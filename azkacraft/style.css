@@ -14,7 +14,7 @@
 }
 
 /* ---------- Colorful theme (default) ---------- */
-body[data-theme="colorful"] {
+html[data-theme="colorful"] {
   --bg-1: #fff3d6;
   --bg-2: #ffd9a0;
   --paper: #fffaf0;
@@ -27,7 +27,7 @@ body[data-theme="colorful"] {
 }
 
 /* ---------- Pastel theme ---------- */
-body[data-theme="pastel"] {
+html[data-theme="pastel"] {
   --bg-1: #eaf2fb;
   --bg-2: #f7e9f5;
   --paper: #fdfbff;

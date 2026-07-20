@@ -54,14 +54,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 function initTheme() {
   const saved = localStorage.getItem(THEME_KEY) || "colorful";
-  document.body.setAttribute("data-theme", saved);
+  document.documentElement.setAttribute("data-theme", saved);
   document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
 }
 
 function toggleTheme() {
-  const current = document.body.getAttribute("data-theme");
+  const current = document.documentElement.getAttribute("data-theme");
   const next = current === "colorful" ? "pastel" : "colorful";
-  document.body.setAttribute("data-theme", next);
+  document.documentElement.setAttribute("data-theme", next);
   localStorage.setItem(THEME_KEY, next);
 }
 
