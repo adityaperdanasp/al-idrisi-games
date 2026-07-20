@@ -1,0 +1,24 @@
+{
+  "name": "AzkaSocial — Storybook Language Quest",
+  "short_name": "AzkaSocial",
+  "description": "A storybook-themed language and arts quiz adventure for Azka.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fdf6e9",
+  "theme_color": "#1266d8",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,1399 @@
+/* =================================================================
+   Multipleazka — script.js
+   All game logic, Firebase sync, and text-to-speech.
+
+   Sections:
+     1. Firebase config & init
+     2. Constants & game state
+     3. Screen navigation helpers
+     4. Role selection
+     5. Pairing: create / join a game
+     6. Firebase realtime listeners
+     7. Race: start, questions, answers
+     8. Progress & winner detection
+     9. Feedback (TTS + popups) — Kids only cheering
+    10. Game over & play again
+   ================================================================= */
+
+
+/* =================================================================
+   1. FIREBASE CONFIG & INIT
+   -----------------------------------------------------------------
+   ⚠️ REPLACE the placeholder values below with YOUR Firebase project's
+   web config. Steps:
+     1. Go to https://console.firebase.google.com  → create a project
+     2. Build → Realtime Database → Create Database → Start in TEST mode
+     3. Project settings ⚙️ → "Your apps" → Web (</>) → register app
+     4. Copy the firebaseConfig object here.
+     5. Make sure databaseURL is present (Realtime DB, not Firestore).
+   ================================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDaWWg1-R9cRVU44coT5qMhzstAK4o8WTw",
+  authDomain: "multipleazka.firebaseapp.com",
+  databaseURL: "https://multipleazka-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "multipleazka",
+  storageBucket: "multipleazka.firebasestorage.app",
+  messagingSenderId: "597375324235",
+  appId: "1:597375324235:web:384f8d3b43e582b281fdce",
+  measurementId: "G-V4RWKQ1C7E"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Google Analytics (via Firebase Analytics). Safe no-op if the analytics
+// SDK script fails to load (e.g. blocked by an ad blocker).
+if (firebase.analytics) {
+  firebase.analytics();
+}
+
+
+/* =================================================================
+   2. CONSTANTS & GAME STATE
+   ================================================================= */
+
+// Child's name — all Kids cheering is personalized with this.
+const CHILD_NAME = "Azka";
+
+// How far each correct answer moves the car (fraction of the track, 0..1).
+// Parent's car moves at 0.25× the Kids' car speed.
+// Kids: 10 correct → finish.   Parent: 40 correct → finish.
+const STEP = {
+  kids: 1 / 10,   // 0.100
+  parent: 1 / 40  // 0.025  (0.25× of Kids' step)
+};
+
+// Seconds allowed per question when the Timer is On.
+const QUESTION_TIME = 10;
+
+// Number ranges for question factors.
+const RANGE = {
+  kids: 10,   // 1..10
+  parent: 12  // 1..12
+};
+
+// Seconds given to pick a ride before the current selection auto-confirms.
+const VEHICLE_TIME = 10;
+
+// The six rides a player can choose before a race.
+const VEHICLE_EMOJI = {
+  car: "🏎️",
+  plane: "🛩️",
+  ship: "🚢",
+  bus: "🚌",
+  truck: "🚚",
+  train: "🚂"
+};
+
+// Kids cheering — spoken aloud + green popup.
+const CHEERS_CORRECT = [
+  "Awesome, Azka! You got it!",
+  "Brilliant work, Azka!",
+  "You're a math star, Azka!",
+  "Perfect! Azka is on fire!",
+  "Great job, Azka! Keep going!",
+  "Yes! Azka nailed it!",
+  "Amazing, Azka! You're so smart!",
+  "Correct! Azka is unstoppable!",
+  "Fantastic, Azka! Well done!",
+  "You rock, Azka!"
+];
+
+// Kids encouragement — spoken aloud + blue/neutral popup (never red).
+const CHEERS_WRONG = [
+  "Almost there, Azka! Try again!",
+  "Good try, Azka! You'll get the next one!",
+  "Keep going, Azka! You're learning!",
+  "Don't give up, Azka! You've got this!",
+  "Close one, Azka! Let's keep practicing!",
+  "Nice effort, Azka! Next one's yours!",
+  "You're getting better, Azka!",
+  "Stay strong, Azka! Try again!",
+  "That's okay, Azka! Champions keep trying!"
+];
+
+// Runtime state for THIS device.
+const state = {
+  role: null,         // 'kids' | 'parent' — the role this device plays
+  code: null,         // pairing code for the game
+  correct: 0,         // correct answers by this player
+  progress: 0,        // 0..1 track position for this player
+  currentAnswer: 0,   // correct value for the on-screen question
+  answerMode: "choice", // 'choice' (multiple choice) | 'type' (keypad)
+  answerLocked: false,  // guards against double-submits between questions
+  timerOn: true,        // per-question 10s countdown on/off
+  solo: false,          // true when playing without a paired opponent
+  wrongAttempts: 0,     // wrong tries on the CURRENT question (type-in gets 2 before reveal)
+  vehicle: "car",        // chosen ride — kept across "Play Again", reset when going Home
+  streak: 0,             // consecutive correct answers THIS race — resets on any wrong answer
+  gameOver: false
+};
+
+// Zeroes every per-race counter. Called at the start of every race —
+// Create/Join/Solo (after the ride is picked) and every Play Again — so a
+// fresh race always begins from a clean slate rather than inheriting
+// whatever an earlier, possibly-abandoned race left behind.
+function resetRaceState() {
+  state.correct = 0;
+  state.progress = 0;
+  state.wrongAttempts = 0;
+  state.streak = 0;
+  state.gameOver = false;
+  lastQuestionKey = null;
+  updateStreakBadge();
+}
+
+// The digits typed so far in "type-it-in" mode.
+let typedValue = "";
+
+// Per-question timer + total race time (for scoreboard best time).
+let timerId = null;
+let timerRemaining = 0;
+let raceStartTime = 0;
+
+// Vehicle-pick countdown.
+let vehicleTimerId = null;
+let vehicleTimeLeft = 0;
+
+// Race-start (3-2-1-GO) countdown.
+let countdownTimeoutId = null;
+let countdownToken = 0;
+
+// The Firebase game code we currently have a listener attached to (or null).
+// Tracked explicitly so Home / a new Create-or-Join can cleanly detach the
+// old listener instead of leaking it.
+let listeningCode = null;
+
+// A pairing code carried in the URL (?join=CODE) from a scanned QR code.
+const pendingJoinCode = new URLSearchParams(location.search).get("join")?.toUpperCase() || null;
+
+
+/* =================================================================
+   3. SCREEN NAVIGATION HELPERS
+   ================================================================= */
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  // The home button makes sense everywhere except the role screen itself.
+  document.getElementById("home-btn").classList.toggle("hidden", id === "screen-role");
+}
+
+// Small helper to grab elements.
+const $ = id => document.getElementById(id);
+
+
+/* =================================================================
+   4. ROLE SELECTION
+   ================================================================= */
+document.querySelectorAll(".role-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.role = btn.dataset.role;                 // 'kids' or 'parent'
+    $("pair-role-label").textContent =
+      state.role === "kids" ? "Kids 👦" : "Parent 🧑";
+    resetPairUI();
+
+    // Arrived here via a scanned QR join link — prefill the code for them.
+    if (pendingJoinCode) {
+      $("join-code-input").value = pendingJoinCode;
+    }
+
+    showScreen("screen-pair");
+  });
+});
+
+// Back buttons
+document.querySelectorAll(".back-btn").forEach(btn => {
+  btn.addEventListener("click", () => showScreen(btn.dataset.back));
+});
+
+// Home button — bails out to Role Select from anywhere, cleaning up
+// whatever was in flight (timers, speech, Firebase listener).
+$("home-btn").addEventListener("click", goHome);
+
+function goHome() {
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  clearQuestionTimer();
+  clearVehicleTimer();
+  cancelRaceCountdown();
+  detachGameListener();
+
+  state.code = null;
+  state.solo = false;
+  state.role = null;
+  state.gameOver = false;
+
+  showScreen("screen-role");
+}
+
+// Answer-style segmented control (multiple choice vs type-in). Per player.
+document.querySelectorAll("#answer-seg .seg-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.answerMode = btn.dataset.mode;           // 'choice' or 'type'
+    document.querySelectorAll("#answer-seg .seg-btn")
+      .forEach(b => b.classList.toggle("active", b === btn));
+  });
+});
+
+// Timer on/off segmented control. Per player.
+document.querySelectorAll("#timer-seg .seg-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.timerOn = btn.dataset.timer === "on";
+    document.querySelectorAll("#timer-seg .seg-btn")
+      .forEach(b => b.classList.toggle("active", b === btn));
+  });
+});
+
+
+/* =================================================================
+   5. PAIRING — CREATE / JOIN
+   ================================================================= */
+
+// Generate a 6-char pairing code (unambiguous chars only).
+function makeCode() {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no I,O,1,0 to avoid confusion
+  let code = "";
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function resetPairUI() {
+  $("pair-choose").classList.remove("hidden");
+  $("pair-waiting").classList.add("hidden");
+  $("pair-error").textContent = "";
+  $("join-code-input").value = "";
+  state.solo = false;
+  state.code = null;
+  state.vehicle = "car";   // fresh setup = fresh ride pick (kept across Play Again only)
+}
+
+// --- CREATE a game --- (picks a ride first, then writes the game)
+$("btn-create").addEventListener("click", () => {
+  showVehicleSelect(async () => {
+    resetRaceState();
+    const code = makeCode();
+    state.code = code;
+
+    // Write the initial game with this player as the creator.
+    await db.ref("games/" + code).set({
+      createdAt: firebase.database.ServerValue.TIMESTAMP,
+      status: "waiting",
+      winner: null,
+      players: {
+        [state.role]: playerSeed()
+      }
+    });
+
+    // Show the waiting UI with the code.
+    showScreen("screen-pair");
+    $("code-display").textContent = code;
+    $("pair-choose").classList.add("hidden");
+    $("pair-waiting").classList.remove("hidden");
+    renderJoinQR(code);
+
+    attachGameListener(code);
+  });
+});
+
+// Render a scannable QR code that deep-links straight to this game's code.
+function renderJoinQR(code) {
+  const box = $("qr-code");
+  box.innerHTML = ""; // clear any QR from a previous game
+  if (typeof QRCode === "undefined") return; // library failed to load — code still works manually
+  const joinUrl = `${location.origin}${location.pathname}?join=${code}`;
+  new QRCode(box, {
+    text: joinUrl,
+    width: 150,
+    height: 150,
+    colorDark: "#16233a",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+// --- JOIN a game --- (validate the code first, THEN pick a ride, THEN join)
+$("btn-join").addEventListener("click", async () => {
+  const code = $("join-code-input").value.trim().toUpperCase();
+  $("pair-error").textContent = "";
+
+  if (code.length !== 6) {
+    $("pair-error").textContent = "Code must be 6 characters.";
+    return;
+  }
+
+  const snap = await db.ref("games/" + code).get();
+  if (!snap.exists()) {
+    $("pair-error").textContent = "No game found with that code.";
+    return;
+  }
+
+  const game = snap.val();
+
+  // Don't let two players take the same role.
+  if (game.players && game.players[state.role]) {
+    $("pair-error").textContent =
+      "The " + state.role + " seat is already taken. Go back and pick the other role.";
+    return;
+  }
+
+  showVehicleSelect(async () => {
+    resetRaceState();
+    state.code = code;
+    await db.ref(`games/${code}/players/${state.role}`).set(playerSeed());
+    attachGameListener(code);
+  });
+});
+
+// --- PLAY SOLO — no pairing, no Firebase game. The opponent lane stays
+// visible on screen but parked at the start line the whole race. ---
+$("btn-solo").addEventListener("click", () => {
+  showVehicleSelect(() => {
+    resetRaceState();
+    state.solo = true;
+    state.code = null;
+    resetCarsToStart();
+    startRace();
+  });
+});
+
+// Copy-code button
+$("btn-copy-code").addEventListener("click", () => {
+  const code = $("code-display").textContent;
+  navigator.clipboard?.writeText(code);
+  $("btn-copy-code").textContent = "Copied ✓";
+  setTimeout(() => ($("btn-copy-code").textContent = "Copy code"), 1500);
+});
+
+// Fresh player node.
+function playerSeed() {
+  return { role: state.role, correct: 0, progress: 0, finished: false, vehicle: state.vehicle };
+}
+
+
+/* =================================================================
+   5b. VEHICLE SELECTION — 10s countdown before Create/Join/Solo commits
+   ================================================================= */
+
+// Show the ride-picker and run its 10s countdown. `onDone` fires once —
+// either when the player taps a ride, or when time runs out (keeping
+// whatever was selected, defaulting to "car").
+function showVehicleSelect(onDone) {
+  showScreen("screen-vehicle");
+
+  document.querySelectorAll(".vehicle-opt").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.vehicle === state.vehicle);
+    btn.onclick = () => {
+      state.vehicle = btn.dataset.vehicle;
+      clearVehicleTimer();
+      onDone();
+    };
+  });
+
+  clearVehicleTimer();
+  vehicleTimeLeft = VEHICLE_TIME;
+  updateVehicleTimerUI();
+  vehicleTimerId = setInterval(() => {
+    vehicleTimeLeft -= 0.1;
+    if (vehicleTimeLeft <= 0) {
+      clearVehicleTimer();
+      onDone();
+    } else {
+      updateVehicleTimerUI();
+    }
+  }, 100);
+}
+
+function updateVehicleTimerUI() {
+  const pct = Math.max(0, vehicleTimeLeft / VEHICLE_TIME) * 100;
+  const fill = $("vehicle-timer-fill");
+  const txt = $("vehicle-timer-text");
+  const low = vehicleTimeLeft < 4;
+  if (fill) { fill.style.width = pct + "%"; fill.classList.toggle("low", low); }
+  if (txt) { txt.textContent = Math.max(0, Math.ceil(vehicleTimeLeft)) + "s"; txt.classList.toggle("low", low); }
+}
+
+function clearVehicleTimer() {
+  if (vehicleTimerId) { clearInterval(vehicleTimerId); vehicleTimerId = null; }
+}
+
+
+/* =================================================================
+   6. FIREBASE REALTIME LISTENERS
+   -----------------------------------------------------------------
+   One listener on the whole game node keeps both cars + status synced.
+   ================================================================= */
+function attachGameListener(code) {
+  if (listeningCode === code) return;    // already listening to this exact game
+  detachGameListener();                  // drop any stale listener from a previous game
+  listeningCode = code;
+
+  db.ref("games/" + code).on("value", snap => {
+    const game = snap.val();
+    if (!game) return;
+
+    const players = game.players || {};
+
+    // Update BOTH cars from the shared state (real-time sync).
+    updateCar("kids", players.kids);
+    updateCar("parent", players.parent);
+
+    // When both players are present and we're still on a pairing screen,
+    // start the race.
+    const bothHere = players.kids && players.parent;
+    if (bothHere && game.status === "waiting") {
+      // First device to notice flips status to "playing".
+      db.ref(`games/${code}/status`).set("playing");
+    }
+    if (bothHere && !document.getElementById("screen-race").classList.contains("active")
+        && !state.gameOver) {
+      startRace();
+    }
+
+    // Winner handling.
+    if (game.winner && !state.gameOver) {
+      endGame(game.winner);
+    }
+  });
+}
+
+// Detach the current Firebase game listener, if any. Called before attaching
+// a new one and when the player heads Home mid-game.
+function detachGameListener() {
+  if (listeningCode) {
+    db.ref("games/" + listeningCode).off();
+    listeningCode = null;
+  }
+}
+
+// Remember each car's last progress so we can detect forward movement (for smoke).
+const lastProgress = { kids: 0, parent: 0 };
+
+// Remember the last nitro-boost timestamp seen per car, so the flame burst
+// fires exactly once per boost instead of re-triggering on every later
+// Firebase echo that still carries the same nitroAt value.
+const lastNitroAt = { kids: 0, parent: 0 };
+
+// Fill each track's scrolling background once at load — sparse clouds with
+// wide gaps, wide enough to never run out on any screen size.
+["kids", "parent"].forEach(role => {
+  const el = $("scenery-" + role);
+  if (el) el.textContent = "☁️" + "                    ☁️".repeat(45);
+});
+
+// Move a car on its track based on that player's progress (0..1).
+function updateCar(role, player) {
+  if (!player) return;
+  const car = $("car-" + role);
+  const track = car.parentElement;
+  const p = Math.min(player.progress || 0, 1);
+
+  // Show whichever ride this player picked (defaults to the F1 car).
+  const emoji = VEHICLE_EMOJI[player.vehicle] || VEHICLE_EMOJI.car;
+  if (car.textContent !== emoji) car.textContent = emoji;
+
+  // Car travels from just past the START label to just before the finish flag.
+  const startX = 28;
+  const endX = Math.max(startX, track.clientWidth - car.offsetWidth - 40);
+  const leftPx = startX + (endX - startX) * p;
+  car.style.left = leftPx + "px";
+  $(role + "-correct").textContent = player.correct || 0;
+
+  // Background scenery scrolls opposite the car, at 60% of its travel
+  // distance — a subtle parallax depth cue, only moving as progress does.
+  const scenery = track.querySelector(".scenery");
+  if (scenery) scenery.style.transform = `translateX(-${(endX - startX) * p * 0.6}px)`;
+
+  // Nitro boost — visible on BOTH devices' view of this lane, fires once.
+  if (player.nitroAt && player.nitroAt > lastNitroAt[role]) {
+    lastNitroAt[role] = player.nitroAt;
+    triggerNitroEffect(role, car, track, leftPx);
+  }
+
+  // Smoke puff for the KIDS car whenever it moves forward. 💨
+  if (role === "kids" && p > lastProgress.kids) {
+    spawnSmoke(track, leftPx);
+  }
+  lastProgress[role] = p;
+}
+
+// Drop a quick smoke puff behind a car at the given left position.
+function spawnSmoke(track, leftPx) {
+  const puff = document.createElement("div");
+  puff.className = "smoke";
+  puff.textContent = "💨";
+  puff.style.left = Math.max(0, leftPx - 6) + "px";
+  track.appendChild(puff);
+  setTimeout(() => puff.remove(), 900);
+}
+
+// Car glow-pulse + flame burst for a nitro boost. The announcement text and
+// whoosh sound only play on the device that actually earned this boost, so
+// watching your opponent's car light up doesn't talk over your own screen.
+function triggerNitroEffect(role, car, track, leftPx) {
+  car.classList.remove("nitro-boost");
+  void car.offsetWidth;
+  car.classList.add("nitro-boost");
+  setTimeout(() => car.classList.remove("nitro-boost"), 650);
+
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => {
+      const flame = document.createElement("div");
+      flame.className = "smoke";
+      flame.textContent = "🔥";
+      flame.style.left = Math.max(0, leftPx - 10 - i * 8) + "px";
+      track.appendChild(flame);
+      setTimeout(() => flame.remove(), 900);
+    }, i * 90);
+  }
+
+  if (role === state.role) {
+    flashNitroText();
+    playNitroSound();
+  }
+}
+
+function flashNitroText() {
+  const el = $("nitro-flash");
+  el.classList.remove("hidden");
+  el.style.animation = "none";
+  void el.offsetWidth;
+  el.style.animation = "";
+  setTimeout(() => el.classList.add("hidden"), 1000);
+}
+
+// A quick rising "whoosh" synthesized with the Web Audio API.
+function playNitroSound() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sawtooth";
+    const start = ctx.currentTime;
+    osc.frequency.setValueAtTime(220, start);
+    osc.frequency.exponentialRampToValueAtTime(880, start + 0.35);
+    gain.gain.setValueAtTime(0.001, start);
+    gain.gain.linearRampToValueAtTime(0.18, start + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + 0.45);
+  } catch (e) {
+    // Web Audio unsupported/blocked — the visual boost still plays.
+  }
+}
+
+// Park both cars back at the start line. Used for Solo mode, which has no
+// Firebase echo to reset them visually.
+function resetCarsToStart() {
+  ["kids", "parent"].forEach(role => {
+    lastProgress[role] = 0;
+    lastNitroAt[role] = 0;
+    // In solo, show MY chosen ride on my own lane; the untouched opponent
+    // lane just falls back to the default car.
+    const vehicle = (state.solo && role === state.role) ? state.vehicle : undefined;
+    updateCar(role, { progress: 0, correct: 0, vehicle });
+  });
+}
+
+
+/* =================================================================
+   7. RACE — START, QUESTIONS, ANSWERS
+   ================================================================= */
+function startRace() {
+  showScreen("screen-race");
+  state.answerLocked = false;
+
+  // Parent role gets neutral feedback; Kids get cheering. Hide/adjust label.
+  $("your-turn-label").textContent =
+    state.role === "kids" ? "Your question, Azka!" : "Your question";
+
+  playRaceCountdown(() => {
+    raceStartTime = Date.now();   // "best time" starts once racing actually begins
+    nextQuestion();
+  });
+}
+
+// 3-2-1-GO overlay shown at the start of every race (including Play Again).
+// Guarded by a token so a Home-button cancel mid-countdown can't leak a
+// stale timeout into whatever screen comes next.
+function playRaceCountdown(onDone) {
+  const overlay = $("race-countdown");
+  const numEl = $("race-countdown-number");
+  overlay.classList.remove("hidden");
+
+  const myToken = ++countdownToken;
+  const steps = ["3", "2", "1", "GO!"];
+  let i = 0;
+
+  function showStep() {
+    if (myToken !== countdownToken) return;   // cancelled
+
+    const val = steps[i];
+    numEl.textContent = val;
+    numEl.className = val === "GO!" ? "go" : "";
+    // Re-trigger the pop animation for each step.
+    numEl.style.animation = "none";
+    void numEl.offsetWidth;
+    numEl.style.animation = "";
+    playCountdownBeep(val === "GO!");
+
+    i++;
+    if (i < steps.length) {
+      countdownTimeoutId = setTimeout(showStep, 700);
+    } else {
+      countdownTimeoutId = setTimeout(() => {
+        if (myToken !== countdownToken) return;   // cancelled
+        overlay.classList.add("hidden");
+        onDone();
+      }, 550);
+    }
+  }
+  showStep();
+}
+
+// Cancels any in-flight 3-2-1-GO countdown (used by the Home button).
+function cancelRaceCountdown() {
+  countdownToken++;
+  if (countdownTimeoutId) { clearTimeout(countdownTimeoutId); countdownTimeoutId = null; }
+  $("race-countdown").classList.add("hidden");
+}
+
+// A short synthesized tick for 3/2/1, and a brighter tone for GO!
+function playCountdownBeep(isGo) {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = isGo ? 880 : 523.25;
+    const start = ctx.currentTime;
+    const dur = isGo ? 0.4 : 0.2;
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(0.22, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + dur - 0.05);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + dur);
+  } catch (e) {
+    // Web Audio unsupported/blocked — the visual countdown still plays.
+  }
+}
+
+// Remembers the last question shown, so the same "a × b" never appears twice
+// in a row. The range always has 100+ combinations, so a reroll always
+// resolves within a couple of tries.
+let lastQuestionKey = null;
+
+// Generate a new question, then render the answer UI for the chosen mode.
+function nextQuestion() {
+  if (state.gameOver) return;
+  state.answerLocked = false;
+  state.wrongAttempts = 0;   // fresh question = fresh retry budget
+
+  const max = RANGE[state.role];
+  let a, b, key;
+  do {
+    a = rand(1, max);
+    b = rand(1, max);
+    key = a + "x" + b;
+  } while (key === lastQuestionKey);
+  lastQuestionKey = key;
+  state.currentAnswer = a * b;
+
+  $("question-text").textContent = `${a} × ${b} = ?`;
+
+  if (state.answerMode === "type") renderKeypad();
+  else renderChoices();
+
+  startQuestionTimer();   // (no-op if Timer is Off)
+}
+
+/* --- Per-question countdown (10s; timeout counts as WRONG) ----------------- */
+function startQuestionTimer() {
+  clearQuestionTimer();
+  const wrap = $("timer-wrap");
+  if (!state.timerOn) { wrap.classList.add("hidden"); return; }
+
+  wrap.classList.remove("hidden");
+  timerRemaining = QUESTION_TIME;
+  updateTimerUI();
+  timerId = setInterval(() => {
+    timerRemaining -= 0.1;
+    if (timerRemaining <= 0) {
+      clearQuestionTimer();
+      // Time's up → treat as a wrong answer.
+      handleAnswer(null);
+    } else {
+      updateTimerUI();
+    }
+  }, 100);
+}
+
+function updateTimerUI() {
+  const pct = Math.max(0, timerRemaining / QUESTION_TIME) * 100;
+  const fill = $("timer-fill");
+  const txt = $("timer-text");
+  const low = timerRemaining < 4;   // <4s → red/urgent
+  if (fill) { fill.style.width = pct + "%"; fill.classList.toggle("low", low); }
+  if (txt) { txt.textContent = Math.max(0, Math.ceil(timerRemaining)) + "s"; txt.classList.toggle("low", low); }
+}
+
+function clearQuestionTimer() {
+  if (timerId) { clearInterval(timerId); timerId = null; }
+}
+
+// --- Multiple choice: 4 tappable options (correct + 3 distractors) ----------
+function renderChoices() {
+  const answer = state.currentAnswer;
+  const options = new Set([answer]);
+  while (options.size < 4) {
+    const delta = rand(1, Math.max(3, Math.round(answer * 0.3)));
+    const candidate = Math.random() < 0.5 ? answer + delta : answer - delta;
+    if (candidate > 0 && candidate !== answer) options.add(candidate);
+  }
+
+  const grid = document.createElement("div");
+  grid.className = "choices-grid";
+  shuffle([...options]).forEach(val => {
+    const btn = document.createElement("button");
+    btn.className = "answer-btn";
+    btn.textContent = val;
+    btn.addEventListener("click", () => handleAnswer(val));
+    grid.appendChild(btn);
+  });
+
+  const wrap = $("answer-options");
+  wrap.innerHTML = "";
+  wrap.appendChild(grid);
+}
+
+// --- Type it in: calculator display + keypad --------------------------------
+function renderKeypad() {
+  typedValue = "";
+  const wrap = $("answer-options");
+  wrap.innerHTML =
+    '<div class="keypad-display" id="keypad-display"></div>' +
+    '<div class="keypad" id="keypad"></div>';
+
+  const keys = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "back", "0", "enter"];
+  const pad = $("keypad");
+  keys.forEach(k => {
+    const btn = document.createElement("button");
+    if (k === "back") { btn.className = "key back"; btn.textContent = "⌫"; btn.setAttribute("aria-label", "Delete"); }
+    else if (k === "enter") { btn.className = "key ent"; btn.textContent = "✓"; btn.setAttribute("aria-label", "Submit"); }
+    else { btn.className = "key"; btn.textContent = k; }
+    btn.addEventListener("click", () => typeKey(k));
+    pad.appendChild(btn);
+  });
+  updateKeypadDisplay();
+}
+
+// Handle a keypad tap OR a physical keyboard key in type-in mode.
+function typeKey(k) {
+  if (state.gameOver || state.answerLocked) return;
+  if (k === "back") { typedValue = typedValue.slice(0, -1); updateKeypadDisplay(); return; }
+  if (k === "enter") { if (typedValue !== "") handleAnswer(Number(typedValue)); return; }
+  if (typedValue.length < 4) { typedValue += k; updateKeypadDisplay(); }
+}
+
+// Redraw the number typed so far (with a blinking cursor).
+function updateKeypadDisplay() {
+  const d = $("keypad-display");
+  if (!d) return;
+  const shown = typedValue === "" ? '<span class="kd-placeholder">?</span>' : typedValue;
+  d.innerHTML = shown + '<span class="kd-cursor"></span>';
+}
+
+// Physical keyboard support (laptops) — only during a race in type-in mode.
+document.addEventListener("keydown", e => {
+  if (state.answerMode !== "type") return;
+  if (!$("screen-race").classList.contains("active")) return;
+  if (e.key >= "0" && e.key <= "9") typeKey(e.key);
+  else if (e.key === "Backspace") { e.preventDefault(); typeKey("back"); }
+  else if (e.key === "Enter") typeKey("enter");
+});
+
+// --- Shared answer handling for BOTH modes ----------------------------------
+function handleAnswer(value) {
+  if (state.gameOver || state.answerLocked) return;
+  state.answerLocked = true;
+  clearQuestionTimer();   // stop the countdown for this question
+
+  // value === null means the timer ran out → always wrong.
+  const isCorrect = value !== null && Number(value) === state.currentAnswer;
+
+  // Lock every input to prevent double-submits between questions.
+  document.querySelectorAll(".answer-btn, .key").forEach(b => (b.disabled = true));
+
+  if (isCorrect) {
+    state.correct += 1;
+    state.streak += 1;
+    updateStreakBadge();
+
+    // Every 3rd answer in a row gives a 50% bigger jump plus a nitro effect.
+    const isNitro = state.streak > 0 && state.streak % 3 === 0;
+    let stepAmount = STEP[state.role];
+    if (isNitro) stepAmount *= 1.5;
+    state.progress = Math.min(state.progress + stepAmount, 1);
+    const raceWon = state.progress >= 1;
+
+    // Suppress the nitro flare (not the progress bonus) on the winning
+    // answer — the win celebration's own sound takes priority there.
+    const showNitroEffect = isNitro && !raceWon;
+
+    // Solo has no Firebase echo to move the car — update it directly.
+    if (state.solo) {
+      updateCar(state.role, {
+        progress: state.progress, correct: state.correct, vehicle: state.vehicle,
+        nitroAt: showNitroEffect ? Date.now() : undefined
+      });
+    } else {
+      pushProgress(showNitroEffect);
+    }
+
+    // On the race-winning answer, skip the per-answer praise VOICE so it
+    // doesn't collide with the "you won the race" announcement that's
+    // about to speak — the popup text still shows for a visual reward.
+    giveFeedback(true, raceWon);
+
+    if (raceWon) {
+      if (state.solo) endSoloRace(); else claimWin();
+      return;
+    }
+    setTimeout(nextQuestion, 850);   // answerLocked is reset inside nextQuestion
+    return;
+  }
+
+  // --- Wrong (or timed out) ---------------------------------------------
+  state.wrongAttempts += 1;
+  state.streak = 0;
+  updateStreakBadge();
+  giveFeedback(false);
+
+  // Type-in gets a second try on the SAME question before the answer is
+  // revealed; multiple choice only ever gets one shot.
+  const allowRetry = state.answerMode === "type" && state.wrongAttempts < 2;
+
+  if (allowRetry) {
+    setTimeout(() => {
+      state.answerLocked = false;
+      typedValue = "";
+      document.querySelectorAll(".key").forEach(b => (b.disabled = false));
+      updateKeypadDisplay();
+      startQuestionTimer();   // fresh 10s for the retry
+    }, 1000);
+  } else {
+    revealCorrectAnswer();
+  }
+}
+
+// Show the correct answer for 3s (highlighted button, or in the keypad
+// display), then move on to a fresh question.
+function revealCorrectAnswer() {
+  if (state.answerMode === "type") {
+    const d = $("keypad-display");
+    if (d) {
+      d.innerHTML = '<span class="kd-reveal-label">Answer:</span>' +
+        `<span class="kd-reveal">${state.currentAnswer}</span>`;
+    }
+  } else {
+    document.querySelectorAll(".answer-btn").forEach(b => {
+      if (Number(b.textContent) === state.currentAnswer) b.classList.add("reveal-correct");
+    });
+  }
+  setTimeout(nextQuestion, 3000);
+}
+
+// Random int in [min, max].
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+// Fisher–Yates shuffle.
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+
+/* =================================================================
+   8. PROGRESS & WINNER
+   ================================================================= */
+
+// Push this player's progress to Firebase (syncs the other device).
+function pushProgress(isNitro) {
+  if (!state.code) return;
+  const update = {
+    correct: state.correct,
+    progress: state.progress,
+    finished: state.progress >= 1
+  };
+  if (isNitro) update.nitroAt = Date.now();
+  db.ref(`games/${state.code}/players/${state.role}`).update(update);
+}
+
+// Claim the win using a transaction so only the FIRST finisher wins.
+function claimWin() {
+  db.ref(`games/${state.code}/winner`).transaction(current => {
+    if (current === null || current === undefined) return state.role;
+    return; // already won by someone else — abort
+  });
+  db.ref(`games/${state.code}/status`).set("finished");
+}
+
+
+/* =================================================================
+   9. FEEDBACK — TTS + POPUPS
+   -----------------------------------------------------------------
+   Kids: random spoken cheer + colored popup (green / blue-neutral).
+   Parent: plain "Correct" / "Try again", NO speech, NO cheering.
+   ================================================================= */
+// Remembers the last cheer TEXT shown per outcome, so the same line never
+// pops up twice in a row (separate from which audio clip plays).
+const lastCheerMsgIndex = { good: -1, wrong: -1 };
+
+function giveFeedback(isCorrect, skipVoice) {
+  const popup = $("feedback-popup");
+
+  if (state.role === "kids") {
+    const list = isCorrect ? CHEERS_CORRECT : CHEERS_WRONG;
+    const key = isCorrect ? "good" : "wrong";
+    let idx;
+    do {
+      idx = Math.floor(Math.random() * list.length);
+    } while (idx === lastCheerMsgIndex[key] && list.length > 1);
+    lastCheerMsgIndex[key] = idx;
+    const msg = list[idx];
+
+    if (!skipVoice) playCheerAudio(isCorrect ? "praise" : "encourage", msg);
+    showPopup(popup, msg, isCorrect ? "good" : "neutral");
+  } else {
+    // Parent — neutral, silent.
+    showPopup(popup, isCorrect ? "Correct" : "Try again", isCorrect ? "good" : "neutral");
+  }
+}
+
+// --- Kids per-answer voice: pre-recorded AzkaSocial cheer clips ------------
+// 20 praise + 20 encourage MP3s, played locally (no API calls). Falls back
+// to browser TTS if a file fails to load/play (e.g. offline, blocked audio).
+const CHEER_AUDIO_COUNT = 20;
+let currentCheerAudio = null;
+
+// Remembers the last audio clip NUMBER played per kind, so the exact same
+// clip never plays twice in a row.
+const lastCheerAudioNum = { praise: 0, encourage: 0 };
+
+function playCheerAudio(kind, fallbackText) {
+  if (currentCheerAudio) { currentCheerAudio.pause(); currentCheerAudio.currentTime = 0; }
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel(); // stop any queued fallback speech
+
+  let num;
+  do {
+    num = rand(1, CHEER_AUDIO_COUNT);
+  } while (num === lastCheerAudioNum[kind]);
+  lastCheerAudioNum[kind] = num;
+
+  const n = String(num).padStart(2, "0");
+  const audio = new Audio(`audio/${kind}/${kind}-${n}.mp3`);
+  currentCheerAudio = audio;
+  audio.addEventListener("error", () => speak(fallbackText));
+  audio.play().catch(() => speak(fallbackText));
+}
+
+function showPopup(popup, text, type) {
+  popup.textContent = text;
+  popup.className = "feedback-popup " + type;   // shows it (removes .hidden)
+  // Re-trigger the entrance animation.
+  popup.style.animation = "none";
+  void popup.offsetWidth;
+  popup.style.animation = "";
+  clearTimeout(showPopup._t);
+  showPopup._t = setTimeout(() => popup.classList.add("hidden"), 1600);
+}
+
+// Combo streak badge — stays visible (unlike the cheer popup, which fades)
+// for as long as the streak holds, updating its count each correct answer.
+// Hidden once the streak drops back below 2 (i.e. any wrong answer).
+function updateStreakBadge() {
+  const badge = $("streak-badge");
+  if (state.streak >= 2) {
+    $("streak-count").textContent = state.streak;
+    badge.classList.remove("hidden");
+    badge.style.animation = "none";
+    void badge.offsetWidth;
+    badge.style.animation = "";
+  } else {
+    badge.classList.add("hidden");
+  }
+}
+
+// --- Warm, friendly FEMALE voice selection ---------------------------------
+// Voices load asynchronously in most browsers, so we cache the best match and
+// refresh it when the list becomes available.
+let preferredVoice = null;
+
+function loadPreferredVoice() {
+  if (!("speechSynthesis" in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return;
+
+  // Warm female English voices, in order of preference across platforms.
+  const wishlist = [
+    "Samantha", "Google UK English Female", "Microsoft Aria",
+    "Microsoft Jenny", "Karen", "Victoria", "Moira", "Tessa",
+    "Fiona", "Microsoft Zira", "Google US English"
+  ];
+  for (const name of wishlist) {
+    const v = voices.find(v => v.name === name || v.name.includes(name));
+    if (v) { preferredVoice = v; return; }
+  }
+  // Fallbacks: anything that looks female + English, else any English voice.
+  preferredVoice =
+    voices.find(v => /female|woman/i.test(v.name) && /^en/i.test(v.lang)) ||
+    voices.find(v => /^en/i.test(v.lang)) ||
+    voices[0] || null;
+}
+
+if ("speechSynthesis" in window) {
+  loadPreferredVoice();
+  window.speechSynthesis.onvoiceschanged = loadPreferredVoice;
+}
+
+// Browser Text-to-Speech (English). Kids only.
+function speak(text) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel(); // stop any queued speech
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US";
+  u.rate = 0.95;  // a touch slower = warmer, friendlier
+  u.pitch = 1.35; // higher pitch, cheerful and kind
+  if (preferredVoice) u.voice = preferredVoice;
+  window.speechSynthesis.speak(u);
+}
+
+
+/* =================================================================
+   10. GAME OVER & PLAY AGAIN
+   ================================================================= */
+function endGame(winnerRole) {
+  state.gameOver = true;
+  clearQuestionTimer();
+
+  const iWon = winnerRole === state.role;
+  $("over-emoji").textContent = iWon ? "🏆" : "🎉";
+
+  const winnerName = winnerRole === "kids" ? "Kids" : "Parent";
+  $("winner-text").textContent = `${winnerName} win${winnerRole === "kids" ? "" : "s"}!`;
+
+  // Winning text still shows, but is no longer spoken — celebrateWin()
+  // plays an applause + "Yeah!" cheer instead (see below).
+  if (state.role === "kids" && iWon) {
+    const msg = `You did it, ${CHILD_NAME}! You won the race! Amazing!`;
+    $("over-sub").textContent = msg;
+  } else if (state.role === "kids" && !iWon) {
+    const msg = `Great racing, ${CHILD_NAME}! So close — let's play again!`;
+    $("over-sub").textContent = msg;
+    speak(msg);
+  } else {
+    $("over-sub").textContent = iWon ? "You reached the finish line first!" : "Better luck next race!";
+  }
+
+  showScreen("screen-over");
+  updateScoreboardUI(winnerRole);   // record + render the family scoreboard
+  if (iWon) celebrateWin();         // confetti + cheer — winner's device only
+}
+
+// Solo finish — same celebration, but skips the head-to-head scoreboard
+// entirely since there's no real opponent to have beaten.
+function endSoloRace() {
+  state.gameOver = true;
+  clearQuestionTimer();
+
+  $("over-emoji").textContent = "🏁";
+  $("winner-text").textContent = "You finished!";
+
+  if (state.role === "kids") {
+    const msg = `You did it, ${CHILD_NAME}! You finished the race! Amazing!`;
+    $("over-sub").textContent = msg;
+    // Not spoken anymore — celebrateWin() plays an applause + "Yeah!" cheer.
+  } else {
+    $("over-sub").textContent = "Race complete! Nice work.";
+  }
+
+  showScreen("screen-over");
+  $("scoreboard").innerHTML = '<div class="sb-title">🏆 Scoreboard</div>' +
+    '<div class="sb-empty">Play a 2-player race to add to the family scoreboard.</div>';
+  celebrateWin();   // solo always "finishes" — celebrate every time
+}
+
+/* =================================================================
+   10a. WIN CELEBRATION — confetti burst + synthesized cheer, ~3s
+   ================================================================= */
+function celebrateWin() {
+  burstConfetti();
+  playCheerSound();
+  playFinishCheer();   // applause + "Yeah!" — replaces the old spoken win line
+}
+
+// Applause + an excited "Yeah!" shout — as loud as the old voiceover was,
+// fires for whoever just won (Kids or Parent, 2-player or solo).
+function playFinishCheer() {
+  playApplause();
+  playYeahShout();
+}
+
+// Real crowd cheering/applause (trimmed to ~6.3s — how long the confetti
+// burst stays visible: 3s of emitting + ~3.3s for the last particles to
+// fade). Falls back to a synthesized clap burst if the file won't play.
+function playApplause() {
+  const audio = new Audio("audio/finish/clap.mp3");
+  audio.volume = 1;
+  audio.addEventListener("error", playSynthesizedApplause);
+  audio.play().catch(playSynthesizedApplause);
+}
+
+// Fallback: a short burst of synthesized clapping (filtered noise impulses,
+// irregular timing so it reads as a small crowd rather than a robotic beat).
+function playSynthesizedApplause() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    const now = ctx.currentTime;
+    const clapCount = 14;
+    for (let i = 0; i < clapCount; i++) {
+      const t = now + i * 0.09 + Math.random() * 0.05;
+      playClap(ctx, t, 0.35 + Math.random() * 0.15);
+    }
+  } catch (e) {
+    // Web Audio unsupported/blocked — the rest of the celebration still plays.
+  }
+}
+
+// A single hand-clap: a short decaying noise burst through a bandpass filter.
+function playClap(ctx, startTime, peakGain) {
+  const duration = 0.15;
+  const bufferSize = Math.floor(ctx.sampleRate * duration);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+  }
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.frequency.value = 1800 + Math.random() * 800;
+  filter.Q.value = 0.8;
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(peakGain, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+  source.connect(filter).connect(gain).connect(ctx.destination);
+  source.start(startTime);
+  source.stop(startTime + duration);
+}
+
+// A short, excited "Yeah!" via the same TTS voice used elsewhere, at full
+// volume so it's at least as loud as the sentence it's replacing.
+function playYeahShout() {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance("Yeah! Woohoo!");
+  u.lang = "en-US";
+  u.rate = 1.15;
+  u.pitch = 1.5;
+  u.volume = 1;
+  if (preferredVoice) u.voice = preferredVoice;
+  window.speechSynthesis.speak(u);
+}
+
+// Fires repeated confetti bursts from both sides for 3 seconds, plus one
+// big burst from the center right away. Uses the canvas-confetti CDN
+// library; silently does nothing if it failed to load.
+function burstConfetti() {
+  if (typeof confetti !== "function") return;
+
+  confetti({ particleCount: 90, spread: 100, origin: { y: 0.4 } });
+
+  const duration = 3000;
+  const end = Date.now() + duration;
+  (function frame() {
+    confetti({ particleCount: 4, angle: 60, spread: 60, origin: { x: 0 } });
+    confetti({ particleCount: 4, angle: 120, spread: 60, origin: { x: 1 } });
+    if (Date.now() < end) requestAnimationFrame(frame);
+  })();
+}
+
+// A short triumphant "ta-da!" fanfare synthesized with the Web Audio API —
+// no external audio file needed.
+function playCheerSound() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6 — bright rising arpeggio
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      const start = ctx.currentTime + i * 0.11;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.25, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.5);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.55);
+    });
+  } catch (e) {
+    // Web Audio unsupported/blocked — confetti still plays, just silently.
+  }
+}
+
+/* =================================================================
+   10b. FAMILY SCOREBOARD — persisted at Firebase /scoreboard
+   ================================================================= */
+async function updateScoreboardUI(winnerRole) {
+  const box = $("scoreboard");
+  box.innerHTML = '<div class="sb-empty">Loading scoreboard…</div>';
+
+  const iWon = winnerRole === state.role;
+  const elapsed = raceStartTime ? Math.round((Date.now() - raceStartTime) / 1000) : 0;
+
+  let sb = null;
+  try {
+    if (iWon) {
+      sb = await recordWin(winnerRole, elapsed);   // only the winner writes
+    } else {
+      await new Promise(r => setTimeout(r, 700));   // let the winner write first
+      const snap = await db.ref("scoreboard").get();
+      sb = snap.val();
+    }
+  } catch (e) {
+    box.innerHTML = '<div class="sb-title">🏆 Scoreboard</div>' +
+      '<div class="sb-empty">Add a Firebase rule for /scoreboard to enable this.</div>';
+    return;
+  }
+  renderScoreboard(sb);
+}
+
+// Read-modify-write the scoreboard (only the winner calls this).
+async function recordWin(winnerRole, timeSec) {
+  const ref = db.ref("scoreboard");
+  const snap = await ref.get();
+  const sb = snap.val() || {};
+
+  sb.wins = sb.wins || { kids: 0, parent: 0 };
+  sb.wins[winnerRole] = (sb.wins[winnerRole] || 0) + 1;
+
+  sb.bestTime = sb.bestTime || {};
+  if (timeSec > 0 && (!sb.bestTime[winnerRole] || timeSec < sb.bestTime[winnerRole])) {
+    sb.bestTime[winnerRole] = timeSec;
+  }
+
+  sb.streak = (sb.streak && sb.streak.role === winnerRole)
+    ? { role: winnerRole, count: (sb.streak.count || 0) + 1 }
+    : { role: winnerRole, count: 1 };
+
+  sb.totalRaces = (sb.totalRaces || 0) + 1;
+
+  const recent = Array.isArray(sb.recent) ? sb.recent
+               : (sb.recent ? Object.values(sb.recent) : []);
+  recent.push({ winner: winnerRole, time: timeSec, at: Date.now() });
+  sb.recent = recent.slice(-5);   // keep the last 5
+
+  await ref.set(sb);
+  return sb;
+}
+
+function fmtTime(sec) {
+  if (!sec || sec < 0) return "—";
+  return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+}
+function roleName(role) { return role === "kids" ? "Azka" : "Parent"; }
+function roleEmoji(role) { return role === "kids" ? "👦" : "🧑"; }
+
+function renderScoreboard(sb) {
+  const box = $("scoreboard");
+  if (!sb || !sb.wins) {
+    box.innerHTML = '<div class="sb-title">🏆 Scoreboard</div>' +
+      '<div class="sb-empty">First race recorded — play again to build the board!</div>';
+    return;
+  }
+  const w = sb.wins || {};
+  const bt = sb.bestTime || {};
+  const streak = sb.streak || {};
+  const recent = (Array.isArray(sb.recent) ? sb.recent : Object.values(sb.recent || {}))
+    .slice().reverse();
+
+  let html = '<div class="sb-title">🏆 Scoreboard</div>';
+  html += '<div class="sb-vs">' +
+    `<div class="p"><div class="em">👦</div><div class="big">${w.kids || 0}</div><div class="nm">Azka</div></div>` +
+    '<div class="dash">—</div>' +
+    `<div class="p"><div class="em">🧑</div><div class="big">${w.parent || 0}</div><div class="nm">Parent</div></div>` +
+    '</div>';
+  html += `<div class="sb-row"><span class="lab">⚡ Best time</span><span class="val">👦 ${fmtTime(bt.kids)} · 🧑 ${fmtTime(bt.parent)}</span></div>`;
+  if (streak.role) {
+    html += `<div class="sb-row"><span class="lab">🔥 Streak</span><span class="val">${roleEmoji(streak.role)} ${roleName(streak.role)} × ${streak.count}</span></div>`;
+  }
+  html += `<div class="sb-row"><span class="lab">🏁 Total races</span><span class="val">${sb.totalRaces || 0}</span></div>`;
+  if (recent.length) {
+    html += '<div class="sb-recent"><div class="rt">Recent races</div>';
+    recent.forEach(r => {
+      const color = r.winner === "kids" ? "#d2691e" : "#1266d8";
+      html += `<div class="sb-rr"><span class="win" style="color:${color}">${roleEmoji(r.winner)} ${roleName(r.winner)} won</span><span>${fmtTime(r.time)}</span></div>`;
+    });
+    html += '</div>';
+  }
+  box.innerHTML = html;
+}
+
+// Play again — reset this game's state in Firebase and locally.
+$("btn-play-again").addEventListener("click", async () => {
+  if (state.code) {
+    // Reset both player nodes + status/winner, keep the same pairing.
+    await db.ref("games/" + state.code).update({
+      status: "playing",
+      winner: null,
+      "players/kids/correct": 0,
+      "players/kids/progress": 0,
+      "players/kids/finished": false,
+      "players/parent/correct": 0,
+      "players/parent/progress": 0,
+      "players/parent/finished": false
+    });
+  } else if (state.solo) {
+    // No Firebase echo in solo mode — reset both cars on screen directly.
+    resetCarsToStart();
+  }
+  resetRaceState();
+  clearQuestionTimer();
+  startRace();
+});
+
+
+/* =================================================================
+   11. COLOR THEME TOGGLE — Pastel ⇄ Colorful
+   ================================================================= */
+const themeToggle = $("theme-toggle");
+
+function applyTheme(theme) {
+  document.body.setAttribute("data-theme", theme);
+  // Icon-only button; theme name lives in the tooltip for clarity.
+  themeToggle.textContent = "🎨";
+  themeToggle.title = theme === "colorful" ? "Colorful theme (tap for Pastel)"
+                                            : "Pastel theme (tap for Colorful)";
+  try { localStorage.setItem("mpz-theme", theme); } catch (e) {}
+}
+
+// Restore the saved choice (default: pastel).
+applyTheme((() => { try { return localStorage.getItem("mpz-theme"); } catch (e) { return null; } })() || "pastel");
+
+themeToggle.addEventListener("click", () => {
+  const next = document.body.getAttribute("data-theme") === "colorful" ? "pastel" : "colorful";
+  applyTheme(next);
+});

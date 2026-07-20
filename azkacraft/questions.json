@@ -1,0 +1,1200 @@
+{
+  "_comment": "AzkaSocial question bank — extracted and adapted from 'GMS Workbook: Language Arts, Upper Elementary, Grade 4 Term 1' (Green Montessori School). Chapters follow the workbook's table of contents order. Each chapter has a large shuffleable pool; the game randomly picks 5 per playthrough and rotates question types.",
+  "chapters": [
+    {
+      "id": 1,
+      "title": "Correct the Spelling Mistake",
+      "topic": "Spelling",
+      "snippet": "Even tricky words like 'ordinary' and 'important' follow patterns once you spot the mistake!",
+      "stickerId": "sticker-spelling",
+      "questions": [
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"George offtin makes a mess at dinner time.\" What is the correct word?",
+          "answer": "often"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"I hurd you playing from the other room!\" What is the correct word?",
+          "answer": "heard"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Eating froot is part of a balanced diet.\" What is the correct word?",
+          "answer": "fruit"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"a set of people or things\"?",
+          "options": [
+            "grewp",
+            "group",
+            "groop",
+            "grewup"
+          ],
+          "answer": "group"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"My rabbit is not very ordineree; she hates eating carrots.\" What is the correct word?",
+          "answer": "ordinary"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"I love to lern about different planets.\" What is the correct word?",
+          "answer": "learn"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"to construct\"?",
+          "options": [
+            "bild",
+            "build",
+            "bilt",
+            "buld"
+          ],
+          "answer": "build"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We will concidur everyone's entries before choosing a winner.\" What is the correct word?",
+          "answer": "consider"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Earlier, there were some straynj noises coming from our shed.\" What is the correct word?",
+          "answer": "strange"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the organ that pumps blood?",
+          "options": [
+            "hart",
+            "heart",
+            "hurt",
+            "haert"
+          ],
+          "answer": "heart"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Taj was worried when he had to take an impawtent test.\" What is the correct word?",
+          "answer": "important"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We have been told to aryv at exactly half past two.\" What is the correct word?",
+          "answer": "arrive"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the planet we live on?",
+          "options": [
+            "urth",
+            "earthe",
+            "earth",
+            "erth"
+          ],
+          "answer": "earth"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Sometimes, the road near our school can be very bizzy.\" What is the correct word?",
+          "answer": "busy"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Did you notis the new classroom display about dragons?\" What is the correct word?",
+          "answer": "notice"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"the one you like best\"?",
+          "options": [
+            "favrit",
+            "favourite",
+            "faverite",
+            "favurite"
+          ],
+          "answer": "favourite"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Last week, we held a surpryz birthday party for my nan.\" What is the correct word?",
+          "answer": "surprise"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Hopefully, Jenna will enjoy her new bysikle.\" What is the correct word?",
+          "answer": "bicycle"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"to picture in your mind\"?",
+          "options": [
+            "imagin",
+            "imagine",
+            "imadgin",
+            "immagine"
+          ],
+          "answer": "imagine"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"I couldn't beleev it when they said that my sister had won.\" What is the correct word?",
+          "answer": "believe"
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "grewp",
+              "right": "group"
+            },
+            {
+              "left": "lern",
+              "right": "learn"
+            },
+            {
+              "left": "hart",
+              "right": "heart"
+            },
+            {
+              "left": "urth",
+              "right": "earth"
+            }
+          ]
+        },
+        {
+          "type": "flashcard",
+          "word": "Ordinary",
+          "definition": "Not special or unusual; normal.",
+          "example": "My rabbit is not very ordinary; she hates eating carrots."
+        },
+        {
+          "type": "sentence-builder",
+          "prompt": "Put the words in order to make a sentence.",
+          "words": [
+            "We",
+            "will",
+            "consider",
+            "everyone's",
+            "entries"
+          ],
+          "answer": "We will consider everyone's entries"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Antonyms Are Opposites",
+      "topic": "Vocabulary",
+      "snippet": "Rosa Parks stood up for what was fair and just — antonyms like 'unfair' and 'fair' help us describe the world around us.",
+      "stickerId": "sticker-antonym",
+      "questions": [
+        {
+          "type": "match",
+          "prompt": "Match each word from the Rosa Parks story to its antonym (opposite).",
+          "pairs": [
+            {
+              "left": "unfair",
+              "right": "fair"
+            },
+            {
+              "left": "cruel",
+              "right": "kind"
+            },
+            {
+              "left": "wrong",
+              "right": "right"
+            },
+            {
+              "left": "afraid",
+              "right": "brave"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each word from the Rosa Parks story to its antonym (opposite).",
+          "pairs": [
+            {
+              "left": "different",
+              "right": "same"
+            },
+            {
+              "left": "unjust",
+              "right": "just"
+            },
+            {
+              "left": "unequal",
+              "right": "equal"
+            },
+            {
+              "left": "enemy",
+              "right": "friend"
+            }
+          ]
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The fire is hot, but the ice is ___.\"",
+          "answer": "cold"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The race car is fast, but the old truck is ___.\"",
+          "answer": "slow"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The green light means go, but the red light means ___.\"",
+          "answer": "stop"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The grandfather is old, but the grandchild is ___.\"",
+          "answer": "young"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The candy is sweet, but the lemon is ___.\"",
+          "answer": "sour"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The window is closed, but the door is ___.\"",
+          "answer": "open"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The children are noisy, but the adults are ___.\"",
+          "answer": "quiet"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The rainforest is humid, but the desert is ___.\"",
+          "answer": "dry"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"I walked to the shop quickly.\" Which word is the antonym of 'quickly'?",
+          "options": [
+            "happily",
+            "eagerly",
+            "slowly"
+          ],
+          "answer": "slowly"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The garden was beautiful in the summer.\" What is the antonym of 'beautiful'?",
+          "options": [
+            "pretty",
+            "ugly",
+            "untidy"
+          ],
+          "answer": "ugly"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"My phone's battery is full.\" What is the antonym of 'full'?",
+          "options": [
+            "charged",
+            "fine",
+            "empty"
+          ],
+          "answer": "empty"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"Mum was angry when I got home.\" What is the antonym of 'angry'?",
+          "options": [
+            "furious",
+            "calm",
+            "sad"
+          ],
+          "answer": "calm"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"I picked the largest sweet from the bowl.\" What is the antonym of 'largest'?",
+          "options": [
+            "smallest",
+            "biggest",
+            "tastiest"
+          ],
+          "answer": "smallest"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The film was so sad.\" What is the antonym of 'sad'?",
+          "options": [
+            "upsetting",
+            "brilliant",
+            "happy"
+          ],
+          "answer": "happy"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"Football is so exciting.\" What is the antonym of 'exciting'?",
+          "options": [
+            "dull",
+            "fun",
+            "thrilling"
+          ],
+          "answer": "dull"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"My teacher hates rainy days.\" What is the antonym of 'hates'?",
+          "options": [
+            "detests",
+            "loves",
+            "loathes"
+          ],
+          "answer": "loves"
+        },
+        {
+          "type": "flashcard",
+          "word": "Antonym",
+          "definition": "A word that means the opposite of another word.",
+          "example": "The lion is wild, but the cat is tame — wild and tame are antonyms."
+        },
+        {
+          "type": "sentence-builder",
+          "prompt": "Put the words in order to make a sentence.",
+          "words": [
+            "The",
+            "lion",
+            "is",
+            "wild",
+            "but",
+            "the",
+            "cat",
+            "is",
+            "tame"
+          ],
+          "answer": "The lion is wild but the cat is tame"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Prefixes and Suffixes",
+      "topic": "Grammar",
+      "snippet": "Adding 'un-' or '-less' to a word can flip its whole meaning — like turning 'happy' into 'unhappy'!",
+      "stickerId": "sticker-affixes",
+      "questions": [
+        {
+          "type": "mc",
+          "prompt": "The prefix 're-' means...",
+          "options": [
+            "to do again",
+            "not",
+            "before",
+            "two"
+          ],
+          "answer": "to do again"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'bi-' means...",
+          "options": [
+            "two",
+            "not",
+            "wrong",
+            "too much"
+          ],
+          "answer": "two"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'un-' means...",
+          "options": [
+            "not",
+            "again",
+            "before",
+            "two"
+          ],
+          "answer": "not"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the prefix un-: \"My shoe is ___.\" (not tied)",
+          "answer": "untied"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the prefix dis-: \"Carl ___ with Paul.\" (does not agree)",
+          "answer": "disagrees"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the prefix un-: \"Abby is ___ to beat me in the video game.\" (not able)",
+          "answer": "unable"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the prefix dis-: \"Will ___ his parents.\" (does not obey)",
+          "answer": "disobeys"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-ful' means...",
+          "options": [
+            "full of",
+            "without",
+            "most",
+            "doing now"
+          ],
+          "answer": "full of"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-less' means...",
+          "options": [
+            "without",
+            "full of",
+            "more",
+            "someone's job"
+          ],
+          "answer": "without"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the suffix -ful: \"I am ___ to have such a loving family.\" (full of thanks)",
+          "answer": "thankful"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the suffix -less: \"Will saw a ___ puppy wandering around town.\" (without a home)",
+          "answer": "homeless"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the suffix -ful: \"Carla, you look ___ in that dress.\" (full of beauty)",
+          "answer": "beautiful"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the suffix -less: \"The squirrels in the backyard are ___.\" (without harm)",
+          "answer": "harmless"
+        },
+        {
+          "type": "match",
+          "prompt": "Match each prefix to its meaning.",
+          "pairs": [
+            {
+              "left": "dis-",
+              "right": "not"
+            },
+            {
+              "left": "mis-",
+              "right": "wrong"
+            },
+            {
+              "left": "pre-",
+              "right": "before"
+            },
+            {
+              "left": "over-",
+              "right": "too much"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each suffix to its meaning.",
+          "pairs": [
+            {
+              "left": "-est",
+              "right": "most"
+            },
+            {
+              "left": "-ing",
+              "right": "doing now"
+            },
+            {
+              "left": "-ly",
+              "right": "how something was done"
+            },
+            {
+              "left": "-er",
+              "right": "more (adjective)"
+            }
+          ]
+        },
+        {
+          "type": "flashcard",
+          "word": "Prefix",
+          "definition": "A group of letters added to the beginning of a word that changes its meaning.",
+          "example": "Adding 're-' to 'turn' makes 'return' — to turn again."
+        },
+        {
+          "type": "flashcard",
+          "word": "Suffix",
+          "definition": "A group of letters added to the end of a word that changes its meaning.",
+          "example": "Adding '-less' to 'fear' makes 'fearless' — without fear."
+        },
+        {
+          "type": "sentence-builder",
+          "prompt": "Put the words in order to make a sentence.",
+          "words": [
+            "Tyler",
+            "dislikes",
+            "school"
+          ],
+          "answer": "Tyler dislikes school"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Contractions",
+      "topic": "Grammar",
+      "snippet": "Squishing two words into one, like 'do not' into 'don't', is called a contraction — don't forget the apostrophe!",
+      "stickerId": "sticker-contraction",
+      "questions": [
+        {
+          "type": "fill",
+          "prompt": "\"I'll\" is short for...",
+          "answer": "I will"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"You'll\" is short for...",
+          "answer": "you will"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"It's\" is short for...",
+          "answer": "it is"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"Wouldn't\" is short for...",
+          "answer": "would not"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"Couldn't\" is short for...",
+          "answer": "could not"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"Shouldn't\" is short for...",
+          "answer": "should not"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"Haven't\" is short for...",
+          "answer": "have not"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"You'd\" is short for...",
+          "answer": "you would"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"he will\"?",
+          "options": [
+            "he'l",
+            "he'll",
+            "hes'll",
+            "he'lls"
+          ],
+          "answer": "he'll"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"they will\"?",
+          "options": [
+            "they'l",
+            "theyll",
+            "they'll",
+            "the'yll"
+          ],
+          "answer": "they'll"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling: \"carnt\" should be written as...",
+          "answer": "can't"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling: \"didnt\" should be written as...",
+          "answer": "didn't"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling: \"cudn't\" should be written as...",
+          "answer": "couldn't"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling: \"wudn't\" should be written as...",
+          "answer": "wouldn't"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling: \"woul'dve\" should be written as...",
+          "answer": "would've"
+        },
+        {
+          "type": "match",
+          "prompt": "Match each contraction to its full form.",
+          "pairs": [
+            {
+              "left": "I'll",
+              "right": "I will"
+            },
+            {
+              "left": "we'll",
+              "right": "we will"
+            },
+            {
+              "left": "she'll",
+              "right": "she will"
+            },
+            {
+              "left": "haven't",
+              "right": "have not"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each contraction to its full form.",
+          "pairs": [
+            {
+              "left": "wouldn't",
+              "right": "would not"
+            },
+            {
+              "left": "couldn't",
+              "right": "could not"
+            },
+            {
+              "left": "shouldn't",
+              "right": "should not"
+            },
+            {
+              "left": "you'd",
+              "right": "you would"
+            }
+          ]
+        },
+        {
+          "type": "flashcard",
+          "word": "Contraction",
+          "definition": "A shortened form of a word or group of words, with an apostrophe marking the missing letters.",
+          "example": "'I will' becomes 'I'll' — the apostrophe replaces 'wi'."
+        },
+        {
+          "type": "sentence-builder",
+          "prompt": "Put the words in order to make a sentence.",
+          "words": [
+            "I",
+            "didn't",
+            "wear",
+            "my",
+            "coat"
+          ],
+          "answer": "I didn't wear my coat"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Capitalization and Punctuation",
+      "topic": "Grammar",
+      "snippet": "Every sentence needs a capital letter to start and a full stop to finish — like tucking it in at both ends!",
+      "stickerId": "sticker-punctuation",
+      "questions": [
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"mark and carl got wet in the rain\"",
+          "answer": "Mark and Carl got wet in the rain."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"jill has fair hair but jack has dark hair\"",
+          "answer": "Jill has fair hair but Jack has dark hair."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"i can hear an owl hoot at night\"",
+          "answer": "I can hear an owl hoot at night."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"nan is sitting in the chair\"",
+          "answer": "Nan is sitting in the chair."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"gurdeep had a chat with his dad\"",
+          "answer": "Gurdeep had a chat with his dad."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "she has a pet snake named rosie",
+            "She has a pet snake named Rosie.",
+            "She has a pet Snake named rosie",
+            "she has a Pet snake named Rosie"
+          ],
+          "answer": "She has a pet snake named Rosie."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence is correctly capitalized and punctuated?",
+          "options": [
+            "marcus went to the mall last friday",
+            "Marcus went to the mall last Friday.",
+            "Marcus Went to the mall last friday.",
+            "marcus Went to the Mall last Friday"
+          ],
+          "answer": "Marcus went to the mall last Friday."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"joanna is from florida\"",
+          "answer": "Joanna is from Florida."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"her mother likes to play tennis\"",
+          "answer": "Her mother likes to play tennis."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence needs a question mark at the end?",
+          "options": [
+            "the boat sailed across the pacific ocean",
+            "Why is cody moving",
+            "i caught three fish at the lake",
+            "her mother likes to play tennis"
+          ],
+          "answer": "Why is cody moving"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"the boat sailed across the pacific ocean\"",
+          "answer": "The boat sailed across the Pacific Ocean."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"the united states is a big country\"",
+          "answer": "The United States is a big country."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"i caught three fish at the lake\"",
+          "answer": "I caught three fish at the lake."
+        },
+        {
+          "type": "match",
+          "prompt": "Match each punctuation rule to what it describes.",
+          "pairs": [
+            {
+              "left": "Sentences start with a",
+              "right": "capital letter"
+            },
+            {
+              "left": "Sentences end with a",
+              "right": "full stop"
+            },
+            {
+              "left": "Names start with a",
+              "right": "capital letter"
+            }
+          ]
+        },
+        {
+          "type": "flashcard",
+          "word": "Capitalization",
+          "definition": "Using a capital (uppercase) letter at the start of a sentence or for names.",
+          "example": "'jill' becomes 'Jill' when it starts a sentence or is a name."
+        },
+        {
+          "type": "sentence-builder",
+          "prompt": "Put the words in order to make a sentence.",
+          "words": [
+            "Bow",
+            "down",
+            "to",
+            "the",
+            "king",
+            "and",
+            "queen"
+          ],
+          "answer": "Bow down to the king and queen"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Reading Comprehension",
+      "topic": "Reading Comprehension",
+      "snippet": "From Jane Goodall's chimpanzees to a mysterious house called Cogston, great readers notice every clue in a story!",
+      "stickerId": "sticker-reading",
+      "questions": [
+        {
+          "type": "mc",
+          "prompt": "According to the text, what animal does Jane Goodall know a lot about?",
+          "options": [
+            "lions",
+            "chimpanzees",
+            "monkeys",
+            "stuffed animals"
+          ],
+          "answer": "chimpanzees"
+        },
+        {
+          "type": "mc",
+          "prompt": "What did Jane's father give her when she was young?",
+          "options": [
+            "A stuffed chimpanzee",
+            "A real puppy",
+            "A book about Africa",
+            "A camera"
+          ],
+          "answer": "A stuffed chimpanzee"
+        },
+        {
+          "type": "fill",
+          "prompt": "Jane's stuffed chimpanzee was named ___.",
+          "answer": "Jubilee"
+        },
+        {
+          "type": "mc",
+          "prompt": "What are chimpanzees, according to the text?",
+          "options": [
+            "monkeys",
+            "gorillas",
+            "apes",
+            "humans"
+          ],
+          "answer": "apes"
+        },
+        {
+          "type": "mc",
+          "prompt": "In 1957, Jane travelled to a country in Africa called...",
+          "options": [
+            "Kenya",
+            "Egypt",
+            "Nigeria",
+            "Morocco"
+          ],
+          "answer": "Kenya"
+        },
+        {
+          "type": "fill",
+          "prompt": "The scientist Jane met in Africa, who knew a lot about chimpanzees, was named ___.",
+          "answer": "Louis Leakey"
+        },
+        {
+          "type": "mc",
+          "prompt": "Why did Jane give the chimpanzees names instead of numbers?",
+          "options": [
+            "It helped her get to know and understand them better",
+            "The other scientists told her to",
+            "It was easier to remember",
+            "The chimps chose their own names"
+          ],
+          "answer": "It helped her get to know and understand them better"
+        },
+        {
+          "type": "mc",
+          "prompt": "What was special about the chimpanzee named David Greybeard?",
+          "options": [
+            "He had a grey chin",
+            "He was the youngest chimp",
+            "He couldn't use tools",
+            "He lived alone"
+          ],
+          "answer": "He had a grey chin"
+        },
+        {
+          "type": "mc",
+          "prompt": "What did Jane observe a chimpanzee doing with grass, which surprised scientists?",
+          "options": [
+            "Using it like a spoon to eat insects",
+            "Building a nest",
+            "Playing with it",
+            "Sleeping on it"
+          ],
+          "answer": "Using it like a spoon to eat insects"
+        },
+        {
+          "type": "mc",
+          "prompt": "In the story 'The Curse of Cogston House', who are the two main characters?",
+          "options": [
+            "Jack and Lucas",
+            "Luca and Jake",
+            "Jack and Luca"
+          ],
+          "answer": "Jack and Luca"
+        },
+        {
+          "type": "mc",
+          "prompt": "Where were Jack and Luca heading in the story?",
+          "options": [
+            "The park",
+            "Cogston House",
+            "The swings"
+          ],
+          "answer": "Cogston House"
+        },
+        {
+          "type": "fill",
+          "prompt": "In the story, fifty-foot-high ___ encased the crumbling walls of Cogston House.",
+          "answer": "scaffolding"
+        },
+        {
+          "type": "mc",
+          "prompt": "How long ago had Cogston House stopped being inhabited, according to the text?",
+          "options": [
+            "About ten years ago",
+            "About thirty years ago",
+            "About a hundred years ago",
+            "It has always been empty"
+          ],
+          "answer": "About thirty years ago"
+        },
+        {
+          "type": "match",
+          "prompt": "Match each fable to what happened in it.",
+          "pairs": [
+            {
+              "left": "The Crow and the Pitcher",
+              "right": "A crow drops pebbles to raise the water level"
+            },
+            {
+              "left": "The Fox and the Stork",
+              "right": "A fox and a stork trick each other with narrow dishes"
+            },
+            {
+              "left": "The Bear and the Bees",
+              "right": "A bear is stung after disturbing a beehive"
+            }
+          ]
+        },
+        {
+          "type": "mc",
+          "prompt": "In 'The Crow and the Pitcher', why could the Crow not drink the water at first?",
+          "options": [
+            "The pitcher had a cap on",
+            "It was high with a narrow neck",
+            "The water inside was dirty",
+            "There were worms in the water"
+          ],
+          "answer": "It was high with a narrow neck"
+        },
+        {
+          "type": "mc",
+          "prompt": "In 'The Fox and the Stork', how did the Fox trick the Stork?",
+          "options": [
+            "He served soup in a shallow dish the Stork could not eat from",
+            "He hid the Stork's food",
+            "He ate all the food before the Stork arrived",
+            "He invited the Stork but never showed up"
+          ],
+          "answer": "He served soup in a shallow dish the Stork could not eat from"
+        },
+        {
+          "type": "mc",
+          "prompt": "In 'The Bear and the Bees', why did the Bear end up jumping into a pool of water?",
+          "options": [
+            "To cool down from the heat",
+            "To escape the swarm of angry bees",
+            "To catch fish",
+            "To wash off honey"
+          ],
+          "answer": "To escape the swarm of angry bees"
+        },
+        {
+          "type": "flashcard",
+          "word": "Infer",
+          "definition": "To figure something out using clues, even when it isn't stated directly — to 'read between the lines'.",
+          "example": "When Daisy's heart beat fast and she walked faster, we can infer that she felt scared."
+        },
+        {
+          "type": "mc",
+          "prompt": "To infer a character's traits and feelings, the workbook teaches you to think 'FAST'. What does the 'F' stand for?",
+          "options": [
+            "Feel",
+            "Fast",
+            "Friend",
+            "Find"
+          ],
+          "answer": "Feel"
+        },
+        {
+          "type": "sentence-builder",
+          "prompt": "Put the words in order to make a sentence.",
+          "words": [
+            "Everyone",
+            "had",
+            "a",
+            "story",
+            "about",
+            "Cogston",
+            "House"
+          ],
+          "answer": "Everyone had a story about Cogston House"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Creative Writing: The Ocean & The Bicycle",
+      "topic": "Creative Writing",
+      "snippet": "Emma's shiny pink bicycle and the wide blue ocean both show how describing details makes a story come alive!",
+      "stickerId": "sticker-creative",
+      "questions": [
+        {
+          "type": "mc",
+          "prompt": "According to 'The Ocean' passage, what color is the ocean water described as?",
+          "options": [
+            "Bright blue",
+            "Dark green",
+            "Grey",
+            "Purple"
+          ],
+          "answer": "Bright blue"
+        },
+        {
+          "type": "mc",
+          "prompt": "What do seagulls do over the ocean, according to the passage?",
+          "options": [
+            "Sleep",
+            "Fly looking for fish",
+            "Build nests",
+            "Swim"
+          ],
+          "answer": "Fly looking for fish"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete the sentence from 'The Ocean': \"There is soft sand along the ___.\"",
+          "answer": "shore"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete the sentence from 'The Ocean': \"There are pretty ___ in the sand.\"",
+          "answer": "seashells"
+        },
+        {
+          "type": "mc",
+          "prompt": "In 'The Bicycle', what color was Emma's new bicycle?",
+          "options": [
+            "Bright pink",
+            "Sky blue",
+            "Sunshine yellow",
+            "Forest green"
+          ],
+          "answer": "Bright pink"
+        },
+        {
+          "type": "mc",
+          "prompt": "Who gave Emma the bicycle as a gift?",
+          "options": [
+            "Her uncle",
+            "Her teacher",
+            "Her best friend",
+            "Her grandmother"
+          ],
+          "answer": "Her uncle"
+        },
+        {
+          "type": "mc",
+          "prompt": "Where did Emma's uncle hide the bicycle to surprise her?",
+          "options": [
+            "Behind a bush",
+            "In the garage",
+            "Under her bed",
+            "In a box"
+          ],
+          "answer": "Behind a bush"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete the sentence: \"When Emma looked behind the bush and saw the bicycle, she jumped for ___.\"",
+          "answer": "joy"
+        },
+        {
+          "type": "mc",
+          "prompt": "What did Emma do after she saw her new bicycle?",
+          "options": [
+            "She gave her uncle a big hug",
+            "She rode away without saying thanks",
+            "She cried",
+            "She asked for a different color"
+          ],
+          "answer": "She gave her uncle a big hug"
+        },
+        {
+          "type": "flashcard",
+          "word": "Descriptive writing",
+          "definition": "Writing that uses vivid details — like colors, sounds, and feelings — to help the reader picture a scene.",
+          "example": "'Bright blue water filled with waves' is descriptive writing about the ocean."
+        },
+        {
+          "type": "sentence-builder",
+          "prompt": "Put the words in order to make a sentence.",
+          "words": [
+            "The",
+            "ocean",
+            "is",
+            "a",
+            "great",
+            "place",
+            "to",
+            "visit"
+          ],
+          "answer": "The ocean is a great place to visit"
+        },
+        {
+          "type": "sentence-builder",
+          "prompt": "Put the words in order to make a sentence.",
+          "words": [
+            "She",
+            "gave",
+            "her",
+            "uncle",
+            "a",
+            "big",
+            "hug"
+          ],
+          "answer": "She gave her uncle a big hug"
+        },
+        {
+          "type": "match",
+          "prompt": "Match each story detail to the correct passage.",
+          "pairs": [
+            {
+              "left": "Bright pink bicycle",
+              "right": "The Bicycle"
+            },
+            {
+              "left": "Seashells in the sand",
+              "right": "The Ocean"
+            },
+            {
+              "left": "Seagulls looking for fish",
+              "right": "The Ocean"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

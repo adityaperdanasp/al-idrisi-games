@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff3d6"/>
+      <stop offset="1" stop-color="#ffd9a0"/>
+    </linearGradient>
+    <linearGradient id="book" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f0e6d2"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- soft storybook clouds -->
+  <circle cx="90" cy="100" r="34" fill="#ffffff" opacity="0.6"/>
+  <circle cx="130" cy="90" r="26" fill="#ffffff" opacity="0.6"/>
+  <circle cx="430" cy="120" r="30" fill="#ffffff" opacity="0.5"/>
+
+  <!-- open storybook -->
+  <path d="M256 300 L110 270 V420 L256 452 L402 420 V270 Z" fill="url(#book)" stroke="#1266d8" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M256 300 L256 452" stroke="#1266d8" stroke-width="6"/>
+  <path d="M140 300 Q198 285 246 305" stroke="#e29d3f" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M140 340 Q198 325 246 345" stroke="#e29d3f" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M266 305 Q314 285 372 300" stroke="#e29d3f" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M266 345 Q314 325 372 340" stroke="#e29d3f" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- mascot body: little writer with round head -->
+  <circle cx="256" cy="176" r="86" fill="#ffe0b2"/>
+  <!-- hair -->
+  <path d="M172 158 Q170 90 256 84 Q342 90 340 158 Q300 130 256 130 Q212 130 172 158Z" fill="#6b4226"/>
+  <!-- eyes -->
+  <circle cx="226" cy="180" r="9" fill="#3a2a20"/>
+  <circle cx="286" cy="180" r="9" fill="#3a2a20"/>
+  <!-- cheeks -->
+  <circle cx="204" cy="204" r="12" fill="#ff9e9e" opacity="0.7"/>
+  <circle cx="308" cy="204" r="12" fill="#ff9e9e" opacity="0.7"/>
+  <!-- smile -->
+  <path d="M226 214 Q256 240 286 214" stroke="#3a2a20" stroke-width="7" fill="none" stroke-linecap="round"/>
+
+  <!-- body / little smock -->
+  <path d="M180 244 Q256 216 332 244 L352 340 Q256 372 160 340 Z" fill="#1266d8"/>
+  <circle cx="220" cy="290" r="7" fill="#ffffff" opacity="0.85"/>
+  <circle cx="256" cy="304" r="7" fill="#ffffff" opacity="0.85"/>
+  <circle cx="292" cy="290" r="7" fill="#ffffff" opacity="0.85"/>
+
+  <!-- arm + paintbrush -->
+  <path d="M338 258 Q392 244 402 190" stroke="#ffe0b2" stroke-width="24" fill="none" stroke-linecap="round"/>
+  <rect x="392" y="120" width="18" height="80" rx="9" fill="#c98a4b" transform="rotate(18 401 160)"/>
+  <path d="M382 118 Q398 96 420 112 Q412 138 388 138 Z" fill="#ff5f7e" transform="rotate(18 401 160)"/>
+
+  <!-- little sparkle stars -->
+  <path d="M420 320 l6 14 14 6 -14 6 -6 14 -6 -14 -14 -6 14 -6 Z" fill="#ffd166"/>
+  <path d="M96 360 l5 11 11 5 -11 5 -5 11 -5 -11 -11 -5 11 -5 Z" fill="#ffd166"/>
+</svg>

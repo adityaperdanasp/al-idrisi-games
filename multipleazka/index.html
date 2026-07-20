@@ -1,0 +1,241 @@
+<!--
+  Multipleazka — 2-Player Multiplication Race Game
+  index.html — STRUCTURE ONLY (all styling in style.css, all logic in script.js)
+
+  Screens are all present in the DOM; script.js shows/hides them by toggling
+  the ".active" class. Firebase is loaded via CDN <script> tags at the bottom.
+-->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#1266d8" />
+<title>Multipleazka 🏎️ — Multiplication Race</title>
+
+<!-- Fredoka: rounded, playful font for a kids' game -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" />
+
+<link rel="stylesheet" href="style.css" />
+
+<!-- App icon for Safari "Add to Home Screen" (racing-car thumbnail) -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="icon" type="image/png" href="icon-512.png" />
+<link rel="manifest" href="manifest.json" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Multipleazka" />
+
+<!-- Floating color-theme toggle (Pastel ⇄ Colorful) — visible on all screens -->
+<button id="theme-toggle" class="theme-toggle">🎨 Pastel</button>
+
+<!-- Floating home button — jumps back to Role Select from anywhere. Hidden
+     on the role screen itself (nowhere to "go home" from). -->
+<button id="home-btn" class="home-btn hidden" title="Back to home">🏠</button>
+
+<div id="app">
+
+  <!-- ============================================================= -->
+  <!-- SCREEN 1: ROLE SELECTION                                       -->
+  <!-- ============================================================= -->
+  <section id="screen-role" class="screen active">
+    <div class="card">
+      <h1 class="logo">Multipleazka <span class="logo-emoji">🏎️</span></h1>
+      <p class="subtitle">Pick who's playing, then race!</p>
+
+      <div class="role-buttons">
+        <button class="role-btn" data-role="kids">
+          <span class="role-emoji">👦</span>
+          <span class="role-title">Kids</span>
+        </button>
+        <button class="role-btn" data-role="parent">
+          <span class="role-emoji">🧑</span>
+          <span class="role-title">Parent</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- SCREEN 2: PAIRING (create or join a game)                      -->
+  <!-- ============================================================= -->
+  <section id="screen-pair" class="screen">
+    <div class="card">
+      <button class="back-btn" data-back="screen-role">← Back</button>
+      <h2>You are: <span id="pair-role-label" class="brand">—</span></h2>
+
+      <!-- Choose create vs join vs solo -->
+      <div id="pair-choose">
+        <p class="subtitle">Start a new race, join your partner, or play solo.</p>
+
+        <button id="btn-create" class="primary-btn">Create Game</button>
+        <div class="or">— or —</div>
+        <div class="join-row">
+          <input id="join-code-input" type="text" maxlength="6" placeholder="ENTER CODE"
+                 autocomplete="off" autocapitalize="characters" />
+          <button id="btn-join" class="primary-btn">Join</button>
+        </div>
+        <p id="pair-error" class="error-text"></p>
+        <div class="or">— or —</div>
+        <button id="btn-solo" class="solo-btn">🙋 Play Solo</button>
+
+        <!-- Answer style: multiple choice vs type-in (per player) -->
+        <div class="setting-row">
+          <span class="setting-label">🔘 Answer style</span>
+          <div class="seg seg-compact" id="answer-seg">
+            <button class="seg-btn active" data-mode="choice">Choice</button>
+            <button class="seg-btn" data-mode="type">Type in</button>
+          </div>
+        </div>
+
+        <!-- Timer: 10s per question, timeout counts as wrong (per player) -->
+        <div class="setting-row">
+          <span class="setting-label">⏱ Timer</span>
+          <div class="seg seg-compact" id="timer-seg">
+            <button class="seg-btn active" data-timer="on">10s</button>
+            <button class="seg-btn" data-timer="off">Off</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Waiting for the other player -->
+      <div id="pair-waiting" class="hidden">
+        <p class="subtitle">Share this code with the other player:</p>
+        <div id="code-display" class="code-display">------</div>
+        <button id="btn-copy-code" class="ghost-btn">Copy code</button>
+
+        <!-- Scan-to-join QR code (encodes a link with the code baked in) -->
+        <div class="qr-wrap">
+          <div class="qr-label">or scan to join</div>
+          <div id="qr-code" class="qr-box"></div>
+        </div>
+
+        <p class="waiting-status">
+          <span class="spinner"></span>
+          <span id="waiting-text">Waiting for the other player to join…</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- SCREEN 2b: VEHICLE SELECTION                                   -->
+  <!-- Shown right after Create/Join/Solo is tapped, before the game  -->
+  <!-- actually starts. 10s countdown; tapping a ride confirms early. -->
+  <!-- ============================================================= -->
+  <section id="screen-vehicle" class="screen">
+    <div class="card">
+      <h2>Choose your ride!</h2>
+      <p class="subtitle">Tap to pick — auto-picks when time's up</p>
+
+      <div class="timer-wrap">
+        <div class="timer-bar"><div id="vehicle-timer-fill" class="timer-fill"></div></div>
+        <span id="vehicle-timer-text" class="timer-text">10s</span>
+      </div>
+
+      <div class="vehicle-grid" id="vehicle-grid">
+        <button class="vehicle-opt active" data-vehicle="car">🏎️</button>
+        <button class="vehicle-opt" data-vehicle="plane">🛩️</button>
+        <button class="vehicle-opt" data-vehicle="ship">🚢</button>
+        <button class="vehicle-opt" data-vehicle="bus">🚌</button>
+        <button class="vehicle-opt" data-vehicle="truck">🚚</button>
+        <button class="vehicle-opt" data-vehicle="train">🚂</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- SCREEN 3: RACE                                                 -->
+  <!-- ============================================================= -->
+  <section id="screen-race" class="screen">
+
+    <!-- Top lane: KIDS -->
+    <div class="lane lane-kids">
+      <div class="lane-header">
+        <span class="lane-name">👦 Kids</span>
+        <span class="lane-score"><span id="kids-correct">0</span> correct</span>
+      </div>
+      <div class="track">
+        <div class="scenery" id="scenery-kids"></div>
+        <div class="finish-flag">🏁</div>
+        <div class="car" id="car-kids">🏎️</div>
+      </div>
+    </div>
+
+    <!-- Bottom lane: PARENT -->
+    <div class="lane lane-parent">
+      <div class="lane-header">
+        <span class="lane-name">🧑 Parent</span>
+        <span class="lane-score"><span id="parent-correct">0</span> correct</span>
+      </div>
+      <div class="track">
+        <div class="scenery" id="scenery-parent"></div>
+        <div class="finish-flag">🏁</div>
+        <div class="car" id="car-parent">🏎️</div>
+      </div>
+    </div>
+
+    <!-- Question panel (only for THIS device's player) -->
+    <div class="question-panel">
+      <!-- 3-2-1-GO overlay, shown briefly at the start of every race -->
+      <div id="race-countdown" class="race-countdown hidden">
+        <span id="race-countdown-number">3</span>
+      </div>
+
+      <!-- Combo streak badge — stays visible while 2+ correct in a row -->
+      <div id="streak-badge" class="streak-badge hidden">
+        🔥 <span id="streak-count">0</span> in a row!
+      </div>
+
+      <div id="your-turn-label" class="your-turn">Your question</div>
+      <div id="question-text" class="question-text">3 × 4 = ?</div>
+
+      <!-- Per-question countdown (shown only when Timer is On) -->
+      <div id="timer-wrap" class="timer-wrap hidden">
+        <div class="timer-bar"><div id="timer-fill" class="timer-fill"></div></div>
+        <span id="timer-text" class="timer-text">10s</span>
+      </div>
+
+      <div id="answer-options" class="answer-options"><!-- buttons/keypad injected by JS --></div>
+
+      <!-- Feedback popup (cheer text for Kids, neutral for Parent) -->
+      <div id="feedback-popup" class="feedback-popup hidden"></div>
+
+      <!-- Nitro boost flash — every 3rd correct answer in a streak -->
+      <div id="nitro-flash" class="nitro-flash hidden">🚀 NITRO BOOST!</div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- SCREEN 4: GAME OVER                                            -->
+  <!-- ============================================================= -->
+  <section id="screen-over" class="screen">
+    <div class="card">
+      <div id="over-emoji" class="over-emoji">🏆</div>
+      <h1 id="winner-text">Winner!</h1>
+      <p id="over-sub" class="subtitle"></p>
+
+      <!-- Family scoreboard (filled from Firebase after each race) -->
+      <div id="scoreboard" class="scoreboard"></div>
+
+      <button id="btn-play-again" class="primary-btn">Play Again</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============================================================= -->
+<!-- Firebase (CDN, compat build for simple global usage)          -->
+<!-- ============================================================= -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+
+<!-- QR code generator (renders a scannable join link on the waiting screen) -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<!-- Confetti burst for the win screen -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+<!-- Game logic -->
+<script src="script.js"></script>

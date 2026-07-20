@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+<title>SolarQuest — Azka's Science Adventure</title>
+<meta name="description" content="A playful quiz adventure for Azka: Life Cycle of a Star, Atoms, Earth Rotation, Globes & Maps, and Time." />
+<meta name="theme-color" content="#1266d8" />
+
+<!-- App icons -->
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="SolarQuest" />
+
+<!-- Fredoka: playful rounded font used everywhere in the app -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="style.css?v=5" />
+</head>
+<body>
+
+<!-- =================================================================
+     TOP BAR — visible on every screen except Brain Rest
+     ================================================================= -->
+<header class="topbar">
+  <button id="btn-home" class="icon-btn" aria-label="Home" title="Home">🏠</button>
+  <div class="topbar-spacer"></div>
+  <div id="xp-badge" class="xp-badge hidden"><span>✨</span><span id="xp-total">0</span> XP</div>
+  <button id="btn-badges" class="icon-btn" aria-label="Badges" title="Badges">🏅</button>
+  <button id="btn-settings" class="icon-btn" aria-label="Settings" title="Settings">⚙️</button>
+</header>
+
+<main id="app">
+
+  <!-- ===============================================================
+       SCREEN: Landing — pick Solo or Multiplayer
+       =============================================================== -->
+  <section id="screen-landing" class="screen active">
+    <div class="hero">
+      <div class="hero-planet" aria-hidden="true">🪐</div>
+      <h1 class="title-xl">SolarQuest</h1>
+      <p class="subtitle">Azka's Science Adventure</p>
+    </div>
+    <div class="mode-choice">
+      <button class="mode-card" id="btn-mode-solo">
+        <span class="mode-emoji">🚀</span>
+        <span class="mode-label">Solo</span>
+        <span class="mode-desc">Play alone and explore the quest map</span>
+      </button>
+      <button class="mode-card" id="btn-mode-multiplayer">
+        <span class="mode-emoji">👯</span>
+        <span class="mode-label">Multiplayer</span>
+        <span class="mode-desc">Race a friend on two devices</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Settings — theme toggle
+       =============================================================== -->
+  <section id="screen-settings" class="screen">
+    <h2 class="title-lg">Settings</h2>
+    <div class="settings-card">
+      <p class="settings-label">Color Theme</p>
+      <div class="theme-pill" id="theme-seg">
+        <button class="theme-pill-btn" data-theme="colorful">Colorful</button>
+        <button class="theme-pill-btn" data-theme="pastel">Pastel</button>
+      </div>
+    </div>
+    <button class="btn btn-secondary" data-back="screen-landing">Back</button>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Solo Quest Map
+       =============================================================== -->
+  <section id="screen-solo-map" class="screen">
+    <h2 class="title-lg">Quest Map</h2>
+    <p class="subtitle-sm">Follow the trail and tap a planet to begin!</p>
+    <div id="quest-map" class="quest-map"></div>
+    <button class="btn btn-secondary" data-back="screen-landing">Back</button>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Badge Collection
+       =============================================================== -->
+  <section id="screen-badges" class="screen">
+    <h2 class="title-lg">Badge Collection</h2>
+    <p class="subtitle-sm">Earn a badge by finishing a topic with 3 stars.</p>
+    <div id="badge-shelf" class="badge-shelf"></div>
+    <button class="btn btn-secondary" data-back="screen-landing">Back</button>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Play — question rendering (Solo & Multiplayer share this)
+       =============================================================== -->
+  <section id="screen-play" class="screen">
+    <!-- Reactive planet mascot: idle blink by default, smiles on correct
+         answers, stays calm and soft on wrong ones (never harsh). -->
+    <div class="mascot" id="mascot" data-mood="idle">
+      <svg viewBox="0 0 100 100">
+        <defs>
+          <radialGradient id="mascotBody" cx="36%" cy="30%" r="75%">
+            <stop offset="0%" stop-color="#ffe9b8"/>
+            <stop offset="45%" stop-color="#ffc978"/>
+            <stop offset="100%" stop-color="#f0903f"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="50" cy="50" rx="47" ry="12" fill="none" stroke="#e8b76a" stroke-width="6" opacity="0.9" transform="rotate(-14 50 50)"/>
+        <circle cx="50" cy="50" r="33" fill="url(#mascotBody)"/>
+        <g class="mood-face mood-idle">
+          <circle class="eye" cx="38" cy="47" r="4" fill="#2b2b45"/>
+          <circle class="eye" cx="62" cy="47" r="4" fill="#2b2b45"/>
+          <path d="M 40 61 Q 50 67 60 61" stroke="#2b2b45" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </g>
+        <g class="mood-face mood-happy">
+          <path d="M 32 47 Q 38 40 44 47" stroke="#2b2b45" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+          <path d="M 56 47 Q 62 40 68 47" stroke="#2b2b45" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+          <path d="M 36 59 Q 50 73 64 59" stroke="#2b2b45" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+        </g>
+        <g class="mood-face mood-soft">
+          <circle cx="38" cy="48" r="3.6" fill="#2b2b45"/>
+          <circle cx="62" cy="48" r="3.6" fill="#2b2b45"/>
+          <path d="M 42 62 Q 50 59 58 62" stroke="#2b2b45" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </g>
+        <ellipse cx="50" cy="50" rx="47" ry="12" fill="none" stroke="#e8b76a" stroke-width="6" opacity="0.55" transform="rotate(-14 50 50)" style="mix-blend-mode: multiply;"/>
+      </svg>
+    </div>
+
+    <div class="play-header">
+      <div class="level-chip"><span id="play-level-emoji">⭐</span> <span id="play-level-name">Level</span></div>
+      <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+      <div class="question-count"><span id="q-index">1</span>/<span id="q-total">8</span></div>
+    </div>
+
+    <!-- Second progress row shown only in multiplayer -->
+    <div id="mp-race-row" class="mp-race-row hidden">
+      <div class="mp-lane">
+        <span class="mp-lane-label">You</span>
+        <div class="progress-track small"><div id="mp-progress-me" class="progress-fill"></div></div>
+        <span id="mp-score-me" class="mp-score">0</span>
+      </div>
+      <div class="mp-lane">
+        <span class="mp-lane-label">Friend</span>
+        <div class="progress-track small"><div id="mp-progress-them" class="progress-fill alt"></div></div>
+        <span id="mp-score-them" class="mp-score">0</span>
+      </div>
+    </div>
+
+    <div id="question-stage" class="question-stage"></div>
+
+    <div id="feedback-popup" class="feedback-popup hidden">
+      <div id="feedback-text"></div>
+      <div id="fun-fact-text" class="fun-fact-line"></div>
+    </div>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Brain Rest — full-screen 10s cat break
+       =============================================================== -->
+  <section id="screen-brain-rest" class="screen brain-rest-screen">
+    <div class="cat-scene">
+      <div class="cat" id="cat1">🐱</div>
+      <div class="cat" id="cat2">🐈</div>
+      <div class="cat" id="cat3" aria-label="Orange Persian cat">
+        <svg viewBox="0 0 100 100" width="1em" height="1em" style="vertical-align: middle;">
+          <ellipse cx="50" cy="58" rx="40" ry="34" fill="#e8965a"/>
+          <path d="M 18 34 Q 14 14 30 24 Q 26 34 24 40 Z" fill="#e8965a"/>
+          <path d="M 82 34 Q 86 14 70 24 Q 74 34 76 40 Z" fill="#e8965a"/>
+          <path d="M 20 32 Q 18 20 28 26 Q 25 32 24 36 Z" fill="#f7c9a0"/>
+          <path d="M 80 32 Q 82 20 72 26 Q 75 32 76 36 Z" fill="#f7c9a0"/>
+          <ellipse cx="34" cy="62" rx="9" ry="7" fill="#f7c9a0" opacity="0.7"/>
+          <ellipse cx="66" cy="62" rx="9" ry="7" fill="#f7c9a0" opacity="0.7"/>
+          <circle cx="36" cy="52" r="5.5" fill="#2b2b2b"/>
+          <circle cx="64" cy="52" r="5.5" fill="#2b2b2b"/>
+          <circle cx="37.5" cy="50" r="1.6" fill="#fff"/>
+          <circle cx="65.5" cy="50" r="1.6" fill="#fff"/>
+          <path d="M 46 60 Q 50 64 54 60 Q 50 66 46 60 Z" fill="#c9754a"/>
+          <path d="M 16 56 Q 4 54 6 60" stroke="#c9754a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <path d="M 16 62 Q 3 63 5 68" stroke="#c9754a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <path d="M 84 56 Q 96 54 94 60" stroke="#c9754a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <path d="M 84 62 Q 97 63 95 68" stroke="#c9754a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+    <h2 class="brain-rest-title">Brain Rest!</h2>
+    <p class="brain-rest-sub">Stretch, wiggle, and relax for a moment 🎉</p>
+    <button id="btn-skip-rest" class="btn btn-secondary">Skip ▶</button>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Reward — level complete summary
+       =============================================================== -->
+  <section id="screen-reward" class="screen">
+    <div class="reward-card">
+      <div class="reward-badge" id="reward-badge">🏅</div>
+      <h2 class="title-lg">Level Complete!</h2>
+      <p id="reward-level-name" class="subtitle-sm">Level Name</p>
+      <div class="stars-row" id="reward-stars">
+        <span class="star">★</span><span class="star">★</span><span class="star">★</span>
+      </div>
+      <p class="reward-xp">+<span id="reward-xp">0</span> XP</p>
+      <button id="btn-reward-continue" class="btn btn-primary">Continue</button>
+    </div>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Multiplayer landing — create or join
+       =============================================================== -->
+  <section id="screen-mp-landing" class="screen">
+    <h2 class="title-lg">Multiplayer</h2>
+    <p class="subtitle-sm">Play together on two devices</p>
+    <div class="mode-choice">
+      <button class="mode-card" id="btn-mp-create">
+        <span class="mode-emoji">➕</span>
+        <span class="mode-label">Create Game</span>
+        <span class="mode-desc">Get a code &amp; QR for your friend</span>
+      </button>
+      <button class="mode-card" id="btn-mp-join">
+        <span class="mode-emoji">🔗</span>
+        <span class="mode-label">Join Game</span>
+        <span class="mode-desc">Enter a code or scan a QR</span>
+      </button>
+    </div>
+    <button class="btn btn-secondary" data-back="screen-landing">Back</button>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Multiplayer create (host) — waiting room
+       =============================================================== -->
+  <section id="screen-mp-create" class="screen">
+    <div id="mp-level-pick-panel">
+      <h2 class="title-lg">Choose a Topic</h2>
+      <p class="subtitle-sm">Pick what you and your friend will race on</p>
+      <div id="mp-level-pick-list" class="quest-map"></div>
+      <button class="btn btn-secondary" data-back="screen-mp-landing">Cancel</button>
+    </div>
+
+    <div id="mp-waiting-panel" class="hidden">
+      <h2 class="title-lg">Waiting for a friend…</h2>
+      <p class="subtitle-sm">Share this code or QR code</p>
+      <div class="pairing-code" id="pairing-code-display">------</div>
+      <div id="qr-code-box" class="qr-box"></div>
+      <p id="mp-create-status" class="subtitle-sm">Waiting for Player 2 to join…</p>
+      <button class="btn btn-secondary" data-back="screen-mp-landing">Cancel</button>
+    </div>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Multiplayer join — type code or scan
+       =============================================================== -->
+  <section id="screen-mp-join" class="screen">
+    <h2 class="title-lg">Join a Game</h2>
+    <div class="seg-control" id="join-method-seg">
+      <button class="seg-btn active" data-method="type">⌨️ Type Code</button>
+      <button class="seg-btn" data-method="scan">📷 Scan QR</button>
+    </div>
+
+    <div id="join-type-panel" class="join-panel">
+      <input id="join-code-input" class="code-input" maxlength="6" placeholder="ABC123" autocapitalize="characters" />
+      <button id="btn-join-submit" class="btn btn-primary">Join</button>
+    </div>
+
+    <div id="join-scan-panel" class="join-panel hidden">
+      <video id="qr-video" class="qr-video" playsinline muted></video>
+      <canvas id="qr-canvas" class="hidden"></canvas>
+      <p class="subtitle-sm">Point your camera at Player 1's QR code</p>
+    </div>
+
+    <p id="mp-join-error" class="error-text"></p>
+    <button class="btn btn-secondary" data-back="screen-mp-landing">Back</button>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Multiplayer game over
+       =============================================================== -->
+  <section id="screen-mp-gameover" class="screen">
+    <div class="reward-card">
+      <div class="reward-badge" id="mp-result-badge">🏆</div>
+      <h2 class="title-lg" id="mp-result-title">You Won!</h2>
+      <div class="mp-final-scores">
+        <div><span class="mp-lane-label">You</span><br /><span id="mp-final-me">0</span></div>
+        <div><span class="mp-lane-label">Friend</span><br /><span id="mp-final-them">0</span></div>
+      </div>
+      <button id="btn-mp-again" class="btn btn-primary">Play Again</button>
+      <button class="btn btn-secondary" data-back="screen-landing">Home</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- =================================================================
+     LIBRARIES
+     ================================================================= -->
+<!-- Firebase Realtime Database (multiplayer sync) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<!-- QR code generator -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<!-- QR code camera scanner -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+<!-- =================================================================
+     APP SCRIPTS
+     ================================================================= -->
+<script src="firebase.js"></script>
+<script src="qrcode.js"></script>
+<script src="script.js?v=5"></script>
+
+</body>
+</html>
