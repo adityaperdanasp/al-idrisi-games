@@ -47,19 +47,17 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  background: #ffffff;
+  background: transparent;
   border-radius: 20px;
   padding: 32px 20px;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 6px 20px rgba(18, 102, 216, 0.12);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease;
 }
 
 .game-card:hover,
 .game-card:focus-visible {
   transform: translateY(-4px);
-  box-shadow: 0 10px 28px rgba(18, 102, 216, 0.2);
 }
 
 .game-icon {
