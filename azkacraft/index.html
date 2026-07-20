@@ -24,6 +24,9 @@
 </head>
 <body data-theme="colorful">
 
+<!-- Floating home button — jumps back to the Al Idrisi Games hub. -->
+<button id="hub-home-btn" class="hub-home-btn" title="Back to Al Idrisi Games">🏠</button>
+
 <!-- ============ LANDING SCREEN ============ -->
 <section id="screen-landing" class="screen active">
   <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🎨</button>
@@ -175,5 +178,10 @@
 <script src="qrcode.js"></script>
 <script src="firebase.js"></script>
 <script src="script.js"></script>
+<script>
+  document.getElementById("hub-home-btn").addEventListener("click", () => {
+    window.location.href = "../";
+  });
+</script>
 </body>
 </html>

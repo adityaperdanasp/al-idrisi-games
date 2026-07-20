@@ -150,7 +150,7 @@ document.querySelectorAll("[data-back]").forEach(btn => {
 
 $("btn-home").addEventListener("click", () => {
   stopScannerIfRunning();
-  showScreen("screen-landing");
+  window.location.href = "../";
 });
 $("btn-settings").addEventListener("click", () => showScreen("screen-settings"));
 $("btn-badges").addEventListener("click", async () => {

@@ -174,8 +174,6 @@ const pendingJoinCode = new URLSearchParams(location.search).get("join")?.toUppe
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
-  // The home button makes sense everywhere except the role screen itself.
-  document.getElementById("home-btn").classList.toggle("hidden", id === "screen-role");
 }
 
 // Small helper to grab elements.
@@ -217,12 +215,7 @@ function goHome() {
   cancelRaceCountdown();
   detachGameListener();
 
-  state.code = null;
-  state.solo = false;
-  state.role = null;
-  state.gameOver = false;
-
-  showScreen("screen-role");
+  window.location.href = "../";
 }
 
 // Answer-style segmented control (multiple choice vs type-in). Per player.
