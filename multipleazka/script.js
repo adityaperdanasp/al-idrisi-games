@@ -673,28 +673,45 @@ function playCountdownBeep(isGo) {
   }
 }
 
-// Remembers the last question shown, so the same "a × b" never appears twice
-// in a row. The range always has 100+ combinations, so a reroll always
-// resolves within a couple of tries.
+// Remembers the last question shown, so the same question never appears
+// twice in a row. The range always has 100+ combinations, so a reroll
+// always resolves within a couple of tries.
 let lastQuestionKey = null;
 
 // Generate a new question, then render the answer UI for the chosen mode.
+// Questions are a 50/50 mix of multiplication and division:
+//  - Multiplication factors are 3..max (1 and 2 are too easy to be useful).
+//  - Division always divides evenly (divisor × quotient), divisor can be as
+//    low as 2, and the dividend (numerator) never exceeds 100.
 function nextQuestion() {
   if (state.gameOver) return;
   state.answerLocked = false;
   state.wrongAttempts = 0;   // fresh question = fresh retry budget
 
   const max = RANGE[state.role];
-  let a, b, key;
+  let isDivision, a, b, dividend, divisor, quotient, key;
   do {
-    a = rand(1, max);
-    b = rand(1, max);
-    key = a + "x" + b;
-  } while (key === lastQuestionKey);
+    isDivision = Math.random() < 0.5;
+    if (isDivision) {
+      divisor = rand(2, max);
+      quotient = rand(3, max);
+      dividend = divisor * quotient;
+      key = "d" + dividend + "/" + divisor;
+    } else {
+      a = rand(3, max);
+      b = rand(3, max);
+      key = "m" + a + "x" + b;
+    }
+  } while (key === lastQuestionKey || (isDivision && dividend > 100));
   lastQuestionKey = key;
-  state.currentAnswer = a * b;
 
-  $("question-text").textContent = `${a} × ${b} = ?`;
+  if (isDivision) {
+    state.currentAnswer = quotient;
+    $("question-text").textContent = `${dividend} ÷ ${divisor} = ?`;
+  } else {
+    state.currentAnswer = a * b;
+    $("question-text").textContent = `${a} × ${b} = ?`;
+  }
 
   if (state.answerMode === "type") renderKeypad();
   else renderChoices();
