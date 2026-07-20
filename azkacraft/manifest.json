@@ -1,6 +1,6 @@
 {
-  "name": "AzkaSocial — Storybook Language Quest",
-  "short_name": "AzkaSocial",
+  "name": "Language & Arts — Storybook Language Quest",
+  "short_name": "Language & Arts",
   "description": "A storybook-themed language and arts quiz adventure for Azka.",
   "start_url": "./index.html",
   "display": "standalone",

@@ -1,6 +1,6 @@
 {
-  "name": "Multipleazka",
-  "short_name": "Multipleazka",
+  "name": "Math Race",
+  "short_name": "Math Race",
   "description": "2-player multiplication race game",
   "start_url": "./",
   "display": "standalone",
