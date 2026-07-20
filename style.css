@@ -8,6 +8,24 @@ body {
   background: #f8f0c9;
 }
 
+/* On wide viewports the centered .hub column leaves bare space on either
+   side. Fill it with a blurred, zoomed copy of the hero art itself so the
+   edges pick up the same colors as whatever is showing in the column,
+   instead of a flat color that clashes with the sky at the top. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -40px;
+  background-image: url("hero.png");
+  background-size: cover;
+  background-position: center 20%;
+  background-repeat: no-repeat;
+  filter: blur(38px) saturate(1.2) brightness(0.95);
+  transform: scale(1.2);
+  z-index: -1;
+  pointer-events: none;
+}
+
 .hub {
   width: 100%;
   max-width: 720px;
