@@ -12,9 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
-<!-- Wide/desktop layout still uses Fredoka (unchanged). The two mobile
-     screens below ("Sticker Craft" redesign) use Baloo 2 + Nunito only. -->
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 
 <!-- Hub's own Firebase project: shared leaderboard/player data + Analytics -->
@@ -24,40 +22,8 @@
 </head>
 <body>
 
-<!-- ============ Wide layout (laptop/desktop, >=900px) — unchanged ============ -->
-<a href="leaderboard.html" class="leaderboard-btn" title="Leaderboard">🏆</a>
-<button id="switch-player-btn" class="switch-player-btn hidden">
-  <span class="avatar" id="current-player-avatar"></span>
-  <span id="current-player-name"></span>
-</button>
-
-<div class="wide-stage">
-  <div class="wide-cards">
-    <a class="game-bar" href="multipleazka/">
-      <img src="multipleazka/icon-512.png" alt="">
-      <span class="txt">
-        <span class="n">Math Race</span>
-        <span class="d">Pick who's playing, then race!</span>
-      </span>
-    </a>
-    <a class="game-bar" href="azkacraft/">
-      <img src="azkacraft/icons/icon-512.png" alt="">
-      <span class="txt">
-        <span class="n">Language &amp; Arts</span>
-        <span class="d">A Storybook Language &amp; Arts</span>
-      </span>
-    </a>
-    <a class="game-bar" href="azkauniverse/">
-      <img src="azkauniverse/icon-512.png" alt="">
-      <span class="txt">
-        <span class="n">SolarQuest</span>
-        <span class="d">AI Science Adventure</span>
-      </span>
-    </a>
-  </div>
-</div>
-
-<!-- ============ Mobile layout (<900px) — "Sticker Craft" redesign ============ -->
+<!-- "Sticker Craft" design — used at every viewport width now (the
+     landscape-hero desktop layout has been retired). -->
 <main class="hub sc-page">
 
   <!-- Page-level floating decoration (outside the app card) -->
@@ -268,40 +234,18 @@
     document.getElementById("sc-player-name").textContent = current.name;
     document.getElementById("sc-screen-select").classList.remove("active");
     document.getElementById("sc-screen-landing").classList.add("active");
-    updateSwitchBtn();
   }
 
   function showSelect() {
     document.getElementById("sc-screen-landing").classList.remove("active");
     document.getElementById("sc-screen-select").classList.add("active");
-    updateSwitchBtn();
-  }
-
-  // Shared floating buttons — only visible in the wide/desktop layout now
-  // (the mobile "Sticker Craft" screens have their own in-flow header).
-  function updateSwitchBtn() {
-    const btn = document.getElementById("switch-player-btn");
-    const nameEl = document.getElementById("current-player-name");
-    const avatarEl = document.getElementById("current-player-avatar");
-    const current = AIGPlayer.getPlayer();
-    if (current) {
-      nameEl.textContent = current.name;
-      avatarEl.textContent = current.name[0].toUpperCase();
-      avatarEl.style.background = scColorFor(current);
-      avatarEl.style.color = SC_INK;
-      btn.classList.remove("hidden");
-    } else {
-      btn.classList.add("hidden");
-    }
   }
 
   renderPicker();
   if (AIGPlayer.getPlayer()) {
     showLanding();
   }
-  updateSwitchBtn();
   document.getElementById("sc-player-chip").addEventListener("click", showSelect);
-  document.getElementById("switch-player-btn").addEventListener("click", showSelect);
 </script>
 
 </body>

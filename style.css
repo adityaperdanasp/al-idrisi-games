@@ -4,31 +4,7 @@
 
 body {
   margin: 0;
-  font-family: "Fredoka", sans-serif;
   background: #f8f0c9;
-}
-
-/* On wide viewports the centered .hub column leaves bare space on either
-   side. Below the landscape-art breakpoint, fill it with a blurred, zoomed
-   copy of the portrait hero art so the edges pick up the same colors as the
-   column. Above that breakpoint, swap in the real landscape illustration —
-   sharp, not blurred — instead of an echo of the portrait art. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: -40px;
-  background-image: url("hero.png");
-  background-size: cover;
-  background-position: center 20%;
-  background-repeat: no-repeat;
-  filter: blur(38px) saturate(1.2) brightness(0.95);
-  transform: scale(1.2);
-  z-index: -1;
-  pointer-events: none;
-}
-
-.wide-stage {
-  display: none;
 }
 
 .hub {
@@ -41,121 +17,10 @@ body::before {
   position: relative;
 }
 
-.game-bar {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  width: min(343px, 100%);
-  background: rgba(255, 255, 255, 0.72);
-  border-radius: 18px;
-  padding: 9px 23px 9px 9px;
-  box-shadow: 0 5px 15px rgba(18, 102, 216, 0.18);
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.15s ease;
-}
-
-.game-bar:hover,
-.game-bar:focus-visible {
-  transform: translateY(-2px);
-}
-
-.game-bar img {
-  width: 46px;
-  height: 46px;
-  border-radius: 13px;
-  flex: none;
-  object-fit: cover;
-  box-shadow: 0 3px 7px rgba(18, 102, 216, 0.24);
-}
-
-.game-bar .txt {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  min-width: 0;
-}
-
-.game-bar .n {
-  font-size: 1.07rem;
-  font-weight: 800;
-  color: #1266d8;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.game-bar .d {
-  font-size: 0.84rem;
-  color: #5c6f8a;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ---------- Leaderboard / switch-player buttons (wide layout only —
-   the mobile "Sticker Craft" screens have their own in-flow header) ---------- */
-.leaderboard-btn {
-  position: fixed;
-  top: 14px;
-  left: 14px;
-  z-index: 20;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 50%;
-  font-size: 1.2rem;
-  box-shadow: 0 4px 12px rgba(18, 102, 216, 0.2);
-  text-decoration: none;
-}
-
-.switch-player-btn {
-  position: fixed;
-  top: 14px;
-  right: 14px;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.85);
-  border: none;
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-family: "Fredoka", sans-serif;
-  font-weight: 700;
-  font-size: 0.85rem;
-  color: #1266d8;
-  box-shadow: 0 4px 12px rgba(18, 102, 216, 0.2);
-  cursor: pointer;
-}
-
-.switch-player-btn.hidden {
-  display: none;
-}
-
-.switch-player-btn .avatar {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 0.7rem;
-  flex: none;
-}
-
-@media (max-width: 899px) {
-  .leaderboard-btn,
-  .switch-player-btn {
-    display: none !important;
-  }
-}
-
 /* =====================================================================
-   "Sticker Craft" mobile redesign (<900px) — Baloo 2 / Nunito only here,
-   rest of the site (wide layout + the 3 games) stays on Fredoka.
+   "Sticker Craft" design — used at every viewport width (mobile, tablet,
+   laptop, desktop). Baloo 2 / Nunito throughout; the 3 games keep their
+   own separate Fredoka styling, untouched by this file.
    ===================================================================== */
 .hub.sc-page {
   max-width: none;
@@ -436,6 +301,12 @@ body::before {
   padding: 16px;
   position: relative;
   z-index: 1;
+  transition: transform 0.15s ease;
+}
+
+.sc-game-card:hover,
+.sc-game-card:focus-visible {
+  transform: translateY(-2px) scale(1.01);
 }
 
 .sc-game-card.math { background: #c1d4f6; transform: rotate(0.6deg); }
@@ -479,42 +350,3 @@ body::before {
 .sc-game-card.lang .sc-game-sub { color: #9b5d84; }
 .sc-game-card.solar .sc-game-title { color: #3f7a4e; }
 .sc-game-card.solar .sc-game-sub { color: #5d9268; }
-
-/* ---------- Wide layout (laptop/desktop, >=900px) ----------
-   Placed last so it reliably wins over the .hub base rule above at equal
-   specificity (media-scoped rules don't get priority just for being
-   conditional — source order still decides ties). */
-@media (min-width: 900px) {
-  .hub,
-  .hub.sc-page {
-    display: none;
-  }
-
-  .wide-stage {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background-color: #41b3e5;
-    background-image: url("hero-landscape.png");
-    background-size: auto 110%;
-    background-repeat: no-repeat;
-    background-position: left center;
-  }
-
-  .wide-cards {
-    position: absolute;
-    right: 6%;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 320px;
-  }
-
-  .wide-cards .game-bar {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(4px);
-  }
-}
