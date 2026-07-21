@@ -102,10 +102,23 @@ function playAzkaOriginal(kind, fallbackText) {
   });
 }
 
+// Every other player also gets 3 fully-recorded (non-spliced) praise clips
+// with their name spoken naturally in the middle — sounds smoother than the
+// generic+name splice. Falls back to the splice system if a player has no
+// personal clips (e.g. a new roster entry added after this batch).
+const PERSONAL_PRAISE_COUNT = 3;
+
 function speakPraise() {
   if (CHILD_ID === "azka") return playAzkaOriginal("praise", pickRandom(PRAISE_PHRASES));
-  const n = randomClipNumber(PRAISE_CLIP_COUNT);
-  playClip("praise", n, `audio/praise/praise-${n}.mp3`, pickRandom(PRAISE_PHRASES));
+
+  const n = randomClipNumber(PERSONAL_PRAISE_COUNT);
+  const audio = new Audio(`audio/praise-personal/${CHILD_ID}-${n}.mp3`);
+  const fallbackToSplice = () => {
+    const n2 = randomClipNumber(PRAISE_CLIP_COUNT);
+    playClip("praise", n2, `audio/praise/praise-${n2}.mp3`, pickRandom(PRAISE_PHRASES));
+  };
+  audio.addEventListener("error", fallbackToSplice);
+  audio.play().catch(fallbackToSplice);
 }
 
 function speakEncouragement() {

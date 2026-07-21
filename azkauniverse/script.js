@@ -262,6 +262,13 @@ const NAME_FIRST_COUNT = { praise: 25, encourage: 15 };
 // system) — keep using those directly for him instead of splicing.
 const AZKA_ORIGINAL_COUNT = { praise: 20, encourage: 20 };
 
+// Every other player also gets 3 fully-recorded (non-spliced) praise clips
+// with their name spoken naturally in the middle — sounds smoother than the
+// generic+name splice. Only praise has these (not encourage). Falls back to
+// the splice system if a player has no personal clips (e.g. a new roster
+// entry added after this batch was recorded).
+const PERSONAL_PRAISE_COUNT = 3;
+
 function speakCheer(isCorrect, phrase) {
   const kind = isCorrect ? "praise" : "encourage";
 
@@ -273,6 +280,19 @@ function speakCheer(isCorrect, phrase) {
     return;
   }
 
+  if (kind === "praise") {
+    const pn = String(Math.floor(Math.random() * PERSONAL_PRAISE_COUNT) + 1).padStart(2, "0");
+    const personal = new Audio(`audio/praise-personal/${CHILD_ID}-${pn}.mp3`);
+    const fallbackToSplice = () => speakSplicedCheer(kind, phrase);
+    personal.addEventListener("error", fallbackToSplice);
+    personal.play().catch(fallbackToSplice);
+    return;
+  }
+
+  speakSplicedCheer(kind, phrase);
+}
+
+function speakSplicedCheer(kind, phrase) {
   const num = Math.floor(Math.random() * CHEER_AUDIO_COUNT[kind]) + 1;
   const n = String(num).padStart(2, "0");
   const line = new Audio(`audio/${kind}/${kind}-${n}.mp3`);
