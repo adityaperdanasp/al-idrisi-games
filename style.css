@@ -27,43 +27,8 @@ body::before {
   pointer-events: none;
 }
 
-/* ---------- Wide layout (laptop/desktop, >=900px) ---------- */
 .wide-stage {
   display: none;
-}
-
-@media (min-width: 900px) {
-  .hub {
-    display: none;
-  }
-
-  .wide-stage {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background-color: #41b3e5;
-    background-image: url("hero-landscape.png");
-    background-size: auto 110%;
-    background-repeat: no-repeat;
-    background-position: left center;
-  }
-
-  .wide-cards {
-    position: absolute;
-    right: 6%;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 320px;
-  }
-
-  .wide-cards .game-bar {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(4px);
-  }
 }
 
 .hub {
@@ -299,4 +264,42 @@ body::before {
 .picker-btn.teacher {
   background: #fff3d6;
   color: #b06a00;
+}
+
+/* ---------- Wide layout (laptop/desktop, >=900px) ----------
+   Placed last so it reliably wins over the .hub base rule above at equal
+   specificity (media-scoped rules don't get priority just for being
+   conditional — source order still decides ties). */
+@media (min-width: 900px) {
+  .hub {
+    display: none;
+  }
+
+  .wide-stage {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background-color: #41b3e5;
+    background-image: url("hero-landscape.png");
+    background-size: auto 110%;
+    background-repeat: no-repeat;
+    background-position: left center;
+  }
+
+  .wide-cards {
+    position: absolute;
+    right: 6%;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 320px;
+  }
+
+  .wide-cards .game-bar {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(4px);
+  }
 }
