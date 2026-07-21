@@ -14,10 +14,19 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+
+<!-- Hub's own Firebase project: shared leaderboard/player data + Analytics -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
 </head>
 <body>
 
 <main class="hub">
+  <button id="switch-player-btn" class="switch-player-btn hidden">
+    👤 <span id="current-player-name"></span>
+  </button>
+
   <div class="hero-stage">
     <img class="hero-img" src="hero.png" alt="Al Idrisi Games">
     <div class="hero-fade"></div>
@@ -47,6 +56,73 @@
   </div>
   <div class="filler"></div>
 </main>
+
+<!-- Player picker overlay — shown until a name is chosen, reopenable via
+     the "switch player" button once dismissed. -->
+<div id="player-picker" class="player-picker">
+  <div class="picker-card">
+    <h1 class="picker-title">Siapa yang main?</h1>
+    <p class="picker-sub">Pilih namamu dulu ya!</p>
+
+    <div class="picker-section-label">Guru</div>
+    <div class="picker-grid teachers" id="picker-teachers"></div>
+
+    <div class="picker-section-label">Murid</div>
+    <div class="picker-grid students" id="picker-students"></div>
+  </div>
+</div>
+
+<script src="player.js"></script>
+<script src="players.js"></script>
+<script src="firebase.js"></script>
+<script>
+  function renderPicker() {
+    const teachersEl = document.getElementById("picker-teachers");
+    const studentsEl = document.getElementById("picker-students");
+    teachersEl.innerHTML = "";
+    studentsEl.innerHTML = "";
+    window.AIG_PLAYERS.forEach(p => {
+      const btn = document.createElement("button");
+      btn.className = "picker-btn " + p.role;
+      btn.textContent = p.name;
+      btn.addEventListener("click", () => selectPlayer(p));
+      (p.role === "teacher" ? teachersEl : studentsEl).appendChild(btn);
+    });
+  }
+
+  function selectPlayer(p) {
+    AIGPlayer.setPlayer(p);
+    closePicker();
+  }
+
+  function closePicker() {
+    document.getElementById("player-picker").classList.add("hidden");
+    updateSwitchBtn();
+  }
+
+  function openPicker() {
+    document.getElementById("player-picker").classList.remove("hidden");
+  }
+
+  function updateSwitchBtn() {
+    const btn = document.getElementById("switch-player-btn");
+    const nameEl = document.getElementById("current-player-name");
+    const current = AIGPlayer.getPlayer();
+    if (current) {
+      nameEl.textContent = current.name;
+      btn.classList.remove("hidden");
+    } else {
+      btn.classList.add("hidden");
+    }
+  }
+
+  renderPicker();
+  if (AIGPlayer.getPlayer()) {
+    document.getElementById("player-picker").classList.add("hidden");
+  }
+  updateSwitchBtn();
+  document.getElementById("switch-player-btn").addEventListener("click", openPicker);
+</script>
 
 </body>
 </html>

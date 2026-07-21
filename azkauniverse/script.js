@@ -24,7 +24,7 @@
 /* =================================================================
    1. CONSTANTS & CHEER PHRASE POOLS
    ================================================================= */
-const CHILD_NAME = "Azka";
+const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().name) || "Azka";
 
 // Index here MUST line up with audio/correct-01.mp3.. correct-20.mp3 --
 // each phrase's array position (1-based) is its recorded filename number.

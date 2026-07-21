@@ -33,6 +33,7 @@ body::before {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .hero-stage {
@@ -130,4 +131,115 @@ body::before {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ---------- Switch-player button ---------- */
+.switch-player-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-family: "Fredoka", sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #1266d8;
+  box-shadow: 0 4px 12px rgba(18, 102, 216, 0.2);
+  cursor: pointer;
+}
+
+.switch-player-btn.hidden {
+  display: none;
+}
+
+/* ---------- Player picker overlay ---------- */
+.player-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: rgba(18, 40, 80, 0.55);
+  backdrop-filter: blur(6px);
+  overflow-y: auto;
+}
+
+.player-picker.hidden {
+  display: none;
+}
+
+.picker-card {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fffdf5;
+  border-radius: 24px;
+  padding: 28px 24px 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  font-family: "Fredoka", sans-serif;
+  text-align: center;
+}
+
+.picker-title {
+  margin: 0 0 4px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1266d8;
+}
+
+.picker-sub {
+  margin: 0 0 20px;
+  color: #5c6f8a;
+  font-size: 0.9rem;
+}
+
+.picker-section-label {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8b96a8;
+  margin: 16px 0 8px;
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.picker-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 6px;
+  font-family: "Fredoka", sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.picker-btn:hover,
+.picker-btn:focus-visible {
+  transform: translateY(-2px);
+}
+
+.picker-btn.student {
+  background: #eaf3ff;
+  color: #1266d8;
+}
+
+.picker-btn.teacher {
+  background: #fff3d6;
+  color: #b06a00;
 }

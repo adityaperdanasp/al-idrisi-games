@@ -52,8 +52,10 @@ if (firebase.analytics) {
    2. CONSTANTS & GAME STATE
    ================================================================= */
 
-// Child's name — all Kids cheering is personalized with this.
-const CHILD_NAME = "Azka";
+// Child's name — all Kids cheering is personalized with this. Picked on the
+// hub's "Siapa yang main?" screen and shared via localStorage (same origin);
+// falls back to "Azka" if no one picked a name (e.g. opened directly).
+const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().name) || "Azka";
 
 // How far each correct answer moves the car (fraction of the track, 0..1).
 // Parent's car moves at 0.25× the Kids' car speed.
@@ -87,29 +89,29 @@ const VEHICLE_EMOJI = {
 
 // Kids cheering — spoken aloud + green popup.
 const CHEERS_CORRECT = [
-  "Awesome, Azka! You got it!",
-  "Brilliant work, Azka!",
-  "You're a math star, Azka!",
-  "Perfect! Azka is on fire!",
-  "Great job, Azka! Keep going!",
-  "Yes! Azka nailed it!",
-  "Amazing, Azka! You're so smart!",
-  "Correct! Azka is unstoppable!",
-  "Fantastic, Azka! Well done!",
-  "You rock, Azka!"
+  `Awesome, ${CHILD_NAME}! You got it!`,
+  `Brilliant work, ${CHILD_NAME}!`,
+  `You're a math star, ${CHILD_NAME}!`,
+  `Perfect! ${CHILD_NAME} is on fire!`,
+  `Great job, ${CHILD_NAME}! Keep going!`,
+  `Yes! ${CHILD_NAME} nailed it!`,
+  `Amazing, ${CHILD_NAME}! You're so smart!`,
+  `Correct! ${CHILD_NAME} is unstoppable!`,
+  `Fantastic, ${CHILD_NAME}! Well done!`,
+  `You rock, ${CHILD_NAME}!`
 ];
 
 // Kids encouragement — spoken aloud + blue/neutral popup (never red).
 const CHEERS_WRONG = [
-  "Almost there, Azka! Try again!",
-  "Good try, Azka! You'll get the next one!",
-  "Keep going, Azka! You're learning!",
-  "Don't give up, Azka! You've got this!",
-  "Close one, Azka! Let's keep practicing!",
-  "Nice effort, Azka! Next one's yours!",
-  "You're getting better, Azka!",
-  "Stay strong, Azka! Try again!",
-  "That's okay, Azka! Champions keep trying!"
+  `Almost there, ${CHILD_NAME}! Try again!`,
+  `Good try, ${CHILD_NAME}! You'll get the next one!`,
+  `Keep going, ${CHILD_NAME}! You're learning!`,
+  `Don't give up, ${CHILD_NAME}! You've got this!`,
+  `Close one, ${CHILD_NAME}! Let's keep practicing!`,
+  `Nice effort, ${CHILD_NAME}! Next one's yours!`,
+  `You're getting better, ${CHILD_NAME}!`,
+  `Stay strong, ${CHILD_NAME}! Try again!`,
+  `That's okay, ${CHILD_NAME}! Champions keep trying!`
 ];
 
 // Runtime state for THIS device.
@@ -598,7 +600,7 @@ function startRace() {
 
   // Parent role gets neutral feedback; Kids get cheering. Hide/adjust label.
   $("your-turn-label").textContent =
-    state.role === "kids" ? "Your question, Azka!" : "Your question";
+    state.role === "kids" ? `Your question, ${CHILD_NAME}!` : "Your question";
 
   playRaceCountdown(() => {
     raceStartTime = Date.now();   // "best time" starts once racing actually begins
@@ -1324,7 +1326,7 @@ function fmtTime(sec) {
   if (!sec || sec < 0) return "—";
   return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
 }
-function roleName(role) { return role === "kids" ? "Azka" : "Parent"; }
+function roleName(role) { return role === "kids" ? CHILD_NAME : "Parent"; }
 function roleEmoji(role) { return role === "kids" ? "👦" : "🧑"; }
 
 function renderScoreboard(sb) {

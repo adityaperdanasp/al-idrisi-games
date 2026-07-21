@@ -8,22 +8,26 @@
 const PRAISE_CLIP_COUNT = 20;
 const ENCOURAGE_CLIP_COUNT = 20;
 
+// Picked on the hub's "Siapa yang main?" screen and shared via localStorage
+// (same origin); falls back to "Azka" if no one picked a name.
+const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().name) || "Azka";
+
 // Used only for the browser-voice fallback text — the real audio is the
-// pre-recorded MP3 clips above.
+// pre-recorded MP3 clips above (generic, not name-specific).
 const PRAISE_PHRASES = [
-  "Amazing job, Azka! You got it!",
-  "Wow Azka, that's exactly right!",
-  "Azka, you're a superstar today!",
-  "Yes! Azka nailed it!",
-  "Fantastic work, Azka!"
+  `Amazing job, ${CHILD_NAME}! You got it!`,
+  `Wow ${CHILD_NAME}, that's exactly right!`,
+  `${CHILD_NAME}, you're a superstar today!`,
+  `Yes! ${CHILD_NAME} nailed it!`,
+  `Fantastic work, ${CHILD_NAME}!`
 ];
 
 const ENCOURAGE_PHRASES = [
-  "Nice try, Azka! Mistakes help us learn, let's keep going!",
-  "That's okay, Azka! You'll get the next one!",
-  "Good effort, Azka! Learning takes practice!",
-  "No worries, Azka! Every try makes you smarter!",
-  "Keep your chin up, Azka! You're learning fast!"
+  `Nice try, ${CHILD_NAME}! Mistakes help us learn, let's keep going!`,
+  `That's okay, ${CHILD_NAME}! You'll get the next one!`,
+  `Good effort, ${CHILD_NAME}! Learning takes practice!`,
+  `No worries, ${CHILD_NAME}! Every try makes you smarter!`,
+  `Keep your chin up, ${CHILD_NAME}! You're learning fast!`
 ];
 
 function pickRandom(arr) {
