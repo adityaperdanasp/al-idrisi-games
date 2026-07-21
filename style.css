@@ -89,6 +89,24 @@ body {
   position: relative;
 }
 
+/* On an actual phone screen there's no "outside" to show the decorative
+   page background in — the phone's own edge is already the frame, so the
+   floating-card-with-padding treatment (meant for previewing on a wider
+   screen) would just look like unwanted borders. Go edge-to-edge instead:
+   card fills the viewport exactly, no padding, no rounded corners. */
+@media (max-width: 480px) {
+  .hub.sc-page {
+    padding: 0;
+  }
+
+  .sc-card {
+    max-width: none;
+    min-height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
 .sc-screen {
   display: none;
   position: relative;
