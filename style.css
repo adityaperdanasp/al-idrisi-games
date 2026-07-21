@@ -30,7 +30,7 @@ body {
   flex-direction: row;
   justify-content: center;
   align-items: flex-start;
-  padding: 28px 16px;
+  padding: calc(28px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
   background: linear-gradient(180deg, #fdedd3 0%, #e9dcc5 55%, #dccba9 100%);
   overflow: hidden;
   font-family: "Nunito", sans-serif;
@@ -97,12 +97,12 @@ body {
    card fills the viewport exactly, no padding, no rounded corners. */
 @media (max-width: 480px) {
   .hub.sc-page {
-    padding: 0;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
   }
 
   .sc-card {
     max-width: none;
-    min-height: 100dvh;
+    min-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     border-radius: 0;
     box-shadow: none;
   }
