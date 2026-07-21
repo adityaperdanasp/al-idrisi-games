@@ -133,6 +133,23 @@ body::before {
   text-overflow: ellipsis;
 }
 
+/* ---------- Leaderboard button ---------- */
+.leaderboard-btn {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  font-size: 1.2rem;
+  box-shadow: 0 4px 12px rgba(18, 102, 216, 0.2);
+  text-decoration: none;
+}
+
 /* ---------- Switch-player button ---------- */
 .switch-player-btn {
   position: absolute;

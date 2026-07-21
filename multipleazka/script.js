@@ -597,6 +597,7 @@ function resetCarsToStart() {
 function startRace() {
   showScreen("screen-race");
   state.answerLocked = false;
+  if (window.AIGLeaderboard) AIGLeaderboard.recordPlay("mathrace");
 
   // Parent role gets neutral feedback; Kids get cheering. Hide/adjust label.
   $("your-turn-label").textContent =

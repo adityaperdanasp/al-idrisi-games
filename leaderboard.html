@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Leaderboard — Al Idrisi Games</title>
+<meta name="theme-color" content="#eaf3ff">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="leaderboard.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="lb-page">
+  <div class="lb-topbar">
+    <a href="index.html" class="lb-back">←</a>
+    <h1>Leaderboard</h1>
+  </div>
+
+  <div class="lb-tabs" id="lb-tabs"></div>
+
+  <div class="lb-metric-label">Diranking dari <b>🎮 jumlah kali main</b></div>
+
+  <div class="lb-podium" id="lb-podium"></div>
+  <div class="lb-you hidden" id="lb-you"></div>
+  <div class="lb-list" id="lb-list"></div>
+  <div class="lb-empty hidden" id="lb-empty">Belum ada yang main game ini. Jadilah yang pertama! 🎉</div>
+</div>
+
+<script src="player.js"></script>
+<script src="leaderboard.js"></script>
+<script>
+  const GAMES = [
+    { id: "mathrace", label: "Math Race", icon: "multipleazka/icon-512.png" },
+    { id: "language-arts", label: "Lang & Arts", icon: "azkacraft/icons/icon-512.png" },
+    { id: "solarquest", label: "SolarQuest", icon: "azkauniverse/icon-512.png" }
+  ];
+
+  const AVATAR_COLORS = ["#1266d8", "#ff9ec4", "#a8d86b", "#f5c2e7", "#ffb020", "#7ea8e0", "#c98a4b", "#6dbf8b"];
+  function colorFor(id) {
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    return AVATAR_COLORS[h % AVATAR_COLORS.length];
+  }
+  function initials(name) {
+    return (name.replace(/^(Ms\.|Mrs\.)\s*/, "")[0] || "?").toUpperCase();
+  }
+
+  let activeGame = GAMES[0].id;
+
+  function renderTabs() {
+    const wrap = document.getElementById("lb-tabs");
+    wrap.innerHTML = "";
+    GAMES.forEach(g => {
+      const btn = document.createElement("button");
+      btn.className = "lb-tab" + (g.id === activeGame ? " active" : "");
+      btn.innerHTML = `<img src="${g.icon}" alt="">${g.label}`;
+      btn.addEventListener("click", () => {
+        activeGame = g.id;
+        renderTabs();
+        loadGame(g.id);
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function render(data) {
+    const me = window.AIGPlayer && AIGPlayer.getPlayer();
+    const entries = Object.keys(data).map(id => ({ id, ...data[id] }));
+    entries.sort((a, b) => (b.timesPlayed || 0) - (a.timesPlayed || 0));
+
+    const podiumEl = document.getElementById("lb-podium");
+    const youEl = document.getElementById("lb-you");
+    const listEl = document.getElementById("lb-list");
+    const emptyEl = document.getElementById("lb-empty");
+    podiumEl.innerHTML = "";
+    listEl.innerHTML = "";
+
+    if (entries.length === 0) {
+      emptyEl.classList.remove("hidden");
+      podiumEl.classList.add("hidden");
+      youEl.classList.add("hidden");
+      listEl.classList.add("hidden");
+      return;
+    }
+    emptyEl.classList.add("hidden");
+    podiumEl.classList.remove("hidden");
+    listEl.classList.remove("hidden");
+
+    const top3 = entries.slice(0, 3);
+    // Visual podium order (silver, gold, bronze), independent of DOM order.
+    const order = [1, 0, 2];
+    const slotClass = ["second", "first", "third"];
+    const medal = ["#2", "#1", "#3"];
+    order.forEach((entryIdx, slotIdx) => {
+      const e = top3[entryIdx];
+      const slot = document.createElement("div");
+      if (!e) {
+        slot.className = "lb-p-slot " + slotClass[slotIdx] + " empty";
+        podiumEl.appendChild(slot);
+        return;
+      }
+      slot.className = "lb-p-slot " + slotClass[slotIdx];
+      slot.innerHTML =
+        `<div class="lb-p-avatar" style="background:${colorFor(e.id)};">${initials(e.name)}</div>` +
+        `<div class="lb-p-name">${e.name}</div>` +
+        `<div class="lb-p-score">${e.timesPlayed || 0} kali main</div>` +
+        `<div class="lb-p-bar">${medal[slotIdx]}</div>`;
+      podiumEl.appendChild(slot);
+    });
+
+    // "Posisi kamu" — always sits right under the podium, whatever the rank.
+    const myIdx = me ? entries.findIndex(e => e.id === me.id) : -1;
+    if (myIdx >= 0) {
+      const e = entries[myIdx];
+      youEl.classList.remove("hidden");
+      youEl.innerHTML =
+        `<div class="rank">#${myIdx + 1}</div>` +
+        `<div class="avatar">${initials(e.name)}</div>` +
+        `<div class="info"><div class="label">Posisi kamu</div><div class="name">${e.name}</div></div>` +
+        `<div class="score">${e.timesPlayed || 0} kali main</div>`;
+    } else {
+      youEl.classList.add("hidden");
+    }
+
+    entries.slice(3).forEach((e, i) => {
+      const row = document.createElement("div");
+      row.className = "lb-row";
+      row.innerHTML =
+        `<div class="rank">${i + 4}</div>` +
+        `<div class="avatar" style="background:${colorFor(e.id)};">${initials(e.name)}</div>` +
+        `<div class="name">${e.name}</div>` +
+        `<div class="score">${e.timesPlayed || 0} kali main</div>`;
+      listEl.appendChild(row);
+    });
+  }
+
+  let unwatch = null;
+  function loadGame(gameId) {
+    if (unwatch) unwatch();
+    unwatch = AIGLeaderboard.watchGame(gameId, render);
+  }
+
+  renderTabs();
+  loadGame(activeGame);
+</script>
+
+</body>
+</html>

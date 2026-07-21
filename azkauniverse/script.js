@@ -674,6 +674,7 @@ function renderBadgeShelf(container) {
    7. LEVEL FLOW
    ================================================================= */
 function startLevel(levelId, mode) {
+  if (window.AIGLeaderboard) AIGLeaderboard.recordPlay("solarquest");
   state.mode = mode;
   state.levelId = levelId;
   state.levelIndex = levelIndexOf(levelId);

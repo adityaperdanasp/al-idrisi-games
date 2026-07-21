@@ -206,6 +206,7 @@ function startChapter(chapterId, mpInfo = null) {
 // questions (picked once by the host and shared via Firebase), instead of
 // each device independently sampling its own random subset.
 function startChapterWithQuestions(chapterId, questions, mpInfo = null) {
+  if (window.AIGLeaderboard) AIGLeaderboard.recordPlay("language-arts");
   const chapter = QUESTION_BANK.chapters.find(c => c.id === chapterId);
   session = {
     chapter,
