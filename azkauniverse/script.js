@@ -257,8 +257,22 @@ function speak(text) {
 const CHEER_AUDIO_COUNT = { praise: 40, encourage: 25 };
 const NAME_FIRST_COUNT = { praise: 25, encourage: 15 };
 
+// Azka already had these clips recorded with his name spoken naturally in
+// the full sentence (before every other player needed the generic+splice
+// system) — keep using those directly for him instead of splicing.
+const AZKA_ORIGINAL_COUNT = { praise: 20, encourage: 20 };
+
 function speakCheer(isCorrect, phrase) {
   const kind = isCorrect ? "praise" : "encourage";
+
+  if (CHILD_ID === "azka") {
+    const n = String(Math.floor(Math.random() * AZKA_ORIGINAL_COUNT[kind]) + 1).padStart(2, "0");
+    const audio = new Audio(`audio/azka-original/${kind}/${kind}-${n}.mp3`);
+    audio.addEventListener("error", () => speak(phrase));
+    audio.play().catch(() => speak(phrase));
+    return;
+  }
+
   const num = Math.floor(Math.random() * CHEER_AUDIO_COUNT[kind]) + 1;
   const n = String(num).padStart(2, "0");
   const line = new Audio(`audio/${kind}/${kind}-${n}.mp3`);

@@ -1007,9 +1007,28 @@ let currentCheerAudio = null;
 // clip never plays twice in a row.
 const lastCheerAudioNum = { praise: 0, encourage: 0 };
 
+// Azka already had these clips recorded with his name spoken naturally in
+// the full sentence (before every other player needed the generic+splice
+// system) — keep using those directly for him instead of splicing.
+const AZKA_ORIGINAL_COUNT = { praise: 20, encourage: 20 };
+
 function playCheerAudio(kind, fallbackText) {
   if (currentCheerAudio) { currentCheerAudio.pause(); currentCheerAudio.currentTime = 0; }
   if ("speechSynthesis" in window) window.speechSynthesis.cancel(); // stop any queued fallback speech
+
+  if (CHILD_ID === "azka") {
+    let num;
+    do {
+      num = rand(1, AZKA_ORIGINAL_COUNT[kind]);
+    } while (num === lastCheerAudioNum[kind]);
+    lastCheerAudioNum[kind] = num;
+    const n = String(num).padStart(2, "0");
+    const audio = new Audio(`audio/azka-original/${kind}/${kind}-${n}.mp3`);
+    currentCheerAudio = audio;
+    audio.addEventListener("error", () => speak(fallbackText));
+    audio.play().catch(() => speak(fallbackText));
+    return;
+  }
 
   let num;
   do {

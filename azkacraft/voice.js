@@ -88,12 +88,28 @@ function playClip(kind, num, url, fallbackText) {
   }
 }
 
+// Azka already had these clips recorded with his name spoken naturally in
+// the full sentence (before every other player needed the generic+splice
+// system) — keep using those directly for him instead of splicing.
+const AZKA_ORIGINAL_COUNT = { praise: 20, encourage: 20 };
+
+function playAzkaOriginal(kind, fallbackText) {
+  const n = randomClipNumber(AZKA_ORIGINAL_COUNT[kind]);
+  const audio = new Audio(`audio/azka-original/${kind}/${kind}-${n}.mp3`);
+  audio.play().catch(err => {
+    console.warn("Pre-recorded clip failed, falling back to browser voice:", err);
+    speakWithBrowser(fallbackText);
+  });
+}
+
 function speakPraise() {
+  if (CHILD_ID === "azka") return playAzkaOriginal("praise", pickRandom(PRAISE_PHRASES));
   const n = randomClipNumber(PRAISE_CLIP_COUNT);
   playClip("praise", n, `audio/praise/praise-${n}.mp3`, pickRandom(PRAISE_PHRASES));
 }
 
 function speakEncouragement() {
+  if (CHILD_ID === "azka") return playAzkaOriginal("encourage", pickRandom(ENCOURAGE_PHRASES));
   const n = randomClipNumber(ENCOURAGE_CLIP_COUNT);
   playClip("encourage", n, `audio/encourage/encourage-${n}.mp3`, pickRandom(ENCOURAGE_PHRASES));
 }
