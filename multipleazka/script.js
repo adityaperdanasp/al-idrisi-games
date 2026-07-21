@@ -120,7 +120,10 @@ const CHEERS_WRONG = [
 
 // Runtime state for THIS device.
 const state = {
-  role: null,         // 'kids' | 'parent' — the role this device plays
+  role: null,         // 'kids' | 'parent' — this device's PACE/ruleset (speed, question range, cheering)
+  seatKey: null,       // this device's unique key inside games/{code}/players — NOT the same as role,
+                       // since up to 3 seats can share the same pace (e.g. 3 "kids")
+  maxPlayers: 2,       // 2 or 3 — chosen by whoever creates the game
   code: null,         // pairing code for the game
   correct: 0,         // correct answers by this player
   progress: 0,        // 0..1 track position for this player
@@ -242,6 +245,17 @@ document.querySelectorAll("#timer-seg .seg-btn").forEach(btn => {
   });
 });
 
+// Player-count segmented control (2 or 3 racers). Only meaningful when
+// CREATING a game — a joiner's choice here is ignored, they just fill the
+// next open seat in whatever game they're joining.
+document.querySelectorAll("#players-seg .seg-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.maxPlayers = Number(btn.dataset.players);
+    document.querySelectorAll("#players-seg .seg-btn")
+      .forEach(b => b.classList.toggle("active", b === btn));
+  });
+});
+
 
 /* =================================================================
    5. PAIRING — CREATE / JOIN
@@ -265,20 +279,34 @@ function resetPairUI() {
   state.vehicle = "car";   // fresh setup = fresh ride pick (kept across Play Again only)
 }
 
+// Picks this device's unique key inside games/{code}/players. Normally just
+// the player's own id (e.g. "arsya") — falls back to a numbered suffix in
+// the rare case the same identity is already seated (e.g. testing solo on
+// two tabs with no one signed in, both defaulting to "azka").
+function uniqueSeatKey(existingPlayers) {
+  const base = CHILD_ID;
+  if (!existingPlayers || !existingPlayers[base]) return base;
+  let n = 2;
+  while (existingPlayers[base + "-" + n]) n++;
+  return base + "-" + n;
+}
+
 // --- CREATE a game --- (picks a ride first, then writes the game)
 $("btn-create").addEventListener("click", () => {
   showVehicleSelect(async () => {
     resetRaceState();
     const code = makeCode();
     state.code = code;
+    state.seatKey = CHILD_ID;
 
-    // Write the initial game with this player as the creator.
+    // Write the initial game with this player as the creator (seat 0).
     await db.ref("games/" + code).set({
       createdAt: firebase.database.ServerValue.TIMESTAMP,
       status: "waiting",
+      maxPlayers: state.maxPlayers,
       winner: null,
       players: {
-        [state.role]: playerSeed()
+        [state.seatKey]: playerSeed(0)
       }
     });
 
@@ -287,6 +315,9 @@ $("btn-create").addEventListener("click", () => {
     $("code-display").textContent = code;
     $("pair-choose").classList.add("hidden");
     $("pair-waiting").classList.remove("hidden");
+    $("waiting-text").textContent = state.maxPlayers === 3
+      ? "Waiting for 2 more players to join…"
+      : "Waiting for the other player to join…";
     renderJoinQR(code);
 
     attachGameListener(code);
@@ -326,18 +357,20 @@ $("btn-join").addEventListener("click", async () => {
   }
 
   const game = snap.val();
+  const players = game.players || {};
+  const seatCount = Object.keys(players).length;
+  const maxPlayers = game.maxPlayers || 2;
 
-  // Don't let two players take the same role.
-  if (game.players && game.players[state.role]) {
-    $("pair-error").textContent =
-      "The " + state.role + " seat is already taken. Go back and pick the other role.";
+  if (seatCount >= maxPlayers) {
+    $("pair-error").textContent = "This race is already full.";
     return;
   }
 
   showVehicleSelect(async () => {
     resetRaceState();
     state.code = code;
-    await db.ref(`games/${code}/players/${state.role}`).set(playerSeed());
+    state.seatKey = uniqueSeatKey(players);
+    await db.ref(`games/${code}/players/${state.seatKey}`).set(playerSeed(seatCount));
     attachGameListener(code);
   });
 });
@@ -349,6 +382,7 @@ $("btn-solo").addEventListener("click", () => {
     resetRaceState();
     state.solo = true;
     state.code = null;
+    $("lane-p3").classList.add("hidden");   // solo is always just 2 lanes: me + a parked ghost
     resetCarsToStart();
     startRace();
   });
@@ -362,9 +396,18 @@ $("btn-copy-code").addEventListener("click", () => {
   setTimeout(() => ($("btn-copy-code").textContent = "Copy code"), 1500);
 });
 
-// Fresh player node.
-function playerSeed() {
-  return { role: state.role, correct: 0, progress: 0, finished: false, vehicle: state.vehicle };
+// Fresh player node. joinOrder (0-based) decides which lane (p1/p2/p3) this
+// seat renders in, independent of its pace — so 3 "kids" can share a race.
+function playerSeed(joinOrder) {
+  return {
+    name: CHILD_NAME,
+    pace: state.role,
+    correct: 0,
+    progress: 0,
+    finished: false,
+    vehicle: state.vehicle,
+    joinOrder
+  };
 }
 
 
@@ -420,6 +463,23 @@ function clearVehicleTimer() {
    -----------------------------------------------------------------
    One listener on the whole game node keeps both cars + status synced.
    ================================================================= */
+// Sorts the players present in a Firebase snapshot by joinOrder and maps
+// them onto the fixed lane slots "p1"/"p2"/"p3" — lanes are positional, NOT
+// tied to pace, so 2 or 3 "kids"-pace players can race side by side.
+function assignSlots(players) {
+  const entries = Object.entries(players)
+    .sort((a, b) => (a[1].joinOrder || 0) - (b[1].joinOrder || 0));
+  const slots = {};
+  entries.forEach(([seatKey, player], i) => {
+    if (i < 3) slots["p" + (i + 1)] = { seatKey, player };
+  });
+  return slots;
+}
+
+// Which lane slot ("p1"/"p2"/"p3") is THIS device's own seat, in the
+// current game — recomputed every snapshot since join order determines it.
+let mySlot = null;
+
 function attachGameListener(code) {
   if (listeningCode === code) return;    // already listening to this exact game
   detachGameListener();                  // drop any stale listener from a previous game
@@ -430,26 +490,33 @@ function attachGameListener(code) {
     if (!game) return;
 
     const players = game.players || {};
+    const maxPlayers = game.maxPlayers || 2;
+    const slots = assignSlots(players);
 
-    // Update BOTH cars from the shared state (real-time sync).
-    updateCar("kids", players.kids);
-    updateCar("parent", players.parent);
+    $("lane-p3").classList.toggle("hidden", maxPlayers < 3);
 
-    // When both players are present and we're still on a pairing screen,
-    // start the race.
-    const bothHere = players.kids && players.parent;
-    if (bothHere && game.status === "waiting") {
+    ["p1", "p2", "p3"].forEach(slot => {
+      const entry = slots[slot];
+      if (!entry) return;
+      if (entry.seatKey === state.seatKey) mySlot = slot;
+      updateCar(slot, entry.player, entry.seatKey === state.seatKey);
+      updateLaneLabel(slot, entry.player);
+    });
+
+    // When every seat is filled and we're still on a pairing screen, start.
+    const allSeated = Object.keys(players).length >= maxPlayers;
+    if (allSeated && game.status === "waiting") {
       // First device to notice flips status to "playing".
       db.ref(`games/${code}/status`).set("playing");
     }
-    if (bothHere && !document.getElementById("screen-race").classList.contains("active")
+    if (allSeated && !document.getElementById("screen-race").classList.contains("active")
         && !state.gameOver) {
       startRace();
     }
 
     // Winner handling.
     if (game.winner && !state.gameOver) {
-      endGame(game.winner);
+      endGame(game.winner, players[game.winner]);
     }
   });
 }
@@ -464,24 +531,35 @@ function detachGameListener() {
 }
 
 // Remember each car's last progress so we can detect forward movement (for smoke).
-const lastProgress = { kids: 0, parent: 0 };
+const lastProgress = { p1: 0, p2: 0, p3: 0 };
 
 // Remember the last nitro-boost timestamp seen per car, so the flame burst
 // fires exactly once per boost instead of re-triggering on every later
 // Firebase echo that still carries the same nitroAt value.
-const lastNitroAt = { kids: 0, parent: 0 };
+const lastNitroAt = { p1: 0, p2: 0, p3: 0 };
 
 // Fill each track's scrolling background once at load — sparse clouds with
 // wide gaps, wide enough to never run out on any screen size.
-["kids", "parent"].forEach(role => {
-  const el = $("scenery-" + role);
+["p1", "p2", "p3"].forEach(slot => {
+  const el = $("scenery-" + slot);
   if (el) el.textContent = "☁️" + "                    ☁️".repeat(45);
 });
 
+// Sets a lane's header to this seat's actual player name + pace emoji
+// (previously a static "Kids"/"Parent" label — now several players can
+// share a pace, so the lane must show WHO, not just which ruleset).
+function updateLaneLabel(slot, player) {
+  const el = $("lane-name-" + slot);
+  if (!el || !player) return;
+  const emoji = player.pace === "kids" ? "👦" : "🧑";
+  const text = `${emoji} ${player.name || "—"}`;
+  if (el.textContent !== text) el.textContent = text;
+}
+
 // Move a car on its track based on that player's progress (0..1).
-function updateCar(role, player) {
+function updateCar(slot, player, isMine) {
   if (!player) return;
-  const car = $("car-" + role);
+  const car = $("car-" + slot);
   const track = car.parentElement;
   const p = Math.min(player.progress || 0, 1);
 
@@ -494,24 +572,24 @@ function updateCar(role, player) {
   const endX = Math.max(startX, track.clientWidth - car.offsetWidth - 40);
   const leftPx = startX + (endX - startX) * p;
   car.style.left = leftPx + "px";
-  $(role + "-correct").textContent = player.correct || 0;
+  $(slot + "-correct").textContent = player.correct || 0;
 
   // Background scenery scrolls opposite the car, at 60% of its travel
   // distance — a subtle parallax depth cue, only moving as progress does.
   const scenery = track.querySelector(".scenery");
   if (scenery) scenery.style.transform = `translateX(-${(endX - startX) * p * 0.6}px)`;
 
-  // Nitro boost — visible on BOTH devices' view of this lane, fires once.
-  if (player.nitroAt && player.nitroAt > lastNitroAt[role]) {
-    lastNitroAt[role] = player.nitroAt;
-    triggerNitroEffect(role, car, track, leftPx);
+  // Nitro boost — visible on every device's view of this lane, fires once.
+  if (player.nitroAt && player.nitroAt > lastNitroAt[slot]) {
+    lastNitroAt[slot] = player.nitroAt;
+    triggerNitroEffect(slot, car, track, leftPx, isMine);
   }
 
-  // Smoke puff for the KIDS car whenever it moves forward. 💨
-  if (role === "kids" && p > lastProgress.kids) {
+  // Smoke puff for any KIDS-pace car whenever it moves forward. 💨
+  if (player.pace === "kids" && p > lastProgress[slot]) {
     spawnSmoke(track, leftPx);
   }
-  lastProgress[role] = p;
+  lastProgress[slot] = p;
 }
 
 // Drop a quick smoke puff behind a car at the given left position.
@@ -527,7 +605,7 @@ function spawnSmoke(track, leftPx) {
 // Car glow-pulse + flame burst for a nitro boost. The announcement text and
 // whoosh sound only play on the device that actually earned this boost, so
 // watching your opponent's car light up doesn't talk over your own screen.
-function triggerNitroEffect(role, car, track, leftPx) {
+function triggerNitroEffect(slot, car, track, leftPx, isMine) {
   car.classList.remove("nitro-boost");
   void car.offsetWidth;
   car.classList.add("nitro-boost");
@@ -544,7 +622,7 @@ function triggerNitroEffect(role, car, track, leftPx) {
     }, i * 90);
   }
 
-  if (role === state.role) {
+  if (isMine) {
     flashNitroText();
     playNitroSound();
   }
@@ -582,16 +660,16 @@ function playNitroSound() {
 }
 
 // Park both cars back at the start line. Used for Solo mode, which has no
-// Firebase echo to reset them visually.
+// Firebase echo to reset them visually. Solo is always exactly p1 (me) +
+// p2 (a parked ghost opponent) — lane p3 stays hidden.
 function resetCarsToStart() {
-  ["kids", "parent"].forEach(role => {
-    lastProgress[role] = 0;
-    lastNitroAt[role] = 0;
-    // In solo, show MY chosen ride on my own lane; the untouched opponent
-    // lane just falls back to the default car.
-    const vehicle = (state.solo && role === state.role) ? state.vehicle : undefined;
-    updateCar(role, { progress: 0, correct: 0, vehicle });
-  });
+  mySlot = "p1";
+  updateLaneLabel("p1", { name: CHILD_NAME, pace: state.role });
+  updateLaneLabel("p2", { name: "Opponent", pace: state.role === "kids" ? "parent" : "kids" });
+  updateCar("p1", { progress: 0, correct: 0, vehicle: state.vehicle, pace: state.role }, true);
+  updateCar("p2", { progress: 0, correct: 0, pace: "parent" }, false);
+  lastProgress.p1 = 0; lastProgress.p2 = 0;
+  lastNitroAt.p1 = 0; lastNitroAt.p2 = 0;
 }
 
 
@@ -860,10 +938,11 @@ function handleAnswer(value) {
 
     // Solo has no Firebase echo to move the car — update it directly.
     if (state.solo) {
-      updateCar(state.role, {
+      updateCar("p1", {
         progress: state.progress, correct: state.correct, vehicle: state.vehicle,
+        pace: state.role,
         nitroAt: showNitroEffect ? Date.now() : undefined
-      });
+      }, true);
     } else {
       pushProgress(showNitroEffect);
     }
@@ -947,13 +1026,13 @@ function pushProgress(isNitro) {
     finished: state.progress >= 1
   };
   if (isNitro) update.nitroAt = Date.now();
-  db.ref(`games/${state.code}/players/${state.role}`).update(update);
+  db.ref(`games/${state.code}/players/${state.seatKey}`).update(update);
 }
 
 // Claim the win using a transaction so only the FIRST finisher wins.
 function claimWin() {
   db.ref(`games/${state.code}/winner`).transaction(current => {
-    if (current === null || current === undefined) return state.role;
+    if (current === null || current === undefined) return state.seatKey;
     return; // already won by someone else — abort
   });
   db.ref(`games/${state.code}/status`).set("finished");
@@ -1174,16 +1253,16 @@ function speak(text) {
 /* =================================================================
    10. GAME OVER & PLAY AGAIN
    ================================================================= */
-function endGame(winnerRole) {
+function endGame(winnerSeatKey, winnerPlayer) {
   state.gameOver = true;
   clearQuestionTimer();
   if (window.AIGLeaderboard) AIGLeaderboard.recordPlay("mathrace");
 
-  const iWon = winnerRole === state.role;
+  const iWon = winnerSeatKey === state.seatKey;
   $("over-emoji").textContent = iWon ? "🏆" : "🎉";
 
-  const winnerName = winnerRole === "kids" ? "Kids" : "Parent";
-  $("winner-text").textContent = `${winnerName} win${winnerRole === "kids" ? "" : "s"}!`;
+  const winnerName = (winnerPlayer && winnerPlayer.name) || "Someone";
+  $("winner-text").textContent = `${winnerName} wins!`;
 
   // Winning text still shows, but is no longer spoken — celebrateWin()
   // plays an applause + "Yeah!" cheer instead (see below).
@@ -1199,7 +1278,11 @@ function endGame(winnerRole) {
   }
 
   showScreen("screen-over");
-  updateScoreboardUI(winnerRole);   // record + render the family scoreboard
+  // Family scoreboard buckets by PACE (kids vs parent), same as before —
+  // just resolved from the winner's own pace instead of assuming the
+  // winning Firebase key literally was "kids" or "parent".
+  const winnerPace = (winnerPlayer && winnerPlayer.pace) || "kids";
+  updateScoreboardUI(winnerPace, iWon);
   if (iWon) celebrateWin();         // confetti + cheer — winner's device only
 }
 
@@ -1356,17 +1439,16 @@ function playCheerSound() {
 /* =================================================================
    10b. FAMILY SCOREBOARD — persisted at Firebase /scoreboard
    ================================================================= */
-async function updateScoreboardUI(winnerRole) {
+async function updateScoreboardUI(winnerPace, iWon) {
   const box = $("scoreboard");
   box.innerHTML = '<div class="sb-empty">Loading scoreboard…</div>';
 
-  const iWon = winnerRole === state.role;
   const elapsed = raceStartTime ? Math.round((Date.now() - raceStartTime) / 1000) : 0;
 
   let sb = null;
   try {
     if (iWon) {
-      sb = await recordWin(winnerRole, elapsed);   // only the winner writes
+      sb = await recordWin(winnerPace, elapsed);   // only the winner writes
     } else {
       await new Promise(r => setTimeout(r, 700));   // let the winner write first
       const snap = await db.ref("scoreboard").get();
@@ -1454,17 +1536,18 @@ function renderScoreboard(sb) {
 // Play again — reset this game's state in Firebase and locally.
 $("btn-play-again").addEventListener("click", async () => {
   if (state.code) {
-    // Reset both player nodes + status/winner, keep the same pairing.
-    await db.ref("games/" + state.code).update({
-      status: "playing",
-      winner: null,
-      "players/kids/correct": 0,
-      "players/kids/progress": 0,
-      "players/kids/finished": false,
-      "players/parent/correct": 0,
-      "players/parent/progress": 0,
-      "players/parent/finished": false
+    // Reset every seat present + status/winner, keep the same pairing.
+    // Each device fetches the current seat list independently — writes are
+    // idempotent, so it's harmless if more than one device resets them.
+    const snap = await db.ref(`games/${state.code}/players`).get();
+    const players = snap.val() || {};
+    const update = { status: "playing", winner: null };
+    Object.keys(players).forEach(seatKey => {
+      update[`players/${seatKey}/correct`] = 0;
+      update[`players/${seatKey}/progress`] = 0;
+      update[`players/${seatKey}/finished`] = false;
     });
+    await db.ref("games/" + state.code).update(update);
   } else if (state.solo) {
     // No Firebase echo in solo mode — reset both cars on screen directly.
     resetCarsToStart();

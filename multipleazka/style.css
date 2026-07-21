@@ -26,8 +26,10 @@
   --page-bg:         linear-gradient(180deg, #eef5fd 0%, #dce9f8 100%);
   --lane-kids-bg:    linear-gradient(180deg, #fff3ea 0%, #ffe6d3 100%);
   --lane-parent-bg:  linear-gradient(180deg, #e8f1fd 0%, #d5e6fb 100%);
+  --lane-p3-bg:      linear-gradient(180deg, #f3ebfd 0%, #e3d3fb 100%);
   --kids-name:       #d2691e;
   --parent-name:     var(--brand);
+  --p3-name:         #7a3fc2;
   --track-bg:        rgba(255, 255, 255, 0.55);
   --track-border:    rgba(0, 0, 0, 0.14);
   --start-color:     #9aa7b8;
@@ -44,8 +46,10 @@ body[data-theme="colorful"] {
   --page-bg:         linear-gradient(180deg, #4fbde9 0%, #8fd14f 100%);
   --lane-kids-bg:    linear-gradient(180deg, #a6d95f 0%, #7cb23c 100%);
   --lane-parent-bg:  linear-gradient(180deg, #5bb8e6 0%, #3b8ec2 100%);
+  --lane-p3-bg:      linear-gradient(180deg, #d9a6f0 0%, #a855c9 100%);
   --kids-name:       #27500a;
   --parent-name:     #042c53;
+  --p3-name:         #3d0a52;
   --track-bg:        rgba(255, 255, 255, 0.32);
   --track-border:    rgba(255, 255, 255, 0.75);
   --start-color:     #ffffff;
@@ -308,8 +312,9 @@ h1, h2 { margin: 0 0 8px; }
   width: 100%;
   padding: 12px 16px 8px;
 }
-.lane-kids   { background: var(--lane-kids-bg); }
-.lane-parent { background: var(--lane-parent-bg); }
+.lane-p1 { background: var(--lane-kids-bg); }
+.lane-p2 { background: var(--lane-parent-bg); }
+.lane-p3 { background: var(--lane-p3-bg); }
 
 .lane-header {
   display: flex;
@@ -318,8 +323,9 @@ h1, h2 { margin: 0 0 8px; }
   font-weight: 700;
   margin-bottom: 6px;
 }
-.lane-kids .lane-name   { color: var(--kids-name); }
-.lane-parent .lane-name { color: var(--parent-name); }
+.lane-p1 .lane-name { color: var(--kids-name); }
+.lane-p2 .lane-name { color: var(--parent-name); }
+.lane-p3 .lane-name { color: var(--p3-name); }
 .lane-score { font-size: .9rem; color: var(--muted); }
 
 /* Track with finish line + moving car (no grid lines — clean lane) */

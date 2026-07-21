@@ -67,6 +67,15 @@
       <div id="pair-choose">
         <p class="subtitle">Start a new race, join your partner, or play solo.</p>
 
+        <!-- How many racers this game has (host picks; joiners just join). -->
+        <div class="setting-row">
+          <span class="setting-label">👥 Players</span>
+          <div class="seg seg-compact" id="players-seg">
+            <button class="seg-btn active" data-players="2">2</button>
+            <button class="seg-btn" data-players="3">3</button>
+          </div>
+        </div>
+
         <button id="btn-create" class="primary-btn">Create Game</button>
         <div class="or">— or —</div>
         <div class="join-row">
@@ -148,29 +157,42 @@
   <!-- ============================================================= -->
   <section id="screen-race" class="screen">
 
-    <!-- Top lane: KIDS -->
-    <div class="lane lane-kids">
+    <!-- Lane 1 -->
+    <div class="lane lane-p1" id="lane-p1">
       <div class="lane-header">
-        <span class="lane-name">👦 Kids</span>
-        <span class="lane-score"><span id="kids-correct">0</span> correct</span>
+        <span class="lane-name" id="lane-name-p1">👦 —</span>
+        <span class="lane-score"><span id="p1-correct">0</span> correct</span>
       </div>
       <div class="track">
-        <div class="scenery" id="scenery-kids"></div>
+        <div class="scenery" id="scenery-p1"></div>
         <div class="finish-flag">🏁</div>
-        <div class="car" id="car-kids">🏎️</div>
+        <div class="car" id="car-p1">🏎️</div>
       </div>
     </div>
 
-    <!-- Bottom lane: PARENT -->
-    <div class="lane lane-parent">
+    <!-- Lane 2 -->
+    <div class="lane lane-p2" id="lane-p2">
       <div class="lane-header">
-        <span class="lane-name">🧑 Parent</span>
-        <span class="lane-score"><span id="parent-correct">0</span> correct</span>
+        <span class="lane-name" id="lane-name-p2">🧑 —</span>
+        <span class="lane-score"><span id="p2-correct">0</span> correct</span>
       </div>
       <div class="track">
-        <div class="scenery" id="scenery-parent"></div>
+        <div class="scenery" id="scenery-p2"></div>
         <div class="finish-flag">🏁</div>
-        <div class="car" id="car-parent">🏎️</div>
+        <div class="car" id="car-p2">🏎️</div>
+      </div>
+    </div>
+
+    <!-- Lane 3 — only shown for 3-player games -->
+    <div class="lane lane-p3 hidden" id="lane-p3">
+      <div class="lane-header">
+        <span class="lane-name" id="lane-name-p3">👦 —</span>
+        <span class="lane-score"><span id="p3-correct">0</span> correct</span>
+      </div>
+      <div class="track">
+        <div class="scenery" id="scenery-p3"></div>
+        <div class="finish-flag">🏁</div>
+        <div class="car" id="car-p3">🏎️</div>
       </div>
     </div>
 
