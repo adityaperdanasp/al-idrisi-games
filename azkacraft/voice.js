@@ -5,8 +5,12 @@
 // the browser's SpeechSynthesis API only if a clip fails to load or play
 // (e.g. missing file, autoplay blocked).
 
-const PRAISE_CLIP_COUNT = 25;
-const ENCOURAGE_CLIP_COUNT = 15;
+// Clips 1..NAME_FIRST_COUNT are phrased "name, then line" (e.g. "Arsya!
+// That's exactly right!"); clips after that are phrased "line, then name"
+// (e.g. "That's exactly right, Arsya!") — mixed for variety.
+const PRAISE_CLIP_COUNT = 40;
+const ENCOURAGE_CLIP_COUNT = 25;
+const NAME_FIRST_COUNT = { praise: 25, encourage: 15 };
 
 // Picked on the hub's "Siapa yang main?" screen and shared via localStorage
 // (same origin); falls back to "Azka" if no one picked a name.
@@ -57,12 +61,15 @@ function speakWithBrowser(text) {
   window.speechSynthesis.speak(utter);
 }
 
-// Plays the name clip first (audio/names/{id}.mp3), then chains into the
-// generic praise/encourage line — e.g. "Arsya! ...That's exactly right!".
-// If the name clip is missing/fails, skips straight to the line so playback
-// still works, just without the name.
-function playClip(url, fallbackText) {
+// Chains the name clip (audio/names/{id}.mp3) with the praise/encourage
+// line, in whichever order this clip number is phrased for. If a clip is
+// missing/fails, skips straight to whatever's left so playback still
+// works, just without the name.
+function playClip(kind, num, url, fallbackText) {
   const line = new Audio(url);
+  const nameClip = new Audio(`audio/names/${CHILD_ID}.mp3`);
+  const nameFirst = Number(num) <= NAME_FIRST_COUNT[kind];
+
   const playLine = () => {
     line.play().catch(err => {
       console.warn("Pre-recorded clip failed, falling back to browser voice:", err);
@@ -70,20 +77,25 @@ function playClip(url, fallbackText) {
     });
   };
 
-  const nameClip = new Audio(`audio/names/${CHILD_ID}.mp3`);
-  nameClip.addEventListener("ended", playLine);
-  nameClip.addEventListener("error", playLine);
-  nameClip.play().catch(playLine);
+  if (nameFirst) {
+    nameClip.addEventListener("ended", playLine);
+    nameClip.addEventListener("error", playLine);
+    nameClip.play().catch(playLine);
+  } else {
+    line.addEventListener("ended", () => nameClip.play().catch(() => {}));
+    line.addEventListener("error", () => speakWithBrowser(fallbackText));
+    line.play().catch(() => speakWithBrowser(fallbackText));
+  }
 }
 
 function speakPraise() {
   const n = randomClipNumber(PRAISE_CLIP_COUNT);
-  playClip(`audio/praise/praise-${n}.mp3`, pickRandom(PRAISE_PHRASES));
+  playClip("praise", n, `audio/praise/praise-${n}.mp3`, pickRandom(PRAISE_PHRASES));
 }
 
 function speakEncouragement() {
   const n = randomClipNumber(ENCOURAGE_CLIP_COUNT);
-  playClip(`audio/encourage/encourage-${n}.mp3`, pickRandom(ENCOURAGE_PHRASES));
+  playClip("encourage", n, `audio/encourage/encourage-${n}.mp3`, pickRandom(ENCOURAGE_PHRASES));
 }
 
 window.AzkaVoice = { speakPraise, speakEncouragement };

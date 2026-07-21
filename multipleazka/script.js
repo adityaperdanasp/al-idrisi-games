@@ -992,12 +992,15 @@ function giveFeedback(isCorrect, skipVoice) {
 }
 
 // --- Kids per-answer voice: pre-recorded AzkaSocial cheer clips ------------
-// 20 praise + 20 encourage MP3s (generic, no name baked in), played locally
-// (no API calls). Each line is preceded by a name clip from audio/names/
-// (same voice) so the cheer sounds personalized, e.g. "Arsya! ...praise line".
-// Falls back to browser TTS if a file fails to load/play (e.g. offline,
-// blocked audio, or no recorded clip yet for this player's name).
-const CHEER_AUDIO_COUNT = { praise: 25, encourage: 15 };
+// Generic (no name baked in) praise/encourage MP3s, played locally (no API
+// calls). Clips 1..NAME_FIRST_COUNT are phrased for "name, then line" (e.g.
+// "Arsya! That's exactly right!"); clips after that are phrased for
+// "line, then name" (e.g. "That's exactly right, Arsya!") — mixing both
+// orders so the cheer doesn't always sound the same shape. Falls back to
+// browser TTS if a file fails to load/play (e.g. offline, blocked audio, or
+// no recorded clip yet for this player's name).
+const CHEER_AUDIO_COUNT = { praise: 40, encourage: 25 };
+const NAME_FIRST_COUNT = { praise: 25, encourage: 15 };
 let currentCheerAudio = null;
 
 // Remembers the last audio clip NUMBER played per kind, so the exact same
@@ -1016,20 +1019,31 @@ function playCheerAudio(kind, fallbackText) {
 
   const n = String(num).padStart(2, "0");
   const line = new Audio(`audio/${kind}/${kind}-${n}.mp3`);
+  const nameClip = new Audio(`audio/names/${CHILD_ID}.mp3`);
+  const nameFirst = num <= NAME_FIRST_COUNT[kind];
+
   const playLine = () => {
     currentCheerAudio = line;
     line.addEventListener("error", () => speak(fallbackText));
     line.play().catch(() => speak(fallbackText));
   };
+  const playName = () => {
+    currentCheerAudio = nameClip;
+    nameClip.addEventListener("ended", playLine);
+    nameClip.addEventListener("error", playLine);
+    nameClip.play().catch(playLine);
+  };
 
-  // Play the name clip first, then chain into the praise/encourage line.
   // If the name clip is missing/fails (e.g. not recorded yet), skip
   // straight to the line so playback still works, just without the name.
-  const nameClip = new Audio(`audio/names/${CHILD_ID}.mp3`);
-  currentCheerAudio = nameClip;
-  nameClip.addEventListener("ended", playLine);
-  nameClip.addEventListener("error", playLine);
-  nameClip.play().catch(playLine);
+  if (nameFirst) {
+    playName();
+  } else {
+    currentCheerAudio = line;
+    line.addEventListener("ended", () => { currentCheerAudio = nameClip; nameClip.play().catch(() => {}); });
+    line.addEventListener("error", () => speak(fallbackText));
+    line.play().catch(() => speak(fallbackText));
+  }
 }
 
 function showPopup(popup, text, type) {

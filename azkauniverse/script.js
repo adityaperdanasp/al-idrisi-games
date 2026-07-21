@@ -248,16 +248,21 @@ function speak(text) {
   speechSynthesis.speak(utter);
 }
 
-// Plays the name clip first (audio/names/{id}.mp3), then chains into a
-// random generic praise/encourage line — e.g. "Arsya! ...that's right!".
-// Falls back to the browser's SpeechSynthesis voice if a clip is missing
-// or playback is blocked, so a cheer always plays either way.
-const CHEER_AUDIO_COUNT = { praise: 25, encourage: 15 };
+// Chains the name clip (audio/names/{id}.mp3) with a random generic
+// praise/encourage line. Clips 1..NAME_FIRST_COUNT are phrased "name, then
+// line" (e.g. "Arsya! That's right!"); clips after that are phrased "line,
+// then name" (e.g. "That's right, Arsya!") — mixed for variety. Falls back
+// to the browser's SpeechSynthesis voice if a clip is missing or playback
+// is blocked, so a cheer always plays either way.
+const CHEER_AUDIO_COUNT = { praise: 40, encourage: 25 };
+const NAME_FIRST_COUNT = { praise: 25, encourage: 15 };
 
 function speakCheer(isCorrect, phrase) {
   const kind = isCorrect ? "praise" : "encourage";
-  const num = String(Math.floor(Math.random() * CHEER_AUDIO_COUNT[kind]) + 1).padStart(2, "0");
-  const line = new Audio(`audio/${kind}/${kind}-${num}.mp3`);
+  const num = Math.floor(Math.random() * CHEER_AUDIO_COUNT[kind]) + 1;
+  const n = String(num).padStart(2, "0");
+  const line = new Audio(`audio/${kind}/${kind}-${n}.mp3`);
+  const nameClip = new Audio(`audio/names/${CHILD_ID}.mp3`);
   let fellBack = false;
   const fallback = () => {
     if (fellBack) return;
@@ -269,10 +274,15 @@ function speakCheer(isCorrect, phrase) {
     line.play().catch(fallback);
   };
 
-  const nameClip = new Audio(`audio/names/${CHILD_ID}.mp3`);
-  nameClip.addEventListener("ended", playLine);
-  nameClip.addEventListener("error", playLine);
-  nameClip.play().catch(playLine);
+  if (num <= NAME_FIRST_COUNT[kind]) {
+    nameClip.addEventListener("ended", playLine);
+    nameClip.addEventListener("error", playLine);
+    nameClip.play().catch(playLine);
+  } else {
+    line.addEventListener("ended", () => nameClip.play().catch(() => {}));
+    line.addEventListener("error", fallback);
+    line.play().catch(fallback);
+  }
 }
 
 /* =================================================================
