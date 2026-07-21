@@ -2,9 +2,10 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
-  background: #f8f0c9;
+  background: linear-gradient(180deg, #fdedd3 0%, #e9dcc5 55%, #dccba9 100%);
 }
 
 .hub {
