@@ -186,7 +186,13 @@
 
   function scColorFor(p) {
     if (p.role === "teacher") return SC_TEACHER_BG;
-    return SC_STUDENT_PALETTE[STUDENTS_ONLY.indexOf(p) % SC_STUDENT_PALETTE.length];
+    // Match by id, not object identity — AIGPlayer.getPlayer() returns a
+    // freshly-parsed object from localStorage after a reload, which would
+    // never === the original AIG_PLAYERS entry even though it's the same
+    // player (that mismatch was the bug: indexOf returned -1, so the
+    // avatar's background silently fell back to transparent).
+    const idx = STUDENTS_ONLY.findIndex(s => s.id === p.id);
+    return SC_STUDENT_PALETTE[idx % SC_STUDENT_PALETTE.length];
   }
 
   function renderPicker() {
