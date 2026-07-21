@@ -44,5 +44,21 @@
     return () => ref.off("value", handler);
   }
 
-  window.AIGLeaderboard = { recordPlay, watchGame, db: aigDb };
+  // ---- Cloud-synced progress (badges/XP), so a child's progress follows
+  // them across devices instead of staying stuck in one browser's
+  // localStorage. Stored at /players/{playerId}/badges/{gameId}.
+  async function getProgress(gameId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player) return null;
+    const snap = await aigDb.ref(`players/${player.id}/badges/${gameId}`).get();
+    return snap.exists() ? snap.val() : null;
+  }
+
+  function setProgress(gameId, data) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player) return;
+    aigDb.ref(`players/${player.id}/badges/${gameId}`).set(data);
+  }
+
+  window.AIGLeaderboard = { recordPlay, watchGame, getProgress, setProgress, db: aigDb };
 })();

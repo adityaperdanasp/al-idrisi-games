@@ -128,8 +128,39 @@ function loadProgress() {
 }
 function saveProgress(progress) {
   localStorage.setItem("solarquest.progress", JSON.stringify(progress));
+  if (window.AIGLeaderboard) AIGLeaderboard.setProgress("solarquest", progress);
 }
 let progress = loadProgress();
+
+// Merges cloud progress (tied to the child's name) into the local copy on
+// boot, so XP/stars earned on a DIFFERENT device still show up here. Per
+// level, keeps whichever is further along; XP never goes backwards. Writes
+// the merged result back to both localStorage and the cloud.
+function mergeSQProgress(local, cloud) {
+  const merged = { xp: Math.max(local.xp || 0, cloud.xp || 0), levels: {} };
+  const ids = new Set([...Object.keys(local.levels || {}), ...Object.keys(cloud.levels || {})]);
+  ids.forEach(id => {
+    const l = (local.levels || {})[id] || { completed: false, stars: 0 };
+    const c = (cloud.levels || {})[id] || { completed: false, stars: 0 };
+    merged.levels[id] = {
+      completed: !!(l.completed || c.completed),
+      stars: Math.max(l.stars || 0, c.stars || 0)
+    };
+  });
+  return merged;
+}
+
+async function syncProgressWithCloud() {
+  if (!window.AIGLeaderboard) return;
+  const cloud = await AIGLeaderboard.getProgress("solarquest").catch(() => null);
+  if (cloud) {
+    progress = mergeSQProgress(progress, cloud);
+    saveProgress(progress);
+  } else {
+    AIGLeaderboard.setProgress("solarquest", progress);
+  }
+  refreshXpBadge();
+}
 
 function refreshXpBadge() {
   $("xp-total").textContent = progress.xp;
@@ -1285,6 +1316,7 @@ $("btn-mp-again").addEventListener("click", () => {
 (function init() {
   applyTheme(loadTheme());
   refreshXpBadge();
+  syncProgressWithCloud();
   loadQuestions();
 
   // Arrived via a scanned/shared QR join link.

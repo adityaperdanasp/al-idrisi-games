@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   QUESTION_BANK = await fetch("questions.json").then(r => r.json());
   PROGRESS = loadProgress();
   renderMultiplayerChapterOptions();
+  syncProgressWithCloud();
 
   // If we arrived via a scanned QR join link (?join=CODE), jump to the join panel.
   const params = new URLSearchParams(location.search);
@@ -108,6 +109,45 @@ function loadProgress() {
 
 function saveProgress() {
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(PROGRESS));
+  if (window.AIGLeaderboard) AIGLeaderboard.setProgress("language-arts", PROGRESS);
+}
+
+// Merges cloud progress (from Firebase, tied to the child's name) into the
+// local copy on boot, so stickers/XP earned on a DIFFERENT device still
+// show up here. Per chapter, keeps whichever is further along; XP total
+// and unlocked chapter never go backwards. Writes the merged result back
+// to both localStorage and the cloud so both sides end up in sync.
+function mergeProgress(local, cloud) {
+  const merged = {
+    xpTotal: Math.max(local.xpTotal || 0, cloud.xpTotal || 0),
+    unlockedChapter: Math.max(local.unlockedChapter || 1, cloud.unlockedChapter || 1),
+    chapters: {}
+  };
+  const ids = new Set([...Object.keys(local.chapters || {}), ...Object.keys(cloud.chapters || {})]);
+  ids.forEach(id => {
+    const l = (local.chapters || {})[id] || { stars: 0, completed: false, xp: 0 };
+    const c = (cloud.chapters || {})[id] || { stars: 0, completed: false, xp: 0 };
+    merged.chapters[id] = {
+      stars: Math.max(l.stars || 0, c.stars || 0),
+      completed: !!(l.completed || c.completed),
+      xp: Math.max(l.xp || 0, c.xp || 0)
+    };
+  });
+  return merged;
+}
+
+async function syncProgressWithCloud() {
+  if (!window.AIGLeaderboard) return;
+  const cloud = await AIGLeaderboard.getProgress("language-arts").catch(() => null);
+  if (cloud) {
+    PROGRESS = mergeProgress(PROGRESS, cloud);
+    saveProgress();
+  } else {
+    AIGLeaderboard.setProgress("language-arts", PROGRESS);
+  }
+  // Refresh whichever progress-dependent screen is already showing.
+  if (document.getElementById("screen-map").classList.contains("active")) renderBookshelf();
+  if (document.getElementById("screen-stickers").classList.contains("active")) renderStickers();
 }
 
 /* ---------------------------- Quest Map / Bookshelf ---------------------------- */
