@@ -150,6 +150,7 @@ function resetRaceState() {
   state.gameOver = false;
   lastQuestionKey = null;
   updateStreakBadge();
+  $("finish-overlay").classList.add("hidden");
 }
 
 // The digits typed so far in "type-it-in" mode.
@@ -304,7 +305,6 @@ $("btn-create").addEventListener("click", () => {
       createdAt: firebase.database.ServerValue.TIMESTAMP,
       status: "waiting",
       maxPlayers: state.maxPlayers,
-      winner: null,
       players: {
         [state.seatKey]: playerSeed(0)
       }
@@ -519,11 +519,34 @@ function attachGameListener(code) {
       startRace();
     }
 
-    // Winner handling.
-    if (game.winner && !state.gameOver) {
-      endGame(game.winner, players[game.winner]);
+    // Finish handling — racers who finish keep their car parked at the
+    // line and see a "You finished Nth!" overlay while everyone else
+    // keeps racing. Only once EVERY seat has finished does the group
+    // move on to the ranked results screen.
+    const finishers = Object.entries(players)
+      .filter(([, p]) => p.finished)
+      .sort((a, b) => (a[1].finishedAt || 0) - (b[1].finishedAt || 0));
+
+    if (!state.gameOver) {
+      const myRank = finishers.findIndex(([seatKey]) => seatKey === state.seatKey) + 1;
+      if (myRank > 0 && finishers.length < maxPlayers) {
+        showFinishOverlay(myRank);
+      }
+      if (finishers.length >= maxPlayers && maxPlayers > 0) {
+        endGame(finishers);
+      }
     }
   });
+}
+
+// Shows "You finished Nth!" over the question panel — this device has
+// finished but the race continues on screen for the players still racing.
+function showFinishOverlay(rank) {
+  const overlay = $("finish-overlay");
+  if (!overlay.classList.contains("hidden")) return; // already showing
+  const ordinal = rank === 1 ? "1st" : rank === 2 ? "2nd" : rank === 3 ? "3rd" : rank + "th";
+  $("finish-rank-text").textContent = `You finished ${ordinal}!`;
+  overlay.classList.remove("hidden");
 }
 
 // Detach the current Firebase game listener, if any. Called before attaching
@@ -958,7 +981,10 @@ function handleAnswer(value) {
     giveFeedback(true, raceWon);
 
     if (raceWon) {
-      if (state.solo) endSoloRace(); else claimWin();
+      if (state.solo) endSoloRace();
+      // Multiplayer: pushProgress() above already wrote finished:true +
+      // finishedAt/finishTimeSec — the group-finish check happens
+      // reactively in attachGameListener's snapshot listener.
       return;
     }
     setTimeout(nextQuestion, 850);   // answerLocked is reset inside nextQuestion
@@ -1019,28 +1045,29 @@ function shuffle(arr) {
 
 
 /* =================================================================
-   8. PROGRESS & WINNER
+   8. PROGRESS & FINISHING
+   -----------------------------------------------------------------
+   Everyone races to their own finish, independent of the others — the
+   first to reach progress 1 does NOT end the race for anyone else.
+   Each seat just records when/how fast IT finished; the group only
+   moves to results once every seat has finished (see attachGameListener).
    ================================================================= */
 
-// Push this player's progress to Firebase (syncs the other device).
+// Push this player's progress to Firebase (syncs the other devices).
 function pushProgress(isNitro) {
   if (!state.code) return;
+  const finished = state.progress >= 1;
   const update = {
     correct: state.correct,
     progress: state.progress,
-    finished: state.progress >= 1
+    finished
   };
   if (isNitro) update.nitroAt = Date.now();
+  if (finished) {
+    update.finishedAt = firebase.database.ServerValue.TIMESTAMP;
+    update.finishTimeSec = raceStartTime ? Math.round((Date.now() - raceStartTime) / 1000) : 0;
+  }
   db.ref(`games/${state.code}/players/${state.seatKey}`).update(update);
-}
-
-// Claim the win using a transaction so only the FIRST finisher wins.
-function claimWin() {
-  db.ref(`games/${state.code}/winner`).transaction(current => {
-    if (current === null || current === undefined) return state.seatKey;
-    return; // already won by someone else — abort
-  });
-  db.ref(`games/${state.code}/status`).set("finished");
 }
 
 
@@ -1258,16 +1285,18 @@ function speak(text) {
 /* =================================================================
    10. GAME OVER & PLAY AGAIN
    ================================================================= */
-function endGame(winnerSeatKey, winnerPlayer) {
+// Called once EVERY seat has finished — `finishers` is the full ranked
+// list (1st..last), already sorted by finishedAt in attachGameListener.
+function endGame(finishers) {
   state.gameOver = true;
   clearQuestionTimer();
+  $("finish-overlay").classList.add("hidden");   // was showing while waiting
   if (window.AIGLeaderboard) AIGLeaderboard.recordPlay("mathrace");
 
+  const [winnerSeatKey, winnerPlayer] = finishers[0];
   const iWon = winnerSeatKey === state.seatKey;
   $("over-emoji").textContent = iWon ? "🏆" : "🎉";
-
-  const winnerName = (winnerPlayer && winnerPlayer.name) || "Someone";
-  $("winner-text").textContent = `${winnerName} wins!`;
+  $("winner-text").textContent = `${(winnerPlayer && winnerPlayer.name) || "Someone"} wins!`;
 
   // Winning text still shows, but is no longer spoken — celebrateWin()
   // plays an applause + "Yeah!" cheer instead (see below).
@@ -1283,16 +1312,11 @@ function endGame(winnerSeatKey, winnerPlayer) {
   }
 
   showScreen("screen-over");
-  // Family scoreboard buckets by PACE (kids vs parent), same as before —
-  // just resolved from the winner's own pace instead of assuming the
-  // winning Firebase key literally was "kids" or "parent".
-  const winnerPace = (winnerPlayer && winnerPlayer.pace) || "kids";
-  updateScoreboardUI(winnerPace, iWon);
+  renderResults(finishers);
   if (iWon) celebrateWin();         // confetti + cheer — winner's device only
 }
 
-// Solo finish — same celebration, but skips the head-to-head scoreboard
-// entirely since there's no real opponent to have beaten.
+// Solo finish — same celebration, but only ever has the one racer.
 function endSoloRace() {
   state.gameOver = true;
   clearQuestionTimer();
@@ -1300,6 +1324,8 @@ function endSoloRace() {
 
   $("over-emoji").textContent = "🏁";
   $("winner-text").textContent = "You finished!";
+
+  const elapsed = raceStartTime ? Math.round((Date.now() - raceStartTime) / 1000) : 0;
 
   if (state.role === "kids") {
     const msg = `You did it, ${CHILD_NAME}! You finished the race! Amazing!`;
@@ -1310,8 +1336,7 @@ function endSoloRace() {
   }
 
   showScreen("screen-over");
-  $("scoreboard").innerHTML = '<div class="sb-title">🏆 Scoreboard</div>' +
-    '<div class="sb-empty">Play a 2-player race to add to the family scoreboard.</div>';
+  renderResults([[state.seatKey, { name: CHILD_NAME, finishTimeSec: elapsed }]]);
   celebrateWin();   // solo always "finishes" — celebrate every time
 }
 
@@ -1442,121 +1467,65 @@ function playCheerSound() {
 }
 
 /* =================================================================
-   10b. FAMILY SCOREBOARD — persisted at Firebase /scoreboard
+   10b. RACE RESULTS — every player's finish time, ranked
    ================================================================= */
-async function updateScoreboardUI(winnerPace, iWon) {
-  const box = $("scoreboard");
-  box.innerHTML = '<div class="sb-empty">Loading scoreboard…</div>';
-
-  const elapsed = raceStartTime ? Math.round((Date.now() - raceStartTime) / 1000) : 0;
-
-  let sb = null;
-  try {
-    if (iWon) {
-      sb = await recordWin(winnerPace, elapsed);   // only the winner writes
-    } else {
-      await new Promise(r => setTimeout(r, 700));   // let the winner write first
-      const snap = await db.ref("scoreboard").get();
-      sb = snap.val();
-    }
-  } catch (e) {
-    box.innerHTML = '<div class="sb-title">🏆 Scoreboard</div>' +
-      '<div class="sb-empty">Add a Firebase rule for /scoreboard to enable this.</div>';
-    return;
-  }
-  renderScoreboard(sb);
-}
-
-// Read-modify-write the scoreboard (only the winner calls this).
-async function recordWin(winnerRole, timeSec) {
-  const ref = db.ref("scoreboard");
-  const snap = await ref.get();
-  const sb = snap.val() || {};
-
-  sb.wins = sb.wins || { kids: 0, parent: 0 };
-  sb.wins[winnerRole] = (sb.wins[winnerRole] || 0) + 1;
-
-  sb.bestTime = sb.bestTime || {};
-  if (timeSec > 0 && (!sb.bestTime[winnerRole] || timeSec < sb.bestTime[winnerRole])) {
-    sb.bestTime[winnerRole] = timeSec;
-  }
-
-  sb.streak = (sb.streak && sb.streak.role === winnerRole)
-    ? { role: winnerRole, count: (sb.streak.count || 0) + 1 }
-    : { role: winnerRole, count: 1 };
-
-  sb.totalRaces = (sb.totalRaces || 0) + 1;
-
-  const recent = Array.isArray(sb.recent) ? sb.recent
-               : (sb.recent ? Object.values(sb.recent) : []);
-  recent.push({ winner: winnerRole, time: timeSec, at: Date.now() });
-  sb.recent = recent.slice(-5);   // keep the last 5
-
-  await ref.set(sb);
-  return sb;
-}
+const RESULT_ENCOURAGEMENT = [
+  "So close — great racing!",
+  "Awesome effort out there!",
+  "Nice hustle, catch them next time!",
+  "You kept right up — well raced!"
+];
 
 function fmtTime(sec) {
-  if (!sec || sec < 0) return "—";
+  if (sec === null || sec === undefined || sec < 0) return "—";
   return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
 }
-function roleName(role) { return role === "kids" ? CHILD_NAME : "Parent"; }
-function roleEmoji(role) { return role === "kids" ? "👦" : "🧑"; }
 
-function renderScoreboard(sb) {
+// `finishers` is the ranked list of [seatKey, playerData] pairs, 1st place
+// first. Shows a medal + name + finish time per row, plus a short
+// encouraging line under everyone except 1st place.
+function renderResults(finishers) {
   const box = $("scoreboard");
-  if (!sb || !sb.wins) {
-    box.innerHTML = '<div class="sb-title">🏆 Scoreboard</div>' +
-      '<div class="sb-empty">First race recorded — play again to build the board!</div>';
-    return;
-  }
-  const w = sb.wins || {};
-  const bt = sb.bestTime || {};
-  const streak = sb.streak || {};
-  const recent = (Array.isArray(sb.recent) ? sb.recent : Object.values(sb.recent || {}))
-    .slice().reverse();
-
-  let html = '<div class="sb-title">🏆 Scoreboard</div>';
-  html += '<div class="sb-vs">' +
-    `<div class="p"><div class="em">👦</div><div class="big">${w.kids || 0}</div><div class="nm">Azka</div></div>` +
-    '<div class="dash">—</div>' +
-    `<div class="p"><div class="em">🧑</div><div class="big">${w.parent || 0}</div><div class="nm">Parent</div></div>` +
-    '</div>';
-  html += `<div class="sb-row"><span class="lab">⚡ Best time</span><span class="val">👦 ${fmtTime(bt.kids)} · 🧑 ${fmtTime(bt.parent)}</span></div>`;
-  if (streak.role) {
-    html += `<div class="sb-row"><span class="lab">🔥 Streak</span><span class="val">${roleEmoji(streak.role)} ${roleName(streak.role)} × ${streak.count}</span></div>`;
-  }
-  html += `<div class="sb-row"><span class="lab">🏁 Total races</span><span class="val">${sb.totalRaces || 0}</span></div>`;
-  if (recent.length) {
-    html += '<div class="sb-recent"><div class="rt">Recent races</div>';
-    recent.forEach(r => {
-      const color = r.winner === "kids" ? "#d2691e" : "#1266d8";
-      html += `<div class="sb-rr"><span class="win" style="color:${color}">${roleEmoji(r.winner)} ${roleName(r.winner)} won</span><span>${fmtTime(r.time)}</span></div>`;
-    });
-    html += '</div>';
-  }
+  let html = '<div class="sb-title">🏁 Race Results</div>';
+  finishers.forEach(([, player], i) => {
+    const rank = i + 1;
+    const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : rank + ".";
+    const name = (player && player.name) || "—";
+    const time = fmtTime(player && player.finishTimeSec);
+    html += `<div class="results-row"><div class="results-main">` +
+      `<span><span class="results-rank">${medal}</span><span class="results-name">${name}</span></span>` +
+      `<span class="results-time">${time}</span></div>`;
+    if (rank > 1) {
+      const line = RESULT_ENCOURAGEMENT[Math.floor(Math.random() * RESULT_ENCOURAGEMENT.length)];
+      html += `<div class="results-note">${line}</div>`;
+    }
+    html += `</div>`;
+  });
   box.innerHTML = html;
 }
 
 // Play again — reset this game's state in Firebase and locally.
 $("btn-play-again").addEventListener("click", async () => {
   if (state.code) {
-    // Reset every seat present + status/winner, keep the same pairing.
-    // Each device fetches the current seat list independently — writes are
-    // idempotent, so it's harmless if more than one device resets them.
+    // Reset every seat present, keep the same pairing. Each device fetches
+    // the current seat list independently — writes are idempotent, so it's
+    // harmless if more than one device resets them.
     const snap = await db.ref(`games/${state.code}/players`).get();
     const players = snap.val() || {};
-    const update = { status: "playing", winner: null };
+    const update = { status: "playing" };
     Object.keys(players).forEach(seatKey => {
       update[`players/${seatKey}/correct`] = 0;
       update[`players/${seatKey}/progress`] = 0;
       update[`players/${seatKey}/finished`] = false;
+      update[`players/${seatKey}/finishedAt`] = null;
+      update[`players/${seatKey}/finishTimeSec`] = null;
     });
     await db.ref("games/" + state.code).update(update);
   } else if (state.solo) {
     // No Firebase echo in solo mode — reset both cars on screen directly.
     resetCarsToStart();
   }
+  $("finish-overlay").classList.add("hidden");
   resetRaceState();
   clearQuestionTimer();
   startRace();

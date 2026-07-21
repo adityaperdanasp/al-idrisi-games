@@ -224,6 +224,15 @@
 
       <!-- Nitro boost flash — every 3rd correct answer in a streak -->
       <div id="nitro-flash" class="nitro-flash hidden">🚀 NITRO BOOST!</div>
+
+      <!-- Shown once THIS player finishes but others are still racing —
+           covers the question panel while their car waits at the finish
+           line. Replaced by screen-over once everyone has finished. -->
+      <div id="finish-overlay" class="finish-overlay hidden">
+        <div class="finish-emoji">🏁</div>
+        <div id="finish-rank-text" class="finish-rank-text">You finished!</div>
+        <div class="finish-waiting">Waiting for everyone to finish…</div>
+      </div>
     </div>
   </section>
 
