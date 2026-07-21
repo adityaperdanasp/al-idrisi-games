@@ -9,9 +9,10 @@ body {
 }
 
 /* On wide viewports the centered .hub column leaves bare space on either
-   side. Fill it with a blurred, zoomed copy of the hero art itself so the
-   edges pick up the same colors as whatever is showing in the column,
-   instead of a flat color that clashes with the sky at the top. */
+   side. Below the landscape-art breakpoint, fill it with a blurred, zoomed
+   copy of the portrait hero art so the edges pick up the same colors as the
+   column. Above that breakpoint, swap in the real landscape illustration —
+   sharp, not blurred — instead of an echo of the portrait art. */
 body::before {
   content: "";
   position: fixed;
@@ -24,6 +25,16 @@ body::before {
   transform: scale(1.2);
   z-index: -1;
   pointer-events: none;
+}
+
+@media (min-width: 900px) {
+  body::before {
+    background-image: url("hero-landscape.png");
+    background-position: center center;
+    filter: none;
+    transform: none;
+    inset: 0;
+  }
 }
 
 .hub {
