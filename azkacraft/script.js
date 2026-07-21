@@ -51,19 +51,79 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-/* ---------------------------- Theme ---------------------------- */
+/* ---------------------------- Theme (Boy/Girl + 3 palettes each) ---------------------------- */
 
-function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY) || "colorful";
-  document.documentElement.setAttribute("data-theme", saved);
-  document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
+const PALETTE_COLORS = {
+  boy: ["#2F6FED", "#2F9E44", "#5B5FEF"],     // Sky Explorer / Forest Ranger / Space Cadet
+  girl: ["#FF6F91", "#D6448C", "#9B6BFF"]     // Coral Bloom / Berry Sorbet / Lilac Dream
+};
+
+let currentTheme = null;
+
+function loadTheme() {
+  try {
+    const raw = localStorage.getItem(THEME_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if ((parsed.gender === "boy" || parsed.gender === "girl") && [0, 1, 2].includes(parsed.palette)) {
+        return parsed;
+      }
+    }
+  } catch (e) { /* ignore corrupt data */ }
+  return { gender: "boy", palette: 0 };
 }
 
-function toggleTheme() {
-  const current = document.documentElement.getAttribute("data-theme");
-  const next = current === "colorful" ? "pastel" : "colorful";
-  document.documentElement.setAttribute("data-theme", next);
-  localStorage.setItem(THEME_KEY, next);
+function saveTheme() {
+  localStorage.setItem(THEME_KEY, JSON.stringify(currentTheme));
+}
+
+function initTheme() {
+  currentTheme = loadTheme();
+  applyTheme();
+  renderThemePanel();
+
+  document.getElementById("theme-toggle").addEventListener("click", () => {
+    document.getElementById("theme-panel").classList.toggle("hidden");
+  });
+  document.getElementById("theme-gender-boy").addEventListener("click", () => setGender("boy"));
+  document.getElementById("theme-gender-girl").addEventListener("click", () => setGender("girl"));
+}
+
+function setGender(gender) {
+  if (currentTheme.gender === gender) return;
+  currentTheme.gender = gender;
+  currentTheme.palette = 0;
+  applyTheme();
+  renderThemePanel();
+  saveTheme();
+}
+
+function setPalette(i) {
+  currentTheme.palette = i;
+  applyTheme();
+  renderThemePanel();
+  saveTheme();
+}
+
+function applyTheme() {
+  document.documentElement.setAttribute("data-gender", currentTheme.gender);
+  document.documentElement.setAttribute("data-palette", String(currentTheme.palette));
+}
+
+function renderThemePanel() {
+  document.getElementById("theme-gender-boy").classList.toggle("active", currentTheme.gender === "boy");
+  document.getElementById("theme-gender-girl").classList.toggle("active", currentTheme.gender === "girl");
+
+  const wrap = document.getElementById("theme-swatches");
+  wrap.innerHTML = "";
+  PALETTE_COLORS[currentTheme.gender].forEach((color, i) => {
+    const btn = document.createElement("button");
+    btn.className = "theme-swatch" + (i === currentTheme.palette ? " active" : "");
+    btn.style.background = color;
+    btn.setAttribute("aria-label", "Palette " + (i + 1));
+    btn.addEventListener("click", () => setPalette(i));
+    wrap.appendChild(btn);
+  });
 }
 
 /* ---------------------------- Navigation ---------------------------- */

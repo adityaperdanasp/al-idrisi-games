@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="colorful">
+<html lang="en" data-gender="boy" data-palette="0">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -29,7 +29,17 @@
 
 <!-- ============ LANDING SCREEN ============ -->
 <section id="screen-landing" class="screen active">
-  <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🎨</button>
+  <button id="theme-toggle" class="theme-toggle" aria-label="Choose colors">🎨</button>
+
+  <!-- Boy/Girl + palette picker — opened by the 🎨 button above -->
+  <div id="theme-panel" class="theme-panel hidden">
+    <div class="theme-panel-gender">
+      <button id="theme-gender-boy" data-gender="boy">👦 Boy</button>
+      <button id="theme-gender-girl" data-gender="girl">👧 Girl</button>
+    </div>
+    <div id="theme-swatches" class="theme-panel-swatches"><!-- swatch buttons injected by JS --></div>
+  </div>
+
   <div class="landing-content">
     <div class="mascot-wave" aria-hidden="true">
       <svg viewBox="0 0 512 512" class="mascot-svg"><use href="#mascot-symbol"></use></svg>

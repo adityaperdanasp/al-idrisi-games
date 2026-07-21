@@ -5,7 +5,17 @@
    ========================================================= */
 
 :root {
-  --brand: #1266d8;
+  /* Fallback (Boy / Sky Explorer) — used only until JS applies the saved
+     data-gender/data-palette attributes on the very first paint. */
+  --brand: #2F6FED; --brand-dark: #1E56C4;
+  --accent-1: #FFB35C; --accent-1-dark: #E89A3F;
+  --accent-2: #FFD866;
+  --accent-3: #22B573; --accent-3-dark: #158A54;
+  --accent-4: #158A54;
+  --bg-1: #EAF3FF; --bg-2: #EAF6E9;
+  --sky-gradient: linear-gradient(180deg,#BFE3FF 0%,#EAF6E9 100%);
+  --paper: #FFFDF7; --ink: #4a3520; --card-border: #F1E6D2;
+
   --radius-lg: 28px;
   --radius-md: 18px;
   --radius-sm: 10px;
@@ -13,30 +23,71 @@
   --font: 'Fredoka', sans-serif;
 }
 
-/* ---------- Colorful theme (default) ---------- */
-html[data-theme="colorful"] {
-  --bg-1: #fff3d6;
-  --bg-2: #ffd9a0;
-  --paper: #fffaf0;
-  --ink: #4a3520;
-  --accent-1: #ff8a5c;
-  --accent-2: #ffd166;
-  --accent-3: #06d6a0;
-  --accent-4: #ff5f7e;
-  --card-border: #e8c98a;
+/* ---------- Boy/Girl + palette themes (6 combos) ----------
+   Replaces the old Colorful/Pastel toggle. Picked via the 🎨 button on
+   the landing screen (gender + one of 3 palettes per gender), persisted
+   to localStorage. All downstream rules key off --brand/--accent-*/etc,
+   so every screen (bookshelf, buttons, sticker book, question area)
+   re-themes automatically — no per-screen CSS needed. */
+html[data-gender="boy"][data-palette="0"] {   /* Sky Explorer */
+  --brand: #2F6FED; --brand-dark: #1E56C4;
+  --accent-1: #FFB35C; --accent-1-dark: #E89A3F;
+  --accent-2: #FFD866;
+  --accent-3: #22B573; --accent-3-dark: #158A54;
+  --accent-4: #158A54;
+  --bg-1: #EAF3FF; --bg-2: #EAF6E9;
+  --sky-gradient: linear-gradient(180deg,#BFE3FF 0%,#EAF6E9 100%);
+  --paper: #FFFDF7; --ink: #4a3520; --card-border: #F1E6D2;
 }
-
-/* ---------- Pastel theme ---------- */
-html[data-theme="pastel"] {
-  --bg-1: #eaf2fb;
-  --bg-2: #f7e9f5;
-  --paper: #fdfbff;
-  --ink: #4a4560;
-  --accent-1: #a7c7e7;
-  --accent-2: #f6c6d9;
-  --accent-3: #b6e2d3;
-  --accent-4: #d9c5f0;
-  --card-border: #dfe6f2;
+html[data-gender="boy"][data-palette="1"] {   /* Forest Ranger */
+  --brand: #2F9E44; --brand-dark: #1F7A34;
+  --accent-1: #FFB35C; --accent-1-dark: #E89A3F;
+  --accent-2: #FFD866;
+  --accent-3: #2F6FED; --accent-3-dark: #1E56C4;
+  --accent-4: #1E56C4;
+  --bg-1: #E9F7E9; --bg-2: #EAF3FF;
+  --sky-gradient: linear-gradient(180deg,#D9F2D0 0%,#EAF3FF 100%);
+  --paper: #FFFDF7; --ink: #4a3520; --card-border: #F1E6D2;
+}
+html[data-gender="boy"][data-palette="2"] {   /* Space Cadet */
+  --brand: #5B5FEF; --brand-dark: #4245C4;
+  --accent-1: #FF7A59; --accent-1-dark: #E85F3F;
+  --accent-2: #FFD866;
+  --accent-3: #22B573; --accent-3-dark: #158A54;
+  --accent-4: #158A54;
+  --bg-1: #ECEBFF; --bg-2: #EAF6E9;
+  --sky-gradient: linear-gradient(180deg,#D9D6FF 0%,#EAF6E9 100%);
+  --paper: #FFFDF7; --ink: #4a3520; --card-border: #F1E6D2;
+}
+html[data-gender="girl"][data-palette="0"] {  /* Coral Bloom */
+  --brand: #FF6F91; --brand-dark: #E8547A;
+  --accent-1: #B9A6FF; --accent-1-dark: #9683E8;
+  --accent-2: #FFC857;
+  --accent-3: #2BB3A3; --accent-3-dark: #1F9186;
+  --accent-4: #1F9186;
+  --bg-1: #FFE7EE; --bg-2: #E6F7F4;
+  --sky-gradient: linear-gradient(180deg,#FFD6E8 0%,#E8F3FF 55%,#F3ECFF 100%);
+  --paper: #FFFDF7; --ink: #4a3520; --card-border: #F1E6D2;
+}
+html[data-gender="girl"][data-palette="1"] {  /* Berry Sorbet */
+  --brand: #D6448C; --brand-dark: #B32E70;
+  --accent-1: #FFB4A2; --accent-1-dark: #E8927D;
+  --accent-2: #FFE066;
+  --accent-3: #5FC9A8; --accent-3-dark: #3FA688;
+  --accent-4: #3FA688;
+  --bg-1: #FCE6F1; --bg-2: #E9F9F1;
+  --sky-gradient: linear-gradient(180deg,#FFDCE8 0%,#FFF3D9 100%);
+  --paper: #FFFDF7; --ink: #4a3520; --card-border: #F1E6D2;
+}
+html[data-gender="girl"][data-palette="2"] {  /* Lilac Dream */
+  --brand: #9B6BFF; --brand-dark: #7E3EDB;
+  --accent-1: #6EC6FF; --accent-1-dark: #4CA8E0;
+  --accent-2: #FFD6A5;
+  --accent-3: #FF8FAB; --accent-3-dark: #E86E8C;
+  --accent-4: #E86E8C;
+  --bg-1: #F0E9FF; --bg-2: #FFE9EF;
+  --sky-gradient: linear-gradient(180deg,#E4DBFF 0%,#DCF2FF 100%);
+  --paper: #FFFDF7; --ink: #4a3520; --card-border: #F1E6D2;
 }
 
 * { box-sizing: border-box; }
@@ -47,7 +98,7 @@ html, body {
   min-height: 100vh;
   font-family: var(--font);
   color: var(--ink);
-  background: linear-gradient(160deg, var(--bg-1), var(--bg-2));
+  background: var(--sky-gradient);
   background-attachment: fixed;
   overflow-x: hidden;
 }
@@ -143,7 +194,57 @@ button {
   height: 46px;
   font-size: 1.3rem;
   box-shadow: var(--shadow-soft);
+  z-index: 2;
 }
+
+/* ---------- Theme panel (Boy/Girl + palette picker) ---------- */
+.theme-panel {
+  position: absolute;
+  top: 74px;
+  right: 20px;
+  z-index: 5;
+  background: var(--paper);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  padding: 14px;
+  width: 210px;
+}
+.theme-panel.hidden { display: none; }
+.theme-panel-gender {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.theme-panel-gender button {
+  flex: 1;
+  border: 2px solid var(--card-border);
+  background: white;
+  border-radius: var(--radius-sm);
+  padding: 8px 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.theme-panel-gender button.active {
+  border-color: var(--brand);
+  background: var(--bg-1);
+  color: var(--brand);
+}
+.theme-panel-swatches {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.theme-swatch {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  padding: 0;
+  cursor: pointer;
+}
+.theme-swatch.active { border-color: var(--ink); }
 
 .hub-home-btn {
   position: fixed;
@@ -182,10 +283,12 @@ button {
 }
 .game-title {
   font-size: 2.6rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--brand);
   margin: 8px 0 0;
-  text-shadow: 2px 2px 0 rgba(255,255,255,0.6);
+  text-shadow:
+    -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff,
+    0 4px 10px rgba(0,0,0,0.08);
 }
 .game-subtitle { margin: 4px 0 28px; font-size: 1.05rem; opacity: 0.85; }
 
