@@ -41,51 +41,6 @@ body::before {
   position: relative;
 }
 
-.hero-stage {
-  position: relative;
-  flex: none;
-}
-
-.filler {
-  flex: 1 0 32px;
-  background-color: #f8f0c9;
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cpath d='M24 10 L27 19 L36 19 L29 25 L32 34 L24 28 L16 34 L19 25 L12 19 L21 19 Z' fill='%23ffd966' opacity='0.55'/%3E%3Ccircle cx='95' cy='40' r='4' fill='%23a8d86b' opacity='0.5'/%3E%3Cpath d='M100 90 L102 96 L108 96 L103 100 L105 106 L100 102 L95 106 L97 100 L92 96 L98 96 Z' fill='%23ffd966' opacity='0.45'/%3E%3Ccircle cx='30' cy='100' r='3' fill='%237ec8e3' opacity='0.4'/%3E%3Ccircle cx='60' cy='60' r='2.5' fill='%23ff9ec4' opacity='0.4'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-position: 0 32px;
-}
-
-.hero-img {
-  width: 100%;
-  display: block;
-}
-
-.hero-fade {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(168, 216, 107, 0) 0%,
-    rgba(168, 216, 107, 0) 55%,
-    rgba(168, 216, 107, 0.55) 70%,
-    rgba(255, 217, 102, 0.88) 85%,
-    #f8f0c9 97%
-  );
-  pointer-events: none;
-}
-
-.hero-cards {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -5px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-}
-
 .game-bar {
   display: flex;
   align-items: center;
@@ -138,7 +93,8 @@ body::before {
   text-overflow: ellipsis;
 }
 
-/* ---------- Leaderboard button ---------- */
+/* ---------- Leaderboard / switch-player buttons (wide layout only —
+   the mobile "Sticker Craft" screens have their own in-flow header) ---------- */
 .leaderboard-btn {
   position: fixed;
   top: 14px;
@@ -155,7 +111,6 @@ body::before {
   text-decoration: none;
 }
 
-/* ---------- Switch-player button ---------- */
 .switch-player-btn {
   position: fixed;
   top: 14px;
@@ -180,91 +135,350 @@ body::before {
   display: none;
 }
 
-/* ---------- Player picker overlay ---------- */
-.player-picker {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
+.switch-player-btn .avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.7rem;
+  flex: none;
+}
+
+@media (max-width: 899px) {
+  .leaderboard-btn,
+  .switch-player-btn {
+    display: none !important;
+  }
+}
+
+/* =====================================================================
+   "Sticker Craft" mobile redesign (<900px) — Baloo 2 / Nunito only here,
+   rest of the site (wide layout + the 3 games) stays on Fredoka.
+   ===================================================================== */
+.hub.sc-page {
+  max-width: none;
+  min-height: 100dvh;
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 24px 16px;
-  background: rgba(18, 40, 80, 0.55);
-  backdrop-filter: blur(6px);
-  overflow-y: auto;
+  align-items: flex-start;
+  padding: 28px 16px;
+  background: linear-gradient(180deg, #fdedd3 0%, #e9dcc5 55%, #dccba9 100%);
+  overflow: hidden;
+  font-family: "Nunito", sans-serif;
 }
 
-.player-picker.hidden {
-  display: none;
+@keyframes sc-bob {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-10px) rotate(var(--r, 0deg)); }
 }
 
-.picker-card {
+.sc-bob {
+  animation: sc-bob 6.5s ease-in-out infinite;
+}
+
+.sc-blob {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.sc-cloud {
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0.9;
+}
+
+.sc-star {
+  position: absolute;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.sc-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.sc-emoji {
+  position: absolute;
+}
+
+.sc-balloon {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.sc-card {
   width: 100%;
-  max-width: 480px;
-  max-height: 90vh;
-  overflow-y: auto;
-  background: #fffdf5;
-  border-radius: 24px;
-  padding: 28px 24px 24px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-  font-family: "Fredoka", sans-serif;
+  max-width: 430px;
+  min-height: calc(100dvh - 56px);
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(60, 40, 20, 0.2);
+  background: #fbf3e7;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.sc-screen {
+  display: none;
+  position: relative;
+  z-index: 1;
+}
+
+.sc-screen.active {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Screen 1: Player Select ---------- */
+#sc-screen-select {
+  padding: 26px 24px 36px;
+  gap: 24px;
+}
+
+.sc-badge {
+  display: inline-block;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 1.375rem;
+  color: #3d2e22;
+  background: #f6e3b4;
+  padding: 8px 20px;
+  border-radius: 100px;
+  transform: rotate(-2deg);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.06);
+}
+
+.sc-title {
+  font-family: "Baloo 2", sans-serif;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #3d2e22;
+}
+
+.sc-subtitle {
+  font-size: 0.94rem;
+  color: #9c8a76;
+  margin-top: 4px;
+}
+
+.sc-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #c2ac91;
+  margin-bottom: 10px;
+}
+
+.sc-teacher-list {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sc-teacher-chip {
+  cursor: pointer;
+  border: none;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 600;
+  font-size: 0.94rem;
+  padding: 12px 18px;
+  border-radius: 14px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.06);
+}
+
+.sc-student-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 11px;
+}
+
+.sc-student-card {
+  cursor: pointer;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border-radius: 16px;
+  padding: 12px 6px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.sc-student-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.94rem;
+  color: #3d2e22;
+}
+
+.sc-student-name {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: #3d2e22;
   text-align: center;
 }
 
-.picker-title {
-  margin: 0 0 4px;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #1266d8;
+/* ---------- Screen 2: Landing ---------- */
+#sc-screen-landing {
+  flex: 1;
 }
 
-.picker-sub {
-  margin: 0 0 20px;
-  color: #5c6f8a;
-  font-size: 0.9rem;
+.sc-header {
+  padding: 20px 24px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
-.picker-section-label {
-  text-align: left;
+.sc-trophy {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #f6e3b4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  transform: rotate(-4deg);
+  text-decoration: none;
+}
+
+.sc-player-chip {
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  padding: 8px 14px 8px 8px;
+  border-radius: 100px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.sc-player-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #3d2e22;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Baloo 2", sans-serif;
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #8b96a8;
-  margin: 16px 0 8px;
 }
 
-.picker-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+.sc-player-name {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #3d2e22;
 }
 
-.picker-btn {
-  border: none;
+.sc-hero {
+  margin: 22px 24px 0;
+  text-align: center;
+  padding: 32px 20px 28px;
+  background: #f6e3b4;
+  border-radius: 24px;
+  transform: rotate(-1deg);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.sc-hero-title {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 2.375rem;
+  line-height: 1.05;
+}
+
+.sc-hero-title .w1 { color: #e8735a; display: inline-block; transform: rotate(-4deg); }
+.sc-hero-title .w2 { color: #2f4c8c; display: inline-block; transform: rotate(3deg); }
+.sc-hero-title .w3 { color: #3f7a4e; display: inline-block; transform: rotate(-3deg); }
+
+.sc-hero-tagline {
+  font-family: "Baloo 2", sans-serif;
+  font-size: 0.875rem;
+  color: #7a5a2e;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.sc-game-list {
+  padding: 30px 24px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.sc-game-card {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: 20px;
+  padding: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.sc-game-card.math { background: #c1d4f6; transform: rotate(0.6deg); }
+.sc-game-card.lang { background: #f6c1e0; transform: rotate(-0.6deg); }
+.sc-game-card.solar { background: #c1e1c1; transform: rotate(0.6deg); }
+
+.sc-game-icon {
+  width: 52px;
+  height: 52px;
   border-radius: 14px;
-  padding: 12px 6px;
-  font-family: "Fredoka", sans-serif;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  overflow: hidden;
+}
+
+.sc-game-icon img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 9px;
+}
+
+.sc-game-title {
+  display: block;
+  font-family: "Baloo 2", sans-serif;
   font-weight: 700;
-  font-size: 0.88rem;
-  cursor: pointer;
-  transition: transform 0.12s ease;
+  font-size: 1.06rem;
 }
 
-.picker-btn:hover,
-.picker-btn:focus-visible {
-  transform: translateY(-2px);
+.sc-game-sub {
+  display: block;
+  font-size: 0.81rem;
 }
 
-.picker-btn.student {
-  background: #eaf3ff;
-  color: #1266d8;
-}
-
-.picker-btn.teacher {
-  background: #fff3d6;
-  color: #b06a00;
-}
+.sc-game-card.math .sc-game-title { color: #2f4c8c; }
+.sc-game-card.math .sc-game-sub { color: #5a6d99; }
+.sc-game-card.lang .sc-game-title { color: #8c2f6b; }
+.sc-game-card.lang .sc-game-sub { color: #9b5d84; }
+.sc-game-card.solar .sc-game-title { color: #3f7a4e; }
+.sc-game-card.solar .sc-game-sub { color: #5d9268; }
 
 /* ---------- Wide layout (laptop/desktop, >=900px) ----------
    Placed last so it reliably wins over the .hub base rule above at equal

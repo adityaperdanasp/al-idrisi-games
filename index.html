@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Al Idrisi Games</title>
-<meta name="theme-color" content="#55b9f8">
+<meta name="theme-color" content="#FDEDD3">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Al Idrisi Games">
@@ -12,7 +12,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Wide/desktop layout still uses Fredoka (unchanged). The two mobile
+     screens below ("Sticker Craft" redesign) use Baloo 2 + Nunito only. -->
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 
 <!-- Hub's own Firebase project: shared leaderboard/player data + Analytics -->
@@ -22,15 +24,13 @@
 </head>
 <body>
 
-<!-- Shared across both layouts (mobile + wide) — fixed to the viewport so
-     they stay put regardless of which layout below is showing. -->
+<!-- ============ Wide layout (laptop/desktop, >=900px) — unchanged ============ -->
 <a href="leaderboard.html" class="leaderboard-btn" title="Leaderboard">🏆</a>
 <button id="switch-player-btn" class="switch-player-btn hidden">
-  👤 <span id="current-player-name"></span>
+  <span class="avatar" id="current-player-avatar"></span>
+  <span id="current-player-name"></span>
 </button>
 
-<!-- Wide layout (laptop/desktop, >=900px) — full-bleed landscape art with
-     the game cards floating on top. Hidden below the breakpoint. -->
 <div class="wide-stage">
   <div class="wide-cards">
     <a class="game-bar" href="multipleazka/">
@@ -57,91 +57,238 @@
   </div>
 </div>
 
-<!-- Mobile/portrait layout (<900px) — unchanged. -->
-<main class="hub">
-  <div class="hero-stage">
-    <img class="hero-img" src="hero.png" alt="Al Idrisi Games">
-    <div class="hero-fade"></div>
-    <div class="hero-cards">
-      <a class="game-bar" href="multipleazka/">
-        <img src="multipleazka/icon-512.png" alt="">
-        <span class="txt">
-          <span class="n">Math Race</span>
-          <span class="d">Pick who's playing, then race!</span>
-        </span>
-      </a>
-      <a class="game-bar" href="azkacraft/">
-        <img src="azkacraft/icons/icon-512.png" alt="">
-        <span class="txt">
-          <span class="n">Language &amp; Arts</span>
-          <span class="d">A Storybook Language &amp; Arts</span>
-        </span>
-      </a>
-      <a class="game-bar" href="azkauniverse/">
-        <img src="azkauniverse/icon-512.png" alt="">
-        <span class="txt">
-          <span class="n">SolarQuest</span>
-          <span class="d">AI Science Adventure</span>
-        </span>
-      </a>
+<!-- ============ Mobile layout (<900px) — "Sticker Craft" redesign ============ -->
+<main class="hub sc-page">
+
+  <!-- Page-level floating decoration (outside the app card) -->
+  <div class="sc-blob" style="width:260px;height:260px;top:-120px;left:-80px;background:#F6E3B4;opacity:.7;"></div>
+  <div class="sc-blob" style="width:180px;height:180px;bottom:-90px;right:-60px;background:#F6C1C1;opacity:.6;"></div>
+  <div class="sc-blob" style="width:130px;height:130px;bottom:120px;left:-50px;background:#C1E1C1;opacity:.5;"></div>
+  <div class="sc-blob" style="width:110px;height:110px;top:30%;right:-40px;background:#D9C1F6;opacity:.5;"></div>
+  <div class="sc-blob" style="width:90px;height:90px;top:6%;right:26%;background:#C1D4F6;opacity:.4;"></div>
+  <div class="sc-cloud sc-bob" style="top:60px;left:8%;width:64px;height:64px;--r:-6deg;"></div>
+  <div class="sc-cloud" style="top:110px;left:calc(8% + 30px);width:34px;height:34px;"></div>
+  <div class="sc-cloud sc-bob" style="top:170px;right:6%;width:52px;height:52px;--r:4deg;animation-delay:.5s;"></div>
+  <div class="sc-cloud" style="top:200px;right:calc(6% + 34px);width:28px;height:28px;"></div>
+  <div class="sc-cloud sc-bob" style="bottom:14%;left:4%;width:58px;height:58px;--r:2deg;animation-delay:.3s;"></div>
+  <div class="sc-cloud" style="bottom:14%;left:calc(4% + 30px);width:30px;height:30px;"></div>
+  <div class="sc-star sc-bob" style="top:14%;right:14%;width:34px;height:34px;background:#F6C1E0;--r:8deg;"></div>
+  <div class="sc-star sc-bob" style="bottom:22%;left:10%;width:24px;height:24px;background:#D9C1F6;--r:-12deg;animation-delay:1s;"></div>
+  <div class="sc-star" style="top:38%;left:5%;width:20px;height:20px;background:#F6E3B4;opacity:.9;"></div>
+  <div class="sc-star sc-bob" style="top:8%;left:30%;width:20px;height:20px;background:#F6C1C1;--r:15deg;animation-delay:.8s;"></div>
+  <div class="sc-star sc-bob" style="top:46%;right:20%;width:26px;height:26px;background:#C1E1C1;--r:-8deg;animation-delay:.2s;"></div>
+  <div class="sc-star" style="bottom:34%;right:22%;width:16px;height:16px;background:#F6E3B4;opacity:.9;"></div>
+  <div class="sc-star" style="bottom:42%;left:16%;width:16px;height:16px;background:#C1D4F6;opacity:.9;"></div>
+  <div class="sc-balloon sc-bob" style="bottom:8%;right:8%;width:46px;height:46px;background:#F6E3B4;">
+    <span style="position:absolute;width:70px;height:16px;border:3px solid #C1D4F6;border-radius:50%;top:15px;left:-12px;transform:rotate(-18deg);"></span>
+  </div>
+  <div class="sc-balloon sc-bob" style="top:24%;left:20%;width:34px;height:34px;background:#F6C1C1;animation-delay:.6s;">
+    <span style="position:absolute;width:50px;height:12px;border:2px solid #F6E3B4;border-radius:50%;top:11px;left:-8px;transform:rotate(-18deg);"></span>
+  </div>
+  <div class="sc-dot" style="top:4%;left:50%;width:8px;height:8px;opacity:.8;"></div>
+  <div class="sc-dot" style="top:22%;right:38%;width:6px;height:6px;opacity:.7;"></div>
+  <div class="sc-dot" style="bottom:18%;left:40%;width:7px;height:7px;opacity:.7;"></div>
+  <div class="sc-dot" style="bottom:30%;right:10%;width:9px;height:9px;opacity:.8;"></div>
+
+  <div class="sc-card">
+
+    <!-- App-card-level decoration -->
+    <div class="sc-blob" style="top:10px;right:-16px;width:56px;height:56px;background:#F6E3B4;opacity:.8;z-index:0;"></div>
+    <div class="sc-star" style="top:60px;right:20px;width:16px;height:16px;background:#C1D4F6;z-index:0;"></div>
+    <div class="sc-blob" style="bottom:20px;left:-18px;width:70px;height:70px;background:#C1E1C1;opacity:.6;z-index:0;"></div>
+    <div class="sc-star" style="top:14px;left:150px;width:14px;height:14px;background:#F6C1E0;transform:rotate(10deg);z-index:0;"></div>
+    <div class="sc-star" style="top:110px;right:10px;width:12px;height:12px;background:#D9C1F6;transform:rotate(-14deg);z-index:0;"></div>
+    <div class="sc-dot" style="top:150px;left:8px;width:10px;height:10px;background:#F6C1C1;opacity:.9;z-index:0;"></div>
+    <div class="sc-dot" style="bottom:70px;right:24px;width:11px;height:11px;background:#F6E3B4;opacity:.9;z-index:0;"></div>
+    <div class="sc-star" style="bottom:120px;left:22px;width:13px;height:13px;background:#C1D4F6;transform:rotate(20deg);z-index:0;"></div>
+    <div class="sc-emoji" style="top:200px;right:16px;font-size:14px;z-index:0;">✨</div>
+    <div class="sc-emoji" style="bottom:180px;left:10px;font-size:16px;transform:rotate(-10deg);z-index:0;">⭐</div>
+    <div class="sc-dot" style="top:260px;left:26px;width:9px;height:9px;background:#F6C1E0;opacity:.9;z-index:0;"></div>
+    <div class="sc-emoji" style="top:34px;right:60px;font-size:13px;transform:rotate(8deg);z-index:0;">✨</div>
+    <div class="sc-emoji" style="top:90px;left:50%;font-size:12px;transform:rotate(-6deg);z-index:0;">⭐</div>
+    <div class="sc-dot" style="top:230px;right:36px;width:10px;height:10px;background:#F6E3B4;z-index:0;"></div>
+    <div class="sc-star" style="bottom:200px;right:14px;width:11px;height:11px;background:#C1E1C1;transform:rotate(-16deg);z-index:0;"></div>
+    <div class="sc-emoji" style="bottom:260px;left:48px;font-size:12px;transform:rotate(12deg);z-index:0;">✨</div>
+    <div class="sc-dot" style="bottom:40px;left:60px;width:10px;height:10px;background:#D9C1F6;opacity:.9;z-index:0;"></div>
+    <div class="sc-emoji" style="bottom:150px;right:60px;font-size:14px;transform:rotate(-8deg);z-index:0;">⭐</div>
+    <div class="sc-dot" style="top:340px;left:14px;width:8px;height:8px;background:#F6C1C1;z-index:0;"></div>
+    <div class="sc-star" style="top:310px;right:24px;width:12px;height:12px;background:#F6E3B4;transform:rotate(22deg);z-index:0;"></div>
+
+    <!-- SCREEN 1: Player Select -->
+    <div id="sc-screen-select" class="sc-screen active">
+      <div style="text-align:center;">
+        <div class="sc-badge">Al Idrisi Games</div>
+      </div>
+      <div>
+        <div class="sc-title">Siapa yang main?</div>
+        <div class="sc-subtitle">Pilih namamu dulu ya!</div>
+      </div>
+      <div>
+        <div class="sc-label">GURU</div>
+        <div class="sc-teacher-list" id="sc-teacher-list"></div>
+      </div>
+      <div>
+        <div class="sc-label">MURID</div>
+        <div class="sc-student-grid" id="sc-student-grid"></div>
+      </div>
     </div>
+
+    <!-- SCREEN 2: Landing -->
+    <div id="sc-screen-landing" class="sc-screen">
+      <div class="sc-emoji" style="top:6%;left:12px;font-size:16px;transform:rotate(-10deg);z-index:0;">⭐</div>
+      <div class="sc-dot" style="top:9%;left:70px;width:9px;height:9px;background:#C1D4F6;z-index:0;"></div>
+      <div class="sc-emoji" style="top:12%;right:80px;font-size:13px;transform:rotate(8deg);z-index:0;">✨</div>
+      <div class="sc-star" style="top:7%;right:20px;width:10px;height:10px;background:#F6C1E0;transform:rotate(16deg);z-index:0;"></div>
+      <div class="sc-blob" style="top:1%;left:-40px;width:110px;height:110px;background:#C1E1C1;opacity:.55;z-index:0;"></div>
+      <div class="sc-dot" style="top:90px;left:130px;width:8px;height:8px;background:#F6E3B4;z-index:0;"></div>
+      <div class="sc-emoji" style="top:120px;left:90px;font-size:12px;transform:rotate(-14deg);z-index:0;">⭐</div>
+      <div class="sc-dot" style="top:2%;right:100px;width:9px;height:9px;background:#D9C1F6;opacity:.9;z-index:0;"></div>
+      <div class="sc-emoji" style="top:100px;right:140px;font-size:12px;transform:rotate(10deg);z-index:0;">✨</div>
+      <div class="sc-dot" style="top:66%;left:16px;width:12px;height:12px;background:#F6E3B4;z-index:0;"></div>
+      <div class="sc-emoji" style="top:72%;right:24px;font-size:16px;transform:rotate(-12deg);z-index:0;">⭐</div>
+      <div class="sc-emoji" style="top:80%;left:40px;font-size:13px;transform:rotate(10deg);z-index:0;">✨</div>
+      <div class="sc-star" style="top:85%;right:60px;width:11px;height:11px;background:#D9C1F6;transform:rotate(-18deg);z-index:0;"></div>
+      <div class="sc-dot" style="top:90%;left:70px;width:10px;height:10px;background:#F6C1C1;opacity:.9;z-index:0;"></div>
+      <div class="sc-emoji" style="top:94%;right:100px;font-size:14px;transform:rotate(14deg);z-index:0;">⭐</div>
+      <div class="sc-dot" style="top:97%;left:110px;width:9px;height:9px;background:#C1E1C1;z-index:0;"></div>
+
+      <div class="sc-header">
+        <a href="leaderboard.html" class="sc-trophy" title="Leaderboard">🏆</a>
+        <button class="sc-player-chip" id="sc-player-chip">
+          <span class="sc-player-avatar" id="sc-player-avatar"></span>
+          <span class="sc-player-name" id="sc-player-name"></span>
+        </button>
+      </div>
+
+      <div class="sc-hero">
+        <span class="sc-emoji" style="top:-14px;left:18px;font-size:22px;transform:rotate(-12deg);">⭐</span>
+        <span class="sc-emoji" style="top:-10px;right:22px;font-size:18px;transform:rotate(14deg);">✨</span>
+        <span class="sc-dot" style="bottom:-12px;right:34px;width:16px;height:16px;background:#F6C1C1;"></span>
+        <span class="sc-dot" style="bottom:-8px;left:40px;width:12px;height:12px;background:#C1D4F6;"></span>
+        <div class="sc-hero-title">
+          <span class="w1">Al</span> <span class="w2">Idrisi</span> <span class="w3">Games</span>
+        </div>
+        <div class="sc-hero-tagline">Pick a quest, have fun, and level up! 🎉</div>
+      </div>
+
+      <div class="sc-game-list">
+        <div class="sc-emoji" style="top:2px;right:2px;font-size:16px;transform:rotate(10deg);z-index:0;">⭐</div>
+        <div class="sc-emoji" style="top:100px;left:-4px;font-size:14px;transform:rotate(-8deg);z-index:0;">✨</div>
+        <div class="sc-dot" style="bottom:60px;right:-6px;width:14px;height:14px;background:#D9C1F6;z-index:0;"></div>
+
+        <a class="sc-game-card math" href="multipleazka/">
+          <span class="sc-game-icon"><img src="multipleazka/icon-512.png" alt=""></span>
+          <span class="sc-game-txt">
+            <span class="sc-game-title">Math Race</span>
+            <span class="sc-game-sub">Pick who's playing, then race!</span>
+          </span>
+        </a>
+        <a class="sc-game-card lang" href="azkacraft/">
+          <span class="sc-game-icon"><img src="azkacraft/icons/icon-512.png" alt=""></span>
+          <span class="sc-game-txt">
+            <span class="sc-game-title">Language &amp; Arts</span>
+            <span class="sc-game-sub">A Storybook Language &amp; Arts</span>
+          </span>
+        </a>
+        <a class="sc-game-card solar" href="azkauniverse/">
+          <span class="sc-game-icon"><img src="azkauniverse/icon-512.png" alt=""></span>
+          <span class="sc-game-txt">
+            <span class="sc-game-title">SolarQuest</span>
+            <span class="sc-game-sub">AI Science Adventure</span>
+          </span>
+        </a>
+      </div>
+    </div>
+
   </div>
-  <div class="filler"></div>
 </main>
-
-<!-- Player picker overlay — shown until a name is chosen, reopenable via
-     the "switch player" button once dismissed. -->
-<div id="player-picker" class="player-picker">
-  <div class="picker-card">
-    <h1 class="picker-title">Siapa yang main?</h1>
-    <p class="picker-sub">Pilih namamu dulu ya!</p>
-
-    <div class="picker-section-label">Guru</div>
-    <div class="picker-grid teachers" id="picker-teachers"></div>
-
-    <div class="picker-section-label">Murid</div>
-    <div class="picker-grid students" id="picker-students"></div>
-  </div>
-</div>
 
 <script src="player.js"></script>
 <script src="players.js"></script>
 <script src="firebase.js"></script>
 <script>
+  // Card background cycles through this palette (index-based, per the
+  // "Sticker Craft" spec). Avatar-letter and name text stay a constant
+  // dark ink color — only the background cycles.
+  const SC_INK = "#3d2e22";
+  const SC_STUDENT_PALETTE = ["#F6C1C1", "#C1E1C1", "#C1D4F6", "#F6E3B4", "#D9C1F6", "#F6C1E0", "#C1F0E8"];
+  const SC_ROTATIONS = [-2, 1.5, -1, 2, -1.5, 1, 0.5];
+  const SC_TEACHER_BG = "#F6C1C1";
+  const SC_TEACHER_TEXT = "#7A2E2E";
+
+  const STUDENTS_ONLY = window.AIG_PLAYERS.filter(p => p.role === "student");
+
+  function scColorFor(p) {
+    if (p.role === "teacher") return SC_TEACHER_BG;
+    return SC_STUDENT_PALETTE[STUDENTS_ONLY.indexOf(p) % SC_STUDENT_PALETTE.length];
+  }
+
   function renderPicker() {
-    const teachersEl = document.getElementById("picker-teachers");
-    const studentsEl = document.getElementById("picker-students");
-    teachersEl.innerHTML = "";
-    studentsEl.innerHTML = "";
-    window.AIG_PLAYERS.forEach(p => {
-      const btn = document.createElement("button");
-      btn.className = "picker-btn " + p.role;
-      btn.textContent = p.name;
-      btn.addEventListener("click", () => selectPlayer(p));
-      (p.role === "teacher" ? teachersEl : studentsEl).appendChild(btn);
+    const teacherEl = document.getElementById("sc-teacher-list");
+    const studentEl = document.getElementById("sc-student-grid");
+    teacherEl.innerHTML = "";
+    studentEl.innerHTML = "";
+
+    window.AIG_PLAYERS.filter(p => p.role === "teacher").forEach(p => {
+      const chip = document.createElement("button");
+      chip.className = "sc-teacher-chip";
+      chip.style.background = SC_TEACHER_BG;
+      chip.style.color = SC_TEACHER_TEXT;
+      chip.style.transform = "rotate(-1.5deg)";
+      chip.textContent = p.name;
+      chip.addEventListener("click", () => selectPlayer(p));
+      teacherEl.appendChild(chip);
+    });
+
+    STUDENTS_ONLY.forEach((p, i) => {
+      const color = SC_STUDENT_PALETTE[i % SC_STUDENT_PALETTE.length];
+      const rot = SC_ROTATIONS[i % SC_ROTATIONS.length];
+      const card = document.createElement("button");
+      card.className = "sc-student-card";
+      card.style.background = color;
+      card.style.transform = `rotate(${rot}deg)`;
+      card.innerHTML =
+        `<span class="sc-student-avatar">${p.name[0].toUpperCase()}</span>` +
+        `<span class="sc-student-name">${p.name}</span>`;
+      card.addEventListener("click", () => selectPlayer(p));
+      studentEl.appendChild(card);
     });
   }
 
   function selectPlayer(p) {
     AIGPlayer.setPlayer(p);
-    closePicker();
+    showLanding();
   }
 
-  function closePicker() {
-    document.getElementById("player-picker").classList.add("hidden");
+  function showLanding() {
+    const current = AIGPlayer.getPlayer();
+    if (!current) return;
+    document.getElementById("sc-player-avatar").style.background = scColorFor(current);
+    document.getElementById("sc-player-avatar").textContent = current.name[0].toUpperCase();
+    document.getElementById("sc-player-name").textContent = current.name;
+    document.getElementById("sc-screen-select").classList.remove("active");
+    document.getElementById("sc-screen-landing").classList.add("active");
     updateSwitchBtn();
   }
 
-  function openPicker() {
-    document.getElementById("player-picker").classList.remove("hidden");
+  function showSelect() {
+    document.getElementById("sc-screen-landing").classList.remove("active");
+    document.getElementById("sc-screen-select").classList.add("active");
+    updateSwitchBtn();
   }
 
+  // Shared floating buttons — only visible in the wide/desktop layout now
+  // (the mobile "Sticker Craft" screens have their own in-flow header).
   function updateSwitchBtn() {
     const btn = document.getElementById("switch-player-btn");
     const nameEl = document.getElementById("current-player-name");
+    const avatarEl = document.getElementById("current-player-avatar");
     const current = AIGPlayer.getPlayer();
     if (current) {
       nameEl.textContent = current.name;
+      avatarEl.textContent = current.name[0].toUpperCase();
+      avatarEl.style.background = scColorFor(current);
+      avatarEl.style.color = SC_INK;
       btn.classList.remove("hidden");
     } else {
       btn.classList.add("hidden");
@@ -150,10 +297,11 @@
 
   renderPicker();
   if (AIGPlayer.getPlayer()) {
-    document.getElementById("player-picker").classList.add("hidden");
+    showLanding();
   }
   updateSwitchBtn();
-  document.getElementById("switch-player-btn").addEventListener("click", openPicker);
+  document.getElementById("sc-player-chip").addEventListener("click", showSelect);
+  document.getElementById("switch-player-btn").addEventListener("click", showSelect);
 </script>
 
 </body>
