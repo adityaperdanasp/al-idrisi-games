@@ -315,6 +315,16 @@
 <script src="../player.js"></script>
 <script src="../leaderboard.js"></script>
 
+<!-- Standalone custom domains (e.g. azkasolar.quest) don't carry the
+     hub's player.js, so "who's playing" can never be known there.
+     Redirect to the same game hosted under the hub instead, where name
+     personalization (and everything downstream of it) actually works. -->
+<script>
+  if (typeof window.AIGPlayer === "undefined") {
+    location.replace("https://playalidrisi.fun/azkauniverse/" + location.search);
+  }
+</script>
+
 <script src="script.js?v=5"></script>
 
 </body>
