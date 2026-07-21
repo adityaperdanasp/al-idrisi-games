@@ -171,12 +171,15 @@ button {
   margin-top: 10px;
 }
 
-/* ---------- Gender pill (Boys/Girls) — small, top-right corner of the card ---------- */
+/* ---------- Settings row (Boys/Girls + palette swatches, side by side) ---------- */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
 .gender-pill {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 4;
   display: flex;
   align-items: center;
   gap: 3px;
@@ -427,8 +430,8 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
 .info-sub { font-size: 12px; font-weight: 700; color: #8a7d6d; }
 .info-text-sm { font-size: 14.5px; line-height: 1.3; }
 
+.settings-row { margin-top: 13px; }
 .palette-row {
-  margin-top: 13px;
   display: flex;
   flex-direction: row;
   align-items: center;
