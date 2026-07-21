@@ -264,10 +264,12 @@ const AZKA_ORIGINAL_COUNT = { praise: 20, encourage: 20 };
 
 // Every other player also gets 3 fully-recorded (non-spliced) praise clips
 // with their name spoken naturally in the middle — sounds smoother than the
-// generic+name splice. Only praise has these (not encourage). Falls back to
-// the splice system if a player has no personal clips (e.g. a new roster
-// entry added after this batch was recorded).
+// generic+name splice. On a correct answer, these 3 are mixed into the SAME
+// random pool as the 40 generic (spliced) praise clips — 43 options total —
+// so the cheer doesn't always come from one system or the other. Encourage
+// only has the generic spliced clips (no personal recordings).
 const PERSONAL_PRAISE_COUNT = 3;
+const PRAISE_POOL_SIZE = PERSONAL_PRAISE_COUNT + CHEER_AUDIO_COUNT.praise; // 43
 
 function speakCheer(isCorrect, phrase) {
   const kind = isCorrect ? "praise" : "encourage";
@@ -281,19 +283,23 @@ function speakCheer(isCorrect, phrase) {
   }
 
   if (kind === "praise") {
-    const pn = String(Math.floor(Math.random() * PERSONAL_PRAISE_COUNT) + 1).padStart(2, "0");
-    const personal = new Audio(`audio/praise-personal/${CHILD_ID}-${pn}.mp3`);
-    const fallbackToSplice = () => speakSplicedCheer(kind, phrase);
-    personal.addEventListener("error", fallbackToSplice);
-    personal.play().catch(fallbackToSplice);
+    const poolNum = Math.floor(Math.random() * PRAISE_POOL_SIZE) + 1;
+    if (poolNum <= PERSONAL_PRAISE_COUNT) {
+      const pn = String(poolNum).padStart(2, "0");
+      const personal = new Audio(`audio/praise-personal/${CHILD_ID}-${pn}.mp3`);
+      personal.addEventListener("error", () => speak(phrase));
+      personal.play().catch(() => speak(phrase));
+      return;
+    }
+    speakSplicedCheer(kind, phrase, poolNum - PERSONAL_PRAISE_COUNT);
     return;
   }
 
   speakSplicedCheer(kind, phrase);
 }
 
-function speakSplicedCheer(kind, phrase) {
-  const num = Math.floor(Math.random() * CHEER_AUDIO_COUNT[kind]) + 1;
+function speakSplicedCheer(kind, phrase, forcedNum) {
+  const num = forcedNum || Math.floor(Math.random() * CHEER_AUDIO_COUNT[kind]) + 1;
   const n = String(num).padStart(2, "0");
   const line = new Audio(`audio/${kind}/${kind}-${n}.mp3`);
   const nameClip = new Audio(`audio/names/${CHILD_ID}.mp3`);
