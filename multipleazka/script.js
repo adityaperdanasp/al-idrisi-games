@@ -425,6 +425,11 @@ function showVehicleSelect(onDone) {
     btn.classList.toggle("active", btn.dataset.vehicle === state.vehicle);
     btn.onclick = () => {
       state.vehicle = btn.dataset.vehicle;
+      // Show the tap immediately — matters most for joiners in a 3-player
+      // game, who can sit on this screen a while waiting for the last
+      // seat to fill before onDone() actually navigates away.
+      document.querySelectorAll(".vehicle-opt")
+        .forEach(b => b.classList.toggle("active", b === btn));
       clearVehicleTimer();
       onDone();
     };
