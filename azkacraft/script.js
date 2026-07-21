@@ -34,6 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   wireNavigation();
   wireMultiplayerSetup();
   wireBrainRest();
+  if (window.AIGBgm) AIGBgm.play("menu");   // starts once the user's first tap unlocks audio
 
   QUESTION_BANK = await fetch("questions.json").then(r => r.json());
   PROGRESS = loadProgress();
@@ -147,6 +148,10 @@ function showScreen(id, opts = {}) {
 
   if (id === "screen-map") renderBookshelf();
   if (id === "screen-stickers") renderStickers();
+
+  // Background music: soft "menu" loop everywhere except the actual
+  // lesson screen, which gets the more energetic "game" loop.
+  if (window.AIGBgm) AIGBgm.play(id === "screen-game" ? "game" : "menu");
 }
 
 function wireNavigation() {

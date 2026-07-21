@@ -111,6 +111,7 @@ const PERSONAL_PRAISE_COUNT = 3;
 const PRAISE_POOL_SIZE = PERSONAL_PRAISE_COUNT + PRAISE_CLIP_COUNT; // 43
 
 function speakPraise() {
+  if (window.AIGBgm) AIGBgm.duck(2600);   // quiet the background music while this cheer speaks
   if (CHILD_ID === "azka") return playAzkaOriginal("praise", pickRandom(PRAISE_PHRASES));
 
   const poolNum = Math.floor(Math.random() * PRAISE_POOL_SIZE) + 1;
@@ -128,6 +129,7 @@ function speakPraise() {
 }
 
 function speakEncouragement() {
+  if (window.AIGBgm) AIGBgm.duck(2600);   // quiet the background music while this cheer speaks
   if (CHILD_ID === "azka") return playAzkaOriginal("encourage", pickRandom(ENCOURAGE_PHRASES));
   const n = randomClipNumber(ENCOURAGE_CLIP_COUNT);
   playClip("encourage", n, `audio/encourage/encourage-${n}.mp3`, pickRandom(ENCOURAGE_PHRASES));
