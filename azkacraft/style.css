@@ -763,10 +763,16 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
    actual mobile device. Below this breakpoint, drop the frame entirely so
    the app fills the real screen like a normal mobile web page. */
 @media (max-width: 480px) {
-  .app-page { padding: 0; min-height: 100dvh; }
+  .app-page { padding: 0; min-height: 100vh; min-height: 100svh; }
   .phone-frame { width: 100%; }
   .phone-inner {
-    height: 100dvh;
+    /* 100svh ("small" viewport height) is the height with Safari's
+       toolbar fully expanded — fixed and stable. 100dvh recalculates as
+       the toolbar auto-hides/shows on scroll, and iOS Safari doesn't
+       always repaint in sync, leaving a strip of stale body background
+       docked at the bottom that doesn't scroll with the content. */
+    height: 100vh;
+    height: 100svh;
     border-radius: 0;
     box-shadow: none;
   }
