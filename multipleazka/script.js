@@ -597,7 +597,6 @@ function resetCarsToStart() {
 function startRace() {
   showScreen("screen-race");
   state.answerLocked = false;
-  if (window.AIGLeaderboard) AIGLeaderboard.recordPlay("mathrace");
 
   // Parent role gets neutral feedback; Kids get cheering. Hide/adjust label.
   $("your-turn-label").textContent =
@@ -1093,6 +1092,7 @@ function speak(text) {
 function endGame(winnerRole) {
   state.gameOver = true;
   clearQuestionTimer();
+  if (window.AIGLeaderboard) AIGLeaderboard.recordPlay("mathrace");
 
   const iWon = winnerRole === state.role;
   $("over-emoji").textContent = iWon ? "🏆" : "🎉";
@@ -1123,6 +1123,7 @@ function endGame(winnerRole) {
 function endSoloRace() {
   state.gameOver = true;
   clearQuestionTimer();
+  if (window.AIGLeaderboard) AIGLeaderboard.recordPlay("mathrace");
 
   $("over-emoji").textContent = "🏁";
   $("winner-text").textContent = "You finished!";
