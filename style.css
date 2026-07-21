@@ -485,7 +485,8 @@ body::before {
    specificity (media-scoped rules don't get priority just for being
    conditional — source order still decides ties). */
 @media (min-width: 900px) {
-  .hub {
+  .hub,
+  .hub.sc-page {
     display: none;
   }
 
