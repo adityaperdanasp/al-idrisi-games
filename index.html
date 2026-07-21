@@ -22,12 +22,43 @@
 </head>
 <body>
 
-<main class="hub">
-  <a href="leaderboard.html" class="leaderboard-btn" title="Leaderboard">🏆</a>
-  <button id="switch-player-btn" class="switch-player-btn hidden">
-    👤 <span id="current-player-name"></span>
-  </button>
+<!-- Shared across both layouts (mobile + wide) — fixed to the viewport so
+     they stay put regardless of which layout below is showing. -->
+<a href="leaderboard.html" class="leaderboard-btn" title="Leaderboard">🏆</a>
+<button id="switch-player-btn" class="switch-player-btn hidden">
+  👤 <span id="current-player-name"></span>
+</button>
 
+<!-- Wide layout (laptop/desktop, >=900px) — full-bleed landscape art with
+     the game cards floating on top. Hidden below the breakpoint. -->
+<div class="wide-stage">
+  <div class="wide-cards">
+    <a class="game-bar" href="multipleazka/">
+      <img src="multipleazka/icon-512.png" alt="">
+      <span class="txt">
+        <span class="n">Math Race</span>
+        <span class="d">Pick who's playing, then race!</span>
+      </span>
+    </a>
+    <a class="game-bar" href="azkacraft/">
+      <img src="azkacraft/icons/icon-512.png" alt="">
+      <span class="txt">
+        <span class="n">Language &amp; Arts</span>
+        <span class="d">A Storybook Language &amp; Arts</span>
+      </span>
+    </a>
+    <a class="game-bar" href="azkauniverse/">
+      <img src="azkauniverse/icon-512.png" alt="">
+      <span class="txt">
+        <span class="n">SolarQuest</span>
+        <span class="d">AI Science Adventure</span>
+      </span>
+    </a>
+  </div>
+</div>
+
+<!-- Mobile/portrait layout (<900px) — unchanged. -->
+<main class="hub">
   <div class="hero-stage">
     <img class="hero-img" src="hero.png" alt="Al Idrisi Games">
     <div class="hero-fade"></div>

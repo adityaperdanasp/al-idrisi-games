@@ -27,13 +27,42 @@ body::before {
   pointer-events: none;
 }
 
+/* ---------- Wide layout (laptop/desktop, >=900px) ---------- */
+.wide-stage {
+  display: none;
+}
+
 @media (min-width: 900px) {
-  body::before {
-    background-image: url("hero-landscape.png");
-    background-position: center center;
-    filter: none;
-    transform: none;
+  .hub {
+    display: none;
+  }
+
+  .wide-stage {
+    display: block;
+    position: fixed;
     inset: 0;
+    background-color: #41b3e5;
+    background-image: url("hero-landscape.png");
+    background-size: auto 110%;
+    background-repeat: no-repeat;
+    background-position: left center;
+  }
+
+  .wide-cards {
+    position: absolute;
+    right: 6%;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 320px;
+  }
+
+  .wide-cards .game-bar {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(4px);
   }
 }
 
@@ -146,7 +175,7 @@ body::before {
 
 /* ---------- Leaderboard button ---------- */
 .leaderboard-btn {
-  position: absolute;
+  position: fixed;
   top: 14px;
   left: 14px;
   z-index: 20;
@@ -163,7 +192,7 @@ body::before {
 
 /* ---------- Switch-player button ---------- */
 .switch-player-btn {
-  position: absolute;
+  position: fixed;
   top: 14px;
   right: 14px;
   z-index: 20;
