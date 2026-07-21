@@ -116,6 +116,9 @@ button {
   animation: fadeIn 0.35s ease;
 }
 .screen.active { display: block; }
+/* Screens built on the phone-frame system own their own spacing via
+   .app-page — the generic .screen padding above would double it up. */
+.screen:has(.app-page) { padding: 0; min-height: 0; }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
@@ -168,39 +171,39 @@ button {
   margin-top: 10px;
 }
 
-/* ---------- Theme toggle ---------- */
-/* ---------- Gender pill (Boys/Girls) — floats above the phone frame ---------- */
+/* ---------- Gender pill (Boys/Girls) — small, top-right corner of the card ---------- */
 .gender-pill {
-  position: relative;
-  z-index: 2;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   background: #ffffffd0;
-  padding: 6px;
+  padding: 3px;
   border-radius: 999px;
   box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-  margin: 0 auto 20px;
   width: fit-content;
 }
 .gender-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   border: none;
   cursor: pointer;
-  padding: 9px 18px;
+  padding: 5px 10px;
   border-radius: 999px;
   font-family: var(--font);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 11px;
   background: transparent;
   color: #7a6f63;
   transition: all .2s;
 }
 .gender-btn.active[data-gender="boy"] { background: #2F6FED; color: #fff; }
 .gender-btn.active[data-gender="girl"] { background: #FF6F91; color: #fff; }
-.gender-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.gender-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 .dot-boy { background: #2F6FED; }
 .dot-girl { background: #FF6F91; }
 
@@ -424,8 +427,14 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
 .info-sub { font-size: 12px; font-weight: 700; color: #8a7d6d; }
 .info-text-sm { font-size: 14.5px; line-height: 1.3; }
 
-.palette-row { margin-top: 13px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.palette-row { display: flex; gap: 10px; justify-content: center; }
+.palette-row {
+  margin-top: 13px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
 .theme-swatch { border: 2px solid transparent; cursor: pointer; background: #fff; padding: 4px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 .theme-swatch.active { border-color: var(--brand); }
 .theme-swatch-bar { display: flex; width: 38px; height: 20px; border-radius: 8px; overflow: hidden; }
@@ -744,9 +753,19 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
   margin-bottom: 20px;
 }
 
-/* ---------- Responsive ---------- */
+/* ---------- Responsive ----------
+   The phone-frame card (rounded corners, drop shadow, fixed 390x844) is a
+   design-preview affectation — it makes sense floating on a desktop
+   browser, but looks like "a phone inside your phone" when opened on an
+   actual mobile device. Below this breakpoint, drop the frame entirely so
+   the app fills the real screen like a normal mobile web page. */
 @media (max-width: 480px) {
-  .game-title { font-size: 2.1rem; }
-  .panel-content { padding: 20px; margin-top: 40px; }
+  .app-page { padding: 0; min-height: 100dvh; }
+  .phone-frame { width: 100%; }
+  .phone-inner {
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
   .match-row { grid-template-columns: 1fr; text-align: center; }
 }
