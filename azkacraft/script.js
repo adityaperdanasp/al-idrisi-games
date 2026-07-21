@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   QUESTION_BANK = await fetch("questions.json").then(r => r.json());
   PROGRESS = loadProgress();
   renderMultiplayerChapterOptions();
+  updateHomeStats();
   syncProgressWithCloud();
 
   // If we arrived via a scanned QR join link (?join=CODE), jump to the join panel.
@@ -53,9 +54,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 /* ---------------------------- Theme (Boy/Girl + 3 palettes each) ---------------------------- */
 
+// Each palette's [primary, secondary, accent] — shown as a 3-segment swatch bar.
 const PALETTE_COLORS = {
-  boy: ["#2F6FED", "#2F9E44", "#5B5FEF"],     // Sky Explorer / Forest Ranger / Space Cadet
-  girl: ["#FF6F91", "#D6448C", "#9B6BFF"]     // Coral Bloom / Berry Sorbet / Lilac Dream
+  boy: [
+    ["#2F6FED", "#22B573", "#FFB35C"],   // Sky Explorer
+    ["#2F9E44", "#2F6FED", "#FFB35C"],   // Forest Ranger
+    ["#5B5FEF", "#22B573", "#FF7A59"]    // Space Cadet
+  ],
+  girl: [
+    ["#FF6F91", "#2BB3A3", "#B9A6FF"],   // Coral Bloom
+    ["#D6448C", "#5FC9A8", "#FFB4A2"],   // Berry Sorbet
+    ["#9B6BFF", "#FF8FAB", "#6EC6FF"]    // Lilac Dream
+  ]
 };
 
 let currentTheme = null;
@@ -82,9 +92,6 @@ function initTheme() {
   applyTheme();
   renderThemePanel();
 
-  document.getElementById("theme-toggle").addEventListener("click", () => {
-    document.getElementById("theme-panel").classList.toggle("hidden");
-  });
   document.getElementById("theme-gender-boy").addEventListener("click", () => setGender("boy"));
   document.getElementById("theme-gender-girl").addEventListener("click", () => setGender("girl"));
 }
@@ -115,12 +122,16 @@ function renderThemePanel() {
   document.getElementById("theme-gender-girl").classList.toggle("active", currentTheme.gender === "girl");
 
   const wrap = document.getElementById("theme-swatches");
+  if (!wrap) return;
   wrap.innerHTML = "";
-  PALETTE_COLORS[currentTheme.gender].forEach((color, i) => {
+  PALETTE_COLORS[currentTheme.gender].forEach((colors, i) => {
     const btn = document.createElement("button");
     btn.className = "theme-swatch" + (i === currentTheme.palette ? " active" : "");
-    btn.style.background = color;
+    btn.title = "Palette " + (i + 1);
     btn.setAttribute("aria-label", "Palette " + (i + 1));
+    btn.innerHTML = '<div class="theme-swatch-bar">' +
+      colors.map(c => `<span style="background:${c}"></span>`).join("") +
+      '</div>';
     btn.addEventListener("click", () => setPalette(i));
     wrap.appendChild(btn);
   });
@@ -212,30 +223,67 @@ async function syncProgressWithCloud() {
 
 /* ---------------------------- Quest Map / Bookshelf ---------------------------- */
 
+// Same subject → icon/color mapping as the storybook design mockup.
+const TOPIC_STYLE = {
+  "Spelling":            { icon: "✏️", color: "#FF9F40", colorDark: "#E08428" },
+  "Vocabulary":          { icon: "🔤", color: "#FF6F91", colorDark: "#E8547A" },
+  "Grammar":             { icon: "📐", color: "#2F6FED", colorDark: "#1E56C4" },
+  "Reading Comprehension": { icon: "🌊", color: "#22B573", colorDark: "#158A54" },
+  "Creative Writing":    { icon: "🎨", color: "#9B59FF", colorDark: "#7E3EDB" }
+};
+const CHAPTER_DECO = ["⭐", "✨", "🍃", "🌟", "🎈", "📎", "💫"];
+
 function renderBookshelf() {
   document.getElementById("xp-total").textContent = PROGRESS.xpTotal;
   const shelf = document.getElementById("bookshelf");
   shelf.innerHTML = "";
 
-  QUESTION_BANK.chapters.forEach(chapter => {
+  QUESTION_BANK.chapters.forEach((chapter, i) => {
     const unlocked = chapter.id <= PROGRESS.unlockedChapter;
     const chStats = PROGRESS.chapters[chapter.id] || { stars: 0 };
+    const style = TOPIC_STYLE[chapter.topic] || TOPIC_STYLE.Grammar;
+    const justify = i % 2 === 0 ? "flex-start" : "flex-end";
+    const iconSide = i % 2 === 0 ? "right" : "left";
+    const iconRotate = (i % 3) * 12 - 12;
+    const deco = CHAPTER_DECO[i % CHAPTER_DECO.length];
+    const borderColor = unlocked ? style.color : "#F1E6D2";
+    const starsDisplay = "★".repeat(chStats.stars) + "☆".repeat(3 - chStats.stars);
 
-    const card = document.createElement("div");
-    card.className = "chapter-book " + (unlocked ? "unlocked" : "locked");
-    card.innerHTML = `
-      <div class="book-icon">${unlocked ? "📖" : "📕"}</div>
-      <div class="book-title">Ch. ${chapter.id}: ${chapter.title}</div>
-      <div class="book-topic">${chapter.topic}</div>
-      <div class="book-stars">${"⭐".repeat(chStats.stars)}${"☆".repeat(3 - chStats.stars)}</div>
+    const node = document.createElement("div");
+    node.className = "timeline-node";
+    node.style.justifyContent = justify;
+    node.innerHTML = `
+      <div class="timeline-deco" style="${iconSide}:2px;transform:translateY(-50%) rotate(${iconRotate}deg)">${deco}</div>
+      <button class="timeline-card ${unlocked ? "" : "locked"}" style="border-color:${borderColor}">
+        <div class="timeline-icon" style="background:${style.color};box-shadow:0 3px 0 ${style.colorDark}">${unlocked ? style.icon : "🔒"}</div>
+        <div class="timeline-text">
+          <div class="timeline-title">Ch. ${chapter.id}: ${chapter.title}</div>
+          <div class="timeline-meta">
+            <span class="timeline-subject" style="color:${style.color};background:${style.color}22">${chapter.topic}</span>
+            <span class="timeline-stars">${starsDisplay}</span>
+          </div>
+        </div>
+      </button>
     `;
     if (unlocked) {
-      card.addEventListener("click", () => startChapter(chapter.id));
+      node.querySelector(".timeline-card").addEventListener("click", () => startChapter(chapter.id));
     }
-    shelf.appendChild(card);
+    shelf.appendChild(node);
   });
 
   renderMultiplayerChapterOptions();
+  updateHomeStats();
+}
+
+// Fills in the stat strip on the home screen (streak/badges/chapter progress)
+// using real PROGRESS data instead of the mockup's placeholder numbers.
+function updateHomeStats() {
+  const badgesEl = document.getElementById("stat-badges");
+  const chapterEl = document.getElementById("stat-chapter");
+  if (!badgesEl || !chapterEl || !PROGRESS) return;
+  const earned = Object.values(PROGRESS.chapters || {}).filter(c => c.completed).length;
+  badgesEl.textContent = `${earned} Badge${earned === 1 ? "" : "s"}`;
+  chapterEl.textContent = `Ch. ${PROGRESS.unlockedChapter} Awaits`;
 }
 
 function renderMultiplayerChapterOptions() {

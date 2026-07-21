@@ -29,44 +29,107 @@
 
 <!-- ============ LANDING SCREEN ============ -->
 <section id="screen-landing" class="screen active">
-  <button id="theme-toggle" class="theme-toggle" aria-label="Choose colors">🎨</button>
+  <div class="app-page">
+    <div class="bg-cloud cloud-1"><span></span><span></span><span></span></div>
+    <div class="bg-cloud cloud-2"><span></span><span></span><span></span></div>
+    <div class="bg-cloud cloud-3"><span></span><span></span><span></span></div>
 
-  <!-- Boy/Girl + palette picker — opened by the 🎨 button above -->
-  <div id="theme-panel" class="theme-panel hidden">
-    <div class="theme-panel-gender">
-      <button id="theme-gender-boy" data-gender="boy">👦 Boy</button>
-      <button id="theme-gender-girl" data-gender="girl">👧 Girl</button>
+    <div class="gender-pill">
+      <button id="theme-gender-boy" class="gender-btn" data-gender="boy"><span class="gender-dot dot-boy"></span>Boys</button>
+      <button id="theme-gender-girl" class="gender-btn" data-gender="girl"><span class="gender-dot dot-girl"></span>Girls</button>
     </div>
-    <div id="theme-swatches" class="theme-panel-swatches"><!-- swatch buttons injected by JS --></div>
-  </div>
 
-  <div class="landing-content">
-    <div class="mascot-wave" aria-hidden="true">
-      <svg viewBox="0 0 512 512" class="mascot-svg"><use href="#mascot-symbol"></use></svg>
-    </div>
-    <h1 class="game-title">Language &amp; Arts</h1>
-    <p class="game-subtitle">A Storybook Language &amp; Arts</p>
+    <div class="phone-frame">
+      <div class="phone-inner">
+        <div class="home-content">
+          <div class="doodle doodle-primary" style="top:88.6%;left:8.7%;font-size:24px;transform:rotate(-12deg)">A</div>
+          <div class="doodle doodle-secondary" style="top:90.7%;left:82%;font-size:22px;transform:rotate(14deg)">b</div>
+          <div class="doodle doodle-accent" style="top:94.8%;left:21.5%;font-size:20px;transform:rotate(10deg)">✎</div>
+          <div class="doodle doodle-secondary" style="top:93.1%;left:59%;font-size:22px;transform:rotate(-8deg)">C</div>
+          <div class="doodle doodle-primary" style="top:96.2%;left:40.5%;font-size:20px;transform:rotate(16deg)">♪</div>
 
-    <div class="mode-buttons">
-      <button id="btn-solo" class="btn btn-primary btn-big">
-        <span class="btn-icon">📖</span>
-        <span>Solo Adventure</span>
-        <small>Play on your own — no waiting!</small>
-      </button>
-      <button id="btn-multiplayer" class="btn btn-secondary btn-big">
-        <span class="btn-icon">🤝</span>
-        <span>Multiplayer Quest</span>
-        <small>Race a friend on another device</small>
-      </button>
+          <div class="hero-scene">
+            <div class="hero-sun"></div>
+            <div class="hero-star" style="top:20px;left:120px;width:4px;height:4px;animation-duration:2.2s"></div>
+            <div class="hero-star" style="top:60px;left:180px;width:3px;height:3px;animation-duration:2.8s"></div>
+            <div class="hero-star" style="top:34px;left:240px;width:5px;height:5px;animation-duration:2.4s"></div>
+            <div class="hero-star" style="top:90px;left:300px;width:3px;height:3px;animation-duration:3s"></div>
+            <div class="hero-star" style="top:18px;left:330px;width:4px;height:4px;animation-duration:2.6s"></div>
+            <div class="hero-star" style="top:70px;left:60px;width:3px;height:3px;animation-duration:3.2s"></div>
+            <div class="hero-hill hero-hill-1"></div>
+            <div class="hero-hill hero-hill-2"></div>
+            <div class="hero-mascot">
+              <div class="mascot-hair"></div>
+              <div class="mascot-hair-side mascot-hair-l"></div>
+              <div class="mascot-hair-side mascot-hair-r"></div>
+              <div class="mascot-face"></div>
+              <div class="mascot-eye mascot-eye-l"></div>
+              <div class="mascot-eye mascot-eye-r"></div>
+              <div class="mascot-mouth"></div>
+              <div class="mascot-shirt-girl"></div>
+              <div class="mascot-shirt-boy"></div>
+            </div>
+            <div class="hero-bubble">Let's play!</div>
+          </div>
+
+          <div class="home-body">
+            <div class="title-ribbon">
+              <h1 class="ribbon-text">Language &amp; Arts</h1>
+            </div>
+            <p class="ribbon-subtitle">A Storybook Adventure in Words &amp; Wonder</p>
+
+            <div class="mode-grid">
+              <button id="btn-solo" class="mode-card mode-solo">
+                <div class="mode-icon">📖</div>
+                <div class="mode-title">Solo Adventure</div>
+                <div class="mode-sub">Play on your own</div>
+              </button>
+              <button id="btn-multiplayer" class="mode-card mode-mp">
+                <div class="mode-icon">🤝</div>
+                <div class="mode-title">Multiplayer</div>
+                <div class="mode-sub">Race a friend</div>
+              </button>
+            </div>
+
+            <div class="stat-strip">
+              <div class="stat-item"><div class="stat-emoji">🔥</div><div class="stat-label" id="stat-streak">Keep going!</div></div>
+              <div class="stat-divider"></div>
+              <div class="stat-item"><div class="stat-emoji">🏅</div><div class="stat-label" id="stat-badges">0 Badges</div></div>
+              <div class="stat-divider"></div>
+              <div class="stat-item"><div class="stat-emoji">📖</div><div class="stat-label" id="stat-chapter">Ch. 1 Awaits</div></div>
+            </div>
+
+            <div class="info-card">
+              <div class="info-icon">💡</div>
+              <div class="info-body">
+                <div class="info-label">Word of the Day</div>
+                <div class="info-text">Whimsical <span class="info-sub">— playfully odd</span></div>
+              </div>
+            </div>
+            <div class="info-card">
+              <div class="info-icon info-icon-alt">🌊</div>
+              <div class="info-body">
+                <div class="info-label">Fun Fact</div>
+                <div class="info-text info-text-sm">The ocean covers over 70% of our whole planet!</div>
+              </div>
+            </div>
+
+            <div class="palette-row" id="theme-swatches"><!-- swatch buttons injected by JS --></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ============ MULTIPLAYER SETUP SCREEN ============ -->
 <section id="screen-multiplayer-setup" class="screen">
-  <button class="btn-back" data-back="screen-landing">← Back</button>
+ <div class="app-page">
+  <div class="phone-frame">
+  <div class="phone-inner">
   <div class="panel-content">
-    <h2>Multiplayer Quest</h2>
+  <button class="btn-back pill-btn" data-back="screen-landing">← Back</button>
+    <h2 class="panel-title">Multiplayer Quest</h2>
     <div class="mp-choice">
       <button id="btn-mp-host" class="btn btn-primary">Host a Game</button>
       <button id="btn-mp-join" class="btn btn-secondary">Join a Game</button>
@@ -96,34 +159,57 @@
       <p id="mp-join-error" class="mp-error hidden"></p>
     </div>
   </div>
+  </div>
+  </div>
+ </div>
 </section>
 
 <!-- ============ QUEST MAP (STORYBOOK) SCREEN ============ -->
 <section id="screen-map" class="screen">
-  <header class="map-header">
-    <button class="btn-back" data-back="screen-landing">← Menu</button>
-    <div class="xp-bar-wrap">
-      <span class="xp-label">⭐ XP: <span id="xp-total">0</span></span>
+  <div class="app-page">
+    <div class="phone-frame">
+      <div class="phone-inner">
+        <div class="chapters-content">
+          <div class="chapters-header">
+            <button class="btn-back pill-btn" data-back="screen-landing">← Menu</button>
+            <div class="xp-chip">⭐ <span id="xp-total">0</span> XP</div>
+            <button id="btn-stickers" class="pill-btn pill-btn-accent">🎒 Stickers</button>
+          </div>
+          <div class="chapters-title-row">
+            <span class="title-deco" style="transform:rotate(-8deg)">📚</span>
+            <h2 class="chapters-title">Your Storybook Trail</h2>
+            <span class="title-deco" style="transform:rotate(8deg)">✏️</span>
+          </div>
+          <div id="bookshelf" class="timeline"></div>
+        </div>
+      </div>
     </div>
-    <button id="btn-stickers" class="btn-stickers">📚 Stickers</button>
-  </header>
-  <h2 class="map-title">Choose Your Chapter</h2>
-  <div id="bookshelf" class="bookshelf"></div>
+  </div>
 </section>
 
 <!-- ============ STICKER BOOK SCREEN ============ -->
 <section id="screen-stickers" class="screen">
-  <button class="btn-back" data-back="screen-map">← Map</button>
+ <div class="app-page">
+  <div class="phone-frame">
+  <div class="phone-inner">
   <div class="panel-content">
-    <h2 id="sticker-book-title">Azka's Sticker Book</h2>
+  <button class="btn-back pill-btn" data-back="screen-map">← Map</button>
+    <h2 id="sticker-book-title" class="panel-title">Azka's Sticker Book</h2>
     <div id="sticker-grid" class="sticker-grid"></div>
   </div>
+  </div>
+  </div>
+ </div>
 </section>
 
 <!-- ============ GAME SCREEN ============ -->
 <section id="screen-game" class="screen">
+ <div class="app-page">
+  <div class="phone-frame">
+  <div class="phone-inner">
+  <div class="panel-content game-panel">
   <header class="game-header">
-    <button class="btn-back" data-back="screen-map">← Exit</button>
+    <button class="btn-back pill-btn" data-back="screen-map">← Exit</button>
     <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
     <div class="score-chip">⭐ <span id="game-score">0</span></div>
   </header>
@@ -132,6 +218,10 @@
   <div class="story-snippet hidden" id="story-snippet"></div>
 
   <div id="question-area" class="question-area"></div>
+  </div>
+  </div>
+  </div>
+ </div>
 </section>
 
 <!-- ============ BRAIN REST SCREEN ============ -->
