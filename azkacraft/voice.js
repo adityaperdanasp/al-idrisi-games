@@ -5,12 +5,13 @@
 // the browser's SpeechSynthesis API only if a clip fails to load or play
 // (e.g. missing file, autoplay blocked).
 
-const PRAISE_CLIP_COUNT = 20;
-const ENCOURAGE_CLIP_COUNT = 20;
+const PRAISE_CLIP_COUNT = 25;
+const ENCOURAGE_CLIP_COUNT = 15;
 
 // Picked on the hub's "Siapa yang main?" screen and shared via localStorage
 // (same origin); falls back to "Azka" if no one picked a name.
 const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().name) || "Azka";
+const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().id) || "azka";
 
 // Used only for the browser-voice fallback text — the real audio is the
 // pre-recorded MP3 clips above (generic, not name-specific).
@@ -56,12 +57,23 @@ function speakWithBrowser(text) {
   window.speechSynthesis.speak(utter);
 }
 
+// Plays the name clip first (audio/names/{id}.mp3), then chains into the
+// generic praise/encourage line — e.g. "Arsya! ...That's exactly right!".
+// If the name clip is missing/fails, skips straight to the line so playback
+// still works, just without the name.
 function playClip(url, fallbackText) {
-  const audio = new Audio(url);
-  audio.play().catch(err => {
-    console.warn("Pre-recorded clip failed, falling back to browser voice:", err);
-    speakWithBrowser(fallbackText);
-  });
+  const line = new Audio(url);
+  const playLine = () => {
+    line.play().catch(err => {
+      console.warn("Pre-recorded clip failed, falling back to browser voice:", err);
+      speakWithBrowser(fallbackText);
+    });
+  };
+
+  const nameClip = new Audio(`audio/names/${CHILD_ID}.mp3`);
+  nameClip.addEventListener("ended", playLine);
+  nameClip.addEventListener("error", playLine);
+  nameClip.play().catch(playLine);
 }
 
 function speakPraise() {

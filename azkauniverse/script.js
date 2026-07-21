@@ -25,9 +25,11 @@
    1. CONSTANTS & CHEER PHRASE POOLS
    ================================================================= */
 const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().name) || "Azka";
+const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().id) || "azka";
 
-// Index here MUST line up with audio/correct-01.mp3.. correct-20.mp3 --
-// each phrase's array position (1-based) is its recorded filename number.
+// Only used as SpeechSynthesis fallback text if a clip fails to load/play.
+// The real audio is generic (no name) in audio/praise/ + audio/encourage/,
+// with the name spoken via a separate clip in audio/names/{id}.mp3.
 const PRAISE_CORRECT = [
   `Awesome, ${CHILD_NAME}! You got it!`,
   `Brilliant work, ${CHILD_NAME}!`,
@@ -51,7 +53,6 @@ const PRAISE_CORRECT = [
   `${CHILD_NAME}, you're becoming a real explorer!`
 ];
 
-// Index here MUST line up with audio/wrong-01.mp3.. wrong-20.mp3.
 const PRAISE_WRONG = [
   `Almost there, ${CHILD_NAME}! Try again!`,
   `Good try, ${CHILD_NAME}! You'll get the next one!`,
@@ -247,22 +248,31 @@ function speak(text) {
   speechSynthesis.speak(utter);
 }
 
-// Plays the pre-recorded ElevenLabs cheer matching this phrase's position
-// in PRAISE_CORRECT/PRAISE_WRONG (audio/correct-01.mp3.. / wrong-01.mp3..).
-// Falls back to the browser's SpeechSynthesis voice if the file is missing
+// Plays the name clip first (audio/names/{id}.mp3), then chains into a
+// random generic praise/encourage line — e.g. "Arsya! ...that's right!".
+// Falls back to the browser's SpeechSynthesis voice if a clip is missing
 // or playback is blocked, so a cheer always plays either way.
-function speakCheer(isCorrect, index, phrase) {
-  const prefix = isCorrect ? "correct" : "wrong";
-  const num = String(index + 1).padStart(2, "0");
-  const audio = new Audio(`audio/${prefix}-${num}.mp3`);
+const CHEER_AUDIO_COUNT = { praise: 25, encourage: 15 };
+
+function speakCheer(isCorrect, phrase) {
+  const kind = isCorrect ? "praise" : "encourage";
+  const num = String(Math.floor(Math.random() * CHEER_AUDIO_COUNT[kind]) + 1).padStart(2, "0");
+  const line = new Audio(`audio/${kind}/${kind}-${num}.mp3`);
   let fellBack = false;
   const fallback = () => {
     if (fellBack) return;
     fellBack = true;
     speak(phrase);
   };
-  audio.addEventListener("error", fallback);
-  audio.play().catch(fallback);
+  const playLine = () => {
+    line.addEventListener("error", fallback);
+    line.play().catch(fallback);
+  };
+
+  const nameClip = new Audio(`audio/names/${CHILD_ID}.mp3`);
+  nameClip.addEventListener("ended", playLine);
+  nameClip.addEventListener("error", playLine);
+  nameClip.play().catch(playLine);
 }
 
 /* =================================================================
@@ -273,7 +283,7 @@ function showFeedback(isCorrect, delayMs) {
   const pool = isCorrect ? PRAISE_CORRECT : PRAISE_WRONG;
   const phraseIndex = Math.floor(Math.random() * pool.length);
   const phrase = pool[phraseIndex];
-  speakCheer(isCorrect, phraseIndex, phrase);
+  speakCheer(isCorrect, phrase);
 
   const popup = $("feedback-popup");
   popup.className = "feedback-popup " + (isCorrect ? "correct" : "wrong");
