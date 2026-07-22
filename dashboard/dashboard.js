@@ -264,15 +264,30 @@
     pendingEl.querySelectorAll("[data-approve]").forEach(btn => {
       btn.addEventListener("click", () => approveInsight(btn.dataset.approve, btn.closest(".db-insight-card").querySelector("textarea").value));
     });
+    approvedEl.querySelectorAll("[data-send]").forEach(btn => {
+      btn.addEventListener("click", () => sendInsightEmail(btn.dataset.send));
+    });
   }
 
   function insightCardHtml(studentId, insight, kind) {
     const player = (window.AIG_PLAYERS || []).find(p => p.id === studentId);
     const name = player ? player.name : studentId;
     const generated = insight.generatedAt ? new Date(insight.generatedAt).toLocaleString("id-ID") : "-";
-    const actions = kind === "pending"
-      ? `<div class="db-insight-actions"><button class="db-btn-small" data-approve="${studentId}">Approve</button></div>`
-      : `<div class="db-insight-meta">Disetujui: ${insight.approvedAt ? new Date(insight.approvedAt).toLocaleString("id-ID") : "-"}</div>`;
+
+    let actions;
+    if (kind === "pending") {
+      actions = `<div class="db-insight-actions"><button class="db-btn-small" data-approve="${studentId}">Approve</button></div>`;
+    } else if (insight.sentAt) {
+      actions = `<div class="db-insight-meta">Disetujui: ${insight.approvedAt ? new Date(insight.approvedAt).toLocaleString("id-ID") : "-"}</div>
+        <div class="db-insight-meta">Terkirim ke ${escapeHtml(insight.sentTo || "-")}: ${new Date(insight.sentAt).toLocaleString("id-ID")}</div>`;
+    } else if (player && player.parentEmail) {
+      actions = `<div class="db-insight-meta">Disetujui: ${insight.approvedAt ? new Date(insight.approvedAt).toLocaleString("id-ID") : "-"}</div>
+        <div class="db-insight-actions"><button class="db-btn-small" data-send="${studentId}">Kirim Email ke Ortu (${escapeHtml(player.parentEmail)})</button></div>`;
+    } else {
+      actions = `<div class="db-insight-meta">Disetujui: ${insight.approvedAt ? new Date(insight.approvedAt).toLocaleString("id-ID") : "-"}</div>
+        <div class="db-empty-note">Email ortu belum diisi di players.js — belum bisa dikirim otomatis.</div>`;
+    }
+
     return `<div class="db-insight-card">
       <h4>${escapeHtml(name)}</h4>
       <textarea ${kind === "approved" ? "readonly" : ""}>${escapeHtml(insight.draft || "")}</textarea>
@@ -289,5 +304,33 @@
     }).then(loadAndRender).catch(err => {
       alert("Gagal menyimpan approval: " + err.message);
     });
+  }
+
+  function sendInsightEmail(studentId) {
+    const player = (window.AIG_PLAYERS || []).find(p => p.id === studentId);
+    const insight = cache.insights[studentId];
+    if (!player || !player.parentEmail || !insight) return;
+
+    const btn = document.querySelector(`[data-send="${studentId}"]`);
+    if (btn) { btn.disabled = true; btn.textContent = "Mengirim..."; }
+
+    fetch("/api/send-insight", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to: player.parentEmail, studentName: player.name, draft: insight.draft })
+    })
+      .then(r => r.json().then(data => ({ ok: r.ok, data })))
+      .then(({ ok, data }) => {
+        if (!ok) throw new Error(data.error || "Gagal mengirim email");
+        return AIGLeaderboard.db.ref(`insights/${studentId}`).update({
+          sentAt: firebase.database.ServerValue.TIMESTAMP,
+          sentTo: player.parentEmail
+        });
+      })
+      .then(loadAndRender)
+      .catch(err => {
+        alert("Gagal mengirim email: " + err.message);
+        if (btn) { btn.disabled = false; btn.textContent = `Kirim Email ke Ortu (${player.parentEmail})`; }
+      });
   }
 })();
