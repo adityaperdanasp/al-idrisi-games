@@ -262,6 +262,58 @@ h1, h2 { margin: 0 0 8px; }
   cursor: pointer;
 }
 
+/* ---------- Sticker book ---------- */
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+.sticker-cell {
+  border-radius: 16px;
+  padding: 16px 10px;
+  text-align: center;
+}
+.sticker-cell.earned {
+  background: var(--brand-light);
+  box-shadow: 0 4px 0 rgba(18,102,216,.12);
+}
+.sticker-cell.locked {
+  background: #f2f4f7;
+  opacity: 0.75;
+}
+.sticker-icon { font-size: 2.2rem; margin-bottom: 6px; }
+.sticker-name { font-size: 0.85rem; font-weight: 800; color: var(--text); }
+.sticker-desc { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+.sticker-loading { grid-column: 1 / -1; color: var(--muted); padding: 20px 0; }
+
+/* ---------- Badge unlock toast ---------- */
+.badge-toast {
+  position: fixed;
+  left: 50%;
+  top: 24px;
+  transform: translate(-50%, -20px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px 18px;
+  box-shadow: 0 10px 26px rgba(9,22,45,.22);
+  opacity: 0;
+  transition: opacity .3s ease, transform .3s ease;
+  pointer-events: none;
+}
+.badge-toast.hidden { display: none; }
+.badge-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.badge-toast-icon { font-size: 2rem; }
+.badge-toast-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.badge-toast-name { font-size: 1.05rem; font-weight: 800; color: var(--brand); }
+
 .back-btn {
   position: absolute;
   top: 16px; left: 16px;

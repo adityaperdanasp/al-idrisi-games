@@ -146,6 +146,7 @@ function resetRaceState() {
   state.correct = 0;
   state.progress = 0;
   state.wrongAttempts = 0;
+  state.raceWrongTotal = 0;    // whole-race wrong count, for the Perfect Run badge
   state.streak = 0;
   state.gameOver = false;
   lastQuestionKey = null;
@@ -1090,6 +1091,7 @@ function handleAnswer(value) {
 
   // --- Wrong (or timed out) ---------------------------------------------
   state.wrongAttempts += 1;
+  state.raceWrongTotal += 1;
   state.streak = 0;
   updateStreakBadge();
   giveFeedback(false);
@@ -1391,10 +1393,23 @@ function endGame(finishers) {
   state.gameOver = true;
   clearQuestionTimer();
   $("finish-overlay").classList.add("hidden");   // was showing while waiting
-  if (window.AIGLeaderboard) AIGLeaderboard.recordPlay("mathrace");
 
   const [winnerSeatKey, winnerPlayer] = finishers[0];
   const iWon = winnerSeatKey === state.seatKey;
+  const mine = finishers.find(([seatKey]) => seatKey === state.seatKey);
+  const myFinishTimeSec = mine ? mine[1].finishTimeSec : null;
+
+  if (window.AIGLeaderboard) {
+    AIGLeaderboard.recordPlay("mathrace").then(timesPlayed => {
+      if (timesPlayed == null || !window.AIGBadges) return;
+      AIGBadges.checkAndAward({
+        timesPlayed,
+        perfectRun: state.raceWrongTotal === 0,
+        finishTimeSec: myFinishTimeSec,
+        isWin: iWon
+      }).then(({ newlyEarned }) => showBadgeToast(newlyEarned));
+    });
+  }
   $("over-emoji").textContent = iWon ? "🏆" : "🎉";
   $("winner-text").textContent = `${(winnerPlayer && winnerPlayer.name) || "Someone"} wins!`;
 
@@ -1424,12 +1439,23 @@ function endGame(finishers) {
 function endSoloRace() {
   state.gameOver = true;
   clearQuestionTimer();
-  if (window.AIGLeaderboard) AIGLeaderboard.recordPlay("mathrace");
 
   $("over-emoji").textContent = "🏁";
   $("winner-text").textContent = "You finished!";
 
   const elapsed = raceStartTime ? Math.round((Date.now() - raceStartTime) / 1000) : 0;
+
+  if (window.AIGLeaderboard) {
+    AIGLeaderboard.recordPlay("mathrace").then(timesPlayed => {
+      if (timesPlayed == null || !window.AIGBadges) return;
+      AIGBadges.checkAndAward({
+        timesPlayed,
+        perfectRun: state.raceWrongTotal === 0,
+        finishTimeSec: elapsed,
+        isWin: false   // solo races don't count toward the Champion badge
+      }).then(({ newlyEarned }) => showBadgeToast(newlyEarned));
+    });
+  }
 
   if (state.role === "kids") {
     const msg = `You did it, ${CHILD_NAME}! You finished the race! Amazing!`;
@@ -1455,6 +1481,34 @@ function celebrateWin() {
   // burstConfetti() runs for 3s (see its own duration constant) — bring
   // the BGM back in once the confetti has finished falling.
   if (window.AIGBgm) setTimeout(() => AIGBgm.start(), 3000);
+}
+
+/* =================================================================
+   10b. BADGE TOAST — pops up on screen-over when a new sticker unlocks
+   ================================================================= */
+let badgeToastQueue = [];
+function showBadgeToast(newlyEarned) {
+  if (!newlyEarned || !newlyEarned.length) return;
+  badgeToastQueue = badgeToastQueue.concat(newlyEarned);
+  if (badgeToastQueue.length === newlyEarned.length) showNextBadgeToast();
+}
+
+function showNextBadgeToast() {
+  const badge = badgeToastQueue[0];
+  if (!badge) return;
+  const toast = $("badge-toast");
+  $("badge-toast-icon").textContent = badge.icon;
+  $("badge-toast-name").textContent = badge.name;
+  toast.classList.remove("hidden");
+  toast.classList.add("show");
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => {
+      toast.classList.add("hidden");
+      badgeToastQueue.shift();
+      showNextBadgeToast();   // in case more than one badge unlocked at once
+    }, 300);
+  }, 2600);
 }
 
 // Applause + an excited "Yeah!" shout — as loud as the old voiceover was,
@@ -1638,6 +1692,29 @@ $("btn-play-again").addEventListener("click", async () => {
   clearQuestionTimer();
   startRace();
 });
+
+/* =================================================================
+   10c. STICKER BOOK — grid of all badges, earned or locked
+   ================================================================= */
+async function openStickerBook() {
+  showScreen("screen-stickers");
+  const grid = $("sticker-grid");
+  grid.innerHTML = `<div class="sticker-loading">Loading…</div>`;
+  const earned = window.AIGBadges ? await AIGBadges.getEarned() : {};
+  const badges = window.AIGBadges ? AIGBadges.BADGES : [];
+
+  grid.innerHTML = badges.map(b => {
+    const got = earned[b.id];
+    return `<div class="sticker-cell ${got ? "earned" : "locked"}">
+      <div class="sticker-icon">${got ? b.icon : "🔒"}</div>
+      <div class="sticker-name">${got ? b.name : "???"}</div>
+      <div class="sticker-desc">${got ? b.desc : "Keep racing to unlock!"}</div>
+    </div>`;
+  }).join("");
+}
+
+$("btn-view-stickers").addEventListener("click", openStickerBook);
+$("btn-view-stickers-role").addEventListener("click", openStickerBook);
 
 
 /* =================================================================

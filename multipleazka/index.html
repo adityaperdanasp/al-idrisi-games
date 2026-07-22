@@ -59,6 +59,8 @@
         <span class="role-doodle">Start</span>
         <span class="role-doodle">Finish</span>
       </div>
+
+      <button id="btn-view-stickers-role" class="ghost-btn">🎒 My Stickers</button>
     </div>
   </section>
 
@@ -265,9 +267,31 @@
       <div id="scoreboard" class="scoreboard"></div>
 
       <button id="btn-play-again" class="primary-btn">Play Again</button>
+      <button id="btn-view-stickers" class="ghost-btn">🎒 My Stickers</button>
     </div>
   </section>
 
+  <!-- ============================================================= -->
+  <!-- STICKER BOOK — badges earned, persisted at players/{id}/badges/mathrace -->
+  <!-- ============================================================= -->
+  <section id="screen-stickers" class="screen">
+    <div class="card">
+      <button class="back-btn" data-back="screen-role">← Back</button>
+      <h1 class="logo" style="font-size:1.6rem;">Sticker Book</h1>
+      <p class="subtitle">Earn stickers by racing!</p>
+      <div class="sticker-grid" id="sticker-grid"></div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Pops up briefly over whatever screen is showing when a new sticker unlocks -->
+<div id="badge-toast" class="badge-toast hidden">
+  <span id="badge-toast-icon" class="badge-toast-icon">🏁</span>
+  <div>
+    <div class="badge-toast-label">New Sticker!</div>
+    <div id="badge-toast-name" class="badge-toast-name">First Race</div>
+  </div>
 </div>
 
 <!-- ============================================================= -->
@@ -300,6 +324,7 @@
 
 <!-- Background music -->
 <script src="bgm.js"></script>
+<script src="badges.js"></script>
 
 <!-- Game logic -->
 <script src="script.js"></script>

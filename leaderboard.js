@@ -24,13 +24,17 @@
 
   // Record one "play" for the currently-picked player in the given game.
   // gameId: "mathrace" | "language-arts" | "solarquest"
-  // Silently does nothing if no one has picked a name yet.
+  // Silently does nothing if no one has picked a name yet. Returns a
+  // promise resolving to the new timesPlayed total (or null), so callers
+  // that care about play-count milestones (e.g. badge unlocks) don't need
+  // a separate read.
   function recordPlay(gameId) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
-    if (!player) return;
+    if (!player) return Promise.resolve(null);
     const ref = aigDb.ref(`leaderboard/${gameId}/${player.id}`);
-    ref.child("timesPlayed").transaction(cur => (cur || 0) + 1);
     ref.update({ name: player.name, lastPlayed: firebase.database.ServerValue.TIMESTAMP });
+    return ref.child("timesPlayed").transaction(cur => (cur || 0) + 1)
+      .then(result => result.committed ? result.snapshot.val() : null);
   }
 
   // Read the full leaderboard for one game, callback gets a plain object
