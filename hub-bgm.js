@@ -39,16 +39,36 @@
     gain.gain.linearRampToValueAtTime(VOLUME, now + FADE_MS / 1000);
   }
 
+  // iOS Safari sometimes leaves the AudioContext stuck in "suspended" even
+  // after resume() is called from directly inside a gesture handler — the
+  // promise it returns can silently never settle. Playing one frame of
+  // silence through it (the classic "kick" trick) forces Safari to
+  // actually start the underlying audio hardware clock.
+  function kickAudioContext() {
+    if (!ctx) return;
+    ctx.resume();
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  }
+
   function unlockOnce() {
+    ensureAudioGraph();
+    kickAudioContext();
+
     if (unlocked) return;
     unlocked = true;
-    ensureAudioGraph();
-    if (ctx && ctx.state === "suspended") ctx.resume();
     track.play().then(fadeIn).catch(err => console.warn("[hub-bgm] playback blocked:", err));
   }
 
+  // NOT one-time-only, because ctx.resume() can fail silently on iOS
+  // Safari; every subsequent tap gets a chance to retry kicking the
+  // AudioContext back into "running" (unlockOnce() itself still only
+  // starts playback once, via the `unlocked` flag).
   ["pointerdown", "touchend", "click", "keydown"].forEach(evt =>
-    document.addEventListener(evt, unlockOnce, { once: true, passive: true })
+    document.addEventListener(evt, unlockOnce, { passive: true })
   );
 
   // Clicking straight into a game card navigates away before the jingle

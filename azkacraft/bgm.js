@@ -95,12 +95,27 @@ function duck(ms) {
   }, (ms || 2500) + 20);
 }
 
+// iOS Safari sometimes leaves the AudioContext stuck in "suspended" even
+// after resume() is called from directly inside a gesture handler — the
+// promise it returns can silently never settle. Playing one frame of
+// silence through it (the classic "kick" trick) forces Safari to actually
+// start the underlying audio hardware clock.
+function kickAudioContext() {
+  if (!ctx) return;
+  ctx.resume();
+  const buffer = ctx.createBuffer(1, 1, 22050);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(ctx.destination);
+  source.start(0);
+}
+
 function unlockOnce() {
+  ensureAudioGraph();
+  kickAudioContext();
+
   if (unlocked) return;
   unlocked = true;
-
-  ensureAudioGraph();
-  if (ctx && ctx.state === "suspended") ctx.resume();
 
   // iOS Safari's autoplay allowance is per <audio> element, not per page —
   // starting a SECOND track later (e.g. switching to "game" when entering
@@ -122,11 +137,12 @@ function unlockOnce() {
   });
 }
 
-// Several event types, all one-shot — iOS Safari is picky about which
-// gesture it treats as "real" for unlocking audio, so listen broadly
-// rather than betting on just one.
+// Several event types — NOT one-time-only, because ctx.resume() can fail
+// silently on iOS Safari; every subsequent tap gets a chance to retry
+// kicking the AudioContext back into "running" (unlockOnce() itself still
+// only runs its one-time priming logic once, via the `unlocked` flag).
 ["pointerdown", "touchend", "click", "keydown"].forEach(evt =>
-  document.addEventListener(evt, unlockOnce, { once: true, passive: true })
+  document.addEventListener(evt, unlockOnce, { passive: true })
 );
 
 window.AIGBgm = { play, duck };
