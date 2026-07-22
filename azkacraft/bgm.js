@@ -14,7 +14,7 @@
 // Browsers also block audio autoplay until the user interacts with the
 // page, so playback only actually starts after the first tap/click.
 
-const BGM_VOLUME = 0.20;      // normal background level (relative to the
+const BGM_VOLUME = 0.30;      // normal background level (relative to the
                                // cheering voice clips, which play at full volume)
 const DUCK_VOLUME = 0.02;     // level while a cheer/voice line is speaking
 const FADE_MS = 350;

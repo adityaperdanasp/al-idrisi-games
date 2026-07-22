@@ -9,7 +9,7 @@
 // page navigation away from the hub.
 
 (function () {
-  const VOLUME = 0.20;
+  const VOLUME = 0.30;
   const FADE_MS = 400;
 
   const track = new Audio("audio/bgm/hub.mp3");
