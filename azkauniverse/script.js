@@ -851,6 +851,7 @@ function handleAnswer(isCorrect, delayMs) {
   if (state.locked) return;
   state.locked = true;
   if (isCorrect) state.correctCount++;
+  else if (window.AIGLeaderboard) AIGLeaderboard.recordMistake("solarquest", state.levelId);
 
   const delay = delayMs || QUESTION_DELAY_MS;
   showFeedback(isCorrect, delay);

@@ -60,5 +60,17 @@
     aigDb.ref(`players/${player.id}/badges/${gameId}`).set(data);
   }
 
-  window.AIGLeaderboard = { recordPlay, watchGame, getProgress, setProgress, db: aigDb };
+  // ---- Wrong-answer tracking, so the teacher/parent dashboard can surface
+  // specific weak spots (e.g. "struggles with the 7-times table") instead of
+  // just completion %. Stored at /players/{playerId}/mistakes/{gameId}/{topicKey}.
+  // topicKey must be Firebase-key-safe (no . # $ / [ ]).
+  function recordMistake(gameId, topicKey) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player) return;
+    const ref = aigDb.ref(`players/${player.id}/mistakes/${gameId}/${topicKey}`);
+    ref.child("count").transaction(cur => (cur || 0) + 1);
+    ref.update({ lastWrongAt: firebase.database.ServerValue.TIMESTAMP });
+  }
+
+  window.AIGLeaderboard = { recordPlay, watchGame, getProgress, setProgress, recordMistake, db: aigDb };
 })();

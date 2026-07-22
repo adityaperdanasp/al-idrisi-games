@@ -473,6 +473,7 @@ function handleMCAnswer(selected, q, grid) {
     buttons.find(b => b.textContent === q.answer).classList.add("reveal-correct");
     const phrase = AzkaVoice.speakEncouragement(q.answer);
     session.score += 3;
+    if (window.AIGLeaderboard) AIGLeaderboard.recordMistake("language-arts", session.chapter.topic);
     nextQuestion(5000);
   }
 }
@@ -515,6 +516,7 @@ function handleFillAnswer(q) {
       `<div class="fill-correction">Correct answer: <strong>${q.answer}</strong></div>`;
     const phrase = AzkaVoice.speakEncouragement(q.answer);
     session.score += 3;
+    if (window.AIGLeaderboard) AIGLeaderboard.recordMistake("language-arts", session.chapter.topic);
     nextQuestion(5000);
   }
 }
@@ -578,6 +580,7 @@ function handleMatchAnswer(q, grid) {
     const firstWrong = q.pairs.find((p, i) => selects[i].value !== p.right);
     const phrase = AzkaVoice.speakEncouragement(`${firstWrong.left} → ${firstWrong.right}`);
     session.score += 3;
+    if (window.AIGLeaderboard) AIGLeaderboard.recordMistake("language-arts", session.chapter.topic);
     nextQuestion(7000);
   }
 }
@@ -650,6 +653,7 @@ function handleSentenceAnswer(q, target) {
     target.after(correction);
     const phrase = AzkaVoice.speakEncouragement(q.answer);
     session.score += 3;
+    if (window.AIGLeaderboard) AIGLeaderboard.recordMistake("language-arts", session.chapter.topic);
     nextQuestion(5000);
   }
 }

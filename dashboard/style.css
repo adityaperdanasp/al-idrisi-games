@@ -1,0 +1,293 @@
+/* Al Idrisi Games — Teacher Dashboard.
+   Reuses the hub's visual identity (Baloo 2 / Nunito, warm gradient,
+   brand blue #1266d8) — see ../style.css and ../leaderboard.css. No CSS
+   variable system in this project, so values are literal hex on purpose,
+   matching the rest of the codebase. */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Nunito", sans-serif;
+  color: #3d2e22;
+  background: linear-gradient(180deg, #fdedd3 0%, #e9dcc5 55%, #dccba9 100%);
+  min-height: 100vh;
+}
+
+h1, h2 {
+  font-family: "Baloo 2", sans-serif;
+  margin: 0 0 6px;
+}
+
+.db-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+
+.hidden { display: none !important; }
+
+/* ---------- PIN gate ---------- */
+.db-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.db-gate-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px 28px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(61, 46, 34, 0.15);
+}
+
+.db-gate-card h1 { font-size: 1.4rem; }
+.db-gate-card p { color: #6b5843; margin: 0 0 18px; }
+
+.db-pin-input {
+  width: 100%;
+  font-size: 1.6rem;
+  letter-spacing: 0.4em;
+  text-align: center;
+  padding: 10px;
+  border: 2px solid #f6e3b4;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  font-family: "Nunito", sans-serif;
+}
+.db-pin-input:focus { outline: none; border-color: #1266d8; }
+
+.db-btn-primary {
+  width: 100%;
+  background: #1266d8;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: "Baloo 2", sans-serif;
+  cursor: pointer;
+}
+.db-btn-primary:active { transform: translateY(1px); }
+
+.db-error { color: #d9534f; margin-top: 10px; font-weight: 600; }
+
+/* ---------- Header / tabs ---------- */
+.db-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.db-header h1 { flex: 1; font-size: 1.5rem; }
+
+.db-back {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: #f6e3b4;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  color: #3d2e22;
+  font-size: 1.1rem;
+}
+
+.db-refresh-btn {
+  background: #fff;
+  border: 2px solid #f6e3b4;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.db-updated {
+  color: #6b5843;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}
+
+.db-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.db-tab {
+  flex: 1;
+  border: none;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 600;
+  color: #6b5843;
+  cursor: pointer;
+}
+.db-tab.active {
+  background: #1266d8;
+  color: #fff;
+}
+
+/* ---------- Student table ---------- */
+.db-table-wrap {
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 8px;
+}
+
+.db-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.db-table th {
+  text-align: left;
+  font-family: "Baloo 2", sans-serif;
+  color: #6b5843;
+  font-size: 0.85rem;
+  padding: 10px 12px;
+  border-bottom: 2px solid #f6e3b4;
+}
+
+.db-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f3ead9;
+  vertical-align: top;
+}
+
+.db-table tbody tr {
+  cursor: pointer;
+}
+.db-table tbody tr:hover {
+  background: #fdf6e8;
+}
+
+.db-student-name {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+}
+
+.db-game-cell { font-size: 0.9rem; line-height: 1.5; }
+.db-game-cell .db-muted { color: #9a8b76; }
+
+.db-topic-chip {
+  display: inline-block;
+  background: #fbe4e4;
+  color: #b23c3c;
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 2px 4px 2px 0;
+}
+
+/* ---------- Detail overlay ---------- */
+.db-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(61, 46, 34, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+  z-index: 20;
+}
+
+.db-detail-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px;
+  max-width: 560px;
+  width: 100%;
+  position: relative;
+}
+
+.db-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  border: none;
+  background: #f6e3b4;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.db-detail-section {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #f3ead9;
+}
+.db-detail-section h3 {
+  font-family: "Baloo 2", sans-serif;
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+/* ---------- Insight / approval cards ---------- */
+.db-insight-list { margin-bottom: 24px; }
+
+.db-insight-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.db-insight-card h4 {
+  font-family: "Baloo 2", sans-serif;
+  margin: 0 0 8px;
+}
+.db-insight-card textarea {
+  width: 100%;
+  min-height: 90px;
+  font-family: "Nunito", sans-serif;
+  font-size: 0.9rem;
+  border: 2px solid #f6e3b4;
+  border-radius: 10px;
+  padding: 8px;
+  resize: vertical;
+}
+.db-insight-card .db-insight-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.db-insight-meta {
+  color: #9a8b76;
+  font-size: 0.78rem;
+  margin-top: 6px;
+}
+
+.db-btn-small {
+  background: #1266d8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-family: "Nunito", sans-serif;
+  cursor: pointer;
+}
+.db-btn-ghost {
+  background: #fff;
+  border: 2px solid #f6e3b4;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.db-empty-note {
+  color: #9a8b76;
+  font-style: italic;
+}

@@ -790,6 +790,20 @@ function playCountdownBeep(isGo) {
 // always resolves within a couple of tries.
 let lastQuestionKey = null;
 
+// Derives dashboard "weak topic" tags from a question key like "m7x8" or
+// "d56/8" (see nextQuestion() below for how these keys are built). Returns
+// an array so a wrong multiplication answer can tag BOTH factors (e.g.
+// 7x8 wrong -> ["times-7", "times-8"]); division only tags the divisor,
+// since that's the "table" a kid is actually practicing (e.g. 56/8 -> ["divby-8"]).
+function topicsFromQuestionKey(key) {
+  if (!key) return [];
+  let m = key.match(/^m(\d+)x(\d+)$/);
+  if (m) return [`times-${m[1]}`, `times-${m[2]}`];
+  m = key.match(/^d(\d+)\/(\d+)$/);
+  if (m) return [`divby-${m[2]}`];
+  return [];
+}
+
 // Generate a new question, then render the answer UI for the chosen mode.
 // Questions are a 50/50 mix of multiplication and division:
 //  - Multiplication factors are 3..max (1 and 2 are too easy to be useful).
@@ -996,6 +1010,9 @@ function handleAnswer(value) {
   state.streak = 0;
   updateStreakBadge();
   giveFeedback(false);
+  if (window.AIGLeaderboard) {
+    topicsFromQuestionKey(lastQuestionKey).forEach(topic => AIGLeaderboard.recordMistake("mathrace", topic));
+  }
 
   // Type-in gets a second try on the SAME question before the answer is
   // revealed; multiple choice only ever gets one shot.
