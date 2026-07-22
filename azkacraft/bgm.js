@@ -6,8 +6,8 @@
 // Browsers block audio autoplay until the user interacts with the page,
 // so playback only actually starts after the first tap/click.
 
-const BGM_VOLUME = 0.16;      // normal background level — quiet, stays out of the way
-const DUCK_VOLUME = 0.045;    // level while a cheer/voice line is speaking
+const BGM_VOLUME = 0.35;      // normal background level
+const DUCK_VOLUME = 0.08;     // level while a cheer/voice line is speaking
 const FADE_MS = 350;
 
 const tracks = {
@@ -52,11 +52,11 @@ function play(key) {
 
   if (prev && prev !== next) {
     fadeTo(prev, 0);
-    setTimeout(() => { if (current !== key || true) prev.pause(); }, FADE_MS + 20);
+    setTimeout(() => prev.pause(), FADE_MS + 20);
   }
-  next.currentTime = next.currentTime || 0;
-  next.play().catch(() => {});
-  fadeTo(next, targetVolume());
+  next.play()
+    .then(() => fadeTo(next, targetVolume()))
+    .catch(err => console.warn("[bgm] playback blocked:", err));
 }
 
 // Lowers the current track's volume for `ms`, then restores it — call this
@@ -75,7 +75,10 @@ function unlockOnce() {
   if (pendingKey) play(pendingKey);
 }
 
-["pointerdown", "keydown"].forEach(evt =>
+// Several event types, all one-shot — iOS Safari is picky about which
+// gesture it treats as "real" for unlocking audio, so listen broadly
+// rather than betting on just one.
+["pointerdown", "touchend", "click", "keydown"].forEach(evt =>
   document.addEventListener(evt, unlockOnce, { once: true, passive: true })
 );
 
