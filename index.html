@@ -86,15 +86,15 @@
         <div class="sc-badge">Al Idrisi Games</div>
       </div>
       <div>
-        <div class="sc-title">Siapa yang main?</div>
-        <div class="sc-subtitle">Pilih namamu dulu ya!</div>
+        <div class="sc-title">Who's playing?</div>
+        <div class="sc-subtitle">Pick your name first!</div>
       </div>
       <div>
-        <div class="sc-label">GURU</div>
+        <div class="sc-label">TEACHERS</div>
         <div class="sc-teacher-list" id="sc-teacher-list"></div>
       </div>
       <div>
-        <div class="sc-label">MURID</div>
+        <div class="sc-label">STUDENTS</div>
         <div class="sc-student-grid" id="sc-student-grid"></div>
       </div>
     </div>
@@ -185,18 +185,19 @@
   const SC_INK = "#3d2e22";
   const SC_STUDENT_PALETTE = ["#F6C1C1", "#C1E1C1", "#C1D4F6", "#F6E3B4", "#D9C1F6", "#F6C1E0", "#C1F0E8"];
   const SC_ROTATIONS = [-2, 1.5, -1, 2, -1.5, 1, 0.5];
-  const SC_TEACHER_BG = "#F6C1C1";
-  const SC_TEACHER_TEXT = "#7A2E2E";
-
   const STUDENTS_ONLY = window.AIG_PLAYERS.filter(p => p.role === "student");
+  const TEACHERS_ONLY = window.AIG_PLAYERS.filter(p => p.role === "teacher");
 
   function scColorFor(p) {
-    if (p.role === "teacher") return SC_TEACHER_BG;
     // Match by id, not object identity — AIGPlayer.getPlayer() returns a
     // freshly-parsed object from localStorage after a reload, which would
     // never === the original AIG_PLAYERS entry even though it's the same
     // player (that mismatch was the bug: indexOf returned -1, so the
     // avatar's background silently fell back to transparent).
+    if (p.role === "teacher") {
+      const tIdx = TEACHERS_ONLY.findIndex(t => t.id === p.id);
+      return SC_STUDENT_PALETTE[tIdx % SC_STUDENT_PALETTE.length];
+    }
     const idx = STUDENTS_ONLY.findIndex(s => s.id === p.id);
     return SC_STUDENT_PALETTE[idx % SC_STUDENT_PALETTE.length];
   }
@@ -207,12 +208,12 @@
     teacherEl.innerHTML = "";
     studentEl.innerHTML = "";
 
-    window.AIG_PLAYERS.filter(p => p.role === "teacher").forEach(p => {
+    window.AIG_PLAYERS.filter(p => p.role === "teacher").forEach((p, i) => {
       const chip = document.createElement("button");
       chip.className = "sc-teacher-chip";
-      chip.style.background = SC_TEACHER_BG;
-      chip.style.color = SC_TEACHER_TEXT;
-      chip.style.transform = "rotate(-1.5deg)";
+      chip.style.background = SC_STUDENT_PALETTE[i % SC_STUDENT_PALETTE.length];
+      chip.style.color = SC_INK;
+      chip.style.transform = `rotate(${SC_ROTATIONS[i % SC_ROTATIONS.length]}deg)`;
       chip.textContent = p.name;
       chip.addEventListener("click", () => selectPlayer(p));
       teacherEl.appendChild(chip);
