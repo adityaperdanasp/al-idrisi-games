@@ -240,6 +240,15 @@
         <div id="finish-rank-text" class="finish-rank-text">You finished!</div>
         <div class="finish-waiting">Waiting for everyone to finish…</div>
       </div>
+
+      <!-- Shown if the other player's connection drops mid-race (or while
+           still waiting to pair) — otherwise this device would just sit
+           there forever with no resolution. -->
+      <div id="opponent-left-overlay" class="finish-overlay hidden">
+        <div class="finish-emoji">👋</div>
+        <div class="finish-rank-text">Your opponent left the race</div>
+        <button id="btn-opponent-left-home" class="primary-btn">Back to Menu</button>
+      </div>
     </div>
   </section>
 

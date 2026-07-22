@@ -344,6 +344,7 @@ $("btn-create").addEventListener("click", () => {
         [state.seatKey]: playerSeed(0)
       }
     });
+    registerDisconnectHandling(code, state.seatKey);
 
     // Show the waiting UI with the code.
     showScreen("screen-pair");
@@ -406,6 +407,7 @@ $("btn-join").addEventListener("click", async () => {
     state.code = code;
     state.seatKey = uniqueSeatKey(players);
     await db.ref(`games/${code}/players/${state.seatKey}`).set(playerSeed(seatCount));
+    registerDisconnectHandling(code, state.seatKey);
     attachGameListener(code);
   });
 });
@@ -531,6 +533,19 @@ function attachGameListener(code) {
 
     const players = game.players || {};
     const maxPlayers = game.maxPlayers || 2;
+
+    // If the OTHER seat's connection dropped (tab closed, phone lost signal,
+    // app killed, etc.), Firebase's onDisconnect hook (registered when they
+    // joined) will have flipped their `disconnected` flag. Without this
+    // check, this device would otherwise just sit on the race/pairing
+    // screen forever waiting for someone who's never coming back.
+    const opponentGone = Object.entries(players)
+      .some(([seatKey, p]) => seatKey !== state.seatKey && p.disconnected);
+    if (opponentGone && !state.gameOver) {
+      handleOpponentLeft();
+      return;
+    }
+
     const slots = assignSlots(players);
 
     $("lane-p3").classList.toggle("hidden", maxPlayers < 3);
@@ -592,6 +607,35 @@ function detachGameListener() {
     listeningCode = null;
   }
 }
+
+// Registers a server-side "this seat went away" write that Firebase fires
+// automatically the moment THIS device's connection drops for any reason
+// (tab closed, app killed, wifi lost, phone died) — no client-side polling
+// or heartbeat needed. The other seat's listener picks up the flag on its
+// next snapshot and can resolve the race instead of waiting forever.
+function registerDisconnectHandling(code, seatKey) {
+  db.ref(`games/${code}/players/${seatKey}`).onDisconnect().update({
+    disconnected: true,
+    disconnectedAt: firebase.database.ServerValue.TIMESTAMP
+  });
+}
+
+// Fires the moment we notice the OTHER seat disconnected — whether that
+// happened before the race even started (still on the pairing screen) or
+// mid-race. There's no fair winner to declare here (we don't know if they
+// meant to leave or just lost signal), so this just ends things cleanly
+// with a clear message instead of silently freezing.
+function handleOpponentLeft() {
+  state.gameOver = true;
+  clearQuestionTimer();
+  cancelRaceCountdown();
+  if (window.AIGBgm) AIGBgm.start();   // race is over one way or another — bring the music back
+  showScreen("screen-race");
+  $("finish-overlay").classList.add("hidden");
+  $("opponent-left-overlay").classList.remove("hidden");
+}
+
+$("btn-opponent-left-home").addEventListener("click", goHome);
 
 // Remember each car's last progress so we can detect forward movement (for smoke).
 const lastProgress = { p1: 0, p2: 0, p3: 0 };
