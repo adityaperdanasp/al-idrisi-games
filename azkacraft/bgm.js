@@ -3,11 +3,20 @@
 // setup, "game" for the actual lesson screen. Auto-ducks (fades quieter)
 // whenever a cheering voice line plays, then fades back up.
 //
-// Browsers block audio autoplay until the user interacts with the page,
-// so playback only actually starts after the first tap/click.
+// Volume is controlled through the Web Audio API (GainNode), NOT the
+// <audio> element's own .volume property — iOS Safari deliberately makes
+// HTMLMediaElement.volume a no-op (only the physical volume buttons are
+// allowed to change loudness), so setting audio.volume in JS silently does
+// nothing on iPhone even though it works fine on desktop/Android. Routing
+// through a GainNode actually attenuates the signal, so it works
+// everywhere.
+//
+// Browsers also block audio autoplay until the user interacts with the
+// page, so playback only actually starts after the first tap/click.
 
-const BGM_VOLUME = 0.20;      // normal background level
-const DUCK_VOLUME = 0.02;     // level while a cheer/voice line is speaking
+const BGM_VOLUME = 0.30;      // normal background level (relative to the
+                               // cheering voice clips, which play at full volume)
+const DUCK_VOLUME = 0.03;     // level while a cheer/voice line is speaking
 const FADE_MS = 350;
 
 const tracks = {
@@ -16,9 +25,28 @@ const tracks = {
 };
 Object.values(tracks).forEach(t => {
   t.loop = true;
-  t.volume = 0;
   t.preload = "auto";
 });
+
+let ctx = null;
+const gainNodes = {};
+
+// Wires each <audio> element through the Web Audio graph exactly once
+// (createMediaElementSource throws if called twice on the same element).
+// Must happen inside/soon after a user gesture, same as starting playback.
+function ensureAudioGraph() {
+  if (ctx) return;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return; // no Web Audio support — tracks will just play at full volume
+  ctx = new AudioCtx();
+  Object.keys(tracks).forEach(key => {
+    const source = ctx.createMediaElementSource(tracks[key]);
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    source.connect(gain).connect(ctx.destination);
+    gainNodes[key] = gain;
+  });
+}
 
 let current = null;          // 'menu' | 'game' | null
 let duckedUntil = 0;         // timestamp; volume target while Date.now() < this
@@ -29,20 +57,15 @@ function targetVolume() {
   return Date.now() < duckedUntil ? DUCK_VOLUME : BGM_VOLUME;
 }
 
-// Each <audio> element gets its OWN fade animation (tracked on the element
-// itself) — sharing one animation-frame id across both tracks meant fading
-// track B in would cancel track A's fade-out mid-flight, leaving A stuck
-// at a non-zero volume while B ramped up too, i.e. both audible at once.
-function fadeTo(audio, vol) {
-  if (audio._fadeRaf) cancelAnimationFrame(audio._fadeRaf);
-  const start = audio.volume;
-  const startTime = performance.now();
-  function step(now) {
-    const p = Math.min(1, (now - startTime) / FADE_MS);
-    audio.volume = start + (vol - start) * p;
-    audio._fadeRaf = p < 1 ? requestAnimationFrame(step) : null;
-  }
-  audio._fadeRaf = requestAnimationFrame(step);
+// Ramps a track's gain smoothly — each key has its own GainNode, so fading
+// one track out can never interfere with another fading in.
+function fadeTo(key, vol) {
+  const gain = gainNodes[key];
+  if (!gain || !ctx) return;
+  const now = ctx.currentTime;
+  gain.gain.cancelScheduledValues(now);
+  gain.gain.setValueAtTime(gain.gain.value, now);
+  gain.gain.linearRampToValueAtTime(vol, now + FADE_MS / 1000);
 }
 
 function play(key) {
@@ -50,15 +73,15 @@ function play(key) {
   if (current === key) return;
 
   const next = tracks[key];
-  const prev = current ? tracks[current] : null;
+  const prevKey = current;
   current = key;
 
-  if (prev && prev !== next) {
-    fadeTo(prev, 0);
-    setTimeout(() => prev.pause(), FADE_MS + 20);
+  if (prevKey && prevKey !== key) {
+    fadeTo(prevKey, 0);
+    setTimeout(() => tracks[prevKey].pause(), FADE_MS + 20);
   }
   next.play()
-    .then(() => fadeTo(next, targetVolume()))
+    .then(() => fadeTo(key, targetVolume()))
     .catch(err => console.warn("[bgm] playback blocked:", err));
 }
 
@@ -66,9 +89,9 @@ function play(key) {
 // right before playing a cheer/voice clip.
 function duck(ms) {
   duckedUntil = Math.max(duckedUntil, Date.now() + (ms || 2500));
-  if (current) fadeTo(tracks[current], DUCK_VOLUME);
+  if (current) fadeTo(current, DUCK_VOLUME);
   setTimeout(() => {
-    if (Date.now() >= duckedUntil && current) fadeTo(tracks[current], targetVolume());
+    if (Date.now() >= duckedUntil && current) fadeTo(current, targetVolume());
   }, (ms || 2500) + 20);
 }
 
@@ -76,11 +99,14 @@ function unlockOnce() {
   if (unlocked) return;
   unlocked = true;
 
+  ensureAudioGraph();
+  if (ctx && ctx.state === "suspended") ctx.resume();
+
   // iOS Safari's autoplay allowance is per <audio> element, not per page —
   // starting a SECOND track later (e.g. switching to "game" when entering
   // a lesson) can get silently blocked if that element was never itself
   // played during a real user gesture. Prime every track right now, in
-  // this same gesture, then immediately pause — silent (volume is still 0
+  // this same gesture, then immediately pause — silent (gain is still 0
   // at this point), but it "unlocks" each element for later.
   //
   // The real playback (play(pendingKey), below) only starts once every
