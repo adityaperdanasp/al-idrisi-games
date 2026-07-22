@@ -175,6 +175,7 @@ body {
   border-radius: 14px;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.06);
   transition: transform 0.28s cubic-bezier(.33, 1.2, .3, 1);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .sc-teacher-chip:hover,
@@ -183,8 +184,8 @@ body {
 }
 
 .sc-teacher-chip:active {
-  transform: translateY(1px) scale(0.97) !important;
-  transition-duration: 0.1s;
+  transform: translateY(1px) scale(0.94) !important;
+  transition-duration: 0.15s;
 }
 
 .sc-student-grid {
@@ -204,6 +205,7 @@ body {
   padding: 12px 6px;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
   transition: transform 0.28s cubic-bezier(.33, 1.2, .3, 1);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .sc-student-card:hover,
@@ -212,8 +214,8 @@ body {
 }
 
 .sc-student-card:active {
-  transform: translateY(1px) scale(0.97) !important;
-  transition-duration: 0.1s;
+  transform: translateY(1px) scale(0.94) !important;
+  transition-duration: 0.15s;
 }
 
 .sc-student-avatar {
@@ -344,6 +346,7 @@ body {
   position: relative;
   z-index: 1;
   transition: transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .sc-game-card:hover,
