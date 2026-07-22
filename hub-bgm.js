@@ -9,7 +9,7 @@
 // page navigation away from the hub.
 
 (function () {
-  const VOLUME = 0.30;
+  const VOLUME = 0.20;
   const FADE_MS = 400;
 
   const track = new Audio("audio/bgm/hub.mp3");
@@ -50,4 +50,15 @@
   ["pointerdown", "touchend", "click", "keydown"].forEach(evt =>
     document.addEventListener(evt, unlockOnce, { once: true, passive: true })
   );
+
+  // Clicking straight into a game card navigates away before the jingle
+  // ever gets audible (unlockOnce()'s track.play() is async, and the
+  // click's own navigation doesn't wait for it). Hold the navigation back
+  // by a beat so the hub music actually gets heard before leaving.
+  document.addEventListener("click", function (e) {
+    const card = e.target.closest(".sc-game-card");
+    if (!card || !card.href) return;
+    e.preventDefault();
+    setTimeout(() => { window.location.href = card.href; }, 250);
+  });
 })();
