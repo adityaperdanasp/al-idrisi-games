@@ -32,11 +32,24 @@
     return topicKey; // language-arts topics are already human-readable
   }
 
-  function topTopics(mistakesForGame, n) {
-    if (!mistakesForGame) return [];
-    return Object.entries(mistakesForGame)
-      .map(([topic, data]) => ({ topic, count: (data && data.count) || 0 }))
-      .sort((a, b) => b.count - a.count)
+  // A topic only counts as a reportable "weak spot" once there's enough
+  // data to trust it (MIN_ATTEMPTS) and the accuracy is actually low
+  // (WEAK_ACCURACY) — otherwise a kid who's just started a topic would get
+  // flagged on 1-2 unlucky misses.
+  const MIN_ATTEMPTS = 3;
+  const WEAK_ACCURACY = 0.7;
+
+  function weakTopics(topicStatsForGame, n) {
+    if (!topicStatsForGame) return [];
+    return Object.entries(topicStatsForGame)
+      .map(([topic, data]) => {
+        const correct = (data && data.correct) || 0;
+        const wrong = (data && data.wrong) || 0;
+        const total = correct + wrong;
+        return { topic, correct, wrong, total, accuracy: total ? correct / total : 0 };
+      })
+      .filter(t => t.total >= MIN_ATTEMPTS && t.accuracy < WEAK_ACCURACY)
+      .sort((a, b) => a.accuracy - b.accuracy)
       .slice(0, n);
   }
 
@@ -103,7 +116,7 @@
 
   function studentSummary(studentId) {
     const badges = (cache.players[studentId] && cache.players[studentId].badges) || {};
-    const mistakes = (cache.players[studentId] && cache.players[studentId].mistakes) || {};
+    const topicStats = (cache.players[studentId] && cache.players[studentId].topicStats) || {};
     const summary = {};
     GAMES.forEach(g => {
       const lb = (cache.leaderboard[g.id] && cache.leaderboard[g.id][studentId]) || null;
@@ -111,7 +124,7 @@
         timesPlayed: lb ? (lb.timesPlayed || 0) : 0,
         lastPlayed: lb ? lb.lastPlayed : null,
         badges: badges[g.id] || null,
-        mistakes: mistakes[g.id] || null
+        topicStats: topicStats[g.id] || null
       };
     });
     return summary;
@@ -128,9 +141,9 @@
         lines.push(`${done} level selesai, ${s.badges.xp || 0} XP`);
       }
     }
-    const top = topTopics(s.mistakes, 2);
-    if (top.length) {
-      lines.push(top.map(t => `<span class="db-topic-chip">${escapeHtml(prettifyTopic(gameId, t.topic))} (${t.count}x)</span>`).join(""));
+    const weak = weakTopics(s.topicStats, 2);
+    if (weak.length) {
+      lines.push(weak.map(t => `<span class="db-topic-chip">${escapeHtml(prettifyTopic(gameId, t.topic))} (${Math.round(t.accuracy * 100)}% benar, ${t.total}x)</span>`).join(""));
     }
     return `<div class="db-game-cell">${lines.map((l, i) => i === 0 ? `<div>${l}</div>` : (i === 1 ? `<div class="db-muted">${l}</div>` : `<div>${l}</div>`)).join("")}</div>`;
   }
@@ -145,7 +158,7 @@
         <td>${gameCellHtml("mathrace", s.mathrace)}</td>
         <td>${gameCellHtml("language-arts", s["language-arts"])}</td>
         <td>${gameCellHtml("solarquest", s.solarquest)}</td>
-        <td>${GAMES.map(g => topTopics(s[g.id].mistakes, 1).map(t =>
+        <td>${GAMES.map(g => weakTopics(s[g.id].topicStats, 1).map(t =>
           `<span class="db-topic-chip">${escapeHtml(g.label)}: ${escapeHtml(prettifyTopic(g.id, t.topic))}</span>`
         ).join("")).join("")}</td>
       </tr>`;
@@ -169,10 +182,10 @@
 
     const sections = GAMES.map(g => {
       const data = s[g.id];
-      const allTopics = topTopics(data.mistakes, 999);
-      const topicsHtml = allTopics.length
-        ? allTopics.map(t => `<span class="db-topic-chip">${escapeHtml(prettifyTopic(g.id, t.topic))} — ${t.count}x salah</span>`).join("")
-        : `<span class="db-empty-note">Belum ada catatan kesalahan spesifik.</span>`;
+      const allWeak = weakTopics(data.topicStats, 999);
+      const topicsHtml = allWeak.length
+        ? allWeak.map(t => `<span class="db-topic-chip">${escapeHtml(prettifyTopic(g.id, t.topic))} — ${Math.round(t.accuracy * 100)}% benar (${t.correct}/${t.total})</span>`).join("")
+        : `<span class="db-empty-note">Belum ada area lemah yang cukup datanya (min. ${MIN_ATTEMPTS} percobaan per topik).</span>`;
       const lastPlayed = data.lastPlayed ? new Date(data.lastPlayed).toLocaleString("id-ID") : "belum pernah";
       return `<div class="db-detail-section">
         <h3>${escapeHtml(g.label)}</h3>
@@ -213,8 +226,8 @@
     });
     const weakSpots = [];
     GAMES.forEach(g => {
-      topTopics(s[g.id].mistakes, 1).forEach(t => {
-        weakSpots.push(`${prettifyTopic(g.id, t.topic)} (${g.label})`);
+      weakTopics(s[g.id].topicStats, 1).forEach(t => {
+        weakSpots.push(`${prettifyTopic(g.id, t.topic)} (${g.label}, ${Math.round(t.accuracy * 100)}% benar)`);
       });
     });
     let draft = `Ringkasan progress ${player.name}: ` +

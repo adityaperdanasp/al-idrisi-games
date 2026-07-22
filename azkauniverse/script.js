@@ -847,11 +847,13 @@ function showFunFact() {
 // `delayMs` lets wrong answers linger longer than the default 1.5s so Azka
 // has time to read the revealed correct answer before the next question
 // loads: 5s for a wrong MC/fill, 7s for a wrong match (more to re-read).
-function handleAnswer(isCorrect, delayMs) {
+// trackTopic=false for flashcards — they're a self-check review with no
+// wrong state, so counting them would falsely inflate topic accuracy.
+function handleAnswer(isCorrect, delayMs, trackTopic = true) {
   if (state.locked) return;
   state.locked = true;
   if (isCorrect) state.correctCount++;
-  else if (window.AIGLeaderboard) AIGLeaderboard.recordMistake("solarquest", state.levelId);
+  if (trackTopic && window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("solarquest", state.levelId, isCorrect);
 
   const delay = delayMs || QUESTION_DELAY_MS;
   showFeedback(isCorrect, delay);
@@ -1092,8 +1094,9 @@ function renderFlashcard(stage, q) {
   });
 
   continueBtn.addEventListener("click", () => {
-    // Flashcards are a review, not a test -- always counts as a win.
-    handleAnswer(true);
+    // Flashcards are a review, not a test -- always counts as a win, and
+    // isn't tracked as a topic attempt (see trackTopic in handleAnswer).
+    handleAnswer(true, undefined, false);
   });
 }
 

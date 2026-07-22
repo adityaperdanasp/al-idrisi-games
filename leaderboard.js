@@ -60,17 +60,21 @@
     aigDb.ref(`players/${player.id}/badges/${gameId}`).set(data);
   }
 
-  // ---- Wrong-answer tracking, so the teacher/parent dashboard can surface
-  // specific weak spots (e.g. "struggles with the 7-times table") instead of
-  // just completion %. Stored at /players/{playerId}/mistakes/{gameId}/{topicKey}.
+  // ---- Per-topic accuracy tracking, so the teacher/parent dashboard can
+  // surface specific weak spots (e.g. "struggles with the 7-times table")
+  // instead of just completion %. Stored at
+  // /players/{playerId}/topicStats/{gameId}/{topicKey}/{correct, wrong, lastWrongAt}.
+  // Call once per answered question with isCorrect so accuracy (not just a
+  // raw wrong count) can be computed — a topic missed 5/5 times is a very
+  // different signal than one missed 5/50 times.
   // topicKey must be Firebase-key-safe (no . # $ / [ ]).
-  function recordMistake(gameId, topicKey) {
+  function recordTopicAttempt(gameId, topicKey, isCorrect) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player) return;
-    const ref = aigDb.ref(`players/${player.id}/mistakes/${gameId}/${topicKey}`);
-    ref.child("count").transaction(cur => (cur || 0) + 1);
-    ref.update({ lastWrongAt: firebase.database.ServerValue.TIMESTAMP });
+    const ref = aigDb.ref(`players/${player.id}/topicStats/${gameId}/${topicKey}`);
+    ref.child(isCorrect ? "correct" : "wrong").transaction(cur => (cur || 0) + 1);
+    if (!isCorrect) ref.update({ lastWrongAt: firebase.database.ServerValue.TIMESTAMP });
   }
 
-  window.AIGLeaderboard = { recordPlay, watchGame, getProgress, setProgress, recordMistake, db: aigDb };
+  window.AIGLeaderboard = { recordPlay, watchGame, getProgress, setProgress, recordTopicAttempt, db: aigDb };
 })();

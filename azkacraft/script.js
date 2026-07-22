@@ -467,13 +467,14 @@ function handleMCAnswer(selected, q, grid) {
     const phrase = AzkaVoice.speakPraise();
     session.score += 10;
     session.correctCount++;
+    if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, true);
     nextQuestion(1500);
   } else {
     buttons.find(b => b.textContent === selected).classList.add("selected-wrong");
     buttons.find(b => b.textContent === q.answer).classList.add("reveal-correct");
     const phrase = AzkaVoice.speakEncouragement(q.answer);
     session.score += 3;
-    if (window.AIGLeaderboard) AIGLeaderboard.recordMistake("language-arts", session.chapter.topic);
+    if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
     nextQuestion(5000);
   }
 }
@@ -509,6 +510,7 @@ function handleFillAnswer(q) {
     const phrase = AzkaVoice.speakPraise();
     session.score += 10;
     session.correctCount++;
+    if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, true);
     nextQuestion(1500);
   } else {
     input.classList.add("wrong");
@@ -516,7 +518,7 @@ function handleFillAnswer(q) {
       `<div class="fill-correction">Correct answer: <strong>${q.answer}</strong></div>`;
     const phrase = AzkaVoice.speakEncouragement(q.answer);
     session.score += 3;
-    if (window.AIGLeaderboard) AIGLeaderboard.recordMistake("language-arts", session.chapter.topic);
+    if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
     nextQuestion(5000);
   }
 }
@@ -575,12 +577,13 @@ function handleMatchAnswer(q, grid) {
     const phrase = AzkaVoice.speakPraise();
     session.score += 10;
     session.correctCount++;
+    if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, true);
     nextQuestion(1500);
   } else {
     const firstWrong = q.pairs.find((p, i) => selects[i].value !== p.right);
     const phrase = AzkaVoice.speakEncouragement(`${firstWrong.left} → ${firstWrong.right}`);
     session.score += 3;
-    if (window.AIGLeaderboard) AIGLeaderboard.recordMistake("language-arts", session.chapter.topic);
+    if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
     nextQuestion(7000);
   }
 }
@@ -645,6 +648,7 @@ function handleSentenceAnswer(q, target) {
     const phrase = AzkaVoice.speakPraise();
     session.score += 10;
     session.correctCount++;
+    if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, true);
     nextQuestion(1500);
   } else {
     const correction = document.createElement("div");
@@ -653,7 +657,7 @@ function handleSentenceAnswer(q, target) {
     target.after(correction);
     const phrase = AzkaVoice.speakEncouragement(q.answer);
     session.score += 3;
-    if (window.AIGLeaderboard) AIGLeaderboard.recordMistake("language-arts", session.chapter.topic);
+    if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
     nextQuestion(5000);
   }
 }

@@ -966,6 +966,9 @@ function handleAnswer(value) {
     state.correct += 1;
     state.streak += 1;
     updateStreakBadge();
+    if (window.AIGLeaderboard) {
+      topicsFromQuestionKey(lastQuestionKey).forEach(topic => AIGLeaderboard.recordTopicAttempt("mathrace", topic, true));
+    }
 
     // Every 3rd answer in a row gives a 50% bigger jump plus a nitro effect.
     const isNitro = state.streak > 0 && state.streak % 3 === 0;
@@ -1011,7 +1014,7 @@ function handleAnswer(value) {
   updateStreakBadge();
   giveFeedback(false);
   if (window.AIGLeaderboard) {
-    topicsFromQuestionKey(lastQuestionKey).forEach(topic => AIGLeaderboard.recordMistake("mathrace", topic));
+    topicsFromQuestionKey(lastQuestionKey).forEach(topic => AIGLeaderboard.recordTopicAttempt("mathrace", topic, false));
   }
 
   // Type-in gets a second try on the SAME question before the answer is
