@@ -34,6 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   wireNavigation();
   wireMultiplayerSetup();
   wireBrainRest();
+  renderDailyContent();
   if (window.AIGBgm) AIGBgm.play("menu");   // starts once the user's first tap unlocks audio
 
   QUESTION_BANK = await fetch("questions.json").then(r => r.json());
@@ -52,6 +53,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("mp-join-code").value = joinCode.toUpperCase();
   }
 });
+
+/* ---------------------------- Word of the Day + Fun Fact ---------------------------- */
+
+function renderDailyContent() {
+  if (!window.AIGDailyContent) return;
+  const { word, meaning } = AIGDailyContent.getWordOfDay();
+  const wordEl = document.getElementById("word-of-day-text");
+  if (wordEl) wordEl.innerHTML = `${word} <span class="info-sub">— ${meaning}</span>`;
+
+  const factEl = document.getElementById("fun-fact-text");
+  if (factEl) factEl.textContent = AIGDailyContent.getFunFact();
+}
 
 /* ---------------------------- Theme (Boy/Girl + 3 palettes each) ---------------------------- */
 
