@@ -329,6 +329,40 @@ body {
   transform: translateY(-2px) scale(1.01);
 }
 
+.sc-greeting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 24px 24px;
+  padding: 4px 18px;
+  font-family: "Baloo 2", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #8a6d3a;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.sc-greeting-emoji {
+  font-size: 1.1rem;
+}
+
+@keyframes sc-greeting-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.sc-greeting-word {
+  display: inline-block;
+  animation: sc-greeting-bob 1.4s ease-in-out infinite;
+}
+
+.sc-greeting-name.blue  { color: #2f4c8c; }
+.sc-greeting-name.pink  { color: #8c2f6b; }
+.sc-greeting-name.green { color: #3f7a4e; }
+
 .sc-game-card.math { background: #c1d4f6; transform: rotate(0.6deg); }
 .sc-game-card.lang { background: #f6c1e0; transform: rotate(-0.6deg); }
 .sc-game-card.solar { background: #c1e1c1; transform: rotate(0.6deg); }

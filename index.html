@@ -164,6 +164,11 @@
           </span>
         </a>
       </div>
+
+      <div class="sc-greeting">
+        <span class="sc-greeting-emoji">🌟</span>
+        <span id="sc-greeting-text">Keep up the great work!</span>
+      </div>
     </div>
 
   </div>
@@ -233,6 +238,14 @@
     showLanding();
   }
 
+  const SC_GREETINGS = [
+    "Keep up the great work, {name}!",
+    "Ready for another adventure, {name}?",
+    "You're doing awesome, {name}!",
+    "Let's learn something new today, {name}!",
+    "{name}, your streak is looking great!"
+  ];
+
   function showLanding() {
     const current = AIGPlayer.getPlayer();
     if (!current) return;
@@ -241,6 +254,23 @@
     document.getElementById("sc-player-name").textContent = current.name;
     document.getElementById("sc-screen-select").classList.remove("active");
     document.getElementById("sc-screen-landing").classList.add("active");
+
+    const SC_GREETING_COLORS = ["blue", "pink", "green"];
+    const firstName = current.name.replace(/^(Ms\.|Mrs\.)\s*/, "");
+    const dayIndex = Math.floor(Date.now() / 86400000) % SC_GREETINGS.length;
+    const nameColor = SC_GREETING_COLORS[dayIndex % SC_GREETING_COLORS.length];
+    const nameHtml = `<span class="sc-greeting-name ${nameColor}">${firstName}</span>`;
+
+    // Split on the template FIRST (so the {name} placeholder is its own
+    // token), then substitute — otherwise the space inside the name
+    // span's class="..." attribute would get cut as if it were a word break.
+    const words = SC_GREETINGS[dayIndex].split(" ").map(w => w.replace("{name}", nameHtml));
+
+    // Wrap each word in its own span so it can bob up and down with a
+    // staggered delay, giving a gentle wave effect across the sentence.
+    document.getElementById("sc-greeting-text").innerHTML = words
+      .map((w, i) => `<span class="sc-greeting-word" style="animation-delay:${i * 0.12}s">${w}</span>`)
+      .join(" ");
   }
 
   function showSelect() {
