@@ -174,25 +174,34 @@ body {
 }
 
 .lb-p-slot.first .lb-p-bar {
-  height: 92px;
+  height: 150px;
   background: linear-gradient(180deg, #ffd35c, #f4b400);
 }
 
 .lb-p-slot.second .lb-p-bar {
-  height: 64px;
+  height: 110px;
   background: linear-gradient(180deg, #c7d0db, #a8b3c2);
 }
 
 .lb-p-slot.third .lb-p-bar {
-  height: 48px;
+  height: 85px;
   background: linear-gradient(180deg, #dba46b, #c98a4b);
+}
+
+@keyframes lb-glow {
+  0%, 100% { box-shadow: 0 0 6px 2px rgba(244, 180, 0, 0.55), 0 6px 14px rgba(0, 0, 0, 0.18); }
+  50% { box-shadow: 0 0 18px 8px rgba(255, 211, 92, 0.9), 0 6px 14px rgba(0, 0, 0, 0.18); }
+}
+
+.lb-p-slot.first .lb-p-avatar {
+  animation: lb-glow 1.8s ease-in-out infinite;
 }
 
 /* ---------- your position + list ---------- */
 .lb-you {
-  margin: -8px 14px 10px;
+  margin: 0 14px 10px;
   padding: 10px 16px;
-  border-radius: 14px;
+  border-radius: 0 0 14px 14px;
   background: linear-gradient(120deg, #1266d8, #3a8bef);
   color: #fff;
   display: flex;

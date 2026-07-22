@@ -20,12 +20,12 @@
 
   <div class="lb-tabs" id="lb-tabs"></div>
 
-  <div class="lb-metric-label">Diranking dari <b>🎮 jumlah kali main</b></div>
+  <div class="lb-metric-label">Ranked by <b>🎮 times played</b></div>
 
   <div class="lb-podium" id="lb-podium"></div>
   <div class="lb-you hidden" id="lb-you"></div>
   <div class="lb-list" id="lb-list"></div>
-  <div class="lb-empty hidden" id="lb-empty">Belum ada yang main game ini. Jadilah yang pertama! 🎉</div>
+  <div class="lb-empty hidden" id="lb-empty">No one has played this game yet. Be the first! 🎉</div>
 </div>
 
 <script src="player.js"></script>
@@ -105,21 +105,22 @@
       slot.innerHTML =
         `<div class="lb-p-avatar" style="background:${colorFor(e.id)};">${initials(e.name)}</div>` +
         `<div class="lb-p-name">${e.name}</div>` +
-        `<div class="lb-p-score">${e.timesPlayed || 0} kali main</div>` +
+        `<div class="lb-p-score">${e.timesPlayed || 0} plays</div>` +
         `<div class="lb-p-bar">${medal[slotIdx]}</div>`;
       podiumEl.appendChild(slot);
     });
 
-    // "Posisi kamu" — always sits right under the podium, whatever the rank.
+    // "Posisi kamu" — only shown when the player isn't already on the podium
+    // (top 3), since their spot is already visible up there.
     const myIdx = me ? entries.findIndex(e => e.id === me.id) : -1;
-    if (myIdx >= 0) {
+    if (myIdx >= 3) {
       const e = entries[myIdx];
       youEl.classList.remove("hidden");
       youEl.innerHTML =
         `<div class="rank">#${myIdx + 1}</div>` +
         `<div class="avatar">${initials(e.name)}</div>` +
-        `<div class="info"><div class="label">Posisi kamu</div><div class="name">${e.name}</div></div>` +
-        `<div class="score">${e.timesPlayed || 0} kali main</div>`;
+        `<div class="info"><div class="label">Your position</div><div class="name">${e.name}</div></div>` +
+        `<div class="score">${e.timesPlayed || 0} plays</div>`;
     } else {
       youEl.classList.add("hidden");
     }
@@ -131,7 +132,7 @@
         `<div class="rank">${i + 4}</div>` +
         `<div class="avatar" style="background:${colorFor(e.id)};">${initials(e.name)}</div>` +
         `<div class="name">${e.name}</div>` +
-        `<div class="score">${e.timesPlayed || 0} kali main</div>`;
+        `<div class="score">${e.timesPlayed || 0} plays</div>`;
       listEl.appendChild(row);
     });
   }
