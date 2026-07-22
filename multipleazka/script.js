@@ -209,6 +209,41 @@ document.querySelectorAll(".role-btn").forEach(btn => {
   });
 });
 
+// Decorative doodle words ("Race" / "Start" / "Finish") scattered under the
+// role cards, and a little ambient confetti burst every 10s to keep the
+// screen feeling alive while a grown-up decides who's playing. Purely
+// cosmetic — doesn't touch game state.
+(function initRoleScreenDecor() {
+  const DOODLE_COLORS = ["#ff9c47", "#1266d8", "#22a06b"];
+  // One zone per word (left/center/right) so "Race"/"Start"/"Finish" never
+  // overlap each other, with the actual order shuffled each load so it's
+  // not always the same word on the same side.
+  const ZONES = [[2, 14], [38, 50], [76, 88]]; // [minLeft%, maxLeft%] per slot
+  const wrap = document.getElementById("role-doodles");
+  if (wrap) {
+    const words = Array.from(wrap.querySelectorAll(".role-doodle"));
+    const zones = [...ZONES].sort(() => Math.random() - 0.5);
+    words.forEach((el, i) => {
+      const [minLeft, maxLeft] = zones[i];
+      const left = minLeft + Math.random() * (maxLeft - minLeft);
+      const top = Math.random() * 45;                 // % of the 70px-tall strip
+      const rotate = Math.round(Math.random() * 24 - 12);
+      const size = 0.85 + Math.random() * 0.25;        // rem
+      el.style.left = left + "%";
+      el.style.top = top + "%";
+      el.style.fontSize = size + "rem";
+      el.style.color = DOODLE_COLORS[i % DOODLE_COLORS.length];
+      el.style.transform = `rotate(${rotate}deg)`;
+    });
+  }
+
+  setInterval(() => {
+    if (document.getElementById("screen-role").classList.contains("active")) {
+      burstConfetti();
+    }
+  }, 10000);
+})();
+
 // Back buttons
 document.querySelectorAll(".back-btn").forEach(btn => {
   btn.addEventListener("click", () => showScreen(btn.dataset.back));

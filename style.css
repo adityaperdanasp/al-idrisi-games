@@ -264,6 +264,12 @@ body {
   font-size: 1.25rem;
   transform: rotate(-4deg);
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease;
+}
+
+.sc-trophy:active {
+  transform: rotate(-4deg) scale(0.9);
 }
 
 .sc-player-chip {
