@@ -270,6 +270,12 @@ button {
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease;
+}
+
+.hub-home-btn:active {
+  transform: scale(0.9);
 }
 
 /* ---------- Phone-frame screens share this scroll container ---------- */

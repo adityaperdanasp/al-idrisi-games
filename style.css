@@ -276,6 +276,12 @@ body {
   padding: 8px 14px 8px 8px;
   border-radius: 100px;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease;
+}
+
+.sc-player-chip:active {
+  transform: scale(0.94);
 }
 
 .sc-player-avatar {
