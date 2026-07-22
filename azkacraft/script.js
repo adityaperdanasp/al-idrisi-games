@@ -316,7 +316,7 @@ function renderMultiplayerChapterOptions() {
 
 function renderStickers() {
   const titleEl = document.getElementById("sticker-book-title");
-  if (titleEl) titleEl.textContent = `${CHILD_NAME}'s Sticker Book`;
+  if (titleEl) titleEl.textContent = "Sticker Book";
 
   const grid = document.getElementById("sticker-grid");
   grid.innerHTML = "";
