@@ -22,7 +22,6 @@ Object.values(tracks).forEach(t => {
 
 let current = null;          // 'menu' | 'game' | null
 let duckedUntil = 0;         // timestamp; volume target while Date.now() < this
-let fadeRaf = null;
 let unlocked = false;
 let pendingKey = null;       // which track to start once audio is unlocked
 
@@ -30,16 +29,20 @@ function targetVolume() {
   return Date.now() < duckedUntil ? DUCK_VOLUME : BGM_VOLUME;
 }
 
+// Each <audio> element gets its OWN fade animation (tracked on the element
+// itself) — sharing one animation-frame id across both tracks meant fading
+// track B in would cancel track A's fade-out mid-flight, leaving A stuck
+// at a non-zero volume while B ramped up too, i.e. both audible at once.
 function fadeTo(audio, vol) {
-  cancelAnimationFrame(fadeRaf);
+  if (audio._fadeRaf) cancelAnimationFrame(audio._fadeRaf);
   const start = audio.volume;
   const startTime = performance.now();
   function step(now) {
     const p = Math.min(1, (now - startTime) / FADE_MS);
     audio.volume = start + (vol - start) * p;
-    if (p < 1) fadeRaf = requestAnimationFrame(step);
+    audio._fadeRaf = p < 1 ? requestAnimationFrame(step) : null;
   }
-  fadeRaf = requestAnimationFrame(step);
+  audio._fadeRaf = requestAnimationFrame(step);
 }
 
 function play(key) {
@@ -79,12 +82,18 @@ function unlockOnce() {
   // played during a real user gesture. Prime every track right now, in
   // this same gesture, then immediately pause — silent (volume is still 0
   // at this point), but it "unlocks" each element for later.
-  Object.values(tracks).forEach(t => {
+  //
+  // The real playback (play(pendingKey), below) only starts once every
+  // priming pause() has actually happened — otherwise a priming pause()
+  // landing AFTER the real fade-in started would silently cut it off.
+  const priming = Object.values(tracks).map(t => {
     const p = t.play();
-    if (p && p.then) p.then(() => t.pause()).catch(() => {});
+    return p && p.then ? p.then(() => t.pause()).catch(() => {}) : Promise.resolve();
   });
 
-  if (pendingKey) play(pendingKey);
+  Promise.all(priming).then(() => {
+    if (pendingKey) play(pendingKey);
+  });
 }
 
 // Several event types, all one-shot — iOS Safari is picky about which
