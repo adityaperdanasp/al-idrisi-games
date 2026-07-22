@@ -6,8 +6,8 @@
 // Browsers block audio autoplay until the user interacts with the page,
 // so playback only actually starts after the first tap/click.
 
-const BGM_VOLUME = 0.35;      // normal background level
-const DUCK_VOLUME = 0.08;     // level while a cheer/voice line is speaking
+const BGM_VOLUME = 0.20;      // normal background level
+const DUCK_VOLUME = 0.02;     // level while a cheer/voice line is speaking
 const FADE_MS = 350;
 
 const tracks = {
@@ -72,6 +72,18 @@ function duck(ms) {
 function unlockOnce() {
   if (unlocked) return;
   unlocked = true;
+
+  // iOS Safari's autoplay allowance is per <audio> element, not per page —
+  // starting a SECOND track later (e.g. switching to "game" when entering
+  // a lesson) can get silently blocked if that element was never itself
+  // played during a real user gesture. Prime every track right now, in
+  // this same gesture, then immediately pause — silent (volume is still 0
+  // at this point), but it "unlocks" each element for later.
+  Object.values(tracks).forEach(t => {
+    const p = t.play();
+    if (p && p.then) p.then(() => t.pause()).catch(() => {});
+  });
+
   if (pendingKey) play(pendingKey);
 }
 
