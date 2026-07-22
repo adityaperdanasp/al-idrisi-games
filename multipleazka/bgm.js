@@ -42,6 +42,14 @@
     gain.gain.linearRampToValueAtTime(VOLUME, now + FADE_MS / 1000);
   }
 
+  function fadeOut() {
+    if (!gain || !ctx) return;
+    const now = ctx.currentTime;
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setValueAtTime(gain.gain.value, now);
+    gain.gain.linearRampToValueAtTime(0, now + FADE_MS / 1000);
+  }
+
   function kickAudioContext() {
     if (!ctx) return;
     ctx.resume();
@@ -68,4 +76,9 @@
   ["pointerdown", "touchend", "click", "keydown"].forEach(evt =>
     document.addEventListener(evt, unlockOnce, { passive: true })
   );
+
+  // Silenced during the race itself (so the countdown/question timer/
+  // cheering aren't competing with music), back on once the post-race
+  // celebration is done. No-op if audio was never unlocked yet.
+  window.AIGBgm = { stop: fadeOut, start: fadeIn };
 })();

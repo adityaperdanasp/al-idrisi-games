@@ -707,6 +707,7 @@ function resetCarsToStart() {
 function startRace() {
   showScreen("screen-race");
   state.answerLocked = false;
+  if (window.AIGBgm) AIGBgm.stop();   // silenced for the race; back on after the confetti finishes
 
   // Parent role gets neutral feedback; Kids get cheering. Hide/adjust label.
   $("your-turn-label").textContent =
@@ -1333,7 +1334,11 @@ function endGame(finishers) {
 
   showScreen("screen-over");
   renderResults(finishers);
-  if (iWon) celebrateWin();         // confetti + cheer — winner's device only
+  if (iWon) {
+    celebrateWin();                 // confetti + cheer — winner's device only (also brings BGM back after)
+  } else if (window.AIGBgm) {
+    AIGBgm.start();                 // no confetti on this device, so bring the music back right away
+  }
 }
 
 // Solo finish — same celebration, but only ever has the one racer.
@@ -1367,6 +1372,10 @@ function celebrateWin() {
   burstConfetti();
   playCheerSound();
   playFinishCheer();   // applause + "Yeah!" — replaces the old spoken win line
+
+  // burstConfetti() runs for 3s (see its own duration constant) — bring
+  // the BGM back in once the confetti has finished falling.
+  if (window.AIGBgm) setTimeout(() => AIGBgm.start(), 3000);
 }
 
 // Applause + an excited "Yeah!" shout — as loud as the old voiceover was,
