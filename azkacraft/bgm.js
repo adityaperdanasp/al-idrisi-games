@@ -130,3 +130,17 @@ function unlockOnce() {
 );
 
 window.AIGBgm = { play, duck };
+
+// Temporary debug hook — lets us inspect Web Audio state from Safari's
+// remote Web Inspector on a real iPhone. Safe to remove once the iOS
+// audio issue is diagnosed.
+window.AIGBgmDebug = () => ({
+  ctxState: ctx ? ctx.state : "no ctx yet",
+  unlocked,
+  current,
+  pendingKey,
+  gains: Object.fromEntries(Object.entries(gainNodes).map(([k, g]) => [k, g.gain.value])),
+  trackPaused: Object.fromEntries(Object.entries(tracks).map(([k, t]) => [k, t.paused])),
+  trackReadyState: Object.fromEntries(Object.entries(tracks).map(([k, t]) => [k, t.readyState])),
+  trackError: Object.fromEntries(Object.entries(tracks).map(([k, t]) => [k, t.error ? t.error.message : null]))
+});
