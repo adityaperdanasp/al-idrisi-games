@@ -2,14 +2,15 @@
 // Edit this list any time; no other code needs to change.
 // parentEmail: fill in for students so the dashboard can send approved
 // insights to parents. Leave "" if not set yet — the dashboard just won't
-// show a "send" button for that student until it's filled in.
+// show a "send" button for that student until it's filled in. Separate
+// multiple parent emails with a comma, e.g. "dad@x.com, mom@x.com".
 window.AIG_PLAYERS = [
   { id: "sofhie", name: "Ms. Sofhie", role: "teacher" },
   { id: "euis", name: "Mrs. Euis", role: "teacher" },
   { id: "rachel", name: "Ms. Rachel", role: "teacher" },
 
   { id: "bram", name: "Bram", role: "student", parentEmail: "" },
-  { id: "azka", name: "Azka", role: "student", parentEmail: "" },
+  { id: "azka", name: "Azka", role: "student", parentEmail: "suherman.aditya@gmail.com, adestefi86@gmail.com" },
   { id: "aikara", name: "Aikara", role: "student", parentEmail: "" },
   { id: "alesha", name: "Alesha", role: "student", parentEmail: "" },
   { id: "annisa", name: "Annisa", role: "student", parentEmail: "" },

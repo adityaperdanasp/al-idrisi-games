@@ -9,8 +9,9 @@ module.exports = async (req, res) => {
   }
 
   const { to, studentName, draft } = req.body || {};
-  if (!to || typeof to !== "string" || !to.includes("@")) {
-    res.status(400).json({ error: "Missing or invalid 'to' email address" });
+  const recipients = (Array.isArray(to) ? to : [to]).filter(e => typeof e === "string" && e.includes("@"));
+  if (!recipients.length) {
+    res.status(400).json({ error: "Missing or invalid 'to' email address(es)" });
     return;
   }
   if (!draft || typeof draft !== "string") {
@@ -34,7 +35,7 @@ module.exports = async (req, res) => {
       },
       body: JSON.stringify({
         from,
-        to: [to],
+        to: recipients,
         subject: `Progress ${studentName || "anak Anda"} di Al Idrisi Games`,
         text: draft
       })

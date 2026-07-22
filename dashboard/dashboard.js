@@ -280,7 +280,7 @@
     } else if (insight.sentAt) {
       actions = `<div class="db-insight-meta">Disetujui: ${insight.approvedAt ? new Date(insight.approvedAt).toLocaleString("id-ID") : "-"}</div>
         <div class="db-insight-meta">Terkirim ke ${escapeHtml(insight.sentTo || "-")}: ${new Date(insight.sentAt).toLocaleString("id-ID")}</div>`;
-    } else if (player && player.parentEmail) {
+    } else if (player && parseEmails(player.parentEmail).length) {
       actions = `<div class="db-insight-meta">Disetujui: ${insight.approvedAt ? new Date(insight.approvedAt).toLocaleString("id-ID") : "-"}</div>
         <div class="db-insight-actions"><button class="db-btn-small" data-send="${studentId}">Kirim Email ke Ortu (${escapeHtml(player.parentEmail)})</button></div>`;
     } else {
@@ -306,10 +306,16 @@
     });
   }
 
+  // Supports comma-separated multiple parent emails, e.g. "dad@x.com, mom@x.com".
+  function parseEmails(str) {
+    return (str || "").split(",").map(e => e.trim()).filter(e => e.includes("@"));
+  }
+
   function sendInsightEmail(studentId) {
     const player = (window.AIG_PLAYERS || []).find(p => p.id === studentId);
     const insight = cache.insights[studentId];
-    if (!player || !player.parentEmail || !insight) return;
+    const emails = player ? parseEmails(player.parentEmail) : [];
+    if (!emails.length || !insight) return;
 
     const btn = document.querySelector(`[data-send="${studentId}"]`);
     if (btn) { btn.disabled = true; btn.textContent = "Mengirim..."; }
@@ -317,14 +323,14 @@
     fetch("/api/send-insight", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ to: player.parentEmail, studentName: player.name, draft: insight.draft })
+      body: JSON.stringify({ to: emails, studentName: player.name, draft: insight.draft })
     })
       .then(r => r.json().then(data => ({ ok: r.ok, data })))
       .then(({ ok, data }) => {
         if (!ok) throw new Error(data.error || "Gagal mengirim email");
         return AIGLeaderboard.db.ref(`insights/${studentId}`).update({
           sentAt: firebase.database.ServerValue.TIMESTAMP,
-          sentTo: player.parentEmail
+          sentTo: emails.join(", ")
         });
       })
       .then(loadAndRender)
