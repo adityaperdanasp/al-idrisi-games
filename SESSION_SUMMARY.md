@@ -74,11 +74,23 @@ Sesi sebelumnya berhenti di "sedang didiskusikan" — sekarang SUDAH dieksekusi 
 ### QA pass sistematis (yang kedua kalinya dilakuin di project ini, setelah Opsi C selesai)
 Checklist: smoke test (semua game+hub+leaderboard+dashboard, console error, network 404) → integration test (verify Firebase asli buat parent identity, lalu cleanup) → regression check (login murid biasa masih normal, volume BGM 4 titik masih konsisten 0.30, badge/topicStats anak gak kesentuh salah) → deploy consistency (diff hub vs 3 domain standalone).
 
-**Hasil: 0 bug ditemukan.** Semua smoke/integration/regression/deploy-consistency check PASS. Satu-satunya yang di-flag: **belum ada verifikasi manual di iPhone/Safari asli** buat semua perubahan audio/tap/animasi sejak fix `AudioContext` besar di sesi sebelumnya (termasuk: BGM baru multipleazka+azkauniverse, BGM stop/resume saat race, tap-highlight fixes, hover-bounce, modal whois baru, layar Get Ready). **Ini task berikutnya yang lagi jalan** — user lagi otw connect iPhone via Safari Web Inspector buat verifikasi manual (2 prompt panduan udah dikasih ke user, satu spesifik project ini, satu template general reusable buat project lain).
+**Hasil: 0 bug ditemukan.** Semua smoke/integration/regression/deploy-consistency check PASS. Satu-satunya yang di-flag waktu itu: belum ada verifikasi manual di iPhone/Safari asli.
+
+### Verifikasi manual iPhone (SUDAH DILAKUKAN, lewat Safari Web Inspector beneran)
+User connect iPhone via kabel, pandu step-by-step sampai buka Web Inspector dari Safari Mac. Checklist dijalanin satu-satu dengan instruksi persis apa yang di-tap:
+
+1. Modal "Playing as {nama}?" (Just me / My parent is playing) — **PASS**, avatar+greeting berubah sesuai identitas yang dipilih
+2. Subtitle Math Race berubah sesuai identitas (anak vs parent) — **PASS**
+3. Layar "Get Ready!" + suara tick sebelum vehicle-select — **PASS**
+4. Tap-highlight (kotak abu-abu Safari) — **❌ ADA, ketemu di tombol "Let's Race!"/"Play Solo"** → **root cause:** fix tap-highlight sebelumnya cuma pernah diterapin per-class (`.vehicle-opt` doang di multipleazka), gak pernah di-generalize. **Fix:** tambah 1 rule global `button, a { -webkit-tap-highlight-color: transparent; }` di SEMUA 4 stylesheet (hub, azkacraft, azkauniverse, multipleazka) — nutup kelas bug ini sekali buat selamanya, gak whack-a-mole per-elemen lagi.
+5. Icon kendaraan "plane" pas dipakai di race — **❌ ARAH KEBALIK** (gak searah race) → **root cause:** ada blanket `scaleX(-1)` di CSS `.car` buat balikin emoji mobil/truk/kapal/kereta (yang defaultnya ngadep kiri) biar ngadep kanan (searah finish). Emoji pesawat kecil (🛩️) orientasi defaultnya BEDA dari yang lain, jadi kena flip yang sama malah jadi kebalik. **Fix:** `car.dataset.vehicle` di-set di `updateCar()`, plus CSS override `.car[data-vehicle="plane"] { transform: translateY(-50%) scaleX(1); }` buat undo flip khusus plane.
+6. BGM Math Race "kedengeran kayak 100%" — **didiagnosis via temporary debug hook** (`AIGBgmDebug()`, pola sama kayak dulu di azkacraft) → hasil: `ctxState: "running"`, `gain: 0.30` — **BUKAN bug**, kode udah bener persis di 30%, cuma file musiknya (`moodmode-retro-game-arcade`) emang di-mastering kenceng jadi tetap kerasa loud di kuping. User milih **biarin di 30%** (gak diganti track, gak diturunin lagi). Debug hook udah dihapus lagi setelah diagnosis selesai.
+
+Semua fix di atas SUDAH commit + deploy ke hub dan ketiga project game (verified sync).
 
 ## Yang masih perlu ditindaklanjuti
-1. **SEDANG BERLANGSUNG: verifikasi manual di iPhone/Safari asli** — checklist yang perlu dicek (lihat draft prompt terakhir di riwayat chat kalau perlu detail persis): modal whois (murid vs "...'s Parent"), subtitle Math Race berubah sesuai identitas, layar Get Ready + suara tick, BGM stop/resume, tap-highlight gak muncul kotak abu-abu, BGM 3 game lain kedengeran normal. Kalau user lapor hasil, tanggapi per-poin.
-2. Testing multiplayer 2-device beneran (bukan simulasi console) buat disconnect handling & BGM stop/resume — logic udah diverifikasi via kode+simulasi browser+Firebase asli, tapi belum pernah dicoba 2 device fisik sekaligus.
+1. Testing multiplayer 2-device beneran (bukan simulasi console) buat disconnect handling & BGM stop/resume — logic udah diverifikasi via kode+simulasi browser+Firebase asli, tapi belum pernah dicoba 2 device fisik sekaligus.
+2. Kalau vehicle lain (ship/train/truck/bus) ternyata JUGA punya masalah arah kayak plane — belum ada laporan, tapi worth dicek kalau user pilih kendaraan lain pas main beneran.
 3. Dashboard guru/ortu: belum ada bukti email approval beneran terkirim; `parentEmail` baru keisi 1 dari 25 murid — kalau mau dashboard berguna penuh (termasuk metrik parentSessions per semua anak), perlu diisi manual oleh user.
 4. File `SESSION_SUMMARY.md` ini cuma buat handoff — boleh dihapus dari repo kalau mau.
 
