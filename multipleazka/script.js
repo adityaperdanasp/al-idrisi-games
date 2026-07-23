@@ -377,8 +377,14 @@ $("btn-choose-vehicle").addEventListener("click", () => {
     if (state.code) {
       db.ref(`games/${state.code}/players/${state.seatKey}/vehicle`).set(state.vehicle);
     }
-    showScreen("screen-pair");
-    updateRideButtonLabel();
+    // Only return to the waiting screen if the race hasn't already started
+    // in the background (e.g. the other player finished joining while we
+    // were still picking) — otherwise this would yank the player away from
+    // a race that's already underway.
+    if (!raceIsActive()) {
+      showScreen("screen-pair");
+      updateRideButtonLabel();
+    }
   });
 });
 
@@ -485,10 +491,23 @@ function playerSeed(joinOrder) {
 // warning was jarring for kids. Reuses the same tick sound as the race
 // start countdown so no new audio asset is needed.
 const GET_READY_MS = 2500;
+
+// True once the race screen is showing — used to stop the ride-picker from
+// yanking a player back to Get Ready/vehicle-grid/waiting screens if the
+// other player finishes joining (and the race auto-starts) while this
+// player is still mid-pick from the post-create "Choose Your Ride" button.
+function raceIsActive() {
+  return document.getElementById("screen-race").classList.contains("active");
+}
+
 function showGetReady(onDone) {
+  if (raceIsActive()) return;
   showScreen("screen-get-ready");
   playCountdownBeep(false);
-  setTimeout(onDone, GET_READY_MS);
+  setTimeout(() => {
+    if (raceIsActive()) return;
+    onDone();
+  }, GET_READY_MS);
 }
 
 // Show the ride-picker and run its 10s countdown. `onDone` fires once —
@@ -501,6 +520,7 @@ function showVehicleSelect(onDone) {
 }
 
 function showVehicleSelectGrid(onDone) {
+  if (raceIsActive()) return;
   showScreen("screen-vehicle");
 
   document.querySelectorAll(".vehicle-opt").forEach(btn => {
@@ -521,6 +541,7 @@ function showVehicleSelectGrid(onDone) {
   vehicleTimeLeft = VEHICLE_TIME;
   updateVehicleTimerUI();
   vehicleTimerId = setInterval(() => {
+    if (raceIsActive()) { clearVehicleTimer(); return; }
     vehicleTimeLeft -= 0.1;
     if (vehicleTimeLeft <= 0) {
       clearVehicleTimer();
