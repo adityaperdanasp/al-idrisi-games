@@ -114,6 +114,19 @@
 
   document.getElementById("db-refresh").addEventListener("click", loadAndRender);
 
+  // Counts how many DISTINCT calendar days a "parent" identity (see
+  // player.js deriveParentPlayer / leaderboard.js recordPlay) played
+  // alongside this child, within the current Mon–Sun week. Written at
+  // players/{studentId}/parentSessions/{YYYY-MM-DD} — capped at one entry
+  // per day per child, so this is a genuine day-count, not a play-count.
+  function parentSessionsThisWeek(studentId) {
+    const sessions = (cache.players[studentId] && cache.players[studentId].parentSessions) || {};
+    const now = new Date();
+    const mondayOffset = (now.getDay() + 6) % 7; // getDay(): Sun=0..Sat=6 → Mon=0..Sun=6
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - mondayOffset);
+    return Object.keys(sessions).filter(dateStr => new Date(dateStr + "T00:00:00") >= startOfWeek).length;
+  }
+
   function studentSummary(studentId) {
     const badges = (cache.players[studentId] && cache.players[studentId].badges) || {};
     const topicStats = (cache.players[studentId] && cache.players[studentId].topicStats) || {};
@@ -153,6 +166,7 @@
     const tbody = document.getElementById("student-tbody");
     tbody.innerHTML = students.map(p => {
       const s = studentSummary(p.id);
+      const parentDays = parentSessionsThisWeek(p.id);
       return `<tr data-student="${p.id}">
         <td class="db-student-name">${escapeHtml(p.name)}</td>
         <td>${gameCellHtml("mathrace", s.mathrace)}</td>
@@ -161,6 +175,7 @@
         <td>${GAMES.map(g => weakTopics(s[g.id].topicStats, 1).map(t =>
           `<span class="db-topic-chip">${escapeHtml(g.label)}: ${escapeHtml(prettifyTopic(g.id, t.topic))}</span>`
         ).join("")).join("")}</td>
+        <td>${parentDays > 0 ? `${parentDays}x minggu ini` : `<span class="db-muted">—</span>`}</td>
       </tr>`;
     }).join("");
 
@@ -194,9 +209,18 @@
       </div>`;
     }).join("");
 
+    const parentDays = parentSessionsThisWeek(studentId);
+    const parentSessionsHtml = `<div class="db-detail-section">
+      <h3>Keterlibatan Orang Tua</h3>
+      <div>${parentDays > 0
+        ? `Orang tua ${escapeHtml(player.name)} menemani main <b>${parentDays}x</b> minggu ini.`
+        : `Belum ada sesi ditemani orang tua minggu ini.`}</div>
+    </div>`;
+
     detailContent.innerHTML = `
       <h2>${escapeHtml(player.name)}</h2>
       ${sections}
+      ${parentSessionsHtml}
       <div class="db-detail-section">
         <button class="db-btn-small" id="generate-draft-btn">Generate draft insight untuk ortu</button>
       </div>
