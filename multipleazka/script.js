@@ -698,6 +698,7 @@ function updateCar(slot, player, isMine) {
   // Show whichever ride this player picked (defaults to the F1 car).
   const emoji = VEHICLE_EMOJI[player.vehicle] || VEHICLE_EMOJI.car;
   if (car.textContent !== emoji) car.textContent = emoji;
+  car.dataset.vehicle = player.vehicle || "car"; // lets CSS flip rides whose emoji art doesn't face the race direction
 
   // Car travels from just past the START label to just before the finish flag.
   const startX = 28;

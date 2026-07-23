@@ -98,6 +98,11 @@ body[data-theme="colorful"] {
 /* ---------- Base ---------- */
 * { box-sizing: border-box; }
 
+/* iOS Safari's default gray tap-highlight overlay on every button/link —
+   disabled globally instead of per-class, so newly added buttons never
+   need this patched in again one at a time. */
+button, a { -webkit-tap-highlight-color: transparent; }
+
 html, body {
   margin: 0;
   height: 100%;
@@ -411,6 +416,12 @@ h1, h2 { margin: 0 0 8px; }
   transition: left 0.5s cubic-bezier(.34,1.2,.64,1);
   will-change: left;
   z-index: 2;
+}
+/* Unlike the car/truck/ship/train art, the small-airplane emoji's default
+   orientation already leans toward the finish line — the blanket flip
+   above turns it backwards, so undo it just for this one ride. */
+.car[data-vehicle="plane"] {
+  transform: translateY(-50%) scaleX(1);
 }
 
 /* Little smoke puff behind the car when it moves */

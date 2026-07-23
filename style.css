@@ -2,6 +2,11 @@
   box-sizing: border-box;
 }
 
+/* iOS Safari's default gray tap-highlight overlay on every button/link —
+   disabled globally instead of per-class, so newly added buttons never
+   need this patched in again one at a time. */
+button, a { -webkit-tap-highlight-color: transparent; }
+
 html,
 body {
   margin: 0;
