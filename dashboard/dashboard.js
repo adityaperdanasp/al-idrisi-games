@@ -262,6 +262,11 @@
       draft += " Belum ada area lemah spesifik yang tercatat.";
     }
 
+    const parentDays = parentSessionsThisWeek(studentId);
+    draft += parentDays > 0
+      ? ` Orang tua ikut menemani main ${parentDays}x minggu ini — terima kasih atas keterlibatannya!`
+      : " Belum ada sesi ditemani orang tua minggu ini.";
+
     AIGLeaderboard.db.ref(`insights/${studentId}`).set({
       draft,
       generatedAt: firebase.database.ServerValue.TIMESTAMP,
