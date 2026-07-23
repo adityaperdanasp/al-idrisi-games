@@ -133,7 +133,6 @@ const state = {
   difficulty: "medium", // 'easy' | 'medium' | 'hard' — see DIFFICULTY table
   answerMode: "choice", // 'choice' (multiple choice) | 'type' (keypad)
   answerLocked: false,  // guards against double-submits between questions
-  timerOn: true,        // per-question 10s countdown on/off
   solo: false,          // true when playing without a paired opponent
   wrongAttempts: 0,     // wrong tries on the CURRENT question (type-in gets 2 before reveal)
   vehicle: "car",        // chosen ride — kept across "Play Again", reset when going Home
@@ -297,15 +296,6 @@ document.querySelectorAll("#answer-seg .seg-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     state.answerMode = btn.dataset.mode;           // 'choice' or 'type'
     document.querySelectorAll("#answer-seg .seg-btn")
-      .forEach(b => b.classList.toggle("active", b === btn));
-  });
-});
-
-// Timer on/off segmented control. Per player.
-document.querySelectorAll("#timer-seg .seg-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    state.timerOn = btn.dataset.timer === "on";
-    document.querySelectorAll("#timer-seg .seg-btn")
       .forEach(b => b.classList.toggle("active", b === btn));
   });
 });
@@ -1030,8 +1020,6 @@ function nextQuestion() {
 function startQuestionTimer() {
   clearQuestionTimer();
   const wrap = $("timer-wrap");
-  if (!state.timerOn) { wrap.classList.add("hidden"); return; }
-
   wrap.classList.remove("hidden");
   questionTimeTotal = DIFFICULTY[state.difficulty].time;
   timerRemaining = questionTimeTotal;
