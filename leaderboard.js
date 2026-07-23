@@ -28,9 +28,27 @@
   // promise resolving to the new timesPlayed total (or null), so callers
   // that care about play-count milestones (e.g. badge unlocks) don't need
   // a separate read.
+  //
+  // A "parent" identity (see player.js deriveParentPlayer) never touches
+  // the child's own leaderboard entry — instead this logs one "parent
+  // accompanied a session" tick for that child, capped at once per
+  // calendar day so replaying several races in a row doesn't inflate it.
   function recordPlay(gameId) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player) return Promise.resolve(null);
+
+    if (player.role === "parent") {
+      if (player.childId) {
+        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        aigDb.ref(`players/${player.childId}/parentSessions/${today}`).set({
+          parentName: player.name,
+          lastGamePlayed: gameId,
+          at: firebase.database.ServerValue.TIMESTAMP
+        });
+      }
+      return Promise.resolve(null); // no timesPlayed/badge milestones for a parent identity
+    }
+
     const ref = aigDb.ref(`leaderboard/${gameId}/${player.id}`);
     ref.update({ name: player.name, lastPlayed: firebase.database.ServerValue.TIMESTAMP });
     return ref.child("timesPlayed").transaction(cur => (cur || 0) + 1)
@@ -51,16 +69,18 @@
   // ---- Cloud-synced progress (badges/XP), so a child's progress follows
   // them across devices instead of staying stuck in one browser's
   // localStorage. Stored at /players/{playerId}/badges/{gameId}.
+  // A "parent" identity never has progress of its own — always null/no-op —
+  // so a parent playing a round never creates or touches any badge data.
   async function getProgress(gameId) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
-    if (!player) return null;
+    if (!player || player.role === "parent") return null;
     const snap = await aigDb.ref(`players/${player.id}/badges/${gameId}`).get();
     return snap.exists() ? snap.val() : null;
   }
 
   function setProgress(gameId, data) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
-    if (!player) return;
+    if (!player || player.role === "parent") return;
     aigDb.ref(`players/${player.id}/badges/${gameId}`).set(data);
   }
 
@@ -72,9 +92,12 @@
   // raw wrong count) can be computed — a topic missed 5/5 times is a very
   // different signal than one missed 5/50 times.
   // topicKey must be Firebase-key-safe (no . # $ / [ ]).
+  // A "parent" identity's answers never count toward the CHILD's weak-spot
+  // tracking — otherwise a parent helping out would make the dashboard
+  // think the child understands a topic they actually still struggle with.
   function recordTopicAttempt(gameId, topicKey, isCorrect) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
-    if (!player) return;
+    if (!player || player.role === "parent") return;
     const ref = aigDb.ref(`players/${player.id}/topicStats/${gameId}/${topicKey}`);
     ref.child(isCorrect ? "correct" : "wrong").transaction(cur => (cur || 0) + 1);
     if (!isCorrect) ref.update({ lastWrongAt: firebase.database.ServerValue.TIMESTAMP });

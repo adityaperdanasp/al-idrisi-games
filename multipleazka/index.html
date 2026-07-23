@@ -40,18 +40,9 @@
   <section id="screen-role" class="screen active">
     <div class="card">
       <h1 class="logo">Math Race <span class="logo-emoji">🏎️</span></h1>
-      <p class="subtitle">Pick who's playing, then race!</p>
+      <p class="subtitle" id="screen-role-subtitle">Pick who's playing, then race!</p>
 
-      <div class="role-buttons">
-        <button class="role-btn" data-role="kids">
-          <span class="role-emoji">👦</span>
-          <span class="role-title">Kids</span>
-        </button>
-        <button class="role-btn" data-role="parent">
-          <span class="role-emoji">🧑</span>
-          <span class="role-title">Parent</span>
-        </button>
-      </div>
+      <button id="btn-lets-race" class="primary-btn">Let's Race! 🏁</button>
 
       <!-- Scattered doodle words — purely decorative, positions randomized by script.js -->
       <div class="role-doodles" id="role-doodles">
@@ -132,6 +123,18 @@
           <span id="waiting-text">Waiting for the other player to join…</span>
         </p>
       </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- SCREEN 2a: GET READY — brief non-interactive beat before the   -->
+  <!-- vehicle-picker's 10s timer starts, so it isn't a jump-scare.   -->
+  <!-- ============================================================= -->
+  <section id="screen-get-ready" class="screen">
+    <div class="card get-ready-card">
+      <div class="get-ready-emoji">🏎️</div>
+      <h2>Get Ready!</h2>
+      <p class="subtitle">You'll pick your ride next…</p>
     </div>
   </section>
 

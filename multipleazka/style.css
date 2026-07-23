@@ -164,60 +164,6 @@ body {
 
 h1, h2 { margin: 0 0 8px; }
 
-/* ---------- Role selection (racetrack lane card) ---------- */
-.role-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-.role-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 22px 10px;
-  border: none;
-  border-radius: var(--radius);
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: transform .18s cubic-bezier(.33,1.2,.3,1), box-shadow .18s ease;
-  box-shadow: 0 6px 0 rgba(0,0,0,.08);
-  background-size: auto, 100% 4px;
-  background-repeat: no-repeat, no-repeat;
-  background-position: center, bottom;
-  -webkit-tap-highlight-color: transparent;
-}
-.role-btn[data-role="kids"] {
-  background-image:
-    linear-gradient(180deg, #ffcb8f 0%, #ff9c47 100%),
-    repeating-linear-gradient(90deg, rgba(255,255,255,.4) 0 14px, transparent 14px 28px);
-}
-.role-btn[data-role="parent"] {
-  background-image:
-    linear-gradient(180deg, #5aa3f0 0%, #1266d8 100%),
-    repeating-linear-gradient(90deg, rgba(255,255,255,.4) 0 14px, transparent 14px 28px);
-}
-.role-btn::after {
-  content: "🏁";
-  position: absolute;
-  top: 8px; right: 10px;
-  font-size: 1.3rem;
-  opacity: .55;
-  transform: rotate(8deg);
-}
-.role-btn:hover, .role-btn:focus-visible {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 0 rgba(0,0,0,.1), 0 16px 26px rgba(18,102,216,.22);
-  outline: none;
-}
-.role-btn:active {
-  transform: translateY(1px);
-  box-shadow: 0 3px 0 rgba(0,0,0,.08);
-}
-.role-emoji { font-size: 2.4rem; filter: drop-shadow(0 4px 6px rgba(0,0,0,.2)); }
-.role-title { font-size: 1.15rem; font-weight: 800; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,.2); }
 
 /* ---------- Scattered decorative doodle words under the role cards ---------- */
 .role-doodles {
@@ -806,6 +752,17 @@ h1, h2 { margin: 0 0 8px; }
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* --- "Get Ready!" beat before the vehicle picker --- */
+.get-ready-card { text-align: center; }
+.get-ready-emoji {
+  font-size: 4rem;
+  animation: getReadyBounce 0.6s ease-in-out infinite alternate;
+}
+@keyframes getReadyBounce {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-14px); }
 }
 
 /* --- Per-question countdown timer --- */

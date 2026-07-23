@@ -441,3 +441,53 @@ body {
 .sc-game-card.lang .sc-game-sub { color: #9b5d84; }
 .sc-game-card.solar .sc-game-title { color: #3f7a4e; }
 .sc-game-card.solar .sc-game-sub { color: #5d9268; }
+
+/* ---------- "Who's actually playing?" step (student vs their parent) ---------- */
+.sc-whois-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(61, 46, 34, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.sc-whois-overlay.hidden { display: none; }
+.sc-whois-card {
+  background: #fdf6ea;
+  border-radius: 20px;
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+}
+.sc-whois-title {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #3d2e22;
+  margin-bottom: 16px;
+}
+.sc-whois-btn {
+  display: block;
+  width: 100%;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 14px;
+  background: #fff;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #3d2e22;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.06);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease;
+}
+.sc-whois-btn:last-child { margin-bottom: 0; }
+.sc-whois-btn:active { transform: scale(0.96); }
+#sc-whois-child { background: #C1E1C1; }
+#sc-whois-parent { background: #C1D4F6; }

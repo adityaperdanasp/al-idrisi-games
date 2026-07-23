@@ -21,5 +21,20 @@
     localStorage.removeItem(STORAGE_KEY);
   }
 
-  window.AIGPlayer = { getPlayer, setPlayer, clearPlayer };
+  // Derives a "play as this child's parent" identity from a student roster
+  // entry — no separate players.js entries needed. Kept deterministic
+  // (same childId always produces the same parent id) so cross-device
+  // progress for the SAME parent-of-that-child always lands in the same
+  // place. `childId` is carried explicitly (not just parsed back out of
+  // the id string) so callers never have to guess the convention.
+  function deriveParentPlayer(child) {
+    return {
+      id: `${child.id}-parent`,
+      name: `${child.name}'s Parent`,
+      role: "parent",
+      childId: child.id
+    };
+  }
+
+  window.AIGPlayer = { getPlayer, setPlayer, clearPlayer, deriveParentPlayer };
 })();

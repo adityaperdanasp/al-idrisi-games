@@ -192,22 +192,29 @@ const $ = id => document.getElementById(id);
 
 
 /* =================================================================
-   4. ROLE SELECTION
+   4. IDENTITY-DERIVED ROLE (was a manual Kids/Parent picker — now the
+   hub identity itself says who's playing, so the pace/tone ruleset
+   follows automatically instead of being self-reported. A parent could
+   previously mis-tag themselves as "Kids" — or vice versa — which
+   quietly corrupted the child's own accuracy/badge data; deriving it
+   from identity makes that impossible.)
    ================================================================= */
-document.querySelectorAll(".role-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    state.role = btn.dataset.role;                 // 'kids' or 'parent'
-    $("pair-role-label").textContent =
-      state.role === "kids" ? "Kids 👦" : "Parent 🧑";
-    resetPairUI();
+state.role = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().role === "parent")
+  ? "parent" : "kids";
+$("screen-role-subtitle").textContent = state.role === "parent"
+  ? "Playing to help your child — let's race!"
+  : "Pick who's playing, then race!";
 
-    // Arrived here via a scanned QR join link — prefill the code for them.
-    if (pendingJoinCode) {
-      $("join-code-input").value = pendingJoinCode;
-    }
+$("btn-lets-race").addEventListener("click", () => {
+  $("pair-role-label").textContent = CHILD_NAME;
+  resetPairUI();
 
-    showScreen("screen-pair");
-  });
+  // Arrived here via a scanned QR join link — prefill the code for them.
+  if (pendingJoinCode) {
+    $("join-code-input").value = pendingJoinCode;
+  }
+
+  showScreen("screen-pair");
 });
 
 // Decorative doodle words ("Race" / "Start" / "Finish") scattered under the
@@ -453,10 +460,27 @@ function playerSeed(joinOrder) {
    5b. VEHICLE SELECTION — 10s countdown before Create/Join/Solo commits
    ================================================================= */
 
+// A brief non-interactive "Get Ready!" beat before the vehicle grid (and
+// its ticking 10s timer) appears — landing straight on a countdown with no
+// warning was jarring for kids. Reuses the same tick sound as the race
+// start countdown so no new audio asset is needed.
+const GET_READY_MS = 2500;
+function showGetReady(onDone) {
+  showScreen("screen-get-ready");
+  playCountdownBeep(false);
+  setTimeout(onDone, GET_READY_MS);
+}
+
 // Show the ride-picker and run its 10s countdown. `onDone` fires once —
 // either when the player taps a ride, or when time runs out (keeping
-// whatever was selected, defaulting to "car").
+// whatever was selected, defaulting to "car"). Always preceded by a short
+// "Get Ready!" beat (see showGetReady) so the timer doesn't start the
+// instant this screen appears.
 function showVehicleSelect(onDone) {
+  showGetReady(() => showVehicleSelectGrid(onDone));
+}
+
+function showVehicleSelectGrid(onDone) {
   showScreen("screen-vehicle");
 
   document.querySelectorAll(".vehicle-opt").forEach(btn => {

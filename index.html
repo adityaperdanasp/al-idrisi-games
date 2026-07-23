@@ -172,6 +172,17 @@
     </div>
 
   </div>
+
+  <!-- "Who's actually playing" step — shown after tapping a STUDENT card,
+       before landing in the hub. Skipped entirely for teachers, who have
+       no parent-identity concept. -->
+  <div id="sc-whois-overlay" class="sc-whois-overlay hidden">
+    <div class="sc-whois-card">
+      <div class="sc-whois-title">Playing as <span id="sc-whois-name">Azka</span>?</div>
+      <button class="sc-whois-btn" id="sc-whois-child">🧒 Just me</button>
+      <button class="sc-whois-btn" id="sc-whois-parent">🧑 My parent is playing with/for me</button>
+    </div>
+  </div>
 </main>
 
 <script src="player.js"></script>
@@ -198,7 +209,11 @@
       const tIdx = TEACHERS_ONLY.findIndex(t => t.id === p.id);
       return SC_STUDENT_PALETTE[tIdx % SC_STUDENT_PALETTE.length];
     }
-    const idx = STUDENTS_ONLY.findIndex(s => s.id === p.id);
+    // A derived "parent" identity isn't in either roster — reuse the
+    // linked child's own color so the avatar still looks intentional
+    // instead of falling through to an unmatched index.
+    const lookupId = p.role === "parent" ? p.childId : p.id;
+    const idx = STUDENTS_ONLY.findIndex(s => s.id === lookupId);
     return SC_STUDENT_PALETTE[idx % SC_STUDENT_PALETTE.length];
   }
 
@@ -235,8 +250,42 @@
   }
 
   function selectPlayer(p) {
-    AIGPlayer.setPlayer(p);
-    showLanding();
+    // Teachers have no parent-identity concept — go straight in.
+    if (p.role !== "student") {
+      AIGPlayer.setPlayer(p);
+      showLanding();
+      return;
+    }
+    showWhoIsPlaying(p);
+  }
+
+  // "Playing as {name}?" step for students only — lets a parent identify
+  // themselves instead of silently posing as the child. Kept as a single
+  // extra tap on the SAME card grid rather than doubling it to 50 boxes.
+  function showWhoIsPlaying(child) {
+    document.getElementById("sc-whois-name").textContent = child.name;
+    const overlay = document.getElementById("sc-whois-overlay");
+    overlay.classList.remove("hidden");
+
+    const childBtn = document.getElementById("sc-whois-child");
+    const parentBtn = document.getElementById("sc-whois-parent");
+
+    function cleanup() {
+      overlay.classList.add("hidden");
+      childBtn.onclick = null;
+      parentBtn.onclick = null;
+    }
+
+    childBtn.onclick = () => {
+      cleanup();
+      AIGPlayer.setPlayer(child);
+      showLanding();
+    };
+    parentBtn.onclick = () => {
+      cleanup();
+      AIGPlayer.setPlayer(AIGPlayer.deriveParentPlayer(child));
+      showLanding();
+    };
   }
 
   const SC_GREETINGS = [
