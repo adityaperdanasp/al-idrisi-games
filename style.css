@@ -372,11 +372,7 @@ body {
 }
 
 .sc-greeting {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin: 4px 24px 24px;
+  margin: 8px 24px 24px;
   padding: 4px 18px;
   font-family: "Baloo 2", sans-serif;
   font-size: 0.95rem;
@@ -385,10 +381,6 @@ body {
   text-align: center;
   position: relative;
   z-index: 1;
-}
-
-.sc-greeting-emoji {
-  font-size: 1.1rem;
 }
 
 @keyframes sc-greeting-bob {
