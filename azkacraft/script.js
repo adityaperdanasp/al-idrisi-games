@@ -314,6 +314,21 @@ function renderMultiplayerChapterOptions() {
 
 /* ---------------------------- Sticker Book ---------------------------- */
 
+// Brief toast announcing a newly-earned sticker — mirrors multipleazka's
+// badge-unlock toast so earning a sticker feels the same across both games.
+function showStickerToast(icon, name) {
+  const toast = document.getElementById("sticker-toast");
+  if (!toast) return;
+  document.getElementById("sticker-toast-icon").textContent = icon;
+  document.getElementById("sticker-toast-name").textContent = name;
+  toast.classList.remove("hidden");
+  toast.classList.add("show");
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.classList.add("hidden"), 300);
+  }, 2600);
+}
+
 function renderStickers() {
   const titleEl = document.getElementById("sticker-book-title");
   if (titleEl) titleEl.textContent = "Sticker Book";
@@ -323,9 +338,11 @@ function renderStickers() {
   QUESTION_BANK.chapters.forEach(chapter => {
     const earned = !!(PROGRESS.chapters[chapter.id] && PROGRESS.chapters[chapter.id].completed);
     const slot = document.createElement("div");
-    slot.className = "sticker-slot " + (earned ? "earned" : "");
-    slot.title = chapter.title;
-    slot.textContent = earned ? (STICKER_EMOJI[chapter.stickerId] || "✨") : "?";
+    slot.className = "sticker-slot " + (earned ? "earned" : "locked");
+    // Locked stickers stay a mystery (no title reveal) until earned — matches
+    // the other 2 games' fully-obscured locked state.
+    slot.title = earned ? chapter.title : "???";
+    slot.textContent = earned ? (STICKER_EMOJI[chapter.stickerId] || "✨") : "🔒";
     grid.appendChild(slot);
   });
 }
@@ -671,12 +688,16 @@ function finishChapter() {
   const xpEarned = session.score;
 
   const existing = PROGRESS.chapters[session.chapter.id] || { stars: 0 };
+  const isNewSticker = !existing.completed;
   PROGRESS.chapters[session.chapter.id] = {
     stars: Math.max(stars, existing.stars),
     completed: true,
     xp: xpEarned
   };
   PROGRESS.xpTotal += xpEarned;
+  if (isNewSticker) {
+    showStickerToast(STICKER_EMOJI[session.chapter.stickerId] || "✨", session.chapter.title);
+  }
   if (session.chapter.id === PROGRESS.unlockedChapter && PROGRESS.unlockedChapter < QUESTION_BANK.chapters.length) {
     PROGRESS.unlockedChapter++;
   }

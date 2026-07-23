@@ -770,13 +770,30 @@ function renderBadgeShelf(container) {
     const earned = !!(lp && lp.stars === 3);
     const div = document.createElement("div");
     div.className = "badge-medal" + (earned ? " earned" : " locked");
+    // Locked badges stay a mystery until earned — matches the other 2
+    // games' fully-obscured locked state (icon + name both hidden).
     div.innerHTML = `
-      <span class="badge-disc">${level.emoji}</span>
-      <span class="badge-label">${level.name}</span>
+      <span class="badge-disc">${earned ? level.emoji : "🔒"}</span>
+      <span class="badge-label">${earned ? level.name : "???"}</span>
       <span class="badge-cond">${earned ? "Didapat" : "Perlu 3 bintang"}</span>
     `;
     container.appendChild(div);
   });
+}
+
+// Brief toast announcing a newly-earned badge — mirrors multipleazka's
+// badge-unlock toast so earning one feels the same across both games.
+function showBadgeToast(icon, name) {
+  const toast = document.getElementById("badge-toast");
+  if (!toast) return;
+  document.getElementById("badge-toast-icon").textContent = icon;
+  document.getElementById("badge-toast-name").textContent = name;
+  toast.classList.remove("hidden");
+  toast.classList.add("show");
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.classList.add("hidden"), 300);
+  }, 2600);
 }
 
 /* =================================================================
@@ -903,12 +920,18 @@ function finishLevel() {
   if (state.mode === "solo") {
     progress.xp += xpEarned;
     const existing = progress.levels[state.levelId] || { stars: 0, completed: false };
+    const newStars = Math.max(existing.stars, stars);
+    const isNewBadge = existing.stars < 3 && newStars === 3;
     progress.levels[state.levelId] = {
       completed: true,
-      stars: Math.max(existing.stars, stars)
+      stars: newStars
     };
     saveProgress(progress);
     refreshXpBadge();
+    if (isNewBadge) {
+      const level = questionsData.levels.find(l => l.id === state.levelId);
+      if (level) showBadgeToast(level.emoji, level.name);
+    }
 
     showBrainRest(() => showReward(stars, xpEarned, "screen-solo-map"));
   } else {

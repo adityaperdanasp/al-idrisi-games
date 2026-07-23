@@ -109,6 +109,23 @@
     line-height:1;
   }
   .theme-toggle:active{ transform: translateY(-50%) scale(0.9); }
+  .hub-back-btn{
+    position:absolute;
+    left:0;
+    top:50%;
+    transform: translateY(-50%);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 19px;
+    cursor:pointer;
+    box-shadow: 0 4px 12px var(--card-shadow);
+    transition: transform .12s ease;
+    line-height:1;
+  }
+  .hub-back-btn:active{ transform: translateY(-50%) scale(0.9); }
   .brand h1{
     font-size: 26px;
     margin:0;
@@ -548,6 +565,7 @@
 
 <div class="app">
   <div class="brand">
+    <button class="hub-back-btn" id="hubBackBtn" title="Kembali ke Al Idrisi Games" aria-label="Kembali ke Al Idrisi Games">🏠</button>
     <h1>🦕 DinoRace<span class="dot">.</span></h1>
     <button class="theme-toggle" id="themeToggle" title="Ganti tema" aria-label="Ganti tema">🎨</button>
   </div>
@@ -893,6 +911,11 @@
     document.getElementById("bestScoreVal").textContent = getBestScore() + " m";
   }
   refreshBestScoreUI();
+
+  // ---------------- back to hub ----------------
+  document.getElementById("hubBackBtn").addEventListener("click", ()=>{
+    window.location.href = "../";
+  });
 
   // ---------------- theme (colorful default / light) ----------------
   const THEME_KEY = "dinorace_theme";

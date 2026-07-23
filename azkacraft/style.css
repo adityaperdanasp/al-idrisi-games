@@ -583,6 +583,33 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
   100% { transform: scale(1) rotate(0); opacity: 1; }
 }
 
+/* ---------- New-sticker toast ---------- */
+.sticker-toast {
+  position: fixed;
+  left: 50%;
+  top: 24px;
+  transform: translate(-50%, -20px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--paper);
+  border-radius: 16px;
+  padding: 12px 18px;
+  box-shadow: 0 10px 26px rgba(60, 40, 10, 0.22);
+  opacity: 0;
+  transition: opacity .3s ease, transform .3s ease;
+  pointer-events: none;
+}
+.sticker-toast.hidden { display: none; }
+.sticker-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.sticker-toast-icon { font-size: 2rem; }
+.sticker-toast-label { font-size: 0.7rem; font-weight: 700; color: var(--ink); opacity: .6; text-transform: uppercase; letter-spacing: .04em; }
+.sticker-toast-name { font-size: 1.05rem; font-weight: 800; color: var(--brand); }
+
 /* ---------- Game screen ---------- */
 .game-header {
   display: flex;

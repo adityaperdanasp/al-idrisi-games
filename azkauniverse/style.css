@@ -530,6 +530,33 @@ button:focus-visible {
   text-align: center;
 }
 
+/* ---------- New-sticker toast ---------- */
+.badge-toast {
+  position: fixed;
+  left: 50%;
+  top: 24px;
+  transform: translate(-50%, -20px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 12px 18px;
+  box-shadow: 0 10px 26px rgba(9, 22, 45, .3);
+  opacity: 0;
+  transition: opacity .3s ease, transform .3s ease;
+  pointer-events: none;
+}
+.badge-toast.hidden { display: none; }
+.badge-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.badge-toast-icon { font-size: 2rem; }
+.badge-toast-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.badge-toast-name { font-size: 1.05rem; font-weight: 800; color: var(--primary); }
+
 /* =================================================================
    7. PLAY SCREEN
    ================================================================= */

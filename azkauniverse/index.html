@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-<link rel="stylesheet" href="style.css?v=8" />
+<link rel="stylesheet" href="style.css?v=9" />
 </head>
 <body>
 
@@ -32,9 +32,18 @@
   <button id="btn-home" class="icon-btn" aria-label="Home" title="Home">🏠</button>
   <div class="topbar-spacer"></div>
   <div id="xp-badge" class="xp-badge hidden"><span>✨</span><span id="xp-total">0</span> XP</div>
-  <button id="btn-badges" class="icon-btn" aria-label="Badges" title="Badges">🏅</button>
+  <button id="btn-badges" class="icon-btn" aria-label="Sticker Book" title="Sticker Book">🏅</button>
   <button id="btn-settings" class="icon-btn" aria-label="Settings" title="Settings">⚙️</button>
 </header>
+
+<!-- New-sticker toast — mirrors multipleazka's badge-unlock toast. -->
+<div id="badge-toast" class="badge-toast hidden">
+  <span id="badge-toast-icon" class="badge-toast-icon">✨</span>
+  <div>
+    <div class="badge-toast-label">New Sticker!</div>
+    <div id="badge-toast-name" class="badge-toast-name">Level Name</div>
+  </div>
+</div>
 
 <main id="app">
 
@@ -87,11 +96,11 @@
   </section>
 
   <!-- ===============================================================
-       SCREEN: Badge Collection
+       SCREEN: Sticker Book
        =============================================================== -->
   <section id="screen-badges" class="screen">
-    <h2 class="title-lg">Badge Collection</h2>
-    <p class="subtitle-sm">Earn a badge by finishing a topic with 3 stars.</p>
+    <h2 class="title-lg">Sticker Book</h2>
+    <p class="subtitle-sm">Earn a sticker by finishing a topic with 3 stars.</p>
     <div id="badge-shelf" class="badge-shelf"></div>
     <button class="btn btn-secondary" data-back="screen-landing">Back</button>
   </section>
@@ -326,7 +335,7 @@
 </script>
 
 <script src="bgm.js"></script>
-<script src="script.js?v=9"></script>
+<script src="script.js?v=10"></script>
 
 </body>
 </html>
