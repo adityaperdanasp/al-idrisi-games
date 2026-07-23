@@ -87,6 +87,17 @@
         <div class="or">— or —</div>
         <button id="btn-solo" class="solo-btn">🙋 Play Solo</button>
 
+        <!-- Difficulty: question range/mix + (Solo only) opponent speed.
+             Personal per player, same as Answer style / Timer below. -->
+        <div class="setting-row">
+          <span class="setting-label">🎚 Difficulty</span>
+          <div class="seg seg-compact" id="difficulty-seg">
+            <button class="seg-btn" data-difficulty="easy">Easy</button>
+            <button class="seg-btn active" data-difficulty="medium">Medium</button>
+            <button class="seg-btn" data-difficulty="hard">Hard</button>
+          </div>
+        </div>
+
         <!-- Answer style: multiple choice vs type-in (per player) -->
         <div class="setting-row">
           <span class="setting-label">🔘 Answer style</span>
@@ -96,11 +107,12 @@
           </div>
         </div>
 
-        <!-- Timer: 10s per question, timeout counts as wrong (per player) -->
+        <!-- Timer: seconds per question depend on Difficulty above; timeout
+             counts as wrong (per player) -->
         <div class="setting-row">
           <span class="setting-label">⏱ Timer</span>
           <div class="seg seg-compact" id="timer-seg">
-            <button class="seg-btn active" data-timer="on">10s</button>
+            <button class="seg-btn active" data-timer="on">On</button>
             <button class="seg-btn" data-timer="off">Off</button>
           </div>
         </div>

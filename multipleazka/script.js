@@ -69,13 +69,15 @@ const STEP = {
   parent: 1 / 40  // 0.025  (0.25× of Kids' step)
 };
 
-// Seconds allowed per question when the Timer is On.
-const QUESTION_TIME = 10;
-
-// Number ranges for question factors.
-const RANGE = {
-  kids: 10,   // 1..10
-  parent: 12  // 1..12
+// Difficulty — personal per-player setting (like Answer style / Timer),
+// picked in #difficulty-seg. Drives question range/mix + per-question
+// timer everywhere, and (Solo only) how fast the AI opponent moves.
+// `medium` matches the original fixed values this game shipped with, so
+// picking no difficulty at all behaves exactly like before this existed.
+const DIFFICULTY = {
+  easy:   { time: 10, min: 2, max: 5,  divisionChance: 0,   maxDividend: 25,  opponentSeconds: 90 },
+  medium: { time: 9,  min: 3, max: 10, divisionChance: 0.5, maxDividend: 100, opponentSeconds: 55 },
+  hard:   { time: 7,  min: 4, max: 12, divisionChance: 0.5, maxDividend: 120, opponentSeconds: 40 }
 };
 
 // Seconds given to pick a ride before the current selection auto-confirms.
@@ -128,6 +130,7 @@ const state = {
   correct: 0,         // correct answers by this player
   progress: 0,        // 0..1 track position for this player
   currentAnswer: 0,   // correct value for the on-screen question
+  difficulty: "medium", // 'easy' | 'medium' | 'hard' — see DIFFICULTY table
   answerMode: "choice", // 'choice' (multiple choice) | 'type' (keypad)
   answerLocked: false,  // guards against double-submits between questions
   timerOn: true,        // per-question 10s countdown on/off
@@ -161,11 +164,18 @@ let typedValue = "";
 // Per-question timer + total race time (for scoreboard best time).
 let timerId = null;
 let timerRemaining = 0;
+let questionTimeTotal = 0;   // this question's full duration, per DIFFICULTY — denominator for the timer bar
 let raceStartTime = 0;
 
 // Vehicle-pick countdown.
 let vehicleTimerId = null;
 let vehicleTimeLeft = 0;
+
+// Solo mode's AI opponent — ticks p2's progress up at a constant rate
+// (no reaction to how the player is doing), calibrated per DIFFICULTY's
+// opponentSeconds so it reaches the finish line in about that long.
+let soloOpponentTimerId = null;
+let soloOpponentProgress = 0;
 
 // Race-start (3-2-1-GO) countdown.
 let countdownTimeoutId = null;
@@ -266,11 +276,21 @@ function goHome() {
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   clearQuestionTimer();
   clearVehicleTimer();
+  stopSoloOpponent();
   cancelRaceCountdown();
   detachGameListener();
 
   window.location.href = "../";
 }
+
+// Difficulty segmented control. Per player — see the DIFFICULTY table.
+document.querySelectorAll("#difficulty-seg .seg-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.difficulty = btn.dataset.difficulty;   // 'easy' | 'medium' | 'hard'
+    document.querySelectorAll("#difficulty-seg .seg-btn")
+      .forEach(b => b.classList.toggle("active", b === btn));
+  });
+});
 
 // Answer-style segmented control (multiple choice vs type-in). Per player.
 document.querySelectorAll("#answer-seg .seg-btn").forEach(btn => {
@@ -835,6 +855,29 @@ function resetCarsToStart() {
   lastNitroAt.p1 = 0; lastNitroAt.p2 = 0;
 }
 
+// Starts the AI opponent moving at a constant pace (independent of how the
+// player is doing) — reaches the finish line in roughly
+// DIFFICULTY[state.difficulty].opponentSeconds. If it gets there before the
+// player finishes their own progress, the player loses (see loseSoloRace()).
+function startSoloOpponent() {
+  stopSoloOpponent();
+  soloOpponentProgress = 0;
+  const seconds = DIFFICULTY[state.difficulty].opponentSeconds;
+  soloOpponentTimerId = setInterval(() => {
+    if (state.gameOver) { stopSoloOpponent(); return; }
+    soloOpponentProgress = Math.min(soloOpponentProgress + 0.1 / seconds, 1);
+    updateCar("p2", { progress: soloOpponentProgress, correct: 0, pace: "parent" }, false);
+    if (soloOpponentProgress >= 1) {
+      stopSoloOpponent();
+      loseSoloRace();
+    }
+  }, 100);
+}
+
+function stopSoloOpponent() {
+  if (soloOpponentTimerId) { clearInterval(soloOpponentTimerId); soloOpponentTimerId = null; }
+}
+
 
 /* =================================================================
    7. RACE — START, QUESTIONS, ANSWERS
@@ -850,6 +893,7 @@ function startRace() {
 
   playRaceCountdown(() => {
     raceStartTime = Date.now();   // "best time" starts once racing actually begins
+    if (state.solo) startSoloOpponent();
     nextQuestion();
   });
 }
@@ -941,30 +985,31 @@ function topicsFromQuestionKey(key) {
 }
 
 // Generate a new question, then render the answer UI for the chosen mode.
-// Questions are a 50/50 mix of multiplication and division:
-//  - Multiplication factors are 3..max (1 and 2 are too easy to be useful).
+// Range, mult/division mix and dividend cap all come from the DIFFICULTY
+// table (Easy is multiplication-only; Medium/Hard mix 50/50):
+//  - Multiplication factors are min..max.
 //  - Division always divides evenly (divisor × quotient), divisor can be as
-//    low as 2, and the dividend (numerator) never exceeds 100.
+//    low as min, and the dividend (numerator) is capped per difficulty.
 function nextQuestion() {
   if (state.gameOver) return;
   state.answerLocked = false;
   state.wrongAttempts = 0;   // fresh question = fresh retry budget
 
-  const max = RANGE[state.role];
+  const d = DIFFICULTY[state.difficulty];
   let isDivision, a, b, dividend, divisor, quotient, key;
   do {
-    isDivision = Math.random() < 0.5;
+    isDivision = Math.random() < d.divisionChance;
     if (isDivision) {
-      divisor = rand(2, max);
-      quotient = rand(3, max);
+      divisor = rand(d.min, d.max);
+      quotient = rand(d.min, d.max);
       dividend = divisor * quotient;
       key = "d" + dividend + "/" + divisor;
     } else {
-      a = rand(3, max);
-      b = rand(3, max);
+      a = rand(d.min, d.max);
+      b = rand(d.min, d.max);
       key = "m" + a + "x" + b;
     }
-  } while (key === lastQuestionKey || (isDivision && dividend > 100));
+  } while (key === lastQuestionKey || (isDivision && dividend > d.maxDividend));
   lastQuestionKey = key;
 
   if (isDivision) {
@@ -988,7 +1033,8 @@ function startQuestionTimer() {
   if (!state.timerOn) { wrap.classList.add("hidden"); return; }
 
   wrap.classList.remove("hidden");
-  timerRemaining = QUESTION_TIME;
+  questionTimeTotal = DIFFICULTY[state.difficulty].time;
+  timerRemaining = questionTimeTotal;
   updateTimerUI();
   timerId = setInterval(() => {
     timerRemaining -= 0.1;
@@ -1003,7 +1049,7 @@ function startQuestionTimer() {
 }
 
 function updateTimerUI() {
-  const pct = Math.max(0, timerRemaining / QUESTION_TIME) * 100;
+  const pct = Math.max(0, timerRemaining / questionTimeTotal) * 100;
   const fill = $("timer-fill");
   const txt = $("timer-text");
   const low = timerRemaining < 4;   // <4s → red/urgent
@@ -1494,6 +1540,7 @@ function endGame(finishers) {
 function endSoloRace() {
   state.gameOver = true;
   clearQuestionTimer();
+  stopSoloOpponent();   // player finished first — freeze the opponent where it was
 
   $("over-emoji").textContent = "🏁";
   $("winner-text").textContent = "You finished!";
@@ -1521,8 +1568,45 @@ function endSoloRace() {
   }
 
   showScreen("screen-over");
-  renderResults([[state.seatKey, { name: CHILD_NAME, finishTimeSec: elapsed }]]);
-  celebrateWin();   // solo always "finishes" — celebrate every time
+  renderResults([
+    [state.seatKey, { name: CHILD_NAME, finishTimeSec: elapsed }],
+    ["opponent", { name: "Opponent", finishTimeSec: null }]
+  ]);
+  celebrateWin();
+}
+
+// Solo loss — the AI opponent reached the finish line first. No confetti;
+// just an honest "try again" nudge (Play Again keeps the same difficulty).
+function loseSoloRace() {
+  state.gameOver = true;
+  clearQuestionTimer();
+
+  const elapsed = raceStartTime ? Math.round((Date.now() - raceStartTime) / 1000) : 0;
+
+  if (window.AIGLeaderboard) {
+    AIGLeaderboard.recordPlay("mathrace").then(timesPlayed => {
+      if (timesPlayed == null || !window.AIGBadges) return;
+      AIGBadges.checkAndAward({
+        timesPlayed,
+        perfectRun: false,   // didn't finish, so no Perfect Run either
+        finishTimeSec: null,
+        isWin: false
+      }).then(({ newlyEarned }) => showBadgeToast(newlyEarned));
+    });
+  }
+
+  $("over-emoji").textContent = "🏎️💨";
+  $("winner-text").textContent = "Opponent finished first!";
+  $("over-sub").textContent = state.role === "kids"
+    ? `So close, ${CHILD_NAME}! Try again and beat them next time!`
+    : "The opponent got there first — give it another go!";
+
+  showScreen("screen-over");
+  renderResults([
+    ["opponent", { name: "Opponent", finishTimeSec: elapsed }],
+    [state.seatKey, { name: CHILD_NAME, finishTimeSec: null }]
+  ]);
+  if (window.AIGBgm) AIGBgm.start();   // no confetti here, so bring the music back right away
 }
 
 /* =================================================================
