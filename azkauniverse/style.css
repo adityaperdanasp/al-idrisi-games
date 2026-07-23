@@ -373,6 +373,41 @@ button:focus-visible {
 .quest-node-lock { font-size: 1.4rem; }
 
 /* =================================================================
+   MOCKUP: DinoRace bonus launcher — floating icon, bouncy idle animation
+   ================================================================= */
+.dino-bonus-fab {
+  position: absolute;
+  z-index: 5;
+  width: 30.4px;
+  height: 30.4px;
+  border-radius: 0;
+  border: none;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  cursor: pointer;
+  animation: dino-fab-bounce 2.2s ease-in-out infinite;
+}
+.dino-bonus-fab img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.dino-bonus-fab:active { animation-play-state: paused; transform: scale(0.92); }
+
+@keyframes dino-fab-bounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%      { transform: translateY(-10px) rotate(-6deg); }
+  50%      { transform: translateY(0) rotate(0deg); }
+  75%      { transform: translateY(-5px) rotate(5deg); }
+}
+
+@keyframes dino-badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.15); }
+}
+
+/* =================================================================
    6b. QUEST PATH MAP (Solo mode v2) — winding path + parallax stars
    ================================================================= */
 .path-map-wrap {

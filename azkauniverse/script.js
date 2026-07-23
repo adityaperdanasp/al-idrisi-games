@@ -581,6 +581,17 @@ function renderQuestPathMap(container) {
     container.appendChild(btn);
   });
 
+  // MOCKUP: bonus DinoRace planet, tucked off to the side near the end of
+  // the trail — scrolls with the map like a real planet, not tied to any
+  // level/progress data.
+  const bonus = document.createElement("button");
+  bonus.className = "dino-bonus-fab";
+  bonus.title = "Bonus: DinoRace!";
+  bonus.style.left = "22%";
+  bonus.style.top = "1080px";
+  bonus.innerHTML = `<img src="astro-dino-mockup.png" alt="DinoRace" />`;
+  container.appendChild(bonus);
+
   buildPathStarfield($("path-field"));
 
   if (shipNodeIndex === null) shipNodeIndex = defaultShipIndex(unlockedFlags);
