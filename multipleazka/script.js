@@ -135,7 +135,8 @@ const state = {
   wrongAttempts: 0,     // wrong tries on the CURRENT question (type-in gets 2 before reveal)
   vehicle: "car",        // chosen ride — kept across "Play Again", reset when going Home
   streak: 0,             // consecutive correct answers THIS race — resets on any wrong answer
-  gameOver: false
+  gameOver: false,
+  vehiclePicked: false   // guards the synced vehicle-select from firing more than once per game
 };
 
 // Zeroes every per-race counter. Called at the start of every race —
@@ -321,6 +322,7 @@ function resetPairUI() {
   state.solo = false;
   state.code = null;
   state.vehicle = "car";   // fresh setup = fresh ride pick (kept across Play Again only)
+  state.vehiclePicked = false;
 }
 
 // Picks this device's unique key inside games/{code}/players. Normally just
@@ -336,8 +338,9 @@ function uniqueSeatKey(existingPlayers) {
 }
 
 // --- CREATE a game --- (writes the game and shows the code/QR right away,
-// so the host can share it immediately — ride pick happens after, while
-// waiting for the other player(s) to join).
+// so the host can share it immediately. Ride pick is synced — see
+// attachGameListener — and happens for everyone together once the room
+// fills up, not before.)
 $("btn-create").addEventListener("click", async () => {
   resetRaceState();
   const code = makeCode();
@@ -355,43 +358,22 @@ $("btn-create").addEventListener("click", async () => {
   });
   registerDisconnectHandling(code, state.seatKey);
 
-  // Show the waiting UI with the code.
+  showWaitingScreen(code);
+  attachGameListener(code);
+});
+
+// Shared "waiting for players" UI — used by both the creator and anyone who
+// joins while the room still has open seats, since any of them can share
+// the same code/QR with whoever's left to join.
+function showWaitingScreen(code) {
   showScreen("screen-pair");
   $("code-display").textContent = code;
   $("pair-choose").classList.add("hidden");
   $("pair-waiting").classList.remove("hidden");
   $("waiting-text").textContent = state.maxPlayers === 3
-    ? "Waiting for 2 more players to join…"
+    ? "Waiting for more players to join…"
     : "Waiting for the other player to join…";
   renderJoinQR(code);
-  updateRideButtonLabel();
-
-  attachGameListener(code);
-});
-
-// Host picks (or changes) their ride while waiting on the code/QR screen.
-// Writes straight to their own seat so the vehicle shows up correctly for
-// the other player(s) once the race starts.
-$("btn-choose-vehicle").addEventListener("click", () => {
-  showVehicleSelect(() => {
-    if (state.code) {
-      db.ref(`games/${state.code}/players/${state.seatKey}/vehicle`).set(state.vehicle);
-    }
-    // Only return to the waiting screen if the race hasn't already started
-    // in the background (e.g. the other player finished joining while we
-    // were still picking) — otherwise this would yank the player away from
-    // a race that's already underway.
-    if (!raceIsActive()) {
-      showScreen("screen-pair");
-      updateRideButtonLabel();
-    }
-  });
-});
-
-function updateRideButtonLabel() {
-  const btn = $("btn-choose-vehicle");
-  if (!btn) return;
-  btn.textContent = `${VEHICLE_EMOJI[state.vehicle] || VEHICLE_EMOJI.car} Choose Your Ride`;
 }
 
 // Render a scannable QR code that deep-links straight to this game's code.
@@ -410,7 +392,8 @@ function renderJoinQR(code) {
   });
 }
 
-// --- JOIN a game --- (validate the code first, THEN pick a ride, THEN join)
+// --- JOIN a game --- (validate the code, then join right away — ride pick
+// is synced with everyone else once the room is full, see attachGameListener)
 $("btn-join").addEventListener("click", async () => {
   const code = $("join-code-input").value.trim().toUpperCase();
   $("pair-error").textContent = "";
@@ -436,14 +419,14 @@ $("btn-join").addEventListener("click", async () => {
     return;
   }
 
-  showVehicleSelect(async () => {
-    resetRaceState();
-    state.code = code;
-    state.seatKey = uniqueSeatKey(players);
-    await db.ref(`games/${code}/players/${state.seatKey}`).set(playerSeed(seatCount));
-    registerDisconnectHandling(code, state.seatKey);
-    attachGameListener(code);
-  });
+  resetRaceState();
+  state.code = code;
+  state.seatKey = uniqueSeatKey(players);
+  await db.ref(`games/${code}/players/${state.seatKey}`).set(playerSeed(seatCount));
+  registerDisconnectHandling(code, state.seatKey);
+
+  showWaitingScreen(code);
+  attachGameListener(code);
 });
 
 // --- PLAY SOLO — no pairing, no Firebase game. The opponent lane stays
@@ -624,15 +607,21 @@ function attachGameListener(code) {
       updateLaneLabel(slot, entry.player);
     });
 
-    // When every seat is filled and we're still on a pairing screen, start.
+    // When every seat is filled for the first time, everyone picks their
+    // ride together (synced by this same snapshot landing on every device
+    // at once), then races. `vehiclePicked` guards this from firing again
+    // on later snapshots (progress updates, disconnect flags, etc.) or
+    // during a "Play Again" rematch, which keeps each player's existing ride.
     const allSeated = Object.keys(players).length >= maxPlayers;
-    if (allSeated && game.status === "waiting") {
-      // First device to notice flips status to "playing".
-      db.ref(`games/${code}/status`).set("playing");
-    }
-    if (allSeated && !document.getElementById("screen-race").classList.contains("active")
-        && !state.gameOver) {
-      startRace();
+    if (allSeated && !state.vehiclePicked && !raceIsActive() && !state.gameOver) {
+      state.vehiclePicked = true;
+      if (game.status === "waiting") {
+        db.ref(`games/${code}/status`).set("playing");
+      }
+      showVehicleSelect(() => {
+        db.ref(`games/${code}/players/${state.seatKey}/vehicle`).set(state.vehicle);
+        if (!raceIsActive()) startRace();
+      });
     }
 
     // Finish handling — racers who finish keep their car parked at the

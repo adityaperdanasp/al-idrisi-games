@@ -329,20 +329,6 @@ h1, h2 { margin: 0 0 8px; }
 }
 .qr-box img { display: block; border-radius: 4px; }
 
-.ride-select-btn {
-  width: 100%;
-  margin-top: 18px;
-  padding: 12px 16px;
-  font-size: .95rem;
-  font-weight: 700;
-  color: var(--brand);
-  background: var(--brand-light);
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-}
-.ride-select-btn:active { transform: scale(.98); }
-
 .waiting-status {
   display: flex;
   align-items: center;
