@@ -81,14 +81,4 @@
   // cheering aren't competing with music), back on once the post-race
   // celebration is done. No-op if audio was never unlocked yet.
   window.AIGBgm = { stop: fadeOut, start: fadeIn };
-
-  // Temporary debug hook for real-device verification — safe to remove
-  // once confirmed.
-  window.AIGBgmDebug = () => ({
-    ctxState: ctx ? ctx.state : "no ctx yet",
-    unlocked,
-    gain: gain ? gain.gain.value : null,
-    trackPaused: track.paused,
-    trackVolume: track.volume
-  });
 })();
