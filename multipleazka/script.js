@@ -202,7 +202,7 @@ const $ = id => document.getElementById(id);
 state.role = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().role === "parent")
   ? "parent" : "kids";
 $("screen-role-subtitle").textContent = state.role === "parent"
-  ? "Playing to help your child — let's race!"
+  ? "Play with your kids - Lets race!"
   : "Pick who's playing, then race!";
 
 $("btn-lets-race").addEventListener("click", () => {
@@ -335,38 +335,58 @@ function uniqueSeatKey(existingPlayers) {
   return base + "-" + n;
 }
 
-// --- CREATE a game --- (picks a ride first, then writes the game)
-$("btn-create").addEventListener("click", () => {
-  showVehicleSelect(async () => {
-    resetRaceState();
-    const code = makeCode();
-    state.code = code;
-    state.seatKey = CHILD_ID;
+// --- CREATE a game --- (writes the game and shows the code/QR right away,
+// so the host can share it immediately — ride pick happens after, while
+// waiting for the other player(s) to join).
+$("btn-create").addEventListener("click", async () => {
+  resetRaceState();
+  const code = makeCode();
+  state.code = code;
+  state.seatKey = CHILD_ID;
 
-    // Write the initial game with this player as the creator (seat 0).
-    await db.ref("games/" + code).set({
-      createdAt: firebase.database.ServerValue.TIMESTAMP,
-      status: "waiting",
-      maxPlayers: state.maxPlayers,
-      players: {
-        [state.seatKey]: playerSeed(0)
-      }
-    });
-    registerDisconnectHandling(code, state.seatKey);
+  // Write the initial game with this player as the creator (seat 0).
+  await db.ref("games/" + code).set({
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    status: "waiting",
+    maxPlayers: state.maxPlayers,
+    players: {
+      [state.seatKey]: playerSeed(0)
+    }
+  });
+  registerDisconnectHandling(code, state.seatKey);
 
-    // Show the waiting UI with the code.
+  // Show the waiting UI with the code.
+  showScreen("screen-pair");
+  $("code-display").textContent = code;
+  $("pair-choose").classList.add("hidden");
+  $("pair-waiting").classList.remove("hidden");
+  $("waiting-text").textContent = state.maxPlayers === 3
+    ? "Waiting for 2 more players to join…"
+    : "Waiting for the other player to join…";
+  renderJoinQR(code);
+  updateRideButtonLabel();
+
+  attachGameListener(code);
+});
+
+// Host picks (or changes) their ride while waiting on the code/QR screen.
+// Writes straight to their own seat so the vehicle shows up correctly for
+// the other player(s) once the race starts.
+$("btn-choose-vehicle").addEventListener("click", () => {
+  showVehicleSelect(() => {
+    if (state.code) {
+      db.ref(`games/${state.code}/players/${state.seatKey}/vehicle`).set(state.vehicle);
+    }
     showScreen("screen-pair");
-    $("code-display").textContent = code;
-    $("pair-choose").classList.add("hidden");
-    $("pair-waiting").classList.remove("hidden");
-    $("waiting-text").textContent = state.maxPlayers === 3
-      ? "Waiting for 2 more players to join…"
-      : "Waiting for the other player to join…";
-    renderJoinQR(code);
-
-    attachGameListener(code);
+    updateRideButtonLabel();
   });
 });
+
+function updateRideButtonLabel() {
+  const btn = $("btn-choose-vehicle");
+  if (!btn) return;
+  btn.textContent = `${VEHICLE_EMOJI[state.vehicle] || VEHICLE_EMOJI.car} Choose Your Ride`;
+}
 
 // Render a scannable QR code that deep-links straight to this game's code.
 function renderJoinQR(code) {
