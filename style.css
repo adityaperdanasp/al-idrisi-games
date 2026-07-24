@@ -346,7 +346,7 @@ body {
 }
 
 .sc-game-list {
-  padding: 30px 24px 30px;
+  padding: 30px 24px 22px;
   display: flex;
   flex-direction: column;
   gap: 16px;
