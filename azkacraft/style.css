@@ -787,6 +787,64 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
 }
 .brainrest-title { color: var(--brand); font-size: 2rem; margin: 14px 0 4px; }
 .brainrest-sub { opacity: 0.8; margin-bottom: 18px; }
+
+/* --- MOCKUP: AI Tutor hint card --- */
+.ai-hint-card {
+  background: linear-gradient(135deg, #fff3e0, #eaf3ff);
+  border: 1px solid #ffdca8;
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin: 0 0 18px;
+  text-align: left;
+}
+.ai-hint-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--accent-1-dark);
+  background: #fff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  margin-bottom: 8px;
+}
+.ai-hint-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .85rem;
+  color: var(--ink);
+  opacity: .7;
+}
+.ai-hint-dots { display: inline-flex; gap: 3px; }
+.ai-hint-dots span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent-1);
+  animation: aiHintBounce 1.2s infinite ease-in-out;
+}
+.ai-hint-dots span:nth-child(2) { animation-delay: .15s; }
+.ai-hint-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes aiHintBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: .5; }
+  40% { transform: translateY(-4px); opacity: 1; }
+}
+.ai-hint-result {
+  font-size: .9rem;
+  color: var(--ink);
+  line-height: 1.45;
+  margin: 0;
+  opacity: 0;
+  animation: aiHintFadeIn .4s ease forwards;
+}
+@keyframes aiHintFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ai-hint-result.hidden { display: none; }
 .brainrest-timer {
   font-size: 2.6rem;
   font-weight: 700;

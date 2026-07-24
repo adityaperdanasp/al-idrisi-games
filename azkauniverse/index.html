@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-<link rel="stylesheet" href="style.css?v=9" />
+<link rel="stylesheet" href="style.css?v=11" />
 </head>
 <body>
 
@@ -214,6 +214,19 @@
         <span class="star">★</span><span class="star">★</span><span class="star">★</span>
       </div>
       <p class="reward-xp">+<span id="reward-xp">0</span> XP</p>
+
+      <!-- MOCKUP: AI Tutor hint — not wired to a real API yet, just a visual demo -->
+      <div id="ai-hint-card" class="ai-hint-card">
+        <div class="ai-hint-badge">✨ AI Tutor</div>
+        <div id="ai-hint-loading" class="ai-hint-loading">
+          <span class="ai-hint-dots"><span></span><span></span><span></span></span>
+          Sedang mikirin cara terbaik jelasinnya...
+        </div>
+        <p id="ai-hint-result" class="ai-hint-result hidden">
+          "Planet yang paling deket Matahari itu Merkurius, bukan Venus — Merkurius urutan ke-1!"
+        </p>
+      </div>
+
       <button id="btn-reward-continue" class="btn btn-primary">Continue</button>
     </div>
   </section>
@@ -335,7 +348,7 @@
 </script>
 
 <script src="bgm.js"></script>
-<script src="script.js?v=10"></script>
+<script src="script.js?v=11"></script>
 
 </body>
 </html>

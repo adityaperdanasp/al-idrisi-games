@@ -934,8 +934,65 @@ button:focus-visible {
   font-weight: 700;
   font-size: 1.2rem;
   color: var(--secondary);
-  margin: 0 0 22px;
+  margin: 0 0 16px;
 }
+
+/* --- MOCKUP: AI Tutor hint card --- */
+.ai-hint-card {
+  background: linear-gradient(135deg, #f3ecff, #eaf2ff);
+  border: 1px solid #ddd0fb;
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin: 0 0 22px;
+  text-align: left;
+}
+.ai-hint-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: #7a4fd1;
+  background: #fff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  margin-bottom: 8px;
+}
+.ai-hint-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .85rem;
+  color: var(--text-muted);
+}
+.ai-hint-dots { display: inline-flex; gap: 3px; }
+.ai-hint-dots span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #a98ae0;
+  animation: aiHintBounce 1.2s infinite ease-in-out;
+}
+.ai-hint-dots span:nth-child(2) { animation-delay: .15s; }
+.ai-hint-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes aiHintBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: .5; }
+  40% { transform: translateY(-4px); opacity: 1; }
+}
+.ai-hint-result {
+  font-size: .9rem;
+  color: var(--text-on-light);
+  line-height: 1.45;
+  margin: 0;
+  opacity: 0;
+  animation: aiHintFadeIn .4s ease forwards;
+}
+@keyframes aiHintFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ai-hint-result.hidden { display: none; }
 
 /* =================================================================
    10. MULTIPLAYER

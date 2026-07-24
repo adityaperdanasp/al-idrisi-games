@@ -5,102 +5,81 @@
 - **multipleazka** — Math Race (multiplayer N-seat racing game, Firebase Realtime DB)
 - **azkacraft** — Language & Arts (storybook-style lessons + voice cheering system)
 - **azkauniverse** — SolarQuest (AI Science Adventure)
+- **dinorace** (BARU) — game balapan dino 2-player, awalnya proyek terpisah (`~/Documents/dinorace`, domain `dinorace.lol`), sekarang **di-copy** juga ke dalam hub ini (`al-idrisi-games/dinorace/`) supaya bisa dimainkan di `playalidrisi.fun/dinorace/`. **Ini snapshot, bukan sinkron otomatis** — kalau nanti edit game asli di `dinorace.lol`, harus di-copy ulang manual ke sini kalau mau ikut ke-update.
 
 Tiap game itu Vercel project terpisah, plus hub-nya sendiri juga Vercel project. Domain:
 - Hub: `playalidrisi.fun/` — path `/{game}/` di domain ini adalah **file yang sama** dari repo hub (bukan proxy ke project game terpisah)
 - Legacy standalone domains (project Vercel terpisah dari hub, tapi kontennya harus identik): `multipleazka.fun`, `azkasocial.fun` (alias project `azkacraft`), `azkasolar.quest` (alias project `azkauniverse`)
+- `dinorace` **cuma ada di hub** (`playalidrisi.fun/dinorace/`), gak punya standalone domain sendiri di hub ini (beda dari `dinorace.lol` yang tetep hidup independen)
 
-**PENTING — dua target deploy buat SEMUA 3 game:** tiap kali edit file di `multipleazka/`, `azkacraft/`, atau `azkauniverse/`, harus **both**:
+**PENTING — dua target deploy buat 3 game utama (mathrace/azkacraft/azkauniverse):** tiap kali edit file di salah satunya, harus **both**:
 1. `git push origin main` → update `playalidrisi.fun/{game}/` (via hub auto-deploy)
 2. `cd {game} && vercel --prod --yes` → update domain standalone-nya
-Verifikasi cepat: `diff <(curl -s https://playalidrisi.fun/{game}/somefile.js) <(curl -s https://{standalone-domain}/somefile.js)` — udah jadi kebiasaan rutin tiap abis deploy, dan per QA terakhir SEMUA identik.
+
+`dinorace/` cukup ikut push #1 aja (gak ada standalone target di hub ini).
+
+Verifikasi cepat: `diff <(curl -s https://playalidrisi.fun/{game}/somefile.js) <(curl -s https://{standalone-domain}/somefile.js)` — rutin tiap abis deploy.
+
+**⚠️ Hub auto-deploy PERNAH sekali gak jalan** (push sukses tapi Vercel gak auto-build) — kejadian 1x sesi ini, gak jelas root cause-nya (bukan ignore-build-step, koneksi Git dikonfirmasi masih nyambung). Fix sementara: `vercel --prod --yes` manual dari root hub. Kalau kejadian lagi, verifikasi dengan `vercel ls` (cek umur deployment terakhir) sebelum asumsi push udah otomatis ke-apply.
 
 **Deploy pattern:**
-- Hub (root files: `index.html`, `style.css`, `leaderboard.html/css`, `hub-bgm.js`, `player.js`, `players.js`, `firebase.js`, `leaderboard.js`, `dashboard/`, `api/`): auto-deploy via GitHub integration
-- Tiap game: **manual** `cd <game-dir> && vercel --prod --yes` setelah push
+- Hub (root files: `index.html`, `style.css`, `leaderboard.html/css`, `hub-bgm.js`, `player.js`, `players.js`, `firebase.js`, `leaderboard.js`, `dashboard/`, `api/`, `dinorace/`): auto-deploy via GitHub integration
+- Tiap game (mathrace/azkacraft/azkauniverse): **manual** `cd <game-dir> && vercel --prod --yes` setelah push
 
 Shared player identity: `window.AIGPlayer.getPlayer()` dari `player.js` → `{id, name, role}`.
 
-## ⚠️ Ada sesi lain yang sempat kerja paralel di repo ini
-Di pertengahan sesi sebelumnya sempat ada commit-commit yang bukan dari sesi itu (fitur dashboard guru/ortu dasar). Kemungkinan user buka >1 sesi Claude bersamaan. **Sebelum commit apapun, selalu `git status --short` dulu**, cuma `git add` file yang benar-benar diedit sendiri — jangan `git add -A`. Belum ada tanda sesi lain aktif belakangan ini, tapi tetap waspada.
+## ⚠️ Ada sesi lain yang kerja PARALEL di repo ini (aktif sepanjang sesi ini)
+Beberapa kali kelihatan commit dari sesi lain nyelip di antara commit sendiri (`d988abc`, `484e58f` — kerjaan dashboard: charts, KPI, AI-generated insight via `api/generate-insight.js`, rebuild total dashboard per "Sirka design handoff"). **Sebelum commit apapun, SELALU `git status --short` dulu**, cuma `git add` file yang benar-benar diedit sendiri sesi ini — jangan `git add -A`. File `.claude/launch.json` juga sempat ke-overwrite gara-gara 2 sesi rebutan port preview yang sama (8642) — kalau nemu launch.json isinya beda dari yang diharapkan, itu tandanya sesi lain masih aktif, jangan kaget.
 
-## Struktur data (player/progress) — UPDATED, ada penambahan identitas parent
+## Struktur data (player/progress)
 
-**`player.js`** — localStorage key `aig_player`, isi `{id, name, role}` milik player yang lagi dipilih di device ini.
-- `AIGPlayer.getPlayer() / setPlayer() / clearPlayer()`
-- **BARU:** `AIGPlayer.deriveParentPlayer(child)` — derive identitas "orang tua" dari 1 entry murid, TANPA nulis entry baru ke `players.js`. Return `{id: "{childId}-parent", name: "{childName}'s Parent", role: "parent", childId}`. Deterministik (childId sama selalu hasilin id sama).
+**`player.js`** — localStorage key `aig_player`, isi `{id, name, role}`. `AIGPlayer.deriveParentPlayer(child)` derive identitas "orang tua" dari 1 murid tanpa nulis entry baru.
 
-**`players.js`** — `window.AIG_PLAYERS`, roster statis: `{id, name, role: "teacher"|"student", parentEmail}`. Cuma Azka yang keisi parentEmail-nya (2 alamat) — 24 murid lain kosong.
+**`players.js`** — `window.AIG_PLAYERS`, roster statis. `parentEmail` baru keisi buat Azka doang (24 murid lain kosong — masih PR).
 
-**`firebase.js`** — init Firebase project `al-idrisi-games` (hub sendiri, terpisah dari Firebase tiap game buat multiplayer).
+**`firebase.js`** — Firebase project `al-idrisi-games` (hub), terpisah dari Firebase tiap game buat multiplayer. `dinorace` pakai Firebase project SENDIRI (`dinorace-d9b8c`), gak numpuk ke sini.
 
-**`leaderboard.js`** — helper baca/tulis Firebase, named app `"aig"`. **SEMUA fungsi di bawah sekarang punya guard `player.role === "parent"` di satu tempat pusat — otomatis melindungi SEMUA 3 game tanpa perlu sentuh script.js masing-masing:**
-- `recordPlay(gameId)` → kalau role BUKAN parent: seperti biasa, increment `leaderboard/{gameId}/{playerId}/timesPlayed`, return Promise resolve ke angka timesPlayed baru. **Kalau role parent:** SKIP leaderboard sepenuhnya, alih-alih tulis `players/{childId}/parentSessions/{YYYY-MM-DD}: {parentName, lastGamePlayed, at}` (pakai tanggal sebagai key → otomatis capped 1x/hari per anak), return `Promise.resolve(null)`.
-- `getProgress(gameId)` / `setProgress(gameId, data)` → return `null`/no-op kalau role parent (badges gak pernah tercipta buat identitas parent)
-- `recordTopicAttempt(gameId, topicKey, isCorrect)` → no-op kalau role parent (topicStats anak gak pernah kesentuh dari jawaban ortu)
-- `watchGame(gameId, callback)` → gak berubah
+**`leaderboard.js`** — semua fungsi punya guard `player.role === "parent"` terpusat (parent main gak nyentuh badge/topicStats/progress anak, cuma nyatet `parentSessions/{date}` buat engagement metric).
 
 Skema Firebase RTDB (project hub):
 ```
 leaderboard/{gameId}/{playerId}/{name, timesPlayed, lastPlayed}
-players/{playerId}/badges/{gameId}/{...progress spesifik tiap game, termasuk badges/wins buat mathrace}
+players/{playerId}/badges/{gameId}/{...progress spesifik tiap game}
 players/{playerId}/topicStats/{gameId}/{topicKey}/{correct, wrong, lastWrongAt}
-players/{childId}/parentSessions/{YYYY-MM-DD}/{parentName, lastGamePlayed, at}   ← BARU, engagement metric
-insights/{studentId}/{draft, status: pending|approved, approvedAt, sentAt, sentTo}   ← dashboard guru/ortu
+players/{childId}/parentSessions/{YYYY-MM-DD}/{parentName, lastGamePlayed, at}
+insights/{studentId}/{draft, status: pending|approved, approvedAt, sentAt, sentTo}
 ```
 
-## Dashboard guru/ortu
-File: `dashboard/index.html`, `dashboard/config.js` (PIN akses, sekarang "2580"), `dashboard/style.css`, `dashboard/dashboard.js`, `api/send-insight.js`.
-- Alur: generate draft insight per murid (dari topicStats) → status "pending" → guru approve → status "approved" → kalau `parentEmail` keisi, tombol "Kirim Email ke Ortu" → `/api/send-insight` (Resend API, env var udah ke-configure di Vercel).
-- **BARU:** kolom **"Ditemani Ortu"** di tabel murid + section **"Keterlibatan Orang Tua"** di detail overlay — nunjukin berapa hari (Senin-Minggu ini) identitas parent main bareng anak itu, dibaca langsung dari `players/{id}/parentSessions` (data yang sama yang udah ke-fetch buat kolom lain, gak ada Firebase query tambahan). Helper: `parentSessionsThisWeek(studentId)`.
-- Belum pernah dites end-to-end beneran (belum ada bukti email approval sukses nyampe ke inbox asli).
-- Validasi email di `parseEmails()` cuma cek `.includes("@")`, lemah tapi gak fatal.
+## Kerjaan selesai sesi ini (kronologis)
 
-## Kerjaan yang sudah selesai sesi ini (kronologis, lanjutan dari sesi sebelumnya)
-
-### Opsi C: Identitas Parent (SUDAH SELESAI DIKERJAKAN & DI-DEPLOY)
-Sesi sebelumnya berhenti di "sedang didiskusikan" — sekarang SUDAH dieksekusi penuh:
-
-1. **Hub picker** (`index.html`): tap kartu MURID → muncul modal "Playing as {nama}? 🧒 Just me / 🧑 My parent is playing with/for me" (elemen `#sc-whois-overlay`). Guru gak kena modal ini (langsung masuk). Pilih "parent" → `AIGPlayer.deriveParentPlayer(child)` dipanggil, identitas parent di-set. `scColorFor()` di-update biar avatar identitas parent reuse warna anaknya (lookup by `childId`, bukan `id`, biar gak fallback ke index -1).
-
-2. **Math Race — role auto-derive**: layar `screen-role` (dulu ada 2 tombol Kids/Parent) di-**redesign total** jadi welcome screen simpel — logo, subtitle dinamis, 1 tombol **"Let's Race! 🏁"**, doodle/confetti decoration dipertahankan, tombol Sticker Book dipertahankan. `state.role` sekarang di-derive OTOMATIS dari `AIGPlayer.getPlayer().role === "parent"` (bukan dari klik tombol lagi). CSS `.role-btn`/`.role-buttons`/`.role-emoji`/`.role-title` yang lama udah dihapus (dead code cleanup).
-
-3. **Layar "Get Ready!" baru** (`screen-get-ready`): muncul ~2.5 detik non-interaktif sebelum vehicle-select, reuse `playCountdownBeep(false)` (gak ada asset suara baru). Implementasi: `showVehicleSelect(onDone)` sekarang cuma wrapper tipis yang manggil `showGetReady(() => showVehicleSelectGrid(onDone))` — 3 call site lama (create/join/solo) TIDAK perlu diubah sama sekali.
-
-4. **`players/{childId}/parentSessions`** — counter baru, capped 1x/hari, terpisah total dari data akademik anak (lihat bagian struktur data di atas). Diverifikasi langsung ke Firebase asli (bukan cuma baca kode) sebanyak 2x di sesi ini (waktu implementasi + waktu QA pass), keduanya OK, data test udah dibersihkan lagi tiap kali.
-
-5. **Dashboard**: metrik "Ditemani Ortu" udah terintegrasi (lihat bagian Dashboard di atas).
-
-### QA pass sistematis (yang kedua kalinya dilakuin di project ini, setelah Opsi C selesai)
-Checklist: smoke test (semua game+hub+leaderboard+dashboard, console error, network 404) → integration test (verify Firebase asli buat parent identity, lalu cleanup) → regression check (login murid biasa masih normal, volume BGM 4 titik masih konsisten 0.30, badge/topicStats anak gak kesentuh salah) → deploy consistency (diff hub vs 3 domain standalone).
-
-**Hasil: 0 bug ditemukan.** Semua smoke/integration/regression/deploy-consistency check PASS. Satu-satunya yang di-flag waktu itu: belum ada verifikasi manual di iPhone/Safari asli.
-
-### Verifikasi manual iPhone (SUDAH DILAKUKAN, lewat Safari Web Inspector beneran)
-User connect iPhone via kabel, pandu step-by-step sampai buka Web Inspector dari Safari Mac. Checklist dijalanin satu-satu dengan instruksi persis apa yang di-tap:
-
-1. Modal "Playing as {nama}?" (Just me / My parent is playing) — **PASS**, avatar+greeting berubah sesuai identitas yang dipilih
-2. Subtitle Math Race berubah sesuai identitas (anak vs parent) — **PASS**
-3. Layar "Get Ready!" + suara tick sebelum vehicle-select — **PASS**
-4. Tap-highlight (kotak abu-abu Safari) — **❌ ADA, ketemu di tombol "Let's Race!"/"Play Solo"** → **root cause:** fix tap-highlight sebelumnya cuma pernah diterapin per-class (`.vehicle-opt` doang di multipleazka), gak pernah di-generalize. **Fix:** tambah 1 rule global `button, a { -webkit-tap-highlight-color: transparent; }` di SEMUA 4 stylesheet (hub, azkacraft, azkauniverse, multipleazka) — nutup kelas bug ini sekali buat selamanya, gak whack-a-mole per-elemen lagi.
-5. Icon kendaraan "plane" pas dipakai di race — **❌ ARAH KEBALIK** (gak searah race) → **root cause:** ada blanket `scaleX(-1)` di CSS `.car` buat balikin emoji mobil/truk/kapal/kereta (yang defaultnya ngadep kiri) biar ngadep kanan (searah finish). Emoji pesawat kecil (🛩️) orientasi defaultnya BEDA dari yang lain, jadi kena flip yang sama malah jadi kebalik. **Fix:** `car.dataset.vehicle` di-set di `updateCar()`, plus CSS override `.car[data-vehicle="plane"] { transform: translateY(-50%) scaleX(1); }` buat undo flip khusus plane.
-6. BGM Math Race "kedengeran kayak 100%" — **didiagnosis via temporary debug hook** (`AIGBgmDebug()`, pola sama kayak dulu di azkacraft) → hasil: `ctxState: "running"`, `gain: 0.30` — **BUKAN bug**, kode udah bener persis di 30%, cuma file musiknya (`moodmode-retro-game-arcade`) emang di-mastering kenceng jadi tetap kerasa loud di kuping. User milih **biarin di 30%** (gak diganti track, gak diturunin lagi). Debug hook udah dihapus lagi setelah diagnosis selesai.
-
-Semua fix di atas SUDAH commit + deploy ke hub dan ketiga project game (verified sync).
+1. **Math Race — reorder Create Game flow**: code/QR muncul duluan pas Create, baru nyusul pilih kendaraan. Sempat ada race condition (opponent finish keburu duluan pas masih milih kendaraan) — udah difix pakai guard `raceIsActive()`.
+2. **Math Race — vehicle-pick disinkron ke room-full**: sekarang SEMUA player (host + joiner) baru masuk layar pilih kendaraan **bareng-bareng** pas kursi penuh (bukan pas masing-masing gabung). Cocok buat 2 & 3 player, dites.
+3. **Math Race — Difficulty system (Easy/Medium/Hard)**: personal per-player setting (kayak Answer style/Timer dulu). Ngatur range angka soal, mix kali/bagi, dan **timer per soal** (10s/9s/7s). Timer On/Off toggle lama **dihapus total** — sekarang timer selalu jalan sesuai Difficulty.
+4. **Math Race — AI opponent buat Solo mode**: opponent yang tadinya diem di garis start sekarang **jalan beneran** dengan kecepatan konstan sesuai Difficulty (~90/55/40 detik buat finish). Kalau opponent finish duluan → kalah beneran, ada layar "Opponent finished first!".
+5. **DinoRace masuk ke hub**: file di-copy ke `al-idrisi-games/dinorace/`, muncul icon dino kecil (pake helm astronot) di peta bintang azkauniverse yang nge-link ke sana. Icon-nya di-hide otomatis di domain standalone (`azkasolar.quest`) karena `/dinorace/` cuma ada di hub. DinoRace ditambahin tombol 🏠 buat balik ke hub (sebelumnya gak ada jalan balik).
+6. **Unifikasi sticker/badge UX** di 3 game: locked sticker/badge sekarang disamarkan konsisten (🔒 + "???") di ketiga game, azkauniverse "Badge Collection" di-rename jadi "Sticker Book", toast "sticker baru!" ditambahin ke azkacraft & azkauniverse (sebelumnya cuma ada di multipleazka).
+7. **Math Race — soal pintar tanpa LLM**: soal berikutnya (`weightedRand()`) condong ke topik yang sering salah (`topicStats.wrong`), gak butuh API/biaya. **Catatan penting**: bobotnya berdasarkan `wrong` KUMULATIF SEPANJANG MASA, gak pernah didiskon walau anak udah membaik — bisa jadi improvement ke depan (rasio wrong/total, atau kedaluwarsa data lama).
+8. **Dashboard — parent engagement di draft insight otomatis**: `generateDraft()` sekarang nyantumin berapa hari minggu ini ortu ikut main bareng.
+9. **Mockup "AI Tutor" (belum wired ke API beneran)** ditaruh di 3 game — Math Race (layar hasil race), azkacraft (layar Brain Rest), azkauniverse (layar Level Complete). Pola konsisten: badge "✨ AI Tutor" → animasi loading (dots + teks) → fade-in ke hint contoh (teks hardcoded, cuma buat nunjukin gimana rasanya kalau beneran jalan). **Status sekarang: uncommitted**, belum di-deploy.
+10. **(Sesi lain, bukan saya)**: dashboard di-rebuild total per "Sirka design handoff" — charts, KPI, AI-generated insight pakai `api/generate-insight.js`. Belum saya review detail.
 
 ## Yang masih perlu ditindaklanjuti
-1. Testing multiplayer 2-device beneran (bukan simulasi console) buat disconnect handling & BGM stop/resume — logic udah diverifikasi via kode+simulasi browser+Firebase asli, tapi belum pernah dicoba 2 device fisik sekaligus.
-2. Kalau vehicle lain (ship/train/truck/bus) ternyata JUGA punya masalah arah kayak plane — belum ada laporan, tapi worth dicek kalau user pilih kendaraan lain pas main beneran.
-3. Dashboard guru/ortu: belum ada bukti email approval beneran terkirim; `parentEmail` baru keisi 1 dari 25 murid — kalau mau dashboard berguna penuh (termasuk metrik parentSessions per semua anak), perlu diisi manual oleh user.
-4. File `SESSION_SUMMARY.md` ini cuma buat handoff — boleh dihapus dari repo kalau mau.
+1. **Commit + deploy mockup AI Tutor** (poin 9 di atas) — masih nunggu approval Adit soal posisi/teks sebelum di-deploy.
+2. **AI tutor versi 2 (LLM beneran)** — didiskusiin konsepnya (pakai Claude Haiku 4.5, estimasi biaya <$5/bulan buat kelas ini), tapi **belum diimplementasi**. Rencana: hint muncul di layar HASIL (bukan live saat race, karena tekanan waktu 7-10 detik per soal terlalu riskan buat manggil API).
+3. **Fix bobot weak-topic yang gak pernah didiskon** (poin 7) — kalau mau, ganti ke rasio atau kasih window waktu.
+4. Testing multiplayer 2-device fisik beneran (disconnect handling, BGM stop/resume) — masih cuma divalidasi via kode+simulasi.
+5. Cek arah icon vehicle lain (ship/train/truck/bus) — cuma plane yang udah dicek & difix (kebalik arahnya).
+6. Dashboard: `parentEmail` baru keisi 1 dari ~25 murid (perlu Adit isi manual biar insight email bisa jalan ke semua ortu). Konfirmasi dari Adit: email approval **sudah pernah nyampe** ke inbox asli (gak perlu diverifikasi ulang).
+7. Review hasil rebuild dashboard dari sesi lain (poin 10 kerjaan selesai) — belum sempat dicek detail dari sisi sesi ini.
 
 ## Gaya kerja user (penting buat lanjut)
-- User (Adit) komunikasi campur Indonesia-Inggris, kadang emosi/marah kalau hasil kerja meleset jauh dari instruksi — kalau dikasih referensi desain/spec yang sangat spesifik, ikutin PERSIS, jangan improvisasi.
-- **User SANGAT suka diskusi/compare opsi dulu sebelum eksekusi** — lempar ide, minta dibandingin sama opsi lain (kadang sampai varian C/D), tanya "mana yang lebih gampang/aman buat lo", baru bilang "gas"/"lanjut" kalau udah yakin. JANGAN coding duluan pas masih tahap "gimana menurut lo" — tunggu sinyal eksplisit.
-- User suka testing sendiri lalu kasih feedback per-poin bernomor — tanggapi tiap poin secara eksplisit.
-- **Testing di real device (iPhone/Safari) itu KRUSIAL** — mayoritas bug besar project ini (audio volume, tap-highlight, AudioContext suspended) cuma muncul di situ. Kalau user connect device, pandu via Safari Web Inspector (Mac WAJIB pakai Safari, Chrome DevTools GAK BISA remote-debug Safari iOS). User sekarang udah punya 2 prompt siap-pakai (project-spesifik + general template) buat minta dipandu verifikasi manual — kalau muncul lagi di sesi baru, ikutin pola yang sama: pandu connect dulu, terus checklist per-fitur dengan instruksi PERSIS apa yang di-tap dan apa yang harus dilihat/didengar.
-- User juga suka nanya hal-hal edukatif di luar coding langsung (misal "ada jenis test apa aja", "push test yang mana") — di tengah kerjaan teknis. Jawab natural, gak perlu terlalu formal, kaitkan ke konteks project kalau relevan.
-- Kalau mockup diminta, **jangan pakai artifact terpisah/isolated** — mockup harus LANGSUNG di halaman asli (edit file asli + screenshot dari situ pakai Browser tool). Pernah di-reject keras di sesi sebelumnya.
-- **Selalu `git status --short` sebelum commit** — jangan asal `git add -A`.
-- Stale browser cache di Browser-pane preview (python http.server gak kirim cache-control) — kalau screenshot kelihatan gak berubah padahal kode udah diedit, cache-bust query param atau fetch+inject `<style>`/reload paksa sebelum nyimpulkan ada bug.
-- **Koordinat klik dari screenshot vs viewport bisa gak akurat** di Browser-pane tool (beberapa kali klik "meleset" padahal terlihat pas di screenshot) — kalau klik keliatan gak ke-trigger, coba panggil `.click()` langsung via `javascript_tool` buat isolasi apakah itu bug logic atau cuma masalah koordinat, sebelum nyimpulkan ada bug.
+- User (Adit) komunikasi campur Indonesia-Inggris. Kalau dikasih referensi desain/spec yang sangat spesifik, ikutin PERSIS, jangan improvisasi.
+- **Sangat suka diskusi/compare opsi dulu sebelum eksekusi** — lempar ide, minta dibandingin, baru bilang "gas"/"lanjut". JANGAN coding duluan pas masih tahap "gimana menurut lo".
+- Suka testing sendiri lalu kasih feedback per-poin. Suka nanya hal edukatif ("kalo pake AI kudu gimana", "ekspektasi hasilnya gimana") di tengah kerjaan teknis — jawab jujur & konkret, jangan oversell, termasuk sebutin keterbatasan/gap logic kalau ada (kayak poin 7 di atas).
+- Mockup **wajib** di file asli (bukan artifact terpisah) — edit langsung + screenshot dari situ pakai Browser tool.
+- **Selalu `git status --short` sebelum commit** — jangan asal `git add -A`, apalagi sekarang ada sesi lain yang aktif paralel.
+- Testing di real device (iPhone/Safari) itu krusial buat bug yang gak muncul di desktop (audio, tap-highlight, dll) — kalau user connect device, pandu via Safari Web Inspector.
+- **azkauniverse punya cache-busting manual** (`script.js?v=N`, `style.css?v=N` di index.html) — WAJIB naikin angka versi tiap edit file itu, kalau lupa perubahan gak akan muncul di browser (udah kejadian beberapa kali, buang waktu debug).
+- Stale browser cache di Browser-pane preview (python http.server gak kirim cache-control) — cache-bust query param atau fetch+inject `<style>` sebelum nyimpulkan ada bug.
+- Koordinat klik dari screenshot vs viewport bisa gak akurat di Browser-pane — kalau klik gak ke-trigger, coba `.click()` langsung via `javascript_tool` buat isolasi masalah.
+- Kalau port preview bentrok sama sesi lain (`al-idrisi-hub` di port 8642), jangan maksa `preview_stop` punya orang lain — jalanin `python3 -m http.server <port lain>` sendiri via Bash lalu `navigate` langsung ke situ.

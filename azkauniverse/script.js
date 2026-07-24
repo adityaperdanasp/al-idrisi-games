@@ -1433,3 +1433,31 @@ $("btn-mp-again").addEventListener("click", () => {
     });
   }
 })();
+
+/* =================================================================
+   MOCKUP: AI Tutor hint demo — replays the loading→result animation
+   every time the reward screen opens. Not wired to a real API; the
+   hint text is a fixed example just to show what it would look like.
+   ================================================================= */
+(function () {
+  const screenReward = document.getElementById("screen-reward");
+  const loadingEl = document.getElementById("ai-hint-loading");
+  const resultEl = document.getElementById("ai-hint-result");
+  if (!screenReward || !loadingEl || !resultEl) return;
+
+  function playDemo() {
+    loadingEl.classList.remove("hidden");
+    resultEl.classList.add("hidden");
+    resultEl.style.animation = "none";
+    setTimeout(() => {
+      loadingEl.classList.add("hidden");
+      resultEl.classList.remove("hidden");
+      void resultEl.offsetWidth;
+      resultEl.style.animation = "";
+    }, 1600);
+  }
+
+  new MutationObserver(() => {
+    if (screenReward.classList.contains("active")) playDemo();
+  }).observe(screenReward, { attributes: true, attributeFilter: ["class"] });
+})();

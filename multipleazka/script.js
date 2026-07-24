@@ -1155,9 +1155,10 @@ function handleAnswer(value) {
     state.correct += 1;
     state.streak += 1;
     updateStreakBadge();
-    if (window.AIGLeaderboard) {
-      topicsFromQuestionKey(lastQuestionKey).forEach(topic => AIGLeaderboard.recordTopicAttempt("mathrace", topic, true));
-    }
+    topicsFromQuestionKey(lastQuestionKey).forEach(topic => {
+      if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathrace", topic, true);
+      updateLocalTopicStat(topic, true);
+    });
 
     // Every 3rd answer in a row gives a 50% bigger jump plus a nitro effect.
     const isNitro = state.streak > 0 && state.streak % 3 === 0;
@@ -1203,9 +1204,10 @@ function handleAnswer(value) {
   state.streak = 0;
   updateStreakBadge();
   giveFeedback(false);
-  if (window.AIGLeaderboard) {
-    topicsFromQuestionKey(lastQuestionKey).forEach(topic => AIGLeaderboard.recordTopicAttempt("mathrace", topic, false));
-  }
+  topicsFromQuestionKey(lastQuestionKey).forEach(topic => {
+    if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathrace", topic, false);
+    updateLocalTopicStat(topic, false);
+  });
 
   // Type-in gets a second try on the SAME question before the answer is
   // revealed; multiple choice only ever gets one shot.
@@ -1249,6 +1251,13 @@ function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + m
 // a topic missed 3x is 7x more likely to be picked than one never missed.
 // Falls back to plain rand() before topicStats has finished loading, or
 // for a topic prefix with no recorded attempts at all.
+// 5 correct answers in a row on a topic (tracked server-side as `streak` by
+// leaderboard.js's recordTopicAttempt) counts as "currently mastered" — the
+// weak-topic weighting backs off to baseline for it regardless of how many
+// times it was missed in the past. Any wrong answer resets the streak, so
+// this reflects recent performance, not a permanent pass/fail stamp.
+const MASTERY_STREAK = 5;
+
 function weightedRand(min, max, topicPrefix) {
   if (!myTopicStats) return rand(min, max);
   const weights = [];
@@ -1256,7 +1265,9 @@ function weightedRand(min, max, topicPrefix) {
   for (let v = min; v <= max; v++) {
     const stats = myTopicStats[`${topicPrefix}-${v}`];
     const wrong = (stats && stats.wrong) || 0;
-    const weight = 1 + wrong * 2;
+    const streak = (stats && stats.streak) || 0;
+    const mastered = streak >= MASTERY_STREAK;
+    const weight = mastered ? 1 : 1 + wrong * 2;
     weights.push({ v, weight });
     total += weight;
   }
@@ -1266,6 +1277,18 @@ function weightedRand(min, max, topicPrefix) {
     if (r <= 0) return w.v;
   }
   return weights[weights.length - 1].v;
+}
+
+// Mirrors recordTopicAttempt's write into the local myTopicStats cache so
+// weightedRand() reacts within the SAME session — myTopicStats is only
+// fetched once on page load, so without this a mastery streak built up
+// during the current race wouldn't take effect until next reload.
+function updateLocalTopicStat(topic, isCorrect) {
+  if (!myTopicStats) myTopicStats = {};
+  const cur = myTopicStats[topic] || { correct: 0, wrong: 0, streak: 0 };
+  myTopicStats[topic] = isCorrect
+    ? { ...cur, correct: (cur.correct || 0) + 1, streak: (cur.streak || 0) + 1 }
+    : { ...cur, wrong: (cur.wrong || 0) + 1, streak: 0 };
 }
 
 // Fisher–Yates shuffle.
@@ -1908,3 +1931,31 @@ themeToggle.addEventListener("click", () => {
   const next = document.body.getAttribute("data-theme") === "colorful" ? "pastel" : "colorful";
   applyTheme(next);
 });
+
+/* =================================================================
+   MOCKUP: AI Tutor hint demo — replays the loading→result animation
+   every time the results screen opens. Not wired to a real API; the
+   hint text is a fixed example just to show what it would look like.
+   ================================================================= */
+(function () {
+  const screenOver = document.getElementById("screen-over");
+  const loadingEl = document.getElementById("ai-hint-loading");
+  const resultEl = document.getElementById("ai-hint-result");
+  if (!screenOver || !loadingEl || !resultEl) return;
+
+  function playDemo() {
+    loadingEl.classList.remove("hidden");
+    resultEl.classList.add("hidden");
+    resultEl.style.animation = "none";
+    setTimeout(() => {
+      loadingEl.classList.add("hidden");
+      resultEl.classList.remove("hidden");
+      void resultEl.offsetWidth;
+      resultEl.style.animation = "";
+    }, 1600);
+  }
+
+  new MutationObserver(() => {
+    if (screenOver.classList.contains("active")) playDemo();
+  }).observe(screenOver, { attributes: true, attributeFilter: ["class"] });
+})();

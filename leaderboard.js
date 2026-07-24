@@ -108,6 +108,12 @@
     const ref = aigDb.ref(`players/${player.id}/topicStats/${gameId}/${topicKey}`);
     ref.child(isCorrect ? "correct" : "wrong").transaction(cur => (cur || 0) + 1);
     if (!isCorrect) ref.update({ lastWrongAt: firebase.database.ServerValue.TIMESTAMP });
+    // Consecutive-correct streak — lets a consumer treat a topic as
+    // "currently mastered" (see multipleazka's weightedRand) without ever
+    // touching the historical correct/wrong totals used for reporting.
+    // Any wrong answer resets it, so mastery has to be shown recently, not
+    // just once a long time ago.
+    ref.child("streak").transaction(cur => isCorrect ? (cur || 0) + 1 : 0);
   }
 
   window.AIGLeaderboard = { recordPlay, watchGame, getProgress, setProgress, recordTopicAttempt, db: aigDb };
