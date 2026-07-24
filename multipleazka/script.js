@@ -61,6 +61,23 @@ const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPl
 // audio/names/{id}.mp3 (same voice as the praise/encourage clips).
 const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().id) || "azka";
 
+// Whose topicStats to read for weak-topic-weighted question picking (see
+// nextQuestion()). A parent identity has its own seat id ({childId}-parent)
+// but never accumulates its own topicStats (leaderboard.js no-ops those
+// writes for role "parent") — so weighting must key off the actual CHILD's
+// id (deriveParentPlayer's `childId` field), not the parent seat's own id.
+const TOPIC_STATS_ID = (window.AIGPlayer && AIGPlayer.getPlayer()
+  && (AIGPlayer.getPlayer().childId || AIGPlayer.getPlayer().id)) || CHILD_ID;
+
+// Fetched once on load; null until it resolves, in which case question
+// picking just falls back to plain uniform random (see weightedRand()).
+let myTopicStats = null;
+if (window.AIGLeaderboard) {
+  AIGLeaderboard.db.ref(`players/${TOPIC_STATS_ID}/topicStats/mathrace`).get()
+    .then(snap => { myTopicStats = snap.val() || {}; })
+    .catch(() => { myTopicStats = {}; });
+}
+
 // How far each correct answer moves the car (fraction of the track, 0..1).
 // Parent's car moves at 0.25× the Kids' car speed.
 // Kids: 10 correct → finish.   Parent: 40 correct → finish.
@@ -990,13 +1007,15 @@ function nextQuestion() {
   do {
     isDivision = Math.random() < d.divisionChance;
     if (isDivision) {
-      divisor = rand(d.min, d.max);
+      // Only the divisor maps to a practiced "topic" (topicsFromQuestionKey
+      // tags divby-N, not the quotient) — so only it gets weak-topic weighting.
+      divisor = weightedRand(d.min, d.max, "divby");
       quotient = rand(d.min, d.max);
       dividend = divisor * quotient;
       key = "d" + dividend + "/" + divisor;
     } else {
-      a = rand(d.min, d.max);
-      b = rand(d.min, d.max);
+      a = weightedRand(d.min, d.max, "times");
+      b = weightedRand(d.min, d.max, "times");
       key = "m" + a + "x" + b;
     }
   } while (key === lastQuestionKey || (isDivision && dividend > d.maxDividend));
@@ -1224,6 +1243,30 @@ function revealCorrectAnswer() {
 
 // Random int in [min, max].
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+// Same as rand(), but values the player has gotten wrong more often (per
+// myTopicStats, keyed "{topicPrefix}-{value}") come up more frequently —
+// a topic missed 3x is 7x more likely to be picked than one never missed.
+// Falls back to plain rand() before topicStats has finished loading, or
+// for a topic prefix with no recorded attempts at all.
+function weightedRand(min, max, topicPrefix) {
+  if (!myTopicStats) return rand(min, max);
+  const weights = [];
+  let total = 0;
+  for (let v = min; v <= max; v++) {
+    const stats = myTopicStats[`${topicPrefix}-${v}`];
+    const wrong = (stats && stats.wrong) || 0;
+    const weight = 1 + wrong * 2;
+    weights.push({ v, weight });
+    total += weight;
+  }
+  let r = Math.random() * total;
+  for (const w of weights) {
+    r -= w.weight;
+    if (r <= 0) return w.v;
+  }
+  return weights[weights.length - 1].v;
+}
 
 // Fisher–Yates shuffle.
 function shuffle(arr) {
