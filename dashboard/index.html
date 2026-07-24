@@ -4,12 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Dashboard Guru — Al Idrisi Games</title>
-<meta name="theme-color" content="#fdedd3">
+<meta name="theme-color" content="#f6f7f9">
 <meta name="robots" content="noindex, nofollow">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.45.0/dist/tabler-icons.min.css">
 <link rel="stylesheet" href="style.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -26,19 +28,39 @@
   </div>
 
   <div id="db-app" class="db-app hidden">
-    <header class="db-header">
-      <a href="../index.html" class="db-back" title="Kembali ke hub">←</a>
-      <h1>Dashboard Guru</h1>
-      <button id="db-refresh" class="db-refresh-btn" title="Muat ulang data">🔄 Refresh</button>
-    </header>
-    <div id="db-updated" class="db-updated"></div>
+    <div class="db-hero">
+      <div class="db-hero-top">
+        <a href="../index.html" class="db-back" title="Kembali ke hub"><i class="ti ti-arrow-left"></i></a>
+        <div class="db-hero-title">
+          <h1><i class="ti ti-layout-dashboard"></i> Dashboard Guru</h1>
+          <p>Ringkasan progress dan insight untuk orang tua — Al Idrisi Games</p>
+        </div>
+        <button id="db-refresh" class="db-refresh-btn" title="Muat ulang data"><i class="ti ti-refresh"></i> Refresh</button>
+      </div>
+      <div id="db-updated" class="db-updated"></div>
+    </div>
 
     <nav class="db-tabs">
-      <button class="db-tab active" data-tab="students">Progress Murid</button>
-      <button class="db-tab" data-tab="approvals">Persetujuan Ortu</button>
+      <button class="db-tab active" data-tab="students"><i class="ti ti-chart-bar"></i> Progress Murid</button>
+      <button class="db-tab" data-tab="approvals"><i class="ti ti-mail"></i> Persetujuan Ortu</button>
     </nav>
 
     <section id="tab-students" class="db-tab-panel">
+      <h2 class="db-section-title"><i class="ti ti-sparkles"></i> Ringkasan kelas</h2>
+      <div id="db-kpi-row" class="db-kpi-row"></div>
+
+      <div class="db-chart-grid">
+        <div class="db-chart-card">
+          <h3><i class="ti ti-bolt"></i> XP per murid</h3>
+          <div class="db-chart-canvas-wrap"><canvas id="chart-xp"></canvas></div>
+        </div>
+        <div class="db-chart-card">
+          <h3><i class="ti ti-alert-triangle"></i> Area lemah per murid</h3>
+          <div class="db-chart-canvas-wrap"><canvas id="chart-weak"></canvas></div>
+        </div>
+      </div>
+
+      <h2 class="db-section-title"><i class="ti ti-list-details"></i> Detail setiap murid</h2>
       <div class="db-table-wrap">
         <table class="db-table">
           <thead>
@@ -57,9 +79,9 @@
     </section>
 
     <section id="tab-approvals" class="db-tab-panel hidden">
-      <h2>Menunggu persetujuan</h2>
+      <h2 class="db-section-title"><i class="ti ti-clock"></i> Menunggu persetujuan</h2>
       <div id="pending-list" class="db-insight-list"></div>
-      <h2>Sudah disetujui — siap dikirim ke ortu</h2>
+      <h2 class="db-section-title"><i class="ti ti-circle-check"></i> Sudah disetujui — siap dikirim ke ortu</h2>
       <div id="approved-list" class="db-insight-list"></div>
     </section>
   </div>

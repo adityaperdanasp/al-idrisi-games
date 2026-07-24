@@ -1,28 +1,26 @@
 /* Al Idrisi Games — Teacher Dashboard.
-   Reuses the hub's visual identity (Baloo 2 / Nunito, warm gradient,
-   brand blue #1266d8) — see ../style.css and ../leaderboard.css. No CSS
-   variable system in this project, so values are literal hex on purpose,
-   matching the rest of the codebase. */
+   Deliberately styled apart from the hub's kid-facing game theme (Baloo 2 /
+   warm gradient) — this is a tool for teachers and parents, so it follows a
+   plain modern web-app dashboard look instead: neutral grays, Inter, flat
+   white cards with hairline borders. No CSS variable system in this project,
+   so values are literal hex on purpose, matching the rest of the codebase. */
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: "Nunito", sans-serif;
-  color: #3d2e22;
-  background: linear-gradient(180deg, #fdedd3 0%, #e9dcc5 55%, #dccba9 100%);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1a1d21;
+  background: #f6f7f9;
   min-height: 100vh;
 }
 
-h1, h2 {
-  font-family: "Baloo 2", sans-serif;
-  margin: 0 0 6px;
-}
+h1, h2, h3 { margin: 0 0 6px; font-weight: 600; }
 
 .db-page {
-  max-width: 960px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 20px 16px 60px;
+  padding: 24px 20px 60px;
 }
 
 .hidden { display: none !important; }
@@ -37,109 +35,248 @@ h1, h2 {
 
 .db-gate-card {
   background: #fff;
-  border-radius: 20px;
+  border: 1px solid #e4e7eb;
+  border-radius: 12px;
   padding: 32px 28px;
   max-width: 320px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(61, 46, 34, 0.15);
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
 }
 
-.db-gate-card h1 { font-size: 1.4rem; }
-.db-gate-card p { color: #6b5843; margin: 0 0 18px; }
+.db-gate-card h1 { font-size: 1.25rem; }
+.db-gate-card p { color: #667085; margin: 0 0 18px; font-size: 0.9rem; }
 
 .db-pin-input {
   width: 100%;
-  font-size: 1.6rem;
-  letter-spacing: 0.4em;
+  font-size: 1.5rem;
+  letter-spacing: 0.35em;
   text-align: center;
   padding: 10px;
-  border: 2px solid #f6e3b4;
-  border-radius: 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
   margin-bottom: 14px;
-  font-family: "Nunito", sans-serif;
+  font-family: inherit;
 }
-.db-pin-input:focus { outline: none; border-color: #1266d8; }
+.db-pin-input:focus { outline: none; border-color: #6b86c4; box-shadow: 0 0 0 3px rgba(107, 134, 196, 0.25); }
 
 .db-btn-primary {
   width: 100%;
-  background: #1266d8;
+  background: #6b86c4;
   color: #fff;
   border: none;
-  border-radius: 12px;
-  padding: 12px;
-  font-size: 1rem;
-  font-weight: 700;
-  font-family: "Baloo 2", sans-serif;
+  border-radius: 8px;
+  padding: 11px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
 }
+.db-btn-primary:hover { background: #5a72ab; }
 .db-btn-primary:active { transform: translateY(1px); }
 
-.db-error { color: #d9534f; margin-top: 10px; font-weight: 600; }
+.db-error { color: #d92d20; margin-top: 10px; font-weight: 500; font-size: 0.88rem; }
 
 /* ---------- Header / tabs ---------- */
-.db-header {
+.db-hero {
+  background: linear-gradient(120deg, #6b86c4 0%, #a993d9 55%, #dd93b7 100%);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(107, 134, 196, 0.25);
+}
+.db-hero-top {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 4px;
+  gap: 14px;
 }
-.db-header h1 { flex: 1; font-size: 1.5rem; }
+.db-hero-title { flex: 1; }
+.db-hero-title h1 {
+  color: #fff;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.db-hero-title p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.86rem;
+  margin: 2px 0 0;
+}
 
 .db-back {
   width: 38px; height: 38px;
   border-radius: 10px;
-  background: #f6e3b4;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   display: flex; align-items: center; justify-content: center;
   text-decoration: none;
-  color: #3d2e22;
-  font-size: 1.1rem;
+  color: #fff;
+  font-size: 1.05rem;
 }
+.db-back:hover { background: rgba(255, 255, 255, 0.25); }
 
 .db-refresh-btn {
-  background: #fff;
-  border: 2px solid #f6e3b4;
-  border-radius: 10px;
-  padding: 8px 12px;
-  font-family: "Nunito", sans-serif;
-  font-weight: 700;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 9px 15px;
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: #fff;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
+.db-refresh-btn:hover { background: rgba(255, 255, 255, 0.25); }
 
 .db-updated {
-  color: #6b5843;
-  font-size: 0.85rem;
-  margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+  margin-top: 12px;
 }
+
+.db-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.02rem;
+  color: #1a1d21;
+  margin: 24px 0 12px;
+}
+.db-section-title i { color: #a993d9; font-size: 1.1rem; }
+.db-tab-panel > .db-section-title:first-child { margin-top: 0; }
 
 .db-tabs {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .db-tab {
-  flex: 1;
-  border: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e4e7eb;
   background: #fff;
-  border-radius: 12px;
-  padding: 10px;
-  font-family: "Baloo 2", sans-serif;
-  font-weight: 600;
-  color: #6b5843;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #667085;
   cursor: pointer;
 }
+.db-tab:hover { border-color: #c7d2fe; color: #1a1d21; }
 .db-tab.active {
-  background: #1266d8;
   color: #fff;
+  background: linear-gradient(120deg, #6b86c4, #a993d9);
+  border-color: transparent;
+}
+
+/* ---------- KPI cards ---------- */
+.db-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.db-kpi-card {
+  background: #fff;
+  border: 1px solid #e4e7eb;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left: 3px solid transparent;
+}
+.db-kpi-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.db-kpi-blue { border-left-color: #6b86c4; }
+.db-kpi-blue .db-kpi-icon { background: #eaf0ff; color: #6b86c4; }
+.db-kpi-purple { border-left-color: #a993d9; }
+.db-kpi-purple .db-kpi-icon { background: #f2ebfe; color: #a993d9; }
+.db-kpi-coral { border-left-color: #e2a06e; }
+.db-kpi-coral .db-kpi-icon { background: #fef1e8; color: #e2a06e; }
+.db-kpi-teal { border-left-color: #dd93b7; }
+.db-kpi-teal .db-kpi-icon { background: #fdeef6; color: #dd93b7; }
+
+.db-kpi-card .db-kpi-label {
+  color: #667085;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.db-kpi-card .db-kpi-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1d21;
+  margin-top: 2px;
+}
+
+/* ---------- Charts ---------- */
+.db-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.db-chart-card {
+  background: #fff;
+  border: 1px solid #e4e7eb;
+  border-top: 3px solid #a993d9;
+  border-radius: 10px;
+  padding: 14px 16px 8px;
+}
+.db-chart-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: #344054;
+}
+.db-chart-card h3 i { color: #a993d9; }
+.db-chart-canvas-wrap {
+  position: relative;
+  height: 220px;
+}
+.db-detail-chart-wrap {
+  position: relative;
+  height: 160px;
+  margin-top: 8px;
+}
+.db-xp-bar-track {
+  background: #eef1f5;
+  border-radius: 6px;
+  height: 8px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.db-xp-bar-fill {
+  background: #6b86c4;
+  height: 100%;
+  border-radius: 6px;
 }
 
 /* ---------- Student table ---------- */
 .db-table-wrap {
   overflow-x: auto;
   background: #fff;
-  border-radius: 16px;
-  padding: 8px;
+  border: 1px solid #e4e7eb;
+  border-radius: 10px;
 }
 
 .db-table {
@@ -150,42 +287,47 @@ h1, h2 {
 
 .db-table th {
   text-align: left;
-  font-family: "Baloo 2", sans-serif;
-  color: #6b5843;
-  font-size: 0.85rem;
-  padding: 10px 12px;
-  border-bottom: 2px solid #f6e3b4;
+  font-weight: 600;
+  color: #667085;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e4e7eb;
 }
 
 .db-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid #f3ead9;
+  padding: 12px 14px;
+  border-bottom: 1px solid #eef1f5;
   vertical-align: top;
+  font-size: 0.9rem;
 }
 
 .db-table tbody tr {
   cursor: pointer;
 }
 .db-table tbody tr:hover {
-  background: #fdf6e8;
+  background: #f9fafb;
 }
+.db-table tbody tr:last-child td { border-bottom: none; }
 
 .db-student-name {
-  font-family: "Baloo 2", sans-serif;
-  font-weight: 700;
+  font-weight: 600;
+  color: #1a1d21;
 }
 
-.db-game-cell { font-size: 0.9rem; line-height: 1.5; }
-.db-game-cell .db-muted { color: #9a8b76; }
+.db-game-cell { font-size: 0.88rem; line-height: 1.5; }
+.db-game-cell .db-muted { color: #98a2b3; }
 
 .db-topic-chip {
   display: inline-block;
-  background: #fbe4e4;
-  color: #b23c3c;
-  border-radius: 8px;
+  background: #faeceb;
+  color: #b0665d;
+  border: 1px solid #f3d9d6;
+  border-radius: 6px;
   padding: 2px 8px;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.74rem;
+  font-weight: 500;
   margin: 2px 4px 2px 0;
 }
 
@@ -193,7 +335,7 @@ h1, h2 {
 .db-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(61, 46, 34, 0.45);
+  background: rgba(16, 24, 40, 0.45);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -204,33 +346,59 @@ h1, h2 {
 
 .db-detail-card {
   background: #fff;
-  border-radius: 18px;
+  border-radius: 12px;
   padding: 24px;
   max-width: 560px;
   width: 100%;
   position: relative;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.18);
 }
 
 .db-close {
   position: absolute;
   top: 14px; right: 14px;
-  width: 32px; height: 32px;
-  border-radius: 10px;
-  border: none;
-  background: #f6e3b4;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid #e4e7eb;
+  background: #fff;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.9rem;
+  color: #667085;
 }
+.db-close:hover { background: #f2f4f7; }
 
 .db-detail-section {
   margin-top: 18px;
   padding-top: 14px;
-  border-top: 1px solid #f3ead9;
+  border-top: 1px solid #eef1f5;
 }
 .db-detail-section h3 {
-  font-family: "Baloo 2", sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 8px;
-  font-size: 1.05rem;
+  font-size: 1rem;
+  color: #1a1d21;
+}
+.db-game-dot-mathrace i { color: #6b86c4; }
+.db-game-dot-language-arts i { color: #a993d9; }
+.db-game-dot-solarquest i { color: #e2a06e; }
+
+.db-detail-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.25rem;
+}
+.db-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(120deg, #6b86c4, #a993d9);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 /* ---------- Insight / approval cards ---------- */
@@ -238,24 +406,26 @@ h1, h2 {
 
 .db-insight-card {
   background: #fff;
-  border-radius: 14px;
+  border: 1px solid #e4e7eb;
+  border-radius: 10px;
   padding: 16px;
   margin-bottom: 12px;
 }
 .db-insight-card h4 {
-  font-family: "Baloo 2", sans-serif;
   margin: 0 0 8px;
+  font-size: 0.95rem;
 }
 .db-insight-card textarea {
   width: 100%;
   min-height: 90px;
-  font-family: "Nunito", sans-serif;
-  font-size: 0.9rem;
-  border: 2px solid #f6e3b4;
-  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
   padding: 8px;
   resize: vertical;
 }
+.db-insight-card textarea:focus { outline: none; border-color: #6b86c4; box-shadow: 0 0 0 3px rgba(107, 134, 196, 0.25); }
 .db-insight-card .db-insight-actions {
   margin-top: 10px;
   display: flex;
@@ -263,31 +433,40 @@ h1, h2 {
   align-items: center;
 }
 .db-insight-meta {
-  color: #9a8b76;
-  font-size: 0.78rem;
+  color: #98a2b3;
+  font-size: 0.76rem;
   margin-top: 6px;
 }
 
 .db-btn-small {
-  background: #1266d8;
+  background: #6b86c4;
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 8px 14px;
-  font-weight: 700;
-  font-family: "Nunito", sans-serif;
+  font-weight: 500;
+  font-size: 0.86rem;
+  font-family: inherit;
   cursor: pointer;
 }
+.db-btn-small:hover { background: #5a72ab; }
+.db-btn-small:disabled { background: #98a2b3; cursor: default; }
+
 .db-btn-ghost {
   background: #fff;
-  border: 2px solid #f6e3b4;
-  border-radius: 8px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
   padding: 7px 12px;
-  font-weight: 700;
+  font-weight: 500;
+  font-size: 0.86rem;
+  font-family: inherit;
   cursor: pointer;
+  color: #344054;
 }
+.db-btn-ghost:hover { background: #f2f4f7; }
 
 .db-empty-note {
-  color: #9a8b76;
+  color: #98a2b3;
   font-style: italic;
+  font-size: 0.88rem;
 }

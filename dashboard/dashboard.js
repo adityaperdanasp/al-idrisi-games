@@ -88,6 +88,19 @@
   // ---- Data loading ----
   let cache = { players: {}, leaderboard: {}, insights: {} };
 
+  // Chart.js instances, kept so re-render (refresh / detail reopen) destroys
+  // the previous chart before drawing a new one on the same canvas.
+  const charts = {};
+  function renderChart(canvasId, config) {
+    if (charts[canvasId]) charts[canvasId].destroy();
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    charts[canvasId] = new Chart(ctx, config);
+  }
+
+  const CHART_COLORS = { mathrace: "#7c98d6", "language-arts": "#a993d9", solarquest: "#e2a06e" };
+  const GAME_ICONS = { mathrace: "ti-calculator", "language-arts": "ti-book-2", solarquest: "ti-rocket" };
+
   function loadAndRender() {
     const db = AIGLeaderboard.db;
     Promise.allSettled([
@@ -108,7 +121,85 @@
         : "Terakhir dimuat: " + new Date().toLocaleString("id-ID");
 
       renderStudentTable();
+      renderClassOverview();
       renderInsights();
+    });
+  }
+
+  // ---- Class-wide KPIs + charts ----
+  function xpTotalFor(s) {
+    const la = (s["language-arts"].badges && s["language-arts"].badges.xpTotal) || 0;
+    const sq = (s.solarquest.badges && s.solarquest.badges.xp) || 0;
+    return la + sq;
+  }
+
+  function renderClassOverview() {
+    const students = (window.AIG_PLAYERS || []).filter(p => p.role === "student");
+    const rows = students.map(p => ({ player: p, summary: studentSummary(p.id) }));
+
+    const activeCount = rows.filter(r => GAMES.some(g => r.summary[g.id].timesPlayed > 0)).length;
+    const totalSessions = rows.reduce((sum, r) => sum + GAMES.reduce((s, g) => s + r.summary[g.id].timesPlayed, 0), 0);
+    const weakCounts = rows.map(r => ({
+      name: r.player.name,
+      count: GAMES.reduce((s, g) => s + weakTopics(r.summary[g.id].topicStats, 999).length, 0)
+    }));
+    const totalWeakSpots = weakCounts.reduce((s, w) => s + w.count, 0);
+    const parentDaysList = rows.map(r => parentSessionsThisWeek(r.player.id));
+    const avgParentDays = parentDaysList.length
+      ? (parentDaysList.reduce((s, n) => s + n, 0) / parentDaysList.length)
+      : 0;
+
+    document.getElementById("db-kpi-row").innerHTML = `
+      <div class="db-kpi-card db-kpi-blue">
+        <div class="db-kpi-icon"><i class="ti ti-users"></i></div>
+        <div><div class="db-kpi-label">Murid aktif</div><div class="db-kpi-value">${activeCount}/${students.length}</div></div>
+      </div>
+      <div class="db-kpi-card db-kpi-purple">
+        <div class="db-kpi-icon"><i class="ti ti-device-gamepad-2"></i></div>
+        <div><div class="db-kpi-label">Total sesi main</div><div class="db-kpi-value">${totalSessions}</div></div>
+      </div>
+      <div class="db-kpi-card db-kpi-coral">
+        <div class="db-kpi-icon"><i class="ti ti-alert-triangle"></i></div>
+        <div><div class="db-kpi-label">Area lemah tercatat</div><div class="db-kpi-value">${totalWeakSpots}</div></div>
+      </div>
+      <div class="db-kpi-card db-kpi-teal">
+        <div class="db-kpi-icon"><i class="ti ti-heart"></i></div>
+        <div><div class="db-kpi-label">Rata² hari ditemani ortu</div><div class="db-kpi-value">${avgParentDays.toFixed(1)}</div></div>
+      </div>
+    `;
+
+    // XP per murid — top 12, sorted desc
+    const xpRows = rows.map(r => ({ name: r.player.name, xp: xpTotalFor(r.summary) }))
+      .sort((a, b) => b.xp - a.xp)
+      .slice(0, 12);
+    renderChart("chart-xp", {
+      type: "bar",
+      data: {
+        labels: xpRows.map(r => r.name),
+        datasets: [{ label: "XP", data: xpRows.map(r => r.xp), backgroundColor: "#7c98d6", borderRadius: 6 }]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+
+    // Area lemah per murid — only students with at least 1 weak spot, top 12
+    const weakRows = weakCounts.filter(w => w.count > 0).sort((a, b) => b.count - a.count).slice(0, 12);
+    renderChart("chart-weak", {
+      type: "bar",
+      data: {
+        labels: weakRows.map(w => w.name),
+        datasets: [{ label: "Area lemah", data: weakRows.map(w => w.count), backgroundColor: "#e2a06e", borderRadius: 6 }]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
     });
   }
 
@@ -190,6 +281,14 @@
   document.getElementById("detail-close").addEventListener("click", () => overlay.classList.add("hidden"));
   overlay.addEventListener("click", e => { if (e.target === overlay) overlay.classList.add("hidden"); });
 
+  function gameTotals(topicStats) {
+    if (!topicStats) return { correct: 0, wrong: 0 };
+    return Object.values(topicStats).reduce((acc, t) => ({
+      correct: acc.correct + ((t && t.correct) || 0),
+      wrong: acc.wrong + ((t && t.wrong) || 0)
+    }), { correct: 0, wrong: 0 });
+  }
+
   function openDetail(studentId) {
     const player = (window.AIG_PLAYERS || []).find(p => p.id === studentId);
     if (!player) return;
@@ -202,23 +301,27 @@
         ? allWeak.map(t => `<span class="db-topic-chip">${escapeHtml(prettifyTopic(g.id, t.topic))} — ${Math.round(t.accuracy * 100)}% benar (${t.correct}/${t.total})</span>`).join("")
         : `<span class="db-empty-note">Belum ada area lemah yang cukup datanya (min. ${MIN_ATTEMPTS} percobaan per topik).</span>`;
       const lastPlayed = data.lastPlayed ? new Date(data.lastPlayed).toLocaleString("id-ID") : "belum pernah";
+      const totals = gameTotals(data.topicStats);
+      const hasAttempts = totals.correct + totals.wrong > 0;
       return `<div class="db-detail-section">
-        <h3>${escapeHtml(g.label)}</h3>
+        <h3 class="db-game-heading db-game-dot-${g.id}"><i class="ti ${GAME_ICONS[g.id]}"></i> ${escapeHtml(g.label)}</h3>
         <div>${data.timesPlayed} kali main — terakhir: ${lastPlayed}</div>
+        ${hasAttempts ? `<div class="db-detail-chart-wrap"><canvas id="detail-chart-${g.id}"></canvas></div>` : ""}
         <div style="margin-top:8px;">${topicsHtml}</div>
       </div>`;
     }).join("");
 
     const parentDays = parentSessionsThisWeek(studentId);
     const parentSessionsHtml = `<div class="db-detail-section">
-      <h3>Keterlibatan Orang Tua</h3>
+      <h3><i class="ti ti-heart" style="color:#dd93b7;"></i> Keterlibatan Orang Tua</h3>
       <div>${parentDays > 0
         ? `Orang tua ${escapeHtml(player.name)} menemani main <b>${parentDays}x</b> minggu ini.`
         : `Belum ada sesi ditemani orang tua minggu ini.`}</div>
     </div>`;
 
+    const initials = player.name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
     detailContent.innerHTML = `
-      <h2>${escapeHtml(player.name)}</h2>
+      <h2 class="db-detail-name"><span class="db-avatar">${initials}</span> ${escapeHtml(player.name)}</h2>
       ${sections}
       ${parentSessionsHtml}
       <div class="db-detail-section">
@@ -227,11 +330,27 @@
     `;
     document.getElementById("generate-draft-btn").addEventListener("click", () => generateDraft(studentId));
     overlay.classList.remove("hidden");
+
+    GAMES.forEach(g => {
+      const totals = gameTotals(s[g.id].topicStats);
+      if (totals.correct + totals.wrong === 0) return;
+      renderChart(`detail-chart-${g.id}`, {
+        type: "doughnut",
+        data: {
+          labels: ["Benar", "Salah"],
+          datasets: [{ data: [totals.correct, totals.wrong], backgroundColor: [CHART_COLORS[g.id], "#f3d9d6"] }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } } }
+        }
+      });
+    });
   }
 
-  function generateDraft(studentId) {
-    const player = (window.AIG_PLAYERS || []).find(p => p.id === studentId);
-    const s = studentSummary(studentId);
+  // Template fallback — used if the AI endpoint is unreachable or misconfigured,
+  // so "Generate draft" never fully breaks even without ANTHROPIC_API_KEY set.
+  function buildTemplateDraft(studentId, player, s) {
     const gameLines = [];
     GAMES.forEach(g => {
       const data = s[g.id];
@@ -261,23 +380,66 @@
     } else {
       draft += " Belum ada area lemah spesifik yang tercatat.";
     }
-
     const parentDays = parentSessionsThisWeek(studentId);
     draft += parentDays > 0
       ? ` Orang tua ikut menemani main ${parentDays}x minggu ini — terima kasih atas keterlibatannya!`
       : " Belum ada sesi ditemani orang tua minggu ini.";
+    return draft;
+  }
 
-    AIGLeaderboard.db.ref(`insights/${studentId}`).set({
-      draft,
-      generatedAt: firebase.database.ServerValue.TIMESTAMP,
-      status: "pending"
-    }).then(() => {
-      overlay.classList.add("hidden");
-      loadAndRender();
-      document.querySelector('.db-tab[data-tab="approvals"]').click();
-    }).catch(err => {
-      alert("Gagal menyimpan draft: " + err.message + "\n\nKemungkinan rule Firebase untuk path 'insights' belum diizinkan.");
+  // Compact facts payload sent to the AI endpoint — no PII beyond the child's
+  // first name, just aggregate stats it already reads from the table/detail view.
+  function buildInsightFacts(studentId, s) {
+    const facts = { games: [], parentDaysThisWeek: parentSessionsThisWeek(studentId) };
+    GAMES.forEach(g => {
+      const data = s[g.id];
+      if (data.timesPlayed === 0) return;
+      const entry = { label: g.label, timesPlayed: data.timesPlayed };
+      if (data.badges) {
+        if (g.id === "language-arts") entry.chaptersDone = Object.values(data.badges.chapters || {}).filter(c => c.completed).length;
+        else if (g.id === "solarquest") entry.levelsDone = Object.values(data.badges.levels || {}).filter(l => l.completed).length;
+      }
+      entry.weakTopics = weakTopics(data.topicStats, 3).map(t => ({
+        topic: prettifyTopic(g.id, t.topic), accuracyPct: Math.round(t.accuracy * 100)
+      }));
+      facts.games.push(entry);
     });
+    return facts;
+  }
+
+  function generateDraft(studentId) {
+    const player = (window.AIG_PLAYERS || []).find(p => p.id === studentId);
+    const s = studentSummary(studentId);
+    const btn = document.getElementById("generate-draft-btn");
+    if (btn) { btn.disabled = true; btn.textContent = "Membuat draft…"; }
+
+    fetch("/api/generate-insight", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studentName: player.name, facts: buildInsightFacts(studentId, s) })
+    })
+      .then(r => r.json().then(data => ({ ok: r.ok, data })))
+      .then(({ ok, data }) => {
+        if (!ok || !data.draft) throw new Error((data && data.error) || "AI gagal merespons");
+        return data.draft;
+      })
+      .catch(() => buildTemplateDraft(studentId, player, s)) // silent fallback — dashboard still works without AI configured
+      .then(draft => AIGLeaderboard.db.ref(`insights/${studentId}`).set({
+        draft,
+        generatedAt: firebase.database.ServerValue.TIMESTAMP,
+        status: "pending"
+      }))
+      .then(() => {
+        overlay.classList.add("hidden");
+        loadAndRender();
+        document.querySelector('.db-tab[data-tab="approvals"]').click();
+      })
+      .catch(err => {
+        alert("Gagal menyimpan draft: " + err.message + "\n\nKemungkinan rule Firebase untuk path 'insights' belum diizinkan.");
+      })
+      .finally(() => {
+        if (btn) { btn.disabled = false; btn.textContent = "Generate draft insight untuk ortu"; }
+      });
   }
 
   // ---- Tabs ----
