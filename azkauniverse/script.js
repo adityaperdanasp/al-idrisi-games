@@ -376,9 +376,7 @@ function spawnBurst() {
    6. QUEST MAP RENDERING
    ================================================================= */
 function isLevelUnlocked(index) {
-  if (index === 0) return true;
-  const prevLevel = questionsData.levels[index - 1];
-  return !!(progress.levels[prevLevel.id] && progress.levels[prevLevel.id].completed);
+  return true; // every chapter is open from the start — no sequential lock
 }
 
 function starsMarkup(count) {
@@ -554,9 +552,9 @@ function renderQuestPathMap(container) {
     const isCurrent = unlocked && !completed;
 
     let meta;
-    if (completed) meta = `Selesai · ${stars}/3 bintang`;
-    else if (isCurrent) meta = "Sedang main";
-    else meta = "Terkunci";
+    if (completed) meta = `Complete · ${stars}/3 stars`;
+    else if (isCurrent) meta = "Playing now";
+    else meta = "Locked";
 
     const btn = document.createElement("button");
     btn.className = `path-node side-${pos.side}` + (unlocked ? "" : " locked");
