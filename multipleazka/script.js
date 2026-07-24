@@ -155,7 +155,8 @@ const state = {
   vehicle: "car",        // chosen ride — kept across "Play Again", reset when going Home
   streak: 0,             // consecutive correct answers THIS race — resets on any wrong answer
   gameOver: false,
-  vehiclePicked: false   // guards the synced vehicle-select from firing more than once per game
+  vehiclePicked: false,   // guards the synced vehicle-select from firing more than once per game
+  lastWrong: null         // most recent missed question this race — feeds the AI Tutor hint (see handleAnswer)
 };
 
 // Zeroes every per-race counter. Called at the start of every race —
@@ -169,6 +170,7 @@ function resetRaceState() {
   state.raceWrongTotal = 0;    // whole-race wrong count, for the Perfect Run badge
   state.streak = 0;
   state.gameOver = false;
+  state.lastWrong = null;
   lastQuestionKey = null;
   updateStreakBadge();
   $("finish-overlay").classList.add("hidden");
@@ -1204,6 +1206,12 @@ function handleAnswer(value) {
   state.streak = 0;
   updateStreakBadge();
   giveFeedback(false);
+  state.lastWrong = {
+    question: $("question-text").textContent,
+    correctAnswer: state.currentAnswer,
+    kidAnswer: value === null ? null : value,
+    topic: topicsFromQuestionKey(lastQuestionKey)[0] || null
+  };
   topicsFromQuestionKey(lastQuestionKey).forEach(topic => {
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathrace", topic, false);
     updateLocalTopicStat(topic, false);
@@ -1933,29 +1941,60 @@ themeToggle.addEventListener("click", () => {
 });
 
 /* =================================================================
-   MOCKUP: AI Tutor hint demo — replays the loading→result animation
-   every time the results screen opens. Not wired to a real API; the
-   hint text is a fixed example just to show what it would look like.
+   AI TUTOR — real hint, generated from the last question the player
+   actually missed this race (state.lastWrong, set in handleAnswer()).
+   No wrong answers this race → card just stays hidden. If the API call
+   fails for any reason, same thing — it never blocks the results screen.
    ================================================================= */
 (function () {
   const screenOver = document.getElementById("screen-over");
+  const card = document.getElementById("ai-hint-card");
   const loadingEl = document.getElementById("ai-hint-loading");
   const resultEl = document.getElementById("ai-hint-result");
-  if (!screenOver || !loadingEl || !resultEl) return;
+  if (!screenOver || !card || !loadingEl || !resultEl) return;
 
-  function playDemo() {
+  let lastRequestedFor = null; // dedupe re-fires (e.g. the observer firing on unrelated class changes)
+
+  async function loadHint() {
+    const missed = state.lastWrong;
+    if (!missed) { card.classList.add("hidden"); return; }
+
+    const requestKey = JSON.stringify(missed);
+    if (requestKey === lastRequestedFor) return;
+    lastRequestedFor = requestKey;
+
+    card.classList.remove("hidden");
     loadingEl.classList.remove("hidden");
     resultEl.classList.add("hidden");
-    resultEl.style.animation = "none";
-    setTimeout(() => {
+
+    try {
+      const res = await fetch("/api/generate-hint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: CHILD_NAME,
+          gameLabel: "Math Race",
+          question: missed.question,
+          correctAnswer: missed.correctAnswer,
+          kidAnswer: missed.kidAnswer,
+          topic: missed.topic
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.hint) throw new Error(data.error || "no hint");
+
+      resultEl.textContent = data.hint;
       loadingEl.classList.add("hidden");
+      resultEl.style.animation = "none";
       resultEl.classList.remove("hidden");
       void resultEl.offsetWidth;
       resultEl.style.animation = "";
-    }, 1600);
+    } catch (e) {
+      card.classList.add("hidden"); // fails silently — never blocks the results screen
+    }
   }
 
   new MutationObserver(() => {
-    if (screenOver.classList.contains("active")) playDemo();
+    if (screenOver.classList.contains("active")) loadHint();
   }).observe(screenOver, { attributes: true, attributeFilter: ["class"] });
 })();

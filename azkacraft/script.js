@@ -396,7 +396,8 @@ function startChapterWithQuestions(chapterId, questions, mpInfo = null) {
     index: 0,
     score: 0,
     correctCount: 0,
-    multiplayer: mpInfo
+    multiplayer: mpInfo,
+    lastWrong: null   // most recent missed question this session — feeds the AI Tutor hint
   };
   showScreen("screen-game", { flip: true });
   renderProgressBar();
@@ -490,6 +491,7 @@ function handleMCAnswer(selected, q, grid) {
     buttons.find(b => b.textContent === selected).classList.add("selected-wrong");
     buttons.find(b => b.textContent === q.answer).classList.add("reveal-correct");
     const phrase = AzkaVoice.speakEncouragement(q.answer);
+    session.lastWrong = { question: q.prompt, correctAnswer: q.answer, kidAnswer: selected, topic: session.chapter.topic };
     session.score += 3;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
     nextQuestion(5000);
@@ -534,6 +536,7 @@ function handleFillAnswer(q) {
     document.getElementById("fill-correction").innerHTML =
       `<div class="fill-correction">Correct answer: <strong>${q.answer}</strong></div>`;
     const phrase = AzkaVoice.speakEncouragement(q.answer);
+    session.lastWrong = { question: q.prompt, correctAnswer: q.answer, kidAnswer: input.value.trim(), topic: session.chapter.topic };
     session.score += 3;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
     nextQuestion(5000);
@@ -599,6 +602,12 @@ function handleMatchAnswer(q, grid) {
   } else {
     const firstWrong = q.pairs.find((p, i) => selects[i].value !== p.right);
     const phrase = AzkaVoice.speakEncouragement(`${firstWrong.left} → ${firstWrong.right}`);
+    session.lastWrong = {
+      question: `Match: ${firstWrong.left}`,
+      correctAnswer: firstWrong.right,
+      kidAnswer: selects[q.pairs.indexOf(firstWrong)].value || null,
+      topic: session.chapter.topic
+    };
     session.score += 3;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
     nextQuestion(7000);
@@ -673,6 +682,7 @@ function handleSentenceAnswer(q, target) {
     correction.innerHTML = `Correct sentence: <strong>${q.answer}</strong>`;
     target.after(correction);
     const phrase = AzkaVoice.speakEncouragement(q.answer);
+    session.lastWrong = { question: q.prompt, correctAnswer: q.answer, kidAnswer: built, topic: session.chapter.topic };
     session.score += 3;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
     nextQuestion(5000);
@@ -831,29 +841,59 @@ function syncMultiplayerProgress() {
 }
 
 /* ---------------------------------------------------------------------
-   MOCKUP: AI Tutor hint demo — replays the loading→result animation
-   every time the Brain Rest screen opens. Not wired to a real API; the
-   hint text is a fixed example just to show what it would look like.
+   AI TUTOR — real hint, generated from the last question missed this
+   session (session.lastWrong, set in each handle*Answer() wrong branch).
+   No wrong answers this session → card stays hidden. Any API failure
+   also just hides it — never blocks Brain Rest.
    ------------------------------------------------------------------- */
 (function () {
   const screenBrainrest = document.getElementById("screen-brainrest");
+  const card = document.getElementById("ai-hint-card");
   const loadingEl = document.getElementById("ai-hint-loading");
   const resultEl = document.getElementById("ai-hint-result");
-  if (!screenBrainrest || !loadingEl || !resultEl) return;
+  if (!screenBrainrest || !card || !loadingEl || !resultEl) return;
 
-  function playDemo() {
+  let lastRequestedFor = null;
+
+  async function loadHint() {
+    const missed = session && session.lastWrong;
+    if (!missed) { card.classList.add("hidden"); return; }
+
+    const requestKey = JSON.stringify(missed);
+    if (requestKey === lastRequestedFor) return;
+    lastRequestedFor = requestKey;
+
+    card.classList.remove("hidden");
     loadingEl.classList.remove("hidden");
     resultEl.classList.add("hidden");
-    resultEl.style.animation = "none";
-    setTimeout(() => {
+
+    try {
+      const res = await fetch("/api/generate-hint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gameLabel: "Language Arts",
+          question: missed.question,
+          correctAnswer: missed.correctAnswer,
+          kidAnswer: missed.kidAnswer,
+          topic: missed.topic
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.hint) throw new Error(data.error || "no hint");
+
+      resultEl.textContent = data.hint;
       loadingEl.classList.add("hidden");
+      resultEl.style.animation = "none";
       resultEl.classList.remove("hidden");
       void resultEl.offsetWidth;
       resultEl.style.animation = "";
-    }, 1600);
+    } catch (e) {
+      card.classList.add("hidden");
+    }
   }
 
   new MutationObserver(() => {
-    if (screenBrainrest.classList.contains("active")) playDemo();
+    if (screenBrainrest.classList.contains("active")) loadHint();
   }).observe(screenBrainrest, { attributes: true, attributeFilter: ["class"] });
 })();

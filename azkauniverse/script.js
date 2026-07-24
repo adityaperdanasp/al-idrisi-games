@@ -95,6 +95,7 @@ const state = {
   qIndex: 0,
   correctCount: 0,
   locked: false,        // guards double answers while feedback plays
+  lastWrong: null,      // most recent missed question this round — feeds the AI Tutor hint
   mp: {
     code: null,
     role: null,          // 'p1' (creator) | 'p2' (joiner)
@@ -813,6 +814,7 @@ function startLevel(levelId, mode) {
   state.qIndex = 0;
   state.correctCount = 0;
   state.locked = false;
+  state.lastWrong = null;
 
   const level = questionsData.levels[state.levelIndex];
   $("play-level-emoji").textContent = level.emoji;
@@ -969,6 +971,14 @@ function renderMC(stage, q) {
         if (order[bi] === q.answer) b.classList.add("correct");
         else if (bi === displayIndex) b.classList.add("wrong");
       });
+      if (!isCorrect) {
+        state.lastWrong = {
+          question: q.question,
+          correctAnswer: q.options[q.answer],
+          kidAnswer: q.options[originalIndex],
+          topic: state.levelId
+        };
+      }
       // Wrong answers keep the correct button highlighted green for 5s
       // (instead of the usual 1.5s) so Azka has time to see the right one.
       handleAnswer(isCorrect, isCorrect ? undefined : 5000);
@@ -1007,6 +1017,7 @@ function renderFill(stage, q) {
       reveal.className = "fill-correct-reveal";
       reveal.textContent = "✓ Correct answer: " + q.answer;
       wrap.appendChild(reveal);
+      state.lastWrong = { question: q.question, correctAnswer: q.answer, kidAnswer: given, topic: state.levelId };
     }
     handleAnswer(isCorrect, isCorrect ? undefined : 5000);
   };
@@ -1084,10 +1095,14 @@ function renderMatch(stage, q) {
     if (!allFilled) return; // let them keep filling in the remaining rows
 
     let allCorrect = true;
-    rows.forEach(row => {
+    let firstWrong = null;
+    rows.forEach((row, i) => {
       const select = row.querySelector("select");
       const rowCorrect = select.value === select.dataset.correct;
-      if (!rowCorrect) allCorrect = false;
+      if (!rowCorrect) {
+        allCorrect = false;
+        if (!firstWrong) firstWrong = { term: q.pairs[i].term, correct: select.dataset.correct, given: select.value };
+      }
       row.classList.toggle("correct", rowCorrect);
       row.classList.toggle("wrong", !rowCorrect);
       select.disabled = true;
@@ -1099,6 +1114,15 @@ function renderMatch(stage, q) {
         row.appendChild(reveal);
       }
     });
+
+    if (firstWrong) {
+      state.lastWrong = {
+        question: `Match: ${firstWrong.term}`,
+        correctAnswer: firstWrong.correct,
+        kidAnswer: firstWrong.given || null,
+        topic: state.levelId
+      };
+    }
 
     // Wrong pairs stay revealed for 7s (instead of the usual 1.5s) so
     // Azka has time to read every correct match before moving on.
@@ -1435,29 +1459,60 @@ $("btn-mp-again").addEventListener("click", () => {
 })();
 
 /* =================================================================
-   MOCKUP: AI Tutor hint demo — replays the loading→result animation
-   every time the reward screen opens. Not wired to a real API; the
-   hint text is a fixed example just to show what it would look like.
+   AI TUTOR — real hint, generated from the last question missed this
+   round (state.lastWrong, set in renderMC/renderFill/renderMatch's wrong
+   branches). No wrong answers this round → card stays hidden. Any API
+   failure also just hides it — never blocks the reward screen.
    ================================================================= */
 (function () {
   const screenReward = document.getElementById("screen-reward");
+  const card = document.getElementById("ai-hint-card");
   const loadingEl = document.getElementById("ai-hint-loading");
   const resultEl = document.getElementById("ai-hint-result");
-  if (!screenReward || !loadingEl || !resultEl) return;
+  if (!screenReward || !card || !loadingEl || !resultEl) return;
 
-  function playDemo() {
+  let lastRequestedFor = null;
+
+  async function loadHint() {
+    const missed = state.lastWrong;
+    if (!missed) { card.classList.add("hidden"); return; }
+
+    const requestKey = JSON.stringify(missed);
+    if (requestKey === lastRequestedFor) return;
+    lastRequestedFor = requestKey;
+
+    card.classList.remove("hidden");
     loadingEl.classList.remove("hidden");
     resultEl.classList.add("hidden");
-    resultEl.style.animation = "none";
-    setTimeout(() => {
+
+    try {
+      const res = await fetch("/api/generate-hint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: CHILD_NAME,
+          gameLabel: "SolarQuest",
+          question: missed.question,
+          correctAnswer: missed.correctAnswer,
+          kidAnswer: missed.kidAnswer,
+          topic: missed.topic
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.hint) throw new Error(data.error || "no hint");
+
+      resultEl.textContent = data.hint;
       loadingEl.classList.add("hidden");
+      resultEl.style.animation = "none";
       resultEl.classList.remove("hidden");
       void resultEl.offsetWidth;
       resultEl.style.animation = "";
-    }, 1600);
+    } catch (e) {
+      card.classList.add("hidden");
+    }
   }
 
   new MutationObserver(() => {
-    if (screenReward.classList.contains("active")) playDemo();
+    if (screenReward.classList.contains("active")) loadHint();
   }).observe(screenReward, { attributes: true, attributeFilter: ["class"] });
 })();
