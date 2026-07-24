@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Dashboard Guru — Al Idrisi Games</title>
-<meta name="theme-color" content="#f6f7f9">
+<meta name="theme-color" content="#faf6f2">
 <meta name="robots" content="noindex, nofollow">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.45.0/dist/tabler-icons.min.css">
 <link rel="stylesheet" href="style.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -46,43 +46,54 @@
     </nav>
 
     <section id="tab-students" class="db-tab-panel">
-      <h2 class="db-section-title"><i class="ti ti-sparkles"></i> Ringkasan kelas</h2>
       <div id="db-kpi-row" class="db-kpi-row"></div>
 
-      <div class="db-chart-grid">
+      <div class="db-row-2">
         <div class="db-chart-card">
-          <h3><i class="ti ti-bolt"></i> XP per murid</h3>
-          <div class="db-chart-canvas-wrap"><canvas id="chart-xp"></canvas></div>
+          <div class="db-chart-card-head">
+            <h3><i class="ti ti-arrows-sort"></i> Perbandingan Antar Murid</h3>
+            <div class="db-pill-toggle" id="comparison-toggle">
+              <button data-metric="played" class="active">Kali Main</button>
+              <button data-metric="xp">Total XP</button>
+            </div>
+          </div>
+          <div class="db-chart-canvas-wrap"><canvas id="chart-comparison"></canvas></div>
         </div>
         <div class="db-chart-card">
-          <h3><i class="ti ti-alert-triangle"></i> Area lemah per murid</h3>
-          <div class="db-chart-canvas-wrap"><canvas id="chart-weak"></canvas></div>
+          <div class="db-chart-card-head">
+            <h3><i class="ti ti-chart-donut"></i> Game Favorit Kelas</h3>
+          </div>
+          <div class="db-donut-wrap"><canvas id="chart-favorites"></canvas></div>
+          <div id="favorites-legend" class="db-donut-legend"></div>
         </div>
       </div>
 
-      <h2 class="db-section-title"><i class="ti ti-list-details"></i> Detail setiap murid</h2>
-      <div class="db-table-wrap">
-        <table class="db-table">
-          <thead>
-            <tr>
-              <th>Murid</th>
-              <th>Math Race</th>
-              <th>Language Arts</th>
-              <th>SolarQuest</th>
-              <th>Area lemah (top)</th>
-              <th>Ditemani Ortu</th>
-            </tr>
-          </thead>
-          <tbody id="student-tbody"></tbody>
-        </table>
+      <div class="db-heatmap-card">
+        <div class="db-chart-card-head">
+          <h3><i class="ti ti-grid-dots"></i> Peta Area Lemah — Topik × Murid</h3>
+          <div class="db-pill-toggle" id="heatmap-toggle">
+            <button data-game="mathrace" class="active">Math Race</button>
+            <button data-game="language-arts">Language Arts</button>
+            <button data-game="solarquest">SolarQuest</button>
+          </div>
+        </div>
+        <div class="db-heatmap-scroll"><div id="heatmap-grid" class="db-heatmap-grid"></div></div>
+        <div class="db-heatmap-legend">
+          <span><i style="background:var(--heat-none)"></i> Data belum cukup (&lt;3x)</span>
+          <span><i style="background:var(--heat-red)"></i> &lt;50% benar</span>
+          <span><i style="background:var(--heat-amber)"></i> 50–70% benar (lemah)</span>
+          <span><i style="background:var(--heat-green-light)"></i> 70–85% benar</span>
+          <span><i style="background:var(--heat-green-dark)"></i> ≥85% benar</span>
+        </div>
       </div>
+
+      <h2 class="db-section-title"><i class="ti ti-users"></i> Daftar Murid</h2>
+      <div id="roster-grid" class="db-roster-grid"></div>
     </section>
 
     <section id="tab-approvals" class="db-tab-panel hidden">
-      <h2 class="db-section-title"><i class="ti ti-clock"></i> Menunggu persetujuan</h2>
-      <div id="pending-list" class="db-insight-list"></div>
-      <h2 class="db-section-title"><i class="ti ti-circle-check"></i> Sudah disetujui — siap dikirim ke ortu</h2>
-      <div id="approved-list" class="db-insight-list"></div>
+      <h2 class="db-section-title"><i class="ti ti-mail"></i> Insight untuk Orang Tua</h2>
+      <div id="approvals-list" class="db-insight-list"></div>
     </section>
   </div>
 

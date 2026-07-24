@@ -51,6 +51,13 @@
 
     const ref = aigDb.ref(`leaderboard/${gameId}/${player.id}`);
     ref.update({ name: player.name, lastPlayed: firebase.database.ServerValue.TIMESTAMP });
+
+    // Per-day play count, so the dashboard's activity calendar can show real
+    // intensity (not just the single lastPlayed timestamp). Only accumulates
+    // from the day this shipped forward — older days have no entry here.
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    aigDb.ref(`players/${player.id}/sessionsByDay/${today}/${gameId}`).transaction(cur => (cur || 0) + 1);
+
     return ref.child("timesPlayed").transaction(cur => (cur || 0) + 1)
       .then(result => result.committed ? result.snapshot.val() : null);
   }
