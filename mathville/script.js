@@ -24,17 +24,59 @@ const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPl
 const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().id) || "guest";
 
 // Town-stop flavor per chapter — order matches MATHVILLE_BANK (= PDF order).
+// mapX/mapY are the exact node positions from the validated Claude Design
+// prototype (built for these same 9 chapters) — a winding two-column path,
+// left/right alternating, top to bottom.
 const CHAPTER_META = {
-  "place-value": { location: "Town Hall", icon: "🏛️" },
-  "addition-subtraction": { location: "Bakery", icon: "🥐" },
-  "prime-numbers": { location: "Factor Grove", icon: "🌳" },
-  "gcf-lcm": { location: "Twin Bridges", icon: "🌉" },
-  "multiplication": { location: "Windmill", icon: "🎡" },
-  "division": { location: "Water Tower", icon: "🚰" },
-  "mixed-operation": { location: "Crossroads Plaza", icon: "🚦" },
-  "measurement": { location: "General Store", icon: "🏪" },
-  "rounding": { location: "Clock Tower", icon: "🕰️" }
+  "place-value": { location: "Town Hall", icon: "🏛️", mapX: 80, mapY: 70 },
+  "addition-subtraction": { location: "Bakery", icon: "🥐", mapX: 340, mapY: 200 },
+  "prime-numbers": { location: "Factor Grove", icon: "🌳", mapX: 80, mapY: 330 },
+  "gcf-lcm": { location: "Twin Bridges", icon: "🌉", mapX: 340, mapY: 460 },
+  "multiplication": { location: "Windmill", icon: "🎡", mapX: 80, mapY: 590 },
+  "division": { location: "Water Tower", icon: "🚰", mapX: 340, mapY: 720 },
+  "mixed-operation": { location: "Crossroads Plaza", icon: "🚦", mapX: 80, mapY: 850 },
+  "measurement": { location: "General Store", icon: "🏪", mapX: 340, mapY: 980 },
+  "rounding": { location: "Clock Tower", icon: "🕰️", mapX: 80, mapY: 1110 }
 };
+const MAP_HEIGHT = 1190;
+
+// Decorative scenery scattered along the road — purely cosmetic, recolored
+// to the Blockville wood/gold/cherry/taupe palette.
+const MAP_ORNAMENTS = [
+  { x: 150, y: 10, shape: "cloud", color: "#E8D9C4", size: 52, kind: "drift" },
+  { x: 8, y: 150, shape: "tree", color: "#8FAE6B", size: 40, kind: "sway" },
+  { x: 400, y: 120, shape: "bush", color: "#C1793E", size: 44, kind: "sway" },
+  { x: 400, y: 300, shape: "house", color: "#E4572E", size: 34, kind: "bob" },
+  { x: 8, y: 410, shape: "bush", color: "#F7C548", size: 38, kind: "sway" },
+  { x: 400, y: 560, shape: "cloud", color: "#D8C7AE", size: 46, kind: "drift" },
+  { x: 8, y: 670, shape: "tree", color: "#8FAE6B", size: 34, kind: "sway" },
+  { x: 400, y: 640, shape: "house", color: "#F7C548", size: 32, kind: "bob" },
+  { x: 8, y: 800, shape: "tree", color: "#C1793E", size: 38, kind: "sway" },
+  { x: 400, y: 940, shape: "bush", color: "#E4572E", size: 42, kind: "sway" },
+  { x: 8, y: 1130, shape: "tree", color: "#8FAE6B", size: 36, kind: "sway" }
+];
+
+function catmullRomPath(pts) {
+  let d = `M${pts[0].x},${pts[0].y}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 5, cp1y = p1.y + (p2.y - p0.y) / 5;
+    const cp2x = p2.x - (p3.x - p1.x) / 5, cp2y = p2.y - (p3.y - p1.y) / 5;
+    d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x},${p2.y}`;
+  }
+  return d;
+}
+
+function ornamentSvg(o) {
+  const shapes = {
+    cloud: `<svg viewBox="0 0 40 22" width="${o.size}" height="${o.size}"><path d="M9 20 a7 7 0 0 1 -1 -13.9 A9 9 0 0 1 25 4 a7 7 0 0 1 6 16 z" fill="${o.color}"/></svg>`,
+    tree: `<svg viewBox="0 0 24 32" width="${o.size}" height="${o.size}"><rect x="10" y="22" width="4" height="9" fill="${o.color}"/><circle cx="12" cy="12" r="11" fill="${o.color}"/></svg>`,
+    bush: `<svg viewBox="0 0 32 18" width="${o.size}" height="${o.size}"><circle cx="9" cy="11" r="8" fill="${o.color}"/><circle cx="20" cy="8" r="9" fill="${o.color}"/><circle cx="27" cy="12" r="6" fill="${o.color}"/></svg>`,
+    house: `<svg viewBox="0 0 28 26" width="${o.size}" height="${o.size}"><path d="M14 1 L27 12 H21 V25 H7 V12 H1 Z" fill="${o.color}"/></svg>`
+  };
+  return shapes[o.shape] || "";
+}
+const ORNAMENT_ANIM = { drift: "mvDrift", sway: "mvSway", bob: "mvBob" };
 const PLACE_NAMES = ["Ones", "Tens", "Hundreds", "Thousands", "Ten Thousands", "Hundred Thousands", "Millions"];
 const ROUND_SIZE = 6;
 
@@ -117,27 +159,71 @@ function goToMap() {
   showScreen("screen-map");
 }
 
+// Boy/Girl theme — purely a cosmetic accent color for the "next stop" glow,
+// nothing is ever locked behind it. Persisted so it sticks across visits.
+state.theme = localStorage.getItem("mathville.theme") || "boy";
+$("theme-btn-boy").classList.toggle("active", state.theme === "boy");
+$("theme-btn-girl").classList.toggle("active", state.theme === "girl");
+function mvThemeAccent() { return state.theme === "girl" ? "#FF6F9F" : "#3B82C4"; }
+function setMathvilleTheme(t) {
+  state.theme = t;
+  localStorage.setItem("mathville.theme", t);
+  $("theme-btn-boy").classList.toggle("active", t === "boy");
+  $("theme-btn-girl").classList.toggle("active", t === "girl");
+  if ($("screen-map").classList.contains("active")) renderTownMap();
+}
+$("theme-btn-boy").addEventListener("click", () => setMathvilleTheme("boy"));
+$("theme-btn-girl").addEventListener("click", () => setMathvilleTheme("girl"));
+
 function renderTownMap() {
   const wrap = $("town-map");
   wrap.innerHTML = "";
+  wrap.style.height = MAP_HEIGHT + "px";
   const chapters = MATHVILLE_BANK.chapters;
+  const accent = mvThemeAccent();
+
+  // Nothing is ever locked — but the first not-yet-completed stop still
+  // gets a gentle pulse as a "start here" suggestion.
+  const nextIdx = chapters.findIndex(ch => !(PROGRESS.chapters[ch.id] || {}).completed);
+
+  const svgNs = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNs, "svg");
+  svg.setAttribute("width", "440");
+  svg.setAttribute("height", String(MAP_HEIGHT));
+  svg.style.cssText = "position:absolute;top:0;left:0;max-width:100%;";
+  const pathD = catmullRomPath(chapters.map(ch => ({ x: CHAPTER_META[ch.id].mapX, y: CHAPTER_META[ch.id].mapY })));
+  svg.innerHTML = `<path d="${pathD}" fill="none" stroke="#D8C7AE" stroke-width="7" stroke-linecap="round" stroke-dasharray="1 18"/>`;
+  wrap.appendChild(svg);
+
+  MAP_ORNAMENTS.forEach((o, i) => {
+    const el = document.createElement("div");
+    el.style.cssText = `position:absolute;left:${o.x}px;top:${o.y}px;opacity:.85;animation:${ORNAMENT_ANIM[o.kind]} ${3 + (i % 4) * 0.7}s ease-in-out infinite;animation-delay:${(i % 5) * 0.3}s`;
+    el.innerHTML = ornamentSvg(o);
+    wrap.appendChild(el);
+  });
+
   chapters.forEach((ch, i) => {
     const meta = CHAPTER_META[ch.id];
     const prog = PROGRESS.chapters[ch.id] || { stars: 0, completed: false };
-    const prevDone = i === 0 || (PROGRESS.chapters[chapters[i - 1].id] || {}).completed;
-    const locked = !prevDone && !prog.completed;
-    const row = document.createElement("div");
-    row.className = "town-stop " + (prog.completed ? "complete" : locked ? "locked" : "unlocked");
-    row.innerHTML = `
-      <div class="stop-node">${locked ? "🔒" : meta.icon}</div>
-      <div class="stop-info">
-        <div class="stop-title">${ch.title}</div>
-        <div class="stop-location">${meta.location}</div>
-        ${prog.completed ? `<div class="stop-stars">${"★".repeat(prog.stars)}${"☆".repeat(3 - prog.stars)}</div>` : ""}
-      </div>`;
-    if (!locked) row.addEventListener("click", () => goToIntro(ch.id, false));
-    wrap.appendChild(row);
+    const isNext = i === nextIdx;
+    const stop = document.createElement("div");
+    stop.className = "map-stop";
+    stop.style.cssText = `left:${meta.mapX}px;top:${meta.mapY}px;`;
+    stop.innerHTML = `
+      <div class="map-stop-node ${prog.completed ? "complete" : isNext ? "next" : "open"}" style="${isNext ? `--pulse-color:${hexToRgb(accent)}` : ""}">
+        <span>${meta.icon}</span>
+        ${prog.completed ? '<span class="map-stop-check">✓</span>' : ""}
+      </div>
+      <div class="map-stop-title">${ch.title}</div>
+      ${prog.completed ? `<div class="map-stop-stars">${"★".repeat(prog.stars)}${"☆".repeat(3 - prog.stars)}</div>` : ""}
+    `;
+    stop.addEventListener("click", () => goToIntro(ch.id, false));
+    wrap.appendChild(stop);
   });
+}
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
 }
 
 function goToIntro(chapterId, isMp) {
@@ -814,25 +900,46 @@ function mvDetachListener() {
 function renderMpTownMap(game) {
   const wrap = $("town-map");
   wrap.innerHTML = "";
+  wrap.style.height = MAP_HEIGHT + "px";
   const chapters = MATHVILLE_BANK.chapters;
   const completed = game.completedChapters || {};
   const isHost = mvIsHost(game);
+  const accent = mvThemeAccent();
+  const nextIdx = chapters.findIndex(ch => !completed[ch.id]);
+
+  const svgNs = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNs, "svg");
+  svg.setAttribute("width", "440");
+  svg.setAttribute("height", String(MAP_HEIGHT));
+  svg.style.cssText = "position:absolute;top:0;left:0;max-width:100%;";
+  const pathD = catmullRomPath(chapters.map(ch => ({ x: CHAPTER_META[ch.id].mapX, y: CHAPTER_META[ch.id].mapY })));
+  svg.innerHTML = `<path d="${pathD}" fill="none" stroke="#D8C7AE" stroke-width="7" stroke-linecap="round" stroke-dasharray="1 18"/>`;
+  wrap.appendChild(svg);
+
+  MAP_ORNAMENTS.forEach((o, i) => {
+    const el = document.createElement("div");
+    el.style.cssText = `position:absolute;left:${o.x}px;top:${o.y}px;opacity:.85;animation:${ORNAMENT_ANIM[o.kind]} ${3 + (i % 4) * 0.7}s ease-in-out infinite;animation-delay:${(i % 5) * 0.3}s`;
+    el.innerHTML = ornamentSvg(o);
+    wrap.appendChild(el);
+  });
+
   chapters.forEach((ch, i) => {
     const meta = CHAPTER_META[ch.id];
-    const prevDone = i === 0 || completed[chapters[i - 1].id];
     const done = !!completed[ch.id];
-    const locked = !prevDone && !done;
-    const row = document.createElement("div");
-    row.className = "town-stop " + (done ? "complete" : locked ? "locked" : "unlocked");
-    const waitTag = !isHost && !locked && !done ? " — waiting for host" : "";
-    row.innerHTML = `
-      <div class="stop-node">${locked ? "🔒" : meta.icon}</div>
-      <div class="stop-info">
-        <div class="stop-title">${ch.title}</div>
-        <div class="stop-location">${meta.location}${waitTag}</div>
-      </div>`;
-    if (!locked && !done && isHost) row.addEventListener("click", () => mvHostStartChapter(ch.id));
-    wrap.appendChild(row);
+    const isNext = i === nextIdx;
+    const waitTag = !isHost && isNext ? " — waiting for host" : "";
+    const stop = document.createElement("div");
+    stop.className = "map-stop";
+    stop.style.cssText = `left:${meta.mapX}px;top:${meta.mapY}px;`;
+    stop.innerHTML = `
+      <div class="map-stop-node ${done ? "complete" : isNext ? "next" : "open"}" style="${isNext ? `--pulse-color:${hexToRgb(accent)}` : ""}">
+        <span>${meta.icon}</span>
+        ${done ? '<span class="map-stop-check">✓</span>' : ""}
+      </div>
+      <div class="map-stop-title">${ch.title}${waitTag}</div>
+    `;
+    if (isHost) stop.addEventListener("click", () => mvHostStartChapter(ch.id));
+    wrap.appendChild(stop);
   });
 }
 

@@ -116,36 +116,53 @@ button { font-family: inherit; }
 .code-display { font: 800 28px "Baloo 2", sans-serif; letter-spacing: 4px; color: var(--wood-dark); }
 .qr-code { display: flex; justify-content: center; margin-top: 12px; }
 
-/* ---------- Town Map ---------- */
-.map-header { text-align: center; margin-bottom: 8px; }
-.town-map { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 8px 0 20px; }
-.town-stop {
-  display: flex; align-items: center; gap: 16px; padding: 10px 4px;
-  cursor: pointer; position: relative;
+/* ---------- Town Map — winding road, like a little journey between stops ---------- */
+.map-header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  margin-bottom: 4px; text-align: left;
 }
-.town-stop::before {
-  content: ""; position: absolute; left: 31px; top: -6px; bottom: -6px; width: 3px;
-  background-image: linear-gradient(var(--taupe) 60%, transparent 0%);
-  background-size: 3px 10px; background-repeat: repeat-y; z-index: 0;
+.theme-toggle { display: flex; background: var(--cream); border-radius: 20px; padding: 3px; gap: 2px; flex: none; }
+.theme-btn {
+  padding: 7px 16px; border: none; border-radius: 16px; background: transparent;
+  font: 700 12px "Fredoka", sans-serif; color: var(--ink-soft); cursor: pointer;
 }
-.town-stop:first-child::before { display: none; }
-.stop-node {
-  flex: none; width: 64px; height: 64px; border-radius: 20px; z-index: 1;
+.theme-btn.active { background: #3B82C4; color: #fff; }
+#theme-btn-girl.active { background: #FF6F9F; }
+
+.town-map {
+  position: relative; width: 440px; max-width: 100%; margin: 12px auto 0;
+}
+.map-stop {
+  position: absolute; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  width: 130px; text-align: center; cursor: pointer; z-index: 1;
+}
+.map-stop-node {
+  width: 64px; height: 64px; border-radius: 20px;
   display: flex; align-items: center; justify-content: center; font-size: 28px;
-  background: var(--taupe); color: #93826c; box-shadow: 0 2px 6px rgba(59,42,26,.12);
+  position: relative; box-shadow: 0 2px 6px rgba(59,42,26,.15);
 }
-.town-stop.locked .stop-node { background: var(--taupe); color: #93826c; }
-.town-stop.unlocked .stop-node { background: var(--card); color: var(--cherry); border: 3px solid var(--cherry); animation: stopPulse 2s ease-in-out infinite; }
-.town-stop.complete .stop-node { background: var(--wood); color: #fff; border: 3px solid var(--wood); }
-@keyframes stopPulse {
-  0%, 100% { box-shadow: 0 0 0 4px rgba(228,87,46,.18); }
-  50% { box-shadow: 0 0 0 9px rgba(228,87,46,.3); }
+.map-stop-node.open { background: var(--card); color: var(--ink); border: 3px solid var(--taupe); }
+.map-stop-node.next {
+  background: var(--card); color: var(--ink); border: 3px solid rgb(var(--pulse-color));
+  animation: mapStopPulse 1.8s ease-in-out infinite;
 }
-.stop-info { flex: 1; }
-.stop-title { font: 700 15px "Fredoka", sans-serif; color: var(--ink); }
-.town-stop.locked .stop-title { color: #93826c; }
-.stop-location { font-size: 12px; color: var(--ink-soft); }
-.stop-stars { font-size: 13px; color: var(--gold); letter-spacing: 1px; }
+.map-stop-node.complete { background: var(--wood); color: #fff; border: 3px solid var(--wood-dark); }
+.map-stop-check {
+  position: absolute; top: -4px; right: -4px; width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; border: 2px solid var(--wood); display: flex; align-items: center; justify-content: center;
+  color: var(--wood); font-size: 12px; font-weight: 800;
+}
+@keyframes mapStopPulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(var(--pulse-color), .22); }
+  50% { box-shadow: 0 0 0 10px rgba(var(--pulse-color), .35); }
+}
+.map-stop-title { font: 700 12px "Fredoka", sans-serif; color: var(--ink); line-height: 1.25; }
+.map-stop-stars { font-size: 12px; color: var(--gold); letter-spacing: 1px; }
+
+@keyframes mvDrift { 0% { transform: translateX(0); } 50% { transform: translateX(14px); } 100% { transform: translateX(0); } }
+@keyframes mvSway { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+@keyframes mvBob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.04); } }
 
 /* ---------- Chapter Intro ---------- */
 .intro-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }

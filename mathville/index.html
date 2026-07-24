@@ -28,7 +28,7 @@
 <script src="../leaderboard.js"></script>
 <script src="../hub-bgm.js"></script>
 
-<link rel="stylesheet" href="style.css?v=1" />
+<link rel="stylesheet" href="style.css?v=2" />
 </head>
 <body>
 
@@ -99,8 +99,14 @@
        =============================================================== -->
   <section id="screen-map" class="screen">
     <div class="map-header">
-      <h2 class="title-lg">Your Town</h2>
-      <p class="subtitle-sm">Tap a stop to start building!</p>
+      <div>
+        <h2 class="title-lg">Your Town</h2>
+        <p class="subtitle-sm">Follow the road and tap a stop to start building!</p>
+      </div>
+      <div class="theme-toggle" id="theme-toggle">
+        <button class="theme-btn active" id="theme-btn-boy" data-theme="boy">Boy</button>
+        <button class="theme-btn" id="theme-btn-girl" data-theme="girl">Girl</button>
+      </div>
     </div>
     <div id="town-map" class="town-map"></div>
   </section>
@@ -187,6 +193,6 @@
 
 <script src="questions.js?v=1"></script>
 <script src="generators.js?v=1"></script>
-<script src="script.js?v=2"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>
