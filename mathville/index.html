@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+<title>MathVille — A Build-Your-Own Town Quest</title>
+<meta name="description" content="A Grade 4 math adventure: build up Blockville chapter by chapter — Place Value, Addition & Subtraction, Prime Numbers, GCF & LCM, Multiplication, Division, Mixed Operation, Measurement, and Rounding." />
+<meta name="theme-color" content="#C1793E" />
+
+<link rel="icon" type="image/svg+xml" href="icon.svg" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="MathVille" />
+
+<!-- Fredoka: same playful rounded font used by the other 3 games in the hub -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+<script src="../firebase.js"></script>
+<script src="../player.js"></script>
+<script src="../players.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../hub-bgm.js"></script>
+
+<link rel="stylesheet" href="style.css?v=1" />
+</head>
+<body>
+
+<header class="topbar">
+  <button id="btn-home" class="icon-btn" aria-label="Home" title="Home">🏠</button>
+  <div id="btn-map" class="icon-btn hidden" aria-label="Map" title="Map">🗺️</div>
+  <div class="topbar-spacer"></div>
+  <div id="xp-badge" class="xp-badge"><span>✨</span><span id="xp-total">0</span> XP</div>
+</header>
+
+<main id="app">
+
+  <!-- ===============================================================
+       SCREEN: Landing — pick Solo or Multiplayer
+       =============================================================== -->
+  <section id="screen-landing" class="screen active">
+    <div class="hero">
+      <div class="hero-icon" aria-hidden="true">🏘️</div>
+      <h1 class="title-xl">MathVille</h1>
+      <p class="subtitle">A Build-Your-Own Town Quest</p>
+    </div>
+    <div class="mode-choice">
+      <button class="mode-card" id="btn-mode-solo">
+        <span class="mode-emoji">🔨</span>
+        <span class="mode-label">Solo</span>
+        <span class="mode-desc">Build your own town at your own pace</span>
+      </button>
+      <button class="mode-card" id="btn-mode-multiplayer">
+        <span class="mode-emoji">🤝</span>
+        <span class="mode-label">Multiplayer</span>
+        <span class="mode-desc">Build together — 2 or 3 players</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Pairing — create / join / player count (multiplayer only)
+       =============================================================== -->
+  <section id="screen-pair" class="screen">
+    <h2 class="title-lg">Play Together</h2>
+
+    <div id="pair-choose">
+      <div class="players-seg" id="players-seg">
+        <button class="seg-btn active" data-players="2">2 Players</button>
+        <button class="seg-btn" data-players="3">3 Players</button>
+      </div>
+      <button class="btn btn-primary" id="btn-create">Create Game</button>
+      <div class="pair-divider">or</div>
+      <input class="pair-input" id="join-code-input" placeholder="Enter 6-letter code" maxlength="6" autocapitalize="characters" />
+      <button class="btn btn-secondary" id="btn-join">Join Game</button>
+      <p class="pair-error" id="pair-error"></p>
+    </div>
+
+    <div id="pair-waiting" class="hidden">
+      <p id="waiting-text">Waiting for the other builder to join…</p>
+      <div class="code-display-wrap">
+        <span class="code-display" id="code-display"></span>
+        <button class="btn btn-copy" id="btn-copy-code">Copy code</button>
+      </div>
+      <div id="qr-code" class="qr-code"></div>
+    </div>
+
+    <button class="btn btn-secondary" data-back="screen-landing">Back</button>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Town Map — 9 construction-site stops
+       =============================================================== -->
+  <section id="screen-map" class="screen">
+    <div class="map-header">
+      <h2 class="title-lg">Your Town</h2>
+      <p class="subtitle-sm">Tap a stop to start building!</p>
+    </div>
+    <div id="town-map" class="town-map"></div>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Chapter Intro
+       =============================================================== -->
+  <section id="screen-intro" class="screen">
+    <div class="intro-head">
+      <div class="intro-icon" id="intro-icon"></div>
+      <div>
+        <div class="intro-title" id="intro-title"></div>
+        <div class="intro-location" id="intro-location"></div>
+      </div>
+    </div>
+    <div class="intro-body">
+      <div class="mascot-badge" aria-hidden="true">🦫</div>
+      <div class="intro-text" id="intro-text"></div>
+    </div>
+    <button class="btn btn-primary btn-cta" id="btn-start-questions">Let's Build!</button>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Question — 4 interaction types render here
+       =============================================================== -->
+  <section id="screen-question" class="screen">
+    <p class="q-label" id="q-label"></p>
+
+    <!-- typein: prompt + keypad -->
+    <div id="ui-typein" class="ui-block hidden">
+      <div class="q-prompt" id="typein-prompt"></div>
+      <div class="keypad-display" id="typein-display"></div>
+      <div id="typein-reveal"></div>
+      <div class="keypad" id="typein-keypad"></div>
+      <button class="btn btn-primary" id="typein-submit">Check</button>
+    </div>
+
+    <!-- mc: prompt + 2x2 button grid -->
+    <div id="ui-mc" class="ui-block hidden">
+      <div class="q-prompt" id="mc-prompt"></div>
+      <div class="mc-grid" id="mc-grid"></div>
+    </div>
+
+    <!-- tap: prompt + circular tap markers -->
+    <div id="ui-tap" class="ui-block hidden">
+      <div class="q-prompt" id="tap-prompt"></div>
+      <div class="tap-markers" id="tap-markers"></div>
+    </div>
+
+    <!-- match: batch drag-line matching -->
+    <div id="ui-match" class="ui-block hidden">
+      <div class="q-prompt">Drag a line to match each item to its answer</div>
+      <div class="match-wrap" id="match-wrap">
+        <svg id="match-svg" class="match-svg"></svg>
+        <div id="match-left" class="match-col match-col-left"></div>
+        <div id="match-col-right" class="match-col match-col-right"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Reward — stars, XP, AI Tutor hint
+       =============================================================== -->
+  <section id="screen-reward" class="screen">
+    <div class="reward-title" id="reward-title"></div>
+    <div class="reward-stars" id="reward-stars"></div>
+    <div class="reward-xp" id="reward-xp"></div>
+
+    <div id="ai-hint-card" class="ai-hint-card hidden">
+      <div class="ai-hint-badge">✨ AI Tutor</div>
+      <div id="ai-hint-loading" class="ai-hint-loading">
+        <span class="ai-hint-dots"><span></span><span></span><span></span></span>
+        Thinking of the best way to explain it...
+      </div>
+      <p id="ai-hint-result" class="ai-hint-result hidden"></p>
+    </div>
+
+    <div id="mp-results" class="mp-results hidden"></div>
+
+    <button class="btn btn-primary btn-cta" id="btn-reward-continue">Continue</button>
+  </section>
+
+</main>
+
+<script src="questions.js?v=1"></script>
+<script src="generators.js?v=1"></script>
+<script src="script.js?v=2"></script>
+</body>
+</html>

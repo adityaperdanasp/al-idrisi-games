@@ -1,0 +1,263 @@
+/* =================================================================
+   MathVille — style.css
+   Blockville Workshop theme: wood brown + cherry red + gold, a town
+   built from numbered blocks that visibly grows as chapters complete.
+   ================================================================= */
+
+:root {
+  --wood: #C1793E;
+  --wood-dark: #A8632F;
+  --cherry: #E4572E;
+  --cherry-dark: #C6431F;
+  --gold: #F7C548;
+  --taupe: #D8C7AE;
+  --cream: #F7EEE0;
+  --ink: #3B2A1A;
+  --ink-soft: #7A6A56;
+  --card: #ffffff;
+  --good: #3F8F5F;
+  --bad: #D64545;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--cream);
+  font-family: "Fredoka", system-ui, sans-serif;
+  color: var(--ink);
+}
+
+button { font-family: inherit; }
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--cream);
+  position: relative;
+  box-shadow: 0 0 40px rgba(0,0,0,.08);
+  padding-bottom: 24px;
+}
+
+.hidden { display: none !important; }
+
+/* ---------- Top bar ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 4px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--taupe);
+  max-width: 480px;
+  margin: 0 auto;
+}
+.topbar-spacer { flex: 1; }
+.icon-btn {
+  background: none; border: none; font-size: 22px; cursor: pointer;
+  padding: 4px 6px; border-radius: 10px; line-height: 1;
+}
+.icon-btn:hover { background: var(--cream); }
+.xp-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-weight: 700; font-size: 13px; color: var(--ink-soft);
+  background: var(--cream); padding: 6px 12px; border-radius: 20px;
+}
+
+/* ---------- Screens ---------- */
+.screen { display: none; padding: 20px; }
+.screen.active { display: block; }
+
+/* ---------- Landing ---------- */
+.hero { text-align: center; padding: 24px 0 8px; }
+.hero-icon { font-size: 56px; }
+.title-xl { font: 800 30px "Baloo 2", sans-serif; color: var(--wood-dark); margin: 6px 0 2px; }
+.subtitle { font-size: 15px; color: var(--ink-soft); margin: 0; }
+.title-lg { font: 800 22px "Baloo 2", sans-serif; color: var(--ink); margin: 4px 0 12px; }
+.subtitle-sm { font-size: 14px; color: var(--ink-soft); margin: 0 0 12px; }
+
+.mode-choice { display: flex; flex-direction: column; gap: 14px; margin-top: 24px; }
+.mode-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 22px; border: none; border-radius: 20px; background: var(--card);
+  box-shadow: 0 2px 8px rgba(59,42,26,.1); cursor: pointer;
+}
+.mode-card:active { transform: scale(0.98); }
+.mode-emoji { font-size: 34px; }
+.mode-label { font: 700 18px "Baloo 2", sans-serif; color: var(--wood-dark); }
+.mode-desc { font-size: 13px; color: var(--ink-soft); }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: block; width: 100%; padding: 15px; border: none; border-radius: 16px;
+  font: 700 16px "Baloo 2", sans-serif; cursor: pointer; margin-top: 12px;
+}
+.btn-primary { background: var(--wood); color: #fff; }
+.btn-primary:active { background: var(--wood-dark); }
+.btn-secondary { background: var(--card); color: var(--wood-dark); border: 2px solid var(--taupe); }
+.btn-cta { background: var(--cherry); }
+.btn-cta:active { background: var(--cherry-dark); }
+.btn-copy { width: auto; padding: 8px 14px; font-size: 13px; margin: 0; }
+
+/* ---------- Pairing ---------- */
+.players-seg { display: flex; gap: 8px; margin-bottom: 14px; }
+.seg-btn {
+  flex: 1; padding: 10px; border: 2px solid var(--taupe); border-radius: 14px;
+  background: var(--card); font: 700 14px "Fredoka", sans-serif; color: var(--ink-soft); cursor: pointer;
+}
+.seg-btn.active { background: var(--wood); border-color: var(--wood); color: #fff; }
+.pair-divider { text-align: center; color: var(--ink-soft); font-size: 13px; margin: 14px 0; }
+.pair-input {
+  width: 100%; padding: 14px; border: 2px solid var(--taupe); border-radius: 14px;
+  font: 700 18px "Fredoka", sans-serif; text-align: center; letter-spacing: 3px; text-transform: uppercase;
+}
+.pair-error { color: var(--bad); font-size: 13px; min-height: 18px; margin: 8px 0 0; }
+.code-display-wrap { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 16px 0; }
+.code-display { font: 800 28px "Baloo 2", sans-serif; letter-spacing: 4px; color: var(--wood-dark); }
+.qr-code { display: flex; justify-content: center; margin-top: 12px; }
+
+/* ---------- Town Map ---------- */
+.map-header { text-align: center; margin-bottom: 8px; }
+.town-map { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 8px 0 20px; }
+.town-stop {
+  display: flex; align-items: center; gap: 16px; padding: 10px 4px;
+  cursor: pointer; position: relative;
+}
+.town-stop::before {
+  content: ""; position: absolute; left: 31px; top: -6px; bottom: -6px; width: 3px;
+  background-image: linear-gradient(var(--taupe) 60%, transparent 0%);
+  background-size: 3px 10px; background-repeat: repeat-y; z-index: 0;
+}
+.town-stop:first-child::before { display: none; }
+.stop-node {
+  flex: none; width: 64px; height: 64px; border-radius: 20px; z-index: 1;
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+  background: var(--taupe); color: #93826c; box-shadow: 0 2px 6px rgba(59,42,26,.12);
+}
+.town-stop.locked .stop-node { background: var(--taupe); color: #93826c; }
+.town-stop.unlocked .stop-node { background: var(--card); color: var(--cherry); border: 3px solid var(--cherry); animation: stopPulse 2s ease-in-out infinite; }
+.town-stop.complete .stop-node { background: var(--wood); color: #fff; border: 3px solid var(--wood); }
+@keyframes stopPulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(228,87,46,.18); }
+  50% { box-shadow: 0 0 0 9px rgba(228,87,46,.3); }
+}
+.stop-info { flex: 1; }
+.stop-title { font: 700 15px "Fredoka", sans-serif; color: var(--ink); }
+.town-stop.locked .stop-title { color: #93826c; }
+.stop-location { font-size: 12px; color: var(--ink-soft); }
+.stop-stars { font-size: 13px; color: var(--gold); letter-spacing: 1px; }
+
+/* ---------- Chapter Intro ---------- */
+.intro-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.intro-icon {
+  flex: none; width: 48px; height: 48px; border-radius: 14px; background: var(--wood);
+  color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px;
+}
+.intro-title { font: 800 19px "Baloo 2", sans-serif; color: var(--ink); }
+.intro-location { font-size: 13px; color: var(--ink-soft); }
+.intro-body { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 20px; }
+.mascot-badge {
+  flex: none; width: 64px; height: 64px; border-radius: 50%; background: var(--taupe);
+  display: flex; align-items: center; justify-content: center; font-size: 32px;
+}
+.intro-text {
+  flex: 1; background: var(--card); border-radius: 16px; border-top-left-radius: 4px;
+  padding: 16px; font-size: 15px; line-height: 1.5; box-shadow: 0 1px 4px rgba(59,42,26,.08);
+}
+
+/* ---------- Question screen ---------- */
+.q-label { font: 700 12px "Fredoka", sans-serif; color: var(--ink-soft); margin-bottom: 14px; }
+.q-prompt { font: 700 21px/1.4 "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 20px; }
+.ui-block { }
+
+/* typein */
+.keypad-display {
+  min-height: 48px; font: 800 30px "Baloo 2", sans-serif; text-align: center;
+  background: var(--card); border-radius: 14px; padding: 10px; margin-bottom: 14px;
+  box-shadow: inset 0 1px 4px rgba(59,42,26,.08);
+}
+.kd-placeholder { color: var(--taupe); }
+.keypad-display.correct-flash { outline: 3px solid var(--good); }
+.keypad-display.wrong-flash { outline: 3px solid var(--bad); }
+#typein-reveal { min-height: 18px; font-size: 13px; color: var(--bad); text-align: center; margin-bottom: 8px; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.key {
+  padding: 16px; border: none; border-radius: 14px; background: var(--card);
+  font: 700 20px "Fredoka", sans-serif; color: var(--ink); cursor: pointer;
+  box-shadow: 0 1px 3px rgba(59,42,26,.08);
+}
+.key.back { background: var(--taupe); color: var(--ink); }
+.key.ent { background: var(--wood); color: #fff; }
+
+/* mc */
+.mc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mc-btn {
+  padding: 18px; border: 3px solid transparent; border-radius: 14px; background: var(--card);
+  font: 700 16px "Fredoka", sans-serif; color: var(--ink); cursor: pointer;
+  box-shadow: 0 1px 3px rgba(59,42,26,.08);
+}
+.mc-btn.correct { border-color: var(--good); background: #e9f6ee; color: #1f5c3a; }
+.mc-btn.wrong { border-color: var(--bad); background: #fdeaea; color: #8c2a2a; }
+
+/* tap */
+.tap-markers { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.tap-marker {
+  min-width: 64px; padding: 12px 16px; border-radius: 30px; border: 3px solid transparent;
+  background: var(--card); font: 700 14px "Fredoka", sans-serif; color: var(--ink); cursor: pointer;
+  box-shadow: 0 1px 3px rgba(59,42,26,.08);
+}
+.tap-marker.correct { border-color: var(--good); background: #e9f6ee; color: #1f5c3a; }
+.tap-marker.wrong { border-color: var(--bad); background: #fdeaea; color: #8c2a2a; }
+
+/* match (drag-line) */
+.match-wrap { position: relative; width: 100%; touch-action: none; }
+.match-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.match-col { position: absolute; top: 0; width: 62%; display: flex; flex-direction: column; }
+.match-col-left { left: 0; }
+.match-col-right { right: 0; align-items: flex-end; }
+.match-item {
+  position: absolute; display: flex; align-items: center; gap: 8px; width: 100%;
+}
+.match-col-right .match-item { justify-content: flex-end; }
+.match-label {
+  font: 700 13px "Fredoka", sans-serif; color: var(--ink); background: var(--card);
+  padding: 8px 10px; border-radius: 10px; box-shadow: 0 1px 3px rgba(59,42,26,.08);
+}
+.match-dot {
+  flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--card);
+  border: 3px solid var(--cherry); box-sizing: border-box; cursor: pointer; touch-action: none;
+}
+.match-col-left .match-dot { border-color: var(--wood); cursor: grab; }
+.match-dot.connected { background: var(--wood); border-color: var(--wood); }
+.match-col-right .match-dot.connected { background: var(--wood); border-color: var(--wood); }
+.match-dot.wrong-flash { background: #fdeaea; border-color: var(--bad); }
+
+/* ---------- Reward ---------- */
+.reward-title { text-align: center; font: 800 22px "Baloo 2", sans-serif; margin-top: 20px; }
+.reward-stars { text-align: center; font-size: 40px; letter-spacing: 8px; color: var(--gold); margin: 12px 0; }
+.reward-xp { text-align: center; font: 700 15px "Fredoka", sans-serif; color: var(--wood-dark); margin-bottom: 12px; }
+
+.ai-hint-card {
+  background: linear-gradient(135deg, #fff 0%, var(--cream) 100%);
+  border-radius: 16px; padding: 16px; margin: 12px 0; box-shadow: 0 1px 4px rgba(59,42,26,.08);
+}
+.ai-hint-badge { font: 700 12px "Fredoka", sans-serif; color: var(--cherry); margin-bottom: 8px; }
+.ai-hint-loading { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); }
+.ai-hint-dots { display: inline-flex; gap: 3px; }
+.ai-hint-dots span {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--cherry);
+  animation: aiHintBounce 1.2s ease-in-out infinite;
+}
+.ai-hint-dots span:nth-child(2) { animation-delay: .15s; }
+.ai-hint-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes aiHintBounce { 0%, 80%, 100% { transform: translateY(0); opacity: .5; } 40% { transform: translateY(-5px); opacity: 1; } }
+.ai-hint-result { font-style: italic; font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 0; animation: aiHintFadeIn .4s ease; }
+@keyframes aiHintFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.mp-results { margin: 16px 0; }
+.mp-result-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: var(--card); border-radius: 12px; margin-bottom: 8px;
+  font: 700 14px "Fredoka", sans-serif; box-shadow: 0 1px 3px rgba(59,42,26,.06);
+}
+.mp-result-row.me { border: 2px solid var(--wood); }

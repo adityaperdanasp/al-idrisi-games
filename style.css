@@ -400,6 +400,7 @@ body {
 .sc-game-card.math { background: #c1d4f6; transform: rotate(0.6deg); }
 .sc-game-card.lang { background: #f6c1e0; transform: rotate(-0.6deg); }
 .sc-game-card.solar { background: #c1e1c1; transform: rotate(0.6deg); }
+.sc-game-card.town { background: #f0dcc4; transform: rotate(-0.6deg); }
 
 .sc-game-icon {
   width: 52px;
@@ -438,6 +439,8 @@ body {
 .sc-game-card.lang .sc-game-sub { color: #9b5d84; }
 .sc-game-card.solar .sc-game-title { color: #3f7a4e; }
 .sc-game-card.solar .sc-game-sub { color: #5d9268; }
+.sc-game-card.town .sc-game-title { color: #8a4a1f; }
+.sc-game-card.town .sc-game-sub { color: #a97a4f; }
 
 /* ---------- "Who's actually playing?" step (student vs their parent) ---------- */
 .sc-whois-overlay {
