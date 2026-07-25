@@ -20,8 +20,25 @@
   const GAMES = [
     { id: "mathrace", label: "Math Race" },
     { id: "language-arts", label: "Language Arts" },
-    { id: "solarquest", label: "SolarQuest" }
+    { id: "solarquest", label: "SolarQuest" },
+    { id: "mathville", label: "MathVille" }
   ];
+
+  // Mirrors mathville/script.js's CHAPTER_META (chapter id -> title) — no
+  // shared source between the two right now since the dashboard doesn't
+  // load the game's own data file, same approach as language-arts' own
+  // CHAPTER_NAMES list further down.
+  const MATHVILLE_CHAPTER_TITLES = {
+    "place-value": "Place Value",
+    "addition-subtraction": "Addition & Subtraction",
+    "prime-numbers": "Prime Numbers",
+    "gcf-lcm": "GCF & LCM",
+    "multiplication": "Multiplication",
+    "division": "Division",
+    "mixed-operation": "Mixed Operation",
+    "measurement": "Measurement",
+    "rounding": "Rounding"
+  };
 
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, c => ({
@@ -44,6 +61,9 @@
     }
     if (gameId === "solarquest") {
       return topicKey.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    }
+    if (gameId === "mathville") {
+      return MATHVILLE_CHAPTER_TITLES[topicKey] || topicKey;
     }
     return topicKey; // language-arts topics are already human-readable
   }
@@ -116,8 +136,8 @@
     charts[canvasId] = new Chart(ctx, config);
   }
 
-  const CHART_COLORS = { mathrace: "#3d6c94", "language-arts": "#6f5498", solarquest: "#d9631f" };
-  const GAME_ICONS = { mathrace: "ti-calculator", "language-arts": "ti-book-2", solarquest: "ti-rocket" };
+  const CHART_COLORS = { mathrace: "#3d6c94", "language-arts": "#6f5498", solarquest: "#d9631f", mathville: "#a8622f" };
+  const GAME_ICONS = { mathrace: "ti-calculator", "language-arts": "ti-book-2", solarquest: "ti-rocket", mathville: "ti-building-castle" };
 
   function loadAndRender() {
     const db = AIGLeaderboard.db;
@@ -155,7 +175,8 @@
   function xpTotalFor(s) {
     const la = (s["language-arts"].badges && s["language-arts"].badges.xpTotal) || 0;
     const sq = (s.solarquest.badges && s.solarquest.badges.xp) || 0;
-    return la + sq;
+    const mv = (s.mathville.badges && s.mathville.badges.xpTotal) || 0;
+    return la + sq + mv;
   }
 
   // Counts how many DISTINCT calendar days a "parent" identity (see
@@ -280,7 +301,7 @@
 
   // ---- Favorites doughnut ----
   function renderFavoritesChart(rows) {
-    const totals = { mathrace: 0, "language-arts": 0, solarquest: 0 };
+    const totals = { mathrace: 0, "language-arts": 0, solarquest: 0, mathville: 0 };
     rows.forEach(r => GAMES.forEach(g => { totals[g.id] += r.summary[g.id].timesPlayed; }));
     const sum = GAMES.reduce((s, g) => s + totals[g.id], 0) || 1;
 
@@ -479,6 +500,19 @@
         <div class="db-kpi-sub" style="margin-top:4px;">${done}/${total} bab selesai · ${(data.badges && data.badges.xpTotal) || 0} XP</div>
       </div>`;
     }
+    if (g.id === "mathville") {
+      const chapters = data.badges ? (data.badges.chapters || {}) : {};
+      const total = Object.keys(MATHVILLE_CHAPTER_TITLES).length;
+      const done = Object.values(chapters).filter(c => c.completed).length;
+      const currentIdx = Math.min(done, total - 1);
+      const currentTitle = MATHVILLE_CHAPTER_TITLES[Object.keys(MATHVILLE_CHAPTER_TITLES)[currentIdx]];
+      const pct = Math.round((done / total) * 100);
+      return `<div class="db-xp-row">
+        <div class="db-xp-row-head"><span class="db-xp-row-label">MathVille</span><span class="db-xp-row-tier">Bab ${currentIdx + 1}: ${escapeHtml(currentTitle)}</span></div>
+        <div class="db-xp-bar-track"><div class="db-xp-bar-fill" style="width:${pct}%;background:${CHART_COLORS.mathville}"></div></div>
+        <div class="db-kpi-sub" style="margin-top:4px;">${done}/${total} bab selesai · ${(data.badges && data.badges.xpTotal) || 0} XP</div>
+      </div>`;
+    }
     // solarquest
     const xp = data.badges ? (data.badges.xp || 0) : 0;
     const { level, tier, pct } = levelInfo(xp);
@@ -629,6 +663,9 @@
         } else if (g.id === "solarquest") {
           const done = Object.values(data.badges.levels || {}).filter(l => l.completed).length;
           line += `, ${done} level selesai`;
+        } else if (g.id === "mathville") {
+          const done = Object.values(data.badges.chapters || {}).filter(c => c.completed).length;
+          line += `, ${done} bab selesai`;
         }
       }
       gameLines.push(line);
@@ -664,6 +701,7 @@
       if (data.badges) {
         if (g.id === "language-arts") entry.chaptersDone = Object.values(data.badges.chapters || {}).filter(c => c.completed).length;
         else if (g.id === "solarquest") entry.levelsDone = Object.values(data.badges.levels || {}).filter(l => l.completed).length;
+        else if (g.id === "mathville") entry.chaptersDone = Object.values(data.badges.chapters || {}).filter(c => c.completed).length;
       }
       entry.weakTopics = weakTopics(data.topicStats, 3).map(t => ({
         topic: prettifyTopic(g.id, t.topic), accuracyPct: Math.round(t.accuracy * 100)

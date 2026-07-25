@@ -186,7 +186,13 @@ function saveChapterProgress(chapterId, stars, xp) {
   PROGRESS.chapters[chapterId] = { stars: Math.max(existing.stars, stars), completed: true };
   PROGRESS.xpTotal = (PROGRESS.xpTotal || 0) + xp;
   saveProgressToStorage();
-  if (window.AIGLeaderboard) AIGLeaderboard.recordPlay("mathville");
+  if (window.AIGLeaderboard) {
+    AIGLeaderboard.recordPlay("mathville");
+    // Mirrors PROGRESS to players/{id}/badges/mathville — same pattern the
+    // other 3 games use — so the teacher/parent dashboard can show chapter
+    // completion for MathVille too, not just topicStats/play count.
+    AIGLeaderboard.setProgress("mathville", { chapters: PROGRESS.chapters, xpTotal: PROGRESS.xpTotal });
+  }
 }
 
 function updateXpBadge() {
