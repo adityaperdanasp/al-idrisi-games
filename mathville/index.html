@@ -27,7 +27,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=9" />
+<link rel="stylesheet" href="style.css?v=11" />
 </head>
 <body>
 
@@ -127,13 +127,19 @@
       </div>
     </div>
     <div id="drive-world" class="drive-world">
-      <div id="drive-car" class="drive-car">🚚</div>
-    </div>
-    <div class="dpad" id="dpad">
-      <button class="dpad-btn dpad-up" data-dir="up" aria-label="Up">▲</button>
-      <button class="dpad-btn dpad-left" data-dir="left" aria-label="Left">◀</button>
-      <button class="dpad-btn dpad-right" data-dir="right" aria-label="Right">▶</button>
-      <button class="dpad-btn dpad-down" data-dir="down" aria-label="Down">▼</button>
+      <div id="drive-car" class="drive-car">
+        <svg viewBox="0 0 26 40" width="26" height="40">
+          <rect x="3" y="1" width="20" height="38" rx="8" fill="#E4572E" stroke="#C6431F" stroke-width="1.5" />
+          <rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" />
+          <rect x="0" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" />
+          <rect x="22" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" />
+          <rect x="0" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
+          <rect x="22" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
+        </svg>
+      </div>
+      <div class="joystick" id="joystick" aria-label="Steer">
+        <div class="joystick-knob" id="joystick-knob"></div>
+      </div>
     </div>
 
     <!-- Quick obstacle question — a lightweight MC popup, separate from
@@ -233,6 +239,6 @@
 <script src="questions.js?v=1"></script>
 <script src="generators.js?v=1"></script>
 <script src="bgm.js"></script>
-<script src="script.js?v=12"></script>
+<script src="script.js?v=15"></script>
 </body>
 </html>

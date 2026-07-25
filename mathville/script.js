@@ -330,6 +330,10 @@ function mvPlaceTraveler(chapters, defaultIdx) {
   const meta = CHAPTER_META[chapters[mvTravelerIdx].id];
   traveler.style.left = meta.mapX + "px";
   traveler.style.top = (meta.mapY - 46) + "px";
+  // Idle facing: point toward wherever the truck would walk next (falls
+  // back to the previous stop's direction at the very last chapter).
+  const refCh = chapters[mvTravelerIdx + 1] || chapters[mvTravelerIdx - 1];
+  if (refCh) traveler.classList.toggle("facing-left", CHAPTER_META[refCh.id].mapX > meta.mapX);
   wrap.appendChild(traveler);
 }
 
@@ -367,7 +371,10 @@ function mvWalkTo(targetIdx, onComplete) {
     const { segIndex, reversed } = hops[hopIdx];
     const segStart = mvPointOnSeg(segIndex, 0, reversed);
     const segEnd = mvPointOnSeg(segIndex, 1, reversed);
-    if (segEnd && segStart) traveler.classList.toggle("facing-left", segEnd.x < segStart.x);
+    // 🚚's default artwork already faces left, so the mirror (scaleX(-1),
+    // applied via the "facing-left" class) is what makes it face RIGHT —
+    // flip only when actually moving rightward.
+    if (segEnd && segStart) traveler.classList.toggle("facing-left", segEnd.x > segStart.x);
 
     const startTime = performance.now();
     function frame(now) {
@@ -455,20 +462,38 @@ function goToIntro(chapterId, isMp) {
    chapter (same flow as the tap-map), bumping a cone pops one quick
    question from the same generators the chapters already use.
    ================================================================= */
-const DRIVE_SPEED = 0.6;      // % of world per animation frame
-const DRIVE_CAR_R = 6;        // collision radius, in the same % units
-const DRIVE_OBSTACLE_R = 6;
-const DRIVE_CITY_R = 8;
+const DRIVE_SPEED = 0.6;      // % of world per animation frame, at full joystick deflection
+// Collision radii in real PIXELS (not %) — the world isn't square
+// (aspect-ratio 2/3), so mixing raw % units in one hypot() distorted
+// distance depending on approach angle. Roughly matched to each icon's
+// actual visual half-size, with a little forgiveness so a near-miss
+// doesn't feel like a hit.
+const DRIVE_CAR_PX_R = 15;
+const DRIVE_OBSTACLE_PX_R = 11;
+const DRIVE_CITY_PX_R = 17;
 const DRIVE_CAR_START = { x: 50, y: 95 };
 const DRIVE_CITY_POS = [
   { x: 20, y: 15 }, { x: 70, y: 12 }, { x: 45, y: 28 },
   { x: 15, y: 40 }, { x: 80, y: 42 }, { x: 35, y: 55 },
-  { x: 65, y: 58 }, { x: 25, y: 75 }, { x: 75, y: 78 }
+  { x: 65, y: 58 }, { x: 38, y: 68 }, { x: 75, y: 78 }
 ];
 const DRIVE_QUICK_GEN_KEYS = [
   "place-value", "addition-subtraction-add", "addition-subtraction-sub",
   "multiplication", "division", "measurement", "rounding"
 ];
+// Drive Mode city markers use topic icons (not the town-map's whimsical
+// building icons) so a kid can tell what's inside at a glance.
+const DRIVE_CITY_ICONS = {
+  "place-value": "🔢",
+  "addition-subtraction": "➕",
+  "prime-numbers": "🌳",
+  "gcf-lcm": "🧩",
+  "multiplication": "✖️",
+  "division": "➗",
+  "mixed-operation": "🔀",
+  "measurement": "📏",
+  "rounding": "🎯"
+};
 // Purely cosmetic backdrop scenery for the drive world, in % coordinates —
 // same palette/shapes as the town-map ornaments, so the two screens feel
 // like one continuous countryside instead of the drive screen being bare.
@@ -486,16 +511,18 @@ const DRIVE_SCENERY = [
 ];
 
 let driveState = null;
+let driveJoyVec = { x: 0, y: 0 }; // normalized -1..1, magnitude = joystick deflection
 
 function goToDrive() {
   driveState = {
     x: DRIVE_CAR_START.x, y: DRIVE_CAR_START.y,
-    held: { up: false, down: false, left: false, right: false },
-    cities: [], obstacles: [], rafId: null, paused: false
+    cities: [], obstacles: [], rafId: null, paused: false, worldRect: null
   };
   renderDriveScenery();
   buildDriveWorld();
   showScreen("screen-drive");
+  driveState.worldRect = $("drive-world").getBoundingClientRect();
+  $("drive-car").style.transform = "rotate(0deg)"; // top-down sprite is drawn nose-up already
   startDriveLoop();
 }
 
@@ -516,7 +543,7 @@ function renderDriveScenery() {
 function buildDriveWorld() {
   const chapters = MATHVILLE_BANK.chapters;
   driveState.cities = chapters.map((ch, i) => ({
-    id: ch.id, title: ch.title, icon: CHAPTER_META[ch.id].icon,
+    id: ch.id, title: ch.title.replace(/\s*\(.*?\)/g, "").trim(), icon: DRIVE_CITY_ICONS[ch.id] || CHAPTER_META[ch.id].icon,
     x: DRIVE_CITY_POS[i].x, y: DRIVE_CITY_POS[i].y,
     completed: !!(PROGRESS.chapters[ch.id] || {}).completed
   }));
@@ -529,7 +556,8 @@ function buildDriveWorld() {
     const tooCloseToCity = driveState.cities.some(c => Math.hypot(c.x - cand.x, c.y - cand.y) < 16);
     const tooCloseToObstacle = driveState.obstacles.some(o => Math.hypot(o.x - cand.x, o.y - cand.y) < 14);
     const tooCloseToStart = Math.hypot(cand.x - DRIVE_CAR_START.x, cand.y - DRIVE_CAR_START.y) < 14;
-    if (!tooCloseToCity && !tooCloseToObstacle && !tooCloseToStart) {
+    const underJoystick = cand.x < 28 && cand.y > 74; // bottom-left corner, covered by the on-screen joystick
+    if (!tooCloseToCity && !tooCloseToObstacle && !tooCloseToStart && !underJoystick) {
       driveState.obstacles.push({ id: "obs" + driveState.obstacles.length, x: cand.x, y: cand.y });
     }
   }
@@ -542,10 +570,11 @@ function renderDriveWorld() {
 
   driveState.cities.forEach(c => {
     const el = document.createElement("div");
-    el.className = "drive-city" + (c.completed ? " complete" : "");
+    el.className = "drive-city";
     el.style.left = c.x + "%";
     el.style.top = c.y + "%";
-    el.innerHTML = `<span>${c.icon}</span><div class="drive-city-label">${escapeHtml(c.title)}</div>`;
+    const check = c.completed ? `<span class="drive-city-check">✅</span>` : "";
+    el.innerHTML = `<span>${c.icon}</span>${check}<div class="drive-city-label">${escapeHtml(c.title)}</div>`;
     world.appendChild(el);
   });
 
@@ -569,18 +598,18 @@ function startDriveLoop() {
   function frame() {
     if (!driveState) return;
     if (!driveState.paused) {
-      let dx = 0, dy = 0;
-      if (driveState.held.up) dy -= DRIVE_SPEED;
-      if (driveState.held.down) dy += DRIVE_SPEED;
-      if (driveState.held.left) dx -= DRIVE_SPEED;
-      if (driveState.held.right) dx += DRIVE_SPEED;
-      if (dx || dy) {
-        driveState.x = Math.max(DRIVE_CAR_R, Math.min(100 - DRIVE_CAR_R, driveState.x + dx));
-        driveState.y = Math.max(DRIVE_CAR_R, Math.min(100 - DRIVE_CAR_R, driveState.y + dy));
+      const mag = Math.min(1, Math.hypot(driveJoyVec.x, driveJoyVec.y));
+      if (mag > 0.05) {
+        const angle = Math.atan2(driveJoyVec.y, driveJoyVec.x); // 0=right,90=down (screen coords)
+        driveState.x = Math.max(0, Math.min(100, driveState.x + Math.cos(angle) * DRIVE_SPEED * mag));
+        driveState.y = Math.max(0, Math.min(100, driveState.y + Math.sin(angle) * DRIVE_SPEED * mag));
         const car = $("drive-car");
         car.style.left = driveState.x + "%";
         car.style.top = driveState.y + "%";
-        if (dx) car.classList.toggle("facing-left", dx < 0);
+        // The top-down car sprite is drawn nose-up (θ=-90° in screen
+        // coords) — rotate the difference so the nose always points
+        // the way it's actually moving.
+        car.style.transform = `rotate(${(angle * 180 / Math.PI) + 90}deg)`;
         checkDriveCollisions();
       }
     }
@@ -596,9 +625,17 @@ function cancelDriveLoop() {
   }
 }
 
+// %-coordinates aren't square (the world is taller than it's wide), so
+// distance must be measured in real pixels or a vertical approach and a
+// horizontal approach would trigger at different true distances.
+function drivePxDist(ax, ay, bx, by) {
+  const rect = driveState.worldRect || $("drive-world").getBoundingClientRect();
+  return Math.hypot((ax - bx) / 100 * rect.width, (ay - by) / 100 * rect.height);
+}
+
 function checkDriveCollisions() {
   for (const c of driveState.cities) {
-    if (Math.hypot(c.x - driveState.x, c.y - driveState.y) < DRIVE_CAR_R + DRIVE_CITY_R) {
+    if (drivePxDist(c.x, c.y, driveState.x, driveState.y) < DRIVE_CAR_PX_R + DRIVE_CITY_PX_R) {
       driveState.paused = true;
       state.driveReturnPending = true;
       goToIntro(c.id, false);
@@ -606,7 +643,7 @@ function checkDriveCollisions() {
     }
   }
   for (const o of driveState.obstacles) {
-    if (Math.hypot(o.x - driveState.x, o.y - driveState.y) < DRIVE_CAR_R + DRIVE_OBSTACLE_R) {
+    if (drivePxDist(o.x, o.y, driveState.x, driveState.y) < DRIVE_CAR_PX_R + DRIVE_OBSTACLE_PX_R) {
       driveState.obstacles = driveState.obstacles.filter(x => x !== o);
       const el = document.getElementById("drive-" + o.id);
       if (el) el.remove();
@@ -616,31 +653,54 @@ function checkDriveCollisions() {
   }
 }
 
+// A "clean" answer is either a compare symbol, or a single number with an
+// optional trailing unit ("100 cm", "12,340", "7"). Division's
+// "long-remainder" variant returns two numbers glued together in one
+// string ("1,234 remainder 5") which can't honestly become 4 MC options —
+// reject it here rather than mangling it in buildQuickMc.
+function isCleanQuickAnswer(q) {
+  if (q.prompt.startsWith("Compare")) return true;
+  return /^-?[\d,]+(\.\d+)?(\s+[a-zA-Z]+)?$/.test(String(q.answer).trim());
+}
+
+function rollDriveQuestion() {
+  for (let i = 0; i < 8; i++) {
+    const key = DRIVE_QUICK_GEN_KEYS[rand(0, DRIVE_QUICK_GEN_KEYS.length - 1)];
+    const raw = MATHVILLE_GENERATORS[key]();
+    if (isCleanQuickAnswer(raw)) return raw;
+  }
+  return MATHVILLE_GENERATORS.rounding(); // always clean — guaranteed fallback
+}
+
 // Builds a quick multiple-choice question from any of the chapter
 // generators — same content, lighter presentation (no round/steps),
 // since a driving pit-stop should be a 5-second beat, not a full round.
 function buildQuickMc(q) {
   if (q.prompt.startsWith("Compare")) {
-    return { prompt: q.prompt, options: ["<", "=", ">"], correctLabel: q.answer };
+    return { prompt: q.prompt, options: shuffle(["<", "=", ">"]), correctLabel: q.answer };
   }
-  const correctNum = Number(String(q.answer).replace(/[^\d.-]/g, ""));
-  if (!isNaN(correctNum) && /\d/.test(String(q.answer))) {
-    const options = new Set([correctNum]);
-    let guard = 0;
-    while (options.size < 4 && guard++ < 30) {
-      const delta = Math.max(1, Math.round(Math.abs(correctNum) * (0.1 + Math.random() * 0.3))) * (Math.random() < 0.5 ? -1 : 1);
-      const cand = correctNum + delta;
-      if (cand >= 0) options.add(cand);
-    }
-    return { prompt: q.prompt, options: shuffle([...options]).map(n => n.toLocaleString("en-US")), correctLabel: correctNum.toLocaleString("en-US") };
+  const m = String(q.answer).trim().match(/^(-?[\d,]+(?:\.\d+)?)(\s+[a-zA-Z]+)?$/);
+  const correctNum = Number(m[1].replace(/,/g, ""));
+  const suffix = m[2] || "";
+  const options = new Set([correctNum]);
+  let guard = 0;
+  while (options.size < 4 && guard++ < 40) {
+    const magnitude = Math.max(1, Math.round(Math.abs(correctNum) * (0.1 + Math.random() * 0.3)));
+    const cand = correctNum + magnitude * (Math.random() < 0.5 ? -1 : 1);
+    if (cand >= 0 && cand !== correctNum) options.add(cand);
   }
-  return { prompt: q.prompt, options: [String(q.answer)], correctLabel: String(q.answer) };
+  let bump = 1; // for very small correctNum (e.g. quotient 1-2), the loop
+  while (options.size < 4) options.add(correctNum + bump++); // above can't find 3 distinct deltas — pad deterministically
+  return {
+    prompt: q.prompt,
+    options: shuffle([...options]).map(n => n.toLocaleString("en-US") + suffix),
+    correctLabel: correctNum.toLocaleString("en-US") + suffix
+  };
 }
 
 function showDriveQuestion() {
   driveState.paused = true;
-  const key = DRIVE_QUICK_GEN_KEYS[rand(0, DRIVE_QUICK_GEN_KEYS.length - 1)];
-  const raw = MATHVILLE_GENERATORS[key]();
+  const raw = rollDriveQuestion();
   const step = buildQuickMc(raw);
 
   $("drive-question-prompt").textContent = step.prompt;
@@ -669,15 +729,47 @@ function showDriveQuestion() {
 }
 
 $("btn-drive").addEventListener("click", goToDrive);
-document.querySelectorAll(".dpad-btn").forEach(btn => {
-  const dir = btn.dataset.dir;
-  const setDir = val => {
-    if (driveState) driveState.held[dir] = val;
-    btn.classList.toggle("active", val);
-  };
-  btn.addEventListener("pointerdown", e => { e.preventDefault(); setDir(true); });
-  ["pointerup", "pointerleave", "pointercancel"].forEach(evt => btn.addEventListener(evt, () => setDir(false)));
-});
+
+// Analog joystick: drag anywhere inside (pointer capture lets the finger
+// wander outside the circle without losing the drag), knob position is
+// clamped to JOY_MAX px from center and read as a -1..1 vector each frame.
+const JOY_MAX = 28; // matches the smaller 92px joystick track
+(function setupDriveJoystick() {
+  const joy = $("joystick");
+  const knob = $("joystick-knob");
+  if (!joy || !knob) return;
+  let activeId = null;
+
+  function updateFromEvent(e) {
+    const rect = joy.getBoundingClientRect();
+    const dx = e.clientX - (rect.left + rect.width / 2);
+    const dy = e.clientY - (rect.top + rect.height / 2);
+    const dist = Math.hypot(dx, dy);
+    const clamped = Math.min(dist, JOY_MAX);
+    const angle = Math.atan2(dy, dx);
+    const kx = Math.cos(angle) * clamped, ky = Math.sin(angle) * clamped;
+    knob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+    driveJoyVec = { x: kx / JOY_MAX, y: ky / JOY_MAX };
+  }
+  function release(e) {
+    if (activeId === null || e.pointerId !== activeId) return;
+    activeId = null;
+    driveJoyVec = { x: 0, y: 0 };
+    knob.style.transform = "translate(-50%, -50%)";
+  }
+  joy.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    activeId = e.pointerId;
+    joy.setPointerCapture(activeId);
+    updateFromEvent(e);
+  });
+  joy.addEventListener("pointermove", e => {
+    if (activeId === null || e.pointerId !== activeId) return;
+    updateFromEvent(e);
+  });
+  joy.addEventListener("pointerup", release);
+  joy.addEventListener("pointercancel", release);
+})();
 
 /* =================================================================
    3. ROUND BUILDER
