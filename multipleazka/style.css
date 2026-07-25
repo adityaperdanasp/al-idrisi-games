@@ -96,14 +96,35 @@ body[data-theme="colorful"] {
 .home-btn.hidden { display: none; }
 
 /* ---------- Roaming car+dino (Role screen only) ---------- */
-.roam-layer { position: fixed; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+/* z-index above .card (2) so the pair roams freely over the whole
+   page, including passing over the card — below the 50-z floating
+   home/theme buttons so those stay reachable either way. */
+.roam-layer { position: fixed; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
 .roam-layer.hidden { display: none; }
 .roam-car, .roam-dino {
-  position: absolute; left: 0; top: 0; font-size: 30px; line-height: 1;
+  position: absolute; left: 0; top: 0; width: 34px; height: 34px;
+  margin-left: -17px; margin-top: -17px;
+  display: flex; align-items: center; justify-content: center;
   will-change: transform; filter: drop-shadow(0 2px 3px rgba(0,0,0,.25));
+  transition: filter .15s ease;
 }
 .roam-car { pointer-events: auto; cursor: pointer; }
 .roam-dino { pointer-events: none; }
+.dino-leg { transform-box: fill-box; transform-origin: top center; }
+.roam-dino.walking .dino-leg-l { animation: roamLegSwing .3s ease-in-out infinite; }
+.roam-dino.walking .dino-leg-r { animation: roamLegSwing .3s ease-in-out infinite reverse; }
+@keyframes roamLegSwing {
+  0%, 100% { transform: rotate(-20deg); }
+  50% { transform: rotate(20deg); }
+}
+.roam-smoke {
+  position: absolute; left: 0; top: 0; font-size: 16px; pointer-events: none;
+  animation: roamSmokePuff .7s ease-out forwards;
+}
+@keyframes roamSmokePuff {
+  0% { transform: translate(-50%, -50%) scale(.6); opacity: .8; }
+  100% { transform: translate(-50%, -50%) translateY(-16px) scale(1.5); opacity: 0; }
+}
 
 /* ---------- Base ---------- */
 * { box-sizing: border-box; }
