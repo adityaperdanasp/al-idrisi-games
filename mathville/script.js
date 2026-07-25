@@ -462,13 +462,13 @@ function goToIntro(chapterId, isMp) {
    chapter (same flow as the tap-map), bumping a cone pops one quick
    question from the same generators the chapters already use.
    ================================================================= */
-const DRIVE_SPEED = 0.6;      // % of world per animation frame, at full joystick deflection
+const DRIVE_SPEED = 0.54;     // % of world per animation frame, at full joystick deflection (-10%)
 // Collision radii in real PIXELS (not %) — the world isn't square
 // (aspect-ratio 2/3), so mixing raw % units in one hypot() distorted
 // distance depending on approach angle. Roughly matched to each icon's
 // actual visual half-size, with a little forgiveness so a near-miss
 // doesn't feel like a hit.
-const DRIVE_CAR_PX_R = 15;
+const DRIVE_CAR_PX_R = 13.5; // matches the -10% car sprite size
 const DRIVE_OBSTACLE_PX_R = 11;
 const DRIVE_CITY_PX_R = 17;
 const DRIVE_CAR_START = { x: 50, y: 95 };

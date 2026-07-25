@@ -139,6 +139,7 @@ button { font-family: inherit; }
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
   margin-bottom: 4px; text-align: left;
 }
+.map-header.drive-header { justify-content: center; text-align: center; margin-bottom: 2px; }
 .theme-toggle { display: flex; background: var(--cream); border-radius: 20px; padding: 3px; gap: 2px; flex: none; }
 .theme-btn {
   padding: 7px 16px; border: none; border-radius: 16px; background: transparent;
@@ -210,8 +211,8 @@ button { font-family: inherit; }
 
 /* ---------- Drive Mode ---------- */
 .drive-world {
-  position: relative; width: 100%; aspect-ratio: 2 / 3; max-height: 58vh;
-  margin-top: 12px; border-radius: 20px; overflow: hidden;
+  position: relative; width: 100%; aspect-ratio: 2 / 3; max-height: 65vh;
+  margin-top: 10px; border-radius: 20px; overflow: hidden;
   background: linear-gradient(180deg, #f2e9d8 0%, var(--cream) 100%);
   box-shadow: inset 0 0 0 3px var(--taupe);
 }
@@ -220,7 +221,7 @@ button { font-family: inherit; }
   z-index: 1; pointer-events: none; opacity: .85;
 }
 .drive-car {
-  position: absolute; width: 42px; height: 42px; margin-left: -21px; margin-top: -21px;
+  position: absolute; width: 38px; height: 38px; margin-left: -19px; margin-top: -19px;
   display: flex; align-items: center; justify-content: center;
   filter: drop-shadow(0 3px 4px rgba(59,42,26,.35)); z-index: 5;
   transition: transform .12s ease-out;
