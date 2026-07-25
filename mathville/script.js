@@ -27,41 +27,45 @@ const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlay
 // mapX/mapY are the exact node positions from the validated Claude Design
 // prototype (built for these same 9 chapters) — a winding two-column path,
 // left/right alternating, top to bottom.
+// Row gap widened to 170px (was 130px) so the road curve clears even a
+// 3-line wrapped title (e.g. "Prime Number (Multiples and Factoring)")
+// before sweeping toward the next stop — same smooth curve, just more
+// room, instead of kinking the path around the text.
 const CHAPTER_META = {
   "place-value": { location: "Town Hall", icon: "🏛️", mapX: 80, mapY: 70 },
-  "addition-subtraction": { location: "Bakery", icon: "🥐", mapX: 340, mapY: 200 },
-  "prime-numbers": { location: "Factor Grove", icon: "🌳", mapX: 80, mapY: 330 },
-  "gcf-lcm": { location: "Twin Bridges", icon: "🌉", mapX: 340, mapY: 460 },
-  "multiplication": { location: "Windmill", icon: "🎡", mapX: 80, mapY: 590 },
-  "division": { location: "Water Tower", icon: "🚰", mapX: 340, mapY: 720 },
-  "mixed-operation": { location: "Crossroads Plaza", icon: "🚦", mapX: 80, mapY: 850 },
-  "measurement": { location: "General Store", icon: "🏪", mapX: 340, mapY: 980 },
-  "rounding": { location: "Clock Tower", icon: "🕰️", mapX: 80, mapY: 1110 }
+  "addition-subtraction": { location: "Bakery", icon: "🥐", mapX: 340, mapY: 240 },
+  "prime-numbers": { location: "Factor Grove", icon: "🌳", mapX: 80, mapY: 410 },
+  "gcf-lcm": { location: "Twin Bridges", icon: "🌉", mapX: 340, mapY: 580 },
+  "multiplication": { location: "Windmill", icon: "🎡", mapX: 80, mapY: 750 },
+  "division": { location: "Water Tower", icon: "🚰", mapX: 340, mapY: 920 },
+  "mixed-operation": { location: "Crossroads Plaza", icon: "🚦", mapX: 80, mapY: 1090 },
+  "measurement": { location: "General Store", icon: "🏪", mapX: 340, mapY: 1260 },
+  "rounding": { location: "Clock Tower", icon: "🕰️", mapX: 80, mapY: 1430 }
 };
-const MAP_HEIGHT = 1190;
+const MAP_HEIGHT = 1520;
 
 // Decorative scenery scattered along the road — purely cosmetic, recolored
 // to the Blockville wood/gold/cherry/taupe palette.
 const MAP_ORNAMENTS = [
-  { x: 150, y: 6, shape: "cloud", color: "#E8D9C4", size: 52, kind: "drift" },
-  { x: -14, y: 40, shape: "mountain", color: "#A88E6B", size: 64, kind: "still" },
-  { x: 8, y: 150, shape: "tree", color: "#8FAE6B", size: 40, kind: "sway" },
-  { x: 400, y: 120, shape: "bush", color: "#C1793E", size: 44, kind: "sway" },
-  { x: 400, y: 300, shape: "house", color: "#E4572E", size: 34, kind: "bob" },
-  { x: 370, y: 250, shape: "bird", color: "#8a6a4a", size: 24, kind: "drift" },
-  { x: 8, y: 410, shape: "bush", color: "#F7C548", size: 38, kind: "sway" },
-  { x: -10, y: 460, shape: "wave", color: "#8FBFC4", size: 60, kind: "still" },
-  { x: 400, y: 560, shape: "cloud", color: "#D8C7AE", size: 46, kind: "drift" },
-  { x: 4, y: 610, shape: "deer", color: "#B48A5A", size: 40, kind: "still" },
-  { x: 8, y: 670, shape: "tree", color: "#8FAE6B", size: 34, kind: "sway" },
-  { x: 400, y: 640, shape: "house", color: "#F7C548", size: 32, kind: "bob" },
-  { x: 400, y: 760, shape: "mountain", color: "#8B9E7A", size: 56, kind: "still" },
-  { x: 8, y: 800, shape: "tree", color: "#C1793E", size: 38, kind: "sway" },
-  { x: 400, y: 890, shape: "wave", color: "#A7CEC8", size: 54, kind: "still" },
-  { x: 400, y: 940, shape: "bush", color: "#E4572E", size: 42, kind: "sway" },
-  { x: 20, y: 1010, shape: "bird", color: "#8a6a4a", size: 22, kind: "drift" },
-  { x: 8, y: 1130, shape: "tree", color: "#8FAE6B", size: 36, kind: "sway" },
-  { x: 380, y: 1160, shape: "deer", color: "#B48A5A", size: 38, kind: "still" }
+  { x: 150, y: 8, shape: "cloud", color: "#E8D9C4", size: 52, kind: "drift" },
+  { x: -14, y: 50, shape: "mountain", color: "#A88E6B", size: 64, kind: "still" },
+  { x: 8, y: 190, shape: "tree", color: "#8FAE6B", size: 40, kind: "sway" },
+  { x: 400, y: 155, shape: "bush", color: "#C1793E", size: 44, kind: "sway" },
+  { x: 400, y: 385, shape: "house", color: "#E4572E", size: 34, kind: "bob" },
+  { x: 370, y: 320, shape: "bird", color: "#8a6a4a", size: 24, kind: "drift" },
+  { x: 8, y: 525, shape: "bush", color: "#F7C548", size: 38, kind: "sway" },
+  { x: -10, y: 590, shape: "wave", color: "#8FBFC4", size: 60, kind: "still" },
+  { x: 400, y: 715, shape: "cloud", color: "#D8C7AE", size: 46, kind: "drift" },
+  { x: 4, y: 780, shape: "deer", color: "#B48A5A", size: 40, kind: "still" },
+  { x: 8, y: 855, shape: "tree", color: "#8FAE6B", size: 34, kind: "sway" },
+  { x: 400, y: 820, shape: "house", color: "#F7C548", size: 32, kind: "bob" },
+  { x: 400, y: 970, shape: "mountain", color: "#8B9E7A", size: 56, kind: "still" },
+  { x: 8, y: 1020, shape: "tree", color: "#C1793E", size: 38, kind: "sway" },
+  { x: 400, y: 1135, shape: "wave", color: "#A7CEC8", size: 54, kind: "still" },
+  { x: 400, y: 1200, shape: "bush", color: "#E4572E", size: 42, kind: "sway" },
+  { x: 20, y: 1290, shape: "bird", color: "#8a6a4a", size: 22, kind: "drift" },
+  { x: 8, y: 1440, shape: "tree", color: "#8FAE6B", size: 36, kind: "sway" },
+  { x: 380, y: 1480, shape: "deer", color: "#B48A5A", size: 38, kind: "still" }
 ];
 
 function catmullRomPath(pts) {
