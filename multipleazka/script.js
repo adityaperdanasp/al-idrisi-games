@@ -214,10 +214,103 @@ const pendingJoinCode = new URLSearchParams(location.search).get("join")?.toUppe
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  if (id === "screen-role") startRoamAnimation(); else stopRoamAnimation();
 }
 
 // Small helper to grab elements.
 const $ = id => document.getElementById(id);
+
+/* =================================================================
+   2b. ROAMING CAR + DINO — decorative, Role screen only. The car
+   wanders the page at random ("kayak laler"); the dino chases it with
+   an oscillating speed (speeds up, slows down, repeat) but can never
+   actually catch it — each frame's step is clamped so the gap never
+   closes below ROAM_MIN_DIST, regardless of frame rate. Tapping the
+   car is a playful alternate trigger for "Let's Race!".
+   ================================================================= */
+const ROAM_CAR_SPEED = 0.9;      // px/frame while wandering to its next target
+const ROAM_DINO_BASE_SPEED = 0.65;
+const ROAM_DINO_AMPLITUDE = 0.55; // speed oscillates between base±amplitude
+const ROAM_MIN_DIST = 70;         // px — the dino is physically barred from getting closer
+let roamState = null;
+let roamRafId = null;
+
+function pickNewRoamTarget() {
+  const margin = 36;
+  const w = Math.max(10, roamState.rect.width - margin * 2);
+  const h = Math.max(10, roamState.rect.height - margin * 2);
+  roamState.carTarget = { x: margin + Math.random() * w, y: margin + Math.random() * h };
+}
+
+function startRoamAnimation() {
+  const layer = $("roam-layer");
+  layer.classList.remove("hidden");
+  if (roamRafId) return; // already running — just made visible again
+  const rect = layer.getBoundingClientRect();
+  roamState = {
+    rect,
+    car: { x: rect.width * 0.5, y: rect.height * 0.22 },
+    dino: { x: rect.width * 0.5, y: rect.height * 0.06 },
+    carTarget: null,
+    startTime: performance.now()
+  };
+  pickNewRoamTarget();
+
+  function frame(now) {
+    if (!roamState) return;
+    const carEl = $("roam-car"), dinoEl = $("roam-dino");
+
+    const ct = roamState.carTarget;
+    const cdx = ct.x - roamState.car.x, cdy = ct.y - roamState.car.y;
+    const cdist = Math.hypot(cdx, cdy);
+    if (cdist < 6) {
+      pickNewRoamTarget();
+    } else {
+      const step = Math.min(cdist, ROAM_CAR_SPEED);
+      const cAngle = Math.atan2(cdy, cdx);
+      roamState.car.x += Math.cos(cAngle) * step;
+      roamState.car.y += Math.sin(cAngle) * step;
+      carEl.style.transform = `translate(${roamState.car.x}px, ${roamState.car.y}px) scaleX(${cdx < 0 ? -1 : 1})`;
+    }
+
+    const t = (now - roamState.startTime) / 1000;
+    const dinoSpeed = Math.max(0, ROAM_DINO_BASE_SPEED + Math.sin(t * 1.3) * ROAM_DINO_AMPLITUDE);
+    let ddx = roamState.car.x - roamState.dino.x, ddy = roamState.car.y - roamState.dino.y;
+    let ddist = Math.hypot(ddx, ddy);
+    if (ddist > ROAM_MIN_DIST) {
+      const step = Math.min(ddist - ROAM_MIN_DIST, dinoSpeed);
+      const dAngle = Math.atan2(ddy, ddx);
+      roamState.dino.x += Math.cos(dAngle) * step;
+      roamState.dino.y += Math.sin(dAngle) * step;
+    }
+    // The clamp above only stops the DINO's own step from closing the
+    // gap — but the car wanders on its own and can drift toward the
+    // dino too, shrinking the distance from the other side. Re-check
+    // after both have moved and push the dino back out if needed, so
+    // "never caught" holds regardless of which one caused the close call.
+    ddx = roamState.car.x - roamState.dino.x; ddy = roamState.car.y - roamState.dino.y;
+    ddist = Math.hypot(ddx, ddy);
+    if (ddist < ROAM_MIN_DIST) {
+      const dAngle = ddist < 0.01 ? Math.random() * Math.PI * 2 : Math.atan2(ddy, ddx);
+      roamState.dino.x = roamState.car.x - Math.cos(dAngle) * ROAM_MIN_DIST;
+      roamState.dino.y = roamState.car.y - Math.sin(dAngle) * ROAM_MIN_DIST;
+    }
+    dinoEl.style.transform = `translate(${roamState.dino.x}px, ${roamState.dino.y}px) scaleX(${ddx < 0 ? -1 : 1})`;
+
+    roamRafId = requestAnimationFrame(frame);
+  }
+  roamRafId = requestAnimationFrame(frame);
+}
+
+function stopRoamAnimation() {
+  $("roam-layer").classList.add("hidden");
+  if (roamRafId) cancelAnimationFrame(roamRafId);
+  roamRafId = null;
+  roamState = null;
+}
+
+$("roam-car").addEventListener("click", () => $("btn-lets-race").click());
+if ($("screen-role").classList.contains("active")) startRoamAnimation();
 
 
 /* =================================================================

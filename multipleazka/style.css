@@ -95,6 +95,16 @@ body[data-theme="colorful"] {
 .home-btn:active { transform: scale(.9); }
 .home-btn.hidden { display: none; }
 
+/* ---------- Roaming car+dino (Role screen only) ---------- */
+.roam-layer { position: fixed; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.roam-layer.hidden { display: none; }
+.roam-car, .roam-dino {
+  position: absolute; left: 0; top: 0; font-size: 30px; line-height: 1;
+  will-change: transform; filter: drop-shadow(0 2px 3px rgba(0,0,0,.25));
+}
+.roam-car { pointer-events: auto; cursor: pointer; }
+.roam-dino { pointer-events: none; }
+
 /* ---------- Base ---------- */
 * { box-sizing: border-box; }
 
@@ -148,6 +158,7 @@ body {
   max-width: 440px;
   text-align: center;
   position: relative;
+  z-index: 2;
   animation: pop 0.35s ease;
 }
 

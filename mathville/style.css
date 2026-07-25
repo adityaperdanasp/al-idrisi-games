@@ -310,6 +310,21 @@ button { font-family: inherit; }
 .drive-question-prompt {
   font: 700 18px/1.35 "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 16px; text-align: center;
 }
+.drive-countdown {
+  position: fixed; inset: 0; background: rgba(59,42,26,.5); z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+}
+.drive-countdown-number {
+  font: 800 88px "Baloo 2", sans-serif; color: #fff;
+  text-shadow: 0 4px 12px rgba(0,0,0,.35);
+  animation: driveCountdownPop .7s ease;
+}
+.drive-countdown-number.go { color: var(--gold); }
+@keyframes driveCountdownPop {
+  0% { transform: scale(0.4); opacity: 0; }
+  40% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
 .drive-end-card { text-align: center; }
 .drive-end-emoji { font-size: 52px; margin-bottom: 6px; }
 .drive-end-title { font: 800 22px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 6px; }

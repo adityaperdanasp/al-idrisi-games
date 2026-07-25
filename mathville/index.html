@@ -28,7 +28,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=14" />
+<link rel="stylesheet" href="style.css?v=15" />
 </head>
 <body>
 
@@ -157,6 +157,13 @@
       </div>
     </div>
 
+    <!-- 3-2-1-GO countdown, shown right after entering Drive Mode fresh
+         from the topbar — the car/dino stay frozen (driveState.paused)
+         until it finishes. -->
+    <div id="drive-countdown" class="drive-countdown hidden">
+      <div id="drive-countdown-number" class="drive-countdown-number">3</div>
+    </div>
+
     <!-- Quick obstacle question — a lightweight MC popup, separate from
          the full chapter question screen. -->
     <div id="drive-question-overlay" class="drive-question-overlay hidden">
@@ -264,6 +271,6 @@
 <script src="questions.js?v=1"></script>
 <script src="generators.js?v=1"></script>
 <script src="bgm.js"></script>
-<script src="script.js?v=19"></script>
+<script src="script.js?v=20"></script>
 </body>
 </html>

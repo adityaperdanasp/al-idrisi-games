@@ -171,7 +171,11 @@ function showScreen(id) {
   if (id === "screen-map") requestAnimationFrame(mvFitMapScale);
   // Leaving the drive screen (city collision, Home, switching to the
   // tap-map) should stop its rAF loop rather than let it spin unseen.
-  if (id !== "screen-drive") cancelDriveLoop();
+  if (id !== "screen-drive") {
+    cancelDriveLoop();
+    driveCountdownToken++;             // cancel any in-flight countdown timeout
+    $("drive-countdown").classList.add("hidden");
+  }
 }
 
 $("btn-home").addEventListener("click", () => { window.location.href = "../"; });
@@ -882,7 +886,43 @@ function showDriveQuestion() {
   $("drive-question-overlay").classList.remove("hidden");
 }
 
-$("btn-drive").addEventListener("click", () => goToDrive(false));
+// 3-2-1-GO before a fresh Drive Mode entry — a token guards against a
+// stale timeout leaking through if the player backs out mid-countdown.
+let driveCountdownToken = 0;
+function playDriveCountdown(onDone) {
+  const overlay = $("drive-countdown");
+  const numEl = $("drive-countdown-number");
+  overlay.classList.remove("hidden");
+  const myToken = ++driveCountdownToken;
+  const steps = ["3", "2", "1", "GO!"];
+  let i = 0;
+  function showStep() {
+    if (myToken !== driveCountdownToken) return;
+    const val = steps[i];
+    numEl.textContent = val;
+    numEl.classList.toggle("go", val === "GO!");
+    numEl.style.animation = "none";
+    void numEl.offsetWidth;
+    numEl.style.animation = "";
+    i++;
+    if (i < steps.length) {
+      setTimeout(showStep, 700);
+    } else {
+      setTimeout(() => {
+        if (myToken !== driveCountdownToken) return;
+        overlay.classList.add("hidden");
+        onDone();
+      }, 550);
+    }
+  }
+  showStep();
+}
+
+$("btn-drive").addEventListener("click", () => {
+  goToDrive(false);
+  driveState.paused = true;
+  playDriveCountdown(() => { if (driveState) driveState.paused = false; });
+});
 $("drive-end-replay").addEventListener("click", () => goToDrive(false));
 
 // Analog joystick: drag anywhere inside (pointer capture lets the finger
