@@ -139,7 +139,10 @@ button { font-family: inherit; }
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
   margin-bottom: 4px; text-align: left;
 }
-.map-header.drive-header { justify-content: center; text-align: center; margin-bottom: 2px; }
+.map-header.drive-header {
+  flex-direction: column; align-items: center;
+  justify-content: center; text-align: center; margin-bottom: 2px;
+}
 .theme-toggle { display: flex; background: var(--cream); border-radius: 20px; padding: 3px; gap: 2px; flex: none; }
 .theme-btn {
   padding: 7px 16px; border: none; border-radius: 16px; background: transparent;
@@ -210,9 +213,15 @@ button { font-family: inherit; }
 @keyframes mvWalkBounceFlip { 0%, 100% { transform: scaleX(-1) translateY(0); } 50% { transform: scaleX(-1) translateY(-4px); } }
 
 /* ---------- Drive Mode ---------- */
+.drive-hud { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }
+.drive-hud-pill {
+  font: 700 13px "Fredoka", sans-serif; color: var(--ink);
+  background: var(--card); padding: 4px 10px; border-radius: 14px;
+  box-shadow: 0 2px 4px rgba(59,42,26,.12);
+}
 .drive-world {
-  position: relative; width: 100%; aspect-ratio: 2 / 3; max-height: 65vh;
-  margin-top: 10px; border-radius: 20px; overflow: hidden;
+  position: relative; width: 100%; height: calc(100vh - 175px); min-height: 380px;
+  margin-top: 8px; border-radius: 20px; overflow: hidden;
   background: linear-gradient(180deg, #f2e9d8 0%, var(--cream) 100%);
   box-shadow: inset 0 0 0 3px var(--taupe);
 }
@@ -226,6 +235,17 @@ button { font-family: inherit; }
   filter: drop-shadow(0 3px 4px rgba(59,42,26,.35)); z-index: 5;
   transition: transform .12s ease-out;
 }
+.drive-car.bitten { animation: driveBitten .35s ease-in-out 3; }
+@keyframes driveBitten {
+  0%, 100% { filter: drop-shadow(0 3px 4px rgba(59,42,26,.35)); }
+  50% { filter: drop-shadow(0 0 8px var(--bad)) brightness(1.3); }
+}
+.drive-dino {
+  position: absolute; width: 34px; height: 34px; margin-left: -17px; margin-top: -17px;
+  display: flex; align-items: center; justify-content: center;
+  filter: drop-shadow(0 3px 4px rgba(59,42,26,.35)); z-index: 4;
+  transition: transform .12s ease-out;
+}
 .drive-obstacle {
   position: absolute; width: 32px; height: 32px; margin-left: -16px; margin-top: -16px;
   display: flex; align-items: center; justify-content: center; font-size: 22px; z-index: 3;
@@ -233,7 +253,13 @@ button { font-family: inherit; }
 .drive-city {
   position: absolute; width: 44px; height: 44px; margin-left: -22px; margin-top: -22px;
   display: flex; align-items: center; justify-content: center; font-size: 27px; z-index: 2;
-  filter: drop-shadow(0 2px 3px rgba(59,42,26,.3));
+}
+.drive-city > span:first-child {
+  animation: driveCityGlow 2.4s ease-in-out infinite;
+}
+@keyframes driveCityGlow {
+  0%, 100% { filter: drop-shadow(0 2px 3px rgba(59,42,26,.3)) drop-shadow(0 0 2px rgba(247,197,72,.15)); }
+  50% { filter: drop-shadow(0 2px 3px rgba(59,42,26,.3)) drop-shadow(0 0 9px rgba(247,197,72,.85)); }
 }
 .drive-city-check {
   position: absolute; top: -3px; right: -3px; font-size: 13px;
@@ -266,6 +292,11 @@ button { font-family: inherit; }
 .drive-question-prompt {
   font: 700 18px/1.35 "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 16px; text-align: center;
 }
+.drive-end-card { text-align: center; }
+.drive-end-emoji { font-size: 52px; margin-bottom: 6px; }
+.drive-end-title { font: 800 22px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 6px; }
+.drive-end-sub { font-size: 14px; color: var(--ink-soft); margin-bottom: 18px; }
+#drive-end-overlay.lost .drive-end-title { color: var(--bad); }
 
 /* ---------- Chapter Intro ---------- */
 .intro-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }

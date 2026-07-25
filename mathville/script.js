@@ -462,20 +462,28 @@ function goToIntro(chapterId, isMp) {
    chapter (same flow as the tap-map), bumping a cone pops one quick
    question from the same generators the chapters already use.
    ================================================================= */
-const DRIVE_SPEED = 0.54;     // % of world per animation frame, at full joystick deflection (-10%)
-// Collision radii in real PIXELS (not %) — the world isn't square
-// (aspect-ratio 2/3), so mixing raw % units in one hypot() distorted
-// distance depending on approach angle. Roughly matched to each icon's
-// actual visual half-size, with a little forgiveness so a near-miss
-// doesn't feel like a hit.
+const DRIVE_SPEED = 0.486;    // % of world per animation frame, at full joystick deflection (-10% again)
+const DINO_SPEED = DRIVE_SPEED * 1.1; // dino always pursues 10% faster than the car's top speed
+const DRIVE_SCORE_TARGET = 25;
+const DRIVE_MAX_BITES = 3;
+const DRIVE_BITE_COOLDOWN_MS = 1500;
+// Collision radii in real PIXELS (not %) — the world isn't square, so
+// mixing raw % units in one hypot() distorted distance depending on
+// approach angle. Roughly matched to each icon's actual visual
+// half-size, with a little forgiveness so a near-miss doesn't feel
+// like a hit.
 const DRIVE_CAR_PX_R = 13.5; // matches the -10% car sprite size
 const DRIVE_OBSTACLE_PX_R = 11;
 const DRIVE_CITY_PX_R = 17;
-const DRIVE_CAR_START = { x: 50, y: 95 };
+const DRIVE_DINO_PX_R = 13;
+const DRIVE_CAR_START = { x: 50, y: 93 };
+const DRIVE_DINO_START = { x: 100 - DRIVE_CAR_START.x, y: 100 - DRIVE_CAR_START.y }; // opposite corner from the car
+// Spread across the now much-bigger play field (roughly a 3x3 grid),
+// keeping clear of the joystick's bottom-left overlay.
 const DRIVE_CITY_POS = [
-  { x: 20, y: 15 }, { x: 70, y: 12 }, { x: 45, y: 28 },
-  { x: 15, y: 40 }, { x: 80, y: 42 }, { x: 35, y: 55 },
-  { x: 65, y: 58 }, { x: 38, y: 68 }, { x: 75, y: 78 }
+  { x: 15, y: 12 }, { x: 50, y: 9 }, { x: 85, y: 14 },
+  { x: 12, y: 38 }, { x: 50, y: 40 }, { x: 88, y: 36 },
+  { x: 18, y: 64 }, { x: 50, y: 66 }, { x: 82, y: 62 }
 ];
 const DRIVE_QUICK_GEN_KEYS = [
   "place-value", "addition-subtraction-add", "addition-subtraction-sub",
@@ -512,18 +520,35 @@ const DRIVE_SCENERY = [
 
 let driveState = null;
 let driveJoyVec = { x: 0, y: 0 }; // normalized -1..1, magnitude = joystick deflection
+// Score + bite count survive a side-trip into a chapter (city collision
+// routes there and back) — only a *fresh* Drive Mode entry resets them.
+let driveSession = null;
 
-function goToDrive() {
+// resume=true when returning from a chapter (score/bites carry over);
+// false/omitted for a brand-new session from the topbar button.
+function goToDrive(resume) {
+  if (!resume || !driveSession) driveSession = { score: 0, bites: 0 };
   driveState = {
     x: DRIVE_CAR_START.x, y: DRIVE_CAR_START.y,
-    cities: [], obstacles: [], rafId: null, paused: false, worldRect: null
+    dino: { x: DRIVE_DINO_START.x, y: DRIVE_DINO_START.y },
+    biteCooldownUntil: 0,
+    cities: [], obstacles: [], rafId: null, paused: false, worldRect: null, ended: false
   };
   renderDriveScenery();
   buildDriveWorld();
   showScreen("screen-drive");
   driveState.worldRect = $("drive-world").getBoundingClientRect();
   $("drive-car").style.transform = "rotate(0deg)"; // top-down sprite is drawn nose-up already
+  $("drive-dino").style.left = driveState.dino.x + "%";
+  $("drive-dino").style.top = driveState.dino.y + "%";
+  $("drive-end-overlay").classList.add("hidden");
+  updateDriveHud();
   startDriveLoop();
+}
+
+function updateDriveHud() {
+  $("drive-score").textContent = `⭐ ${driveSession.score}/${DRIVE_SCORE_TARGET}`;
+  $("drive-lives").textContent = "❤️".repeat(DRIVE_MAX_BITES - driveSession.bites) + "🖤".repeat(driveSession.bites);
 }
 
 function renderDriveScenery() {
@@ -549,15 +574,16 @@ function buildDriveWorld() {
   }));
 
   driveState.obstacles = [];
-  const targetCount = rand(5, 8);
+  const targetCount = rand(6, 9); // a few more now that the field is bigger
   let guard = 0;
   while (driveState.obstacles.length < targetCount && guard++ < 300) {
-    const cand = { x: rand(10, 90), y: rand(20, 90) };
-    const tooCloseToCity = driveState.cities.some(c => Math.hypot(c.x - cand.x, c.y - cand.y) < 16);
-    const tooCloseToObstacle = driveState.obstacles.some(o => Math.hypot(o.x - cand.x, o.y - cand.y) < 14);
-    const tooCloseToStart = Math.hypot(cand.x - DRIVE_CAR_START.x, cand.y - DRIVE_CAR_START.y) < 14;
+    const cand = { x: rand(6, 94), y: rand(12, 92) };
+    const tooCloseToCity = driveState.cities.some(c => Math.hypot(c.x - cand.x, c.y - cand.y) < 15);
+    const tooCloseToObstacle = driveState.obstacles.some(o => Math.hypot(o.x - cand.x, o.y - cand.y) < 13);
+    const tooCloseToStart = Math.hypot(cand.x - DRIVE_CAR_START.x, cand.y - DRIVE_CAR_START.y) < 13;
+    const tooCloseToDino = Math.hypot(cand.x - DRIVE_DINO_START.x, cand.y - DRIVE_DINO_START.y) < 13;
     const underJoystick = cand.x < 28 && cand.y > 74; // bottom-left corner, covered by the on-screen joystick
-    if (!tooCloseToCity && !tooCloseToObstacle && !tooCloseToStart && !underJoystick) {
+    if (!tooCloseToCity && !tooCloseToObstacle && !tooCloseToStart && !tooCloseToDino && !underJoystick) {
       driveState.obstacles.push({ id: "obs" + driveState.obstacles.length, x: cand.x, y: cand.y });
     }
   }
@@ -593,10 +619,15 @@ function renderDriveWorld() {
   car.style.top = driveState.y + "%";
 }
 
+// The top-down sprites are drawn nose-up (θ=-90° in screen-coordinate
+// atan2 terms) — this converts a travel angle into the CSS rotation
+// that makes a sprite's nose point the way it's actually moving.
+function driveHeadingCss(angleRad) { return (angleRad * 180 / Math.PI) + 90; }
+
 function startDriveLoop() {
   cancelDriveLoop();
   function frame() {
-    if (!driveState) return;
+    if (!driveState || driveState.ended) return;
     if (!driveState.paused) {
       const mag = Math.min(1, Math.hypot(driveJoyVec.x, driveJoyVec.y));
       if (mag > 0.05) {
@@ -606,12 +637,23 @@ function startDriveLoop() {
         const car = $("drive-car");
         car.style.left = driveState.x + "%";
         car.style.top = driveState.y + "%";
-        // The top-down car sprite is drawn nose-up (θ=-90° in screen
-        // coords) — rotate the difference so the nose always points
-        // the way it's actually moving.
-        car.style.transform = `rotate(${(angle * 180 / Math.PI) + 90}deg)`;
-        checkDriveCollisions();
+        car.style.transform = `rotate(${driveHeadingCss(angle)}deg)`;
       }
+      // The dino always pursues the car's current spot, a bit faster
+      // than the car's own top speed.
+      const dx = driveState.x - driveState.dino.x, dy = driveState.y - driveState.dino.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 0.5) {
+        const dAngle = Math.atan2(dy, dx);
+        const step = Math.min(dist, DINO_SPEED);
+        driveState.dino.x += Math.cos(dAngle) * step;
+        driveState.dino.y += Math.sin(dAngle) * step;
+        const dinoEl = $("drive-dino");
+        dinoEl.style.left = driveState.dino.x + "%";
+        dinoEl.style.top = driveState.dino.y + "%";
+        dinoEl.style.transform = `rotate(${driveHeadingCss(dAngle)}deg)`;
+      }
+      checkDriveCollisions();
     }
     driveState.rafId = requestAnimationFrame(frame);
   }
@@ -633,10 +675,17 @@ function drivePxDist(ax, ay, bx, by) {
   return Math.hypot((ax - bx) / 100 * rect.width, (ay - by) / 100 * rect.height);
 }
 
+function awardDriveScore(points) {
+  driveSession.score = Math.min(DRIVE_SCORE_TARGET, driveSession.score + points);
+  updateDriveHud();
+  return driveSession.score >= DRIVE_SCORE_TARGET;
+}
+
 function checkDriveCollisions() {
   for (const c of driveState.cities) {
     if (drivePxDist(c.x, c.y, driveState.x, driveState.y) < DRIVE_CAR_PX_R + DRIVE_CITY_PX_R) {
       driveState.paused = true;
+      if (awardDriveScore(10)) { showDriveEnd(true); return; }
       state.driveReturnPending = true;
       goToIntro(c.id, false);
       return;
@@ -647,9 +696,40 @@ function checkDriveCollisions() {
       driveState.obstacles = driveState.obstacles.filter(x => x !== o);
       const el = document.getElementById("drive-" + o.id);
       if (el) el.remove();
+      if (awardDriveScore(1)) { showDriveEnd(true); return; }
       showDriveQuestion();
       return;
     }
+  }
+  const now = performance.now();
+  if (now >= driveState.biteCooldownUntil &&
+      drivePxDist(driveState.dino.x, driveState.dino.y, driveState.x, driveState.y) < DRIVE_CAR_PX_R + DRIVE_DINO_PX_R) {
+    driveState.biteCooldownUntil = now + DRIVE_BITE_COOLDOWN_MS;
+    driveSession.bites++;
+    updateDriveHud();
+    const car = $("drive-car");
+    car.classList.add("bitten");
+    setTimeout(() => car.classList.remove("bitten"), DRIVE_BITE_COOLDOWN_MS);
+    if (driveSession.bites >= DRIVE_MAX_BITES) showDriveEnd(false);
+  }
+}
+
+function showDriveEnd(won) {
+  driveState.ended = true;
+  driveState.paused = true;
+  const name = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().name) || "Kamu";
+  const overlay = $("drive-end-overlay");
+  overlay.classList.toggle("won", won);
+  overlay.classList.toggle("lost", !won);
+  $("drive-end-emoji").textContent = won ? "🏆" : "🦖";
+  $("drive-end-title").textContent = won ? `You did it, ${name}!` : "Digigit Dino 3x!";
+  $("drive-end-sub").textContent = won
+    ? `${DRIVE_SCORE_TARGET} poin tercapai — mantap!`
+    : `Yuk coba lagi, ${name}!`;
+  overlay.classList.remove("hidden");
+  if (won && typeof confetti === "function") {
+    confetti({ particleCount: 100, spread: 100, origin: { y: 0.4 } });
+    setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.3 } }), 300);
   }
 }
 
@@ -728,7 +808,8 @@ function showDriveQuestion() {
   $("drive-question-overlay").classList.remove("hidden");
 }
 
-$("btn-drive").addEventListener("click", goToDrive);
+$("btn-drive").addEventListener("click", () => goToDrive(false));
+$("drive-end-replay").addEventListener("click", () => goToDrive(false));
 
 // Analog joystick: drag anywhere inside (pointer capture lets the finger
 // wander outside the circle without losing the drag), knob position is
@@ -1210,7 +1291,7 @@ function showReward(stars) {
   // should drop the player back into the driving world (with that city
   // now shown complete) instead of the tap-map.
   $("btn-reward-continue").onclick = () => {
-    if (state.driveReturnPending) { state.driveReturnPending = false; goToDrive(); }
+    if (state.driveReturnPending) { state.driveReturnPending = false; goToDrive(true); }
     else goToMap();
   };
 }

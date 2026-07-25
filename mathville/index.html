@@ -19,6 +19,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet" />
 
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
@@ -27,7 +28,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=12" />
+<link rel="stylesheet" href="style.css?v=13" />
 </head>
 <body>
 
@@ -123,6 +124,10 @@
     <div class="map-header drive-header">
       <div>
         <h2 class="title-lg">Drive Mode</h2>
+        <div class="drive-hud">
+          <span class="drive-hud-pill" id="drive-score">⭐ 0/25</span>
+          <span class="drive-hud-pill" id="drive-lives">❤️❤️❤️</span>
+        </div>
       </div>
     </div>
     <div id="drive-world" class="drive-world">
@@ -136,6 +141,15 @@
           <rect x="22" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
         </svg>
       </div>
+      <div id="drive-dino" class="drive-dino">
+        <svg viewBox="0 0 30 40" width="27" height="36">
+          <path d="M15 39 Q9 34 15 29 Q21 34 15 39 Z" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.2" />
+          <ellipse cx="15" cy="24" rx="10" ry="13" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.5" />
+          <circle cx="15" cy="10" r="9.5" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.5" />
+          <circle cx="15" cy="10" r="9.5" fill="rgba(191,227,240,.5)" stroke="#8fb9c9" stroke-width="1.5" />
+          <circle cx="15" cy="3.5" r="1.6" fill="#E4572E" />
+        </svg>
+      </div>
       <div class="joystick" id="joystick" aria-label="Steer">
         <div class="joystick-knob" id="joystick-knob"></div>
       </div>
@@ -147,6 +161,16 @@
       <div class="drive-question-card">
         <div class="drive-question-prompt" id="drive-question-prompt"></div>
         <div class="mc-grid" id="drive-question-options"></div>
+      </div>
+    </div>
+
+    <!-- Win/lose overlay — 25 points to win, 3 dino bites to lose. -->
+    <div id="drive-end-overlay" class="drive-question-overlay hidden">
+      <div class="drive-question-card drive-end-card">
+        <div class="drive-end-emoji" id="drive-end-emoji">🏆</div>
+        <div class="drive-end-title" id="drive-end-title"></div>
+        <div class="drive-end-sub" id="drive-end-sub"></div>
+        <button class="btn btn-primary" id="drive-end-replay">Main Lagi</button>
       </div>
     </div>
   </section>
@@ -238,6 +262,6 @@
 <script src="questions.js?v=1"></script>
 <script src="generators.js?v=1"></script>
 <script src="bgm.js"></script>
-<script src="script.js?v=16"></script>
+<script src="script.js?v=17"></script>
 </body>
 </html>
