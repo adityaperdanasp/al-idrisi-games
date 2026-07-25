@@ -112,22 +112,32 @@
     <div class="sc-dot" style="top:340px;left:14px;width:8px;height:8px;background:#F6C1C1;z-index:0;"></div>
     <div class="sc-star" style="top:310px;right:24px;width:12px;height:12px;background:#F6E3B4;transform:rotate(22deg);z-index:0;"></div>
 
-    <!-- SCREEN 1: Player Select -->
+    <!-- SCREEN 1: Sign Up / Sign In (MOCKUP — no wiring yet) -->
     <div id="sc-screen-select" class="sc-screen active">
       <div style="text-align:center;">
         <div class="sc-badge">Al Idrisi Games</div>
       </div>
-      <div>
-        <div class="sc-title">Who's playing?</div>
-        <div class="sc-subtitle">Pick your name first!</div>
+      <div style="text-align:center;">
+        <div class="sc-title">Welcome!</div>
+        <div class="sc-subtitle">Sign up or sign in to start playing</div>
       </div>
-      <div>
-        <div class="sc-label">TEACHERS</div>
-        <div class="sc-teacher-list" id="sc-teacher-list"></div>
+
+      <div class="sc-auth-toggle">
+        <button class="sc-auth-tab active" data-mode="signup">Sign Up</button>
+        <button class="sc-auth-tab" data-mode="signin">Sign In</button>
       </div>
-      <div>
-        <div class="sc-label">STUDENTS</div>
-        <div class="sc-student-grid" id="sc-student-grid"></div>
+
+      <div class="sc-auth-form">
+        <label class="sc-auth-field">
+          <span class="sc-auth-field-label">Your name</span>
+          <input type="text" class="sc-auth-input" id="sc-auth-name" placeholder="e.g. Azka" autocomplete="off" />
+          <span class="sc-auth-error" id="sc-auth-name-error">This name is already taken</span>
+        </label>
+        <label class="sc-auth-field">
+          <span class="sc-auth-field-label">4-digit PIN</span>
+          <input type="password" inputmode="numeric" maxlength="4" class="sc-auth-input sc-auth-pin" id="sc-auth-pin" placeholder="••••" autocomplete="off" />
+        </label>
+        <button class="sc-auth-submit" id="sc-auth-submit">Let's Go! 🚀</button>
       </div>
     </div>
 
@@ -238,26 +248,24 @@
   const TEACHERS_ONLY = window.AIG_PLAYERS.filter(p => p.role === "teacher");
 
   function scColorFor(p) {
-    // Match by id, not object identity — AIGPlayer.getPlayer() returns a
-    // freshly-parsed object from localStorage after a reload, which would
-    // never === the original AIG_PLAYERS entry even though it's the same
-    // player (that mismatch was the bug: indexOf returned -1, so the
-    // avatar's background silently fell back to transparent).
-    if (p.role === "teacher") {
-      const tIdx = TEACHERS_ONLY.findIndex(t => t.id === p.id);
-      return SC_STUDENT_PALETTE[tIdx % SC_STUDENT_PALETTE.length];
-    }
-    // A derived "parent" identity isn't in either roster — reuse the
-    // linked child's own color so the avatar still looks intentional
-    // instead of falling through to an unmatched index.
+    // Hashes the id into a stable palette index instead of looking it
+    // up in the static roster array — self-signed-up testers aren't in
+    // that roster at all (findIndex would return -1 and the avatar's
+    // background would silently fall back to transparent), so this
+    // needs to work for ANY id, roster or not.
     const lookupId = p.role === "parent" ? p.childId : p.id;
-    const idx = STUDENTS_ONLY.findIndex(s => s.id === lookupId);
-    return SC_STUDENT_PALETTE[idx % SC_STUDENT_PALETTE.length];
+    let hash = 0;
+    for (let i = 0; i < lookupId.length; i++) hash = (hash * 31 + lookupId.charCodeAt(i)) >>> 0;
+    return SC_STUDENT_PALETTE[hash % SC_STUDENT_PALETTE.length];
   }
 
   function renderPicker() {
+    // MOCKUP NOTE: sc-screen-select's roster grid was swapped for the
+    // Sign Up / Sign In mockup below, so these no longer exist — no-op
+    // until the real auth flow replaces this function's job.
     const teacherEl = document.getElementById("sc-teacher-list");
     const studentEl = document.getElementById("sc-student-grid");
+    if (!teacherEl || !studentEl) return;
     teacherEl.innerHTML = "";
     studentEl.innerHTML = "";
 
@@ -371,6 +379,10 @@
     document.getElementById("sc-screen-landing").classList.remove("active");
     document.getElementById("sc-screen-select").classList.add("active");
     stopRoamAnimation();
+    document.getElementById("sc-auth-name").value = "";
+    document.getElementById("sc-auth-pin").value = "";
+    document.getElementById("sc-auth-name-error").classList.remove("visible");
+    document.getElementById("sc-auth-name").classList.remove("invalid");
   }
 
   /* ===============================================================
@@ -513,6 +525,74 @@
   // genuine link tap gets, which showed up as an ugly flash of gray
   // between pages. A real anchor tap avoids it, matching how the other
   // game cards already navigate cleanly.
+
+  // ===============================================================
+  // SIGN UP / SIGN IN — open to anyone (not just the school roster),
+  // since this hub is now being handed to outside testers too. Real
+  // accounts live in Firebase at testerAccounts/{nameKey}; the name
+  // itself (lowercased, sanitized) is the key, so it doubles as the
+  // player id everywhere else (players/{id}/badges/..., etc.) — same
+  // shape the old static roster ids already used.
+  // ===============================================================
+  document.querySelectorAll(".sc-auth-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".sc-auth-tab").forEach(t => t.classList.toggle("active", t === tab));
+      clearAuthError();
+    });
+  });
+
+  function sanitizeNameKey(name) {
+    return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+
+  function showAuthError(msg) {
+    document.getElementById("sc-auth-name-error").textContent = msg;
+    document.getElementById("sc-auth-name-error").classList.add("visible");
+    document.getElementById("sc-auth-name").classList.add("invalid");
+  }
+  function clearAuthError() {
+    document.getElementById("sc-auth-name-error").classList.remove("visible");
+    document.getElementById("sc-auth-name").classList.remove("invalid");
+  }
+  document.getElementById("sc-auth-name").addEventListener("input", clearAuthError);
+  document.getElementById("sc-auth-pin").addEventListener("input", clearAuthError);
+
+  async function handleAuthSubmit() {
+    const mode = document.querySelector(".sc-auth-tab.active").dataset.mode;
+    const rawName = document.getElementById("sc-auth-name").value.trim();
+    const pin = document.getElementById("sc-auth-pin").value.trim();
+    clearAuthError();
+
+    if (!rawName) { showAuthError("Enter your name"); return; }
+    const key = sanitizeNameKey(rawName);
+    if (!key) { showAuthError("Enter your name"); return; }
+    if (!/^\d{4}$/.test(pin)) { showAuthError("PIN must be 4 digits"); return; }
+
+    const submitBtn = document.getElementById("sc-auth-submit");
+    submitBtn.disabled = true;
+    try {
+      const snap = await aigDb.ref(`testerAccounts/${key}`).get();
+      const existing = snap.exists() ? snap.val() : null;
+
+      if (mode === "signup") {
+        if (existing) { showAuthError("This name is already taken"); return; }
+        await aigDb.ref(`testerAccounts/${key}`).set({ name: rawName, pin, createdAt: Date.now() });
+        AIGPlayer.setPlayer({ id: key, name: rawName, role: "student" });
+        showLanding();
+      } else {
+        if (!existing || existing.pin !== pin) { showAuthError("Name or PIN is incorrect"); return; }
+        AIGPlayer.setPlayer({ id: key, name: existing.name, role: "student" });
+        showLanding();
+      }
+    } catch (e) {
+      showAuthError("Something went wrong — try again");
+    } finally {
+      submitBtn.disabled = false;
+    }
+  }
+
+  document.getElementById("sc-auth-submit").addEventListener("click", handleAuthSubmit);
+  document.getElementById("sc-auth-pin").addEventListener("keydown", e => { if (e.key === "Enter") handleAuthSubmit(); });
 
   renderPicker();
   if (AIGPlayer.getPlayer()) {
