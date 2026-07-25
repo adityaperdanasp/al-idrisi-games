@@ -162,11 +162,16 @@ const state = {
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   $(id).classList.add("active");
-  $("btn-map").classList.toggle("hidden", id === "screen-landing" || id === "screen-pair");
+  const hideNav = id === "screen-landing" || id === "screen-pair";
+  $("btn-map").classList.toggle("hidden", hideNav);
+  $("btn-drive").classList.toggle("hidden", hideNav);
   // The map's width can only be measured once the screen is actually
   // visible (display:none reports clientWidth 0) — re-fit right after
   // it becomes active, regardless of which code path got us here.
   if (id === "screen-map") requestAnimationFrame(mvFitMapScale);
+  // Leaving the drive screen (city collision, Home, switching to the
+  // tap-map) should stop its rAF loop rather than let it spin unseen.
+  if (id !== "screen-drive") cancelDriveLoop();
 }
 
 $("btn-home").addEventListener("click", () => { window.location.href = "../"; });
@@ -440,6 +445,239 @@ function goToIntro(chapterId, isMp) {
     renderStep();
   };
 }
+
+/* =================================================================
+   DRIVE MODE — free-roam alternative to the tap-map. Single screen,
+   no camera/scroll: everything lives in a 0-100 x 0-100 percentage
+   coordinate space that maps 1:1 onto CSS left%/top%, so collision
+   math never needs to know the world's actual pixel size. A d-pad
+   (press-and-hold) drives the truck; bumping a building enters that
+   chapter (same flow as the tap-map), bumping a cone pops one quick
+   question from the same generators the chapters already use.
+   ================================================================= */
+const DRIVE_SPEED = 0.6;      // % of world per animation frame
+const DRIVE_CAR_R = 6;        // collision radius, in the same % units
+const DRIVE_OBSTACLE_R = 6;
+const DRIVE_CITY_R = 8;
+const DRIVE_CAR_START = { x: 50, y: 95 };
+const DRIVE_CITY_POS = [
+  { x: 20, y: 15 }, { x: 70, y: 12 }, { x: 45, y: 28 },
+  { x: 15, y: 40 }, { x: 80, y: 42 }, { x: 35, y: 55 },
+  { x: 65, y: 58 }, { x: 25, y: 75 }, { x: 75, y: 78 }
+];
+const DRIVE_QUICK_GEN_KEYS = [
+  "place-value", "addition-subtraction-add", "addition-subtraction-sub",
+  "multiplication", "division", "measurement", "rounding"
+];
+// Purely cosmetic backdrop scenery for the drive world, in % coordinates —
+// same palette/shapes as the town-map ornaments, so the two screens feel
+// like one continuous countryside instead of the drive screen being bare.
+const DRIVE_SCENERY = [
+  { x: 4, y: 6, shape: "mountain", color: "#A88E6B", size: 46, kind: "still" },
+  { x: 92, y: 8, shape: "cloud", color: "#E8D9C4", size: 36, kind: "drift" },
+  { x: 50, y: 4, shape: "cloud", color: "#D8C7AE", size: 30, kind: "drift" },
+  { x: 8, y: 22, shape: "tree", color: "#8FAE6B", size: 26, kind: "sway" },
+  { x: 95, y: 25, shape: "tree", color: "#8FAE6B", size: 24, kind: "sway" },
+  { x: 3, y: 60, shape: "bush", color: "#C1793E", size: 24, kind: "sway" },
+  { x: 96, y: 62, shape: "deer", color: "#B48A5A", size: 26, kind: "still" },
+  { x: 6, y: 90, shape: "wave", color: "#A7CEC8", size: 34, kind: "still" },
+  { x: 90, y: 92, shape: "wave", color: "#8FBFC4", size: 30, kind: "still" },
+  { x: 50, y: 96, shape: "bush", color: "#F7C548", size: 22, kind: "sway" }
+];
+
+let driveState = null;
+
+function goToDrive() {
+  driveState = {
+    x: DRIVE_CAR_START.x, y: DRIVE_CAR_START.y,
+    held: { up: false, down: false, left: false, right: false },
+    cities: [], obstacles: [], rafId: null, paused: false
+  };
+  renderDriveScenery();
+  buildDriveWorld();
+  showScreen("screen-drive");
+  startDriveLoop();
+}
+
+function renderDriveScenery() {
+  const world = $("drive-world");
+  world.querySelectorAll(".drive-scenery").forEach(el => el.remove());
+  DRIVE_SCENERY.forEach(o => {
+    const el = document.createElement("div");
+    el.className = "drive-scenery";
+    el.style.left = o.x + "%";
+    el.style.top = o.y + "%";
+    el.style.animation = ORNAMENT_ANIM[o.kind] !== "none" ? `${ORNAMENT_ANIM[o.kind]} ${3 + Math.random() * 2}s ease-in-out infinite` : "none";
+    el.innerHTML = ornamentSvg(o);
+    world.appendChild(el);
+  });
+}
+
+function buildDriveWorld() {
+  const chapters = MATHVILLE_BANK.chapters;
+  driveState.cities = chapters.map((ch, i) => ({
+    id: ch.id, title: ch.title, icon: CHAPTER_META[ch.id].icon,
+    x: DRIVE_CITY_POS[i].x, y: DRIVE_CITY_POS[i].y,
+    completed: !!(PROGRESS.chapters[ch.id] || {}).completed
+  }));
+
+  driveState.obstacles = [];
+  const targetCount = rand(5, 8);
+  let guard = 0;
+  while (driveState.obstacles.length < targetCount && guard++ < 300) {
+    const cand = { x: rand(10, 90), y: rand(20, 90) };
+    const tooCloseToCity = driveState.cities.some(c => Math.hypot(c.x - cand.x, c.y - cand.y) < 16);
+    const tooCloseToObstacle = driveState.obstacles.some(o => Math.hypot(o.x - cand.x, o.y - cand.y) < 14);
+    const tooCloseToStart = Math.hypot(cand.x - DRIVE_CAR_START.x, cand.y - DRIVE_CAR_START.y) < 14;
+    if (!tooCloseToCity && !tooCloseToObstacle && !tooCloseToStart) {
+      driveState.obstacles.push({ id: "obs" + driveState.obstacles.length, x: cand.x, y: cand.y });
+    }
+  }
+  renderDriveWorld();
+}
+
+function renderDriveWorld() {
+  const world = $("drive-world");
+  world.querySelectorAll(".drive-city, .drive-obstacle").forEach(el => el.remove());
+
+  driveState.cities.forEach(c => {
+    const el = document.createElement("div");
+    el.className = "drive-city" + (c.completed ? " complete" : "");
+    el.style.left = c.x + "%";
+    el.style.top = c.y + "%";
+    el.innerHTML = `<span>${c.icon}</span><div class="drive-city-label">${escapeHtml(c.title)}</div>`;
+    world.appendChild(el);
+  });
+
+  driveState.obstacles.forEach(o => {
+    const el = document.createElement("div");
+    el.className = "drive-obstacle";
+    el.id = "drive-" + o.id;
+    el.style.left = o.x + "%";
+    el.style.top = o.y + "%";
+    el.textContent = "🚧";
+    world.appendChild(el);
+  });
+
+  const car = $("drive-car");
+  car.style.left = driveState.x + "%";
+  car.style.top = driveState.y + "%";
+}
+
+function startDriveLoop() {
+  cancelDriveLoop();
+  function frame() {
+    if (!driveState) return;
+    if (!driveState.paused) {
+      let dx = 0, dy = 0;
+      if (driveState.held.up) dy -= DRIVE_SPEED;
+      if (driveState.held.down) dy += DRIVE_SPEED;
+      if (driveState.held.left) dx -= DRIVE_SPEED;
+      if (driveState.held.right) dx += DRIVE_SPEED;
+      if (dx || dy) {
+        driveState.x = Math.max(DRIVE_CAR_R, Math.min(100 - DRIVE_CAR_R, driveState.x + dx));
+        driveState.y = Math.max(DRIVE_CAR_R, Math.min(100 - DRIVE_CAR_R, driveState.y + dy));
+        const car = $("drive-car");
+        car.style.left = driveState.x + "%";
+        car.style.top = driveState.y + "%";
+        if (dx) car.classList.toggle("facing-left", dx < 0);
+        checkDriveCollisions();
+      }
+    }
+    driveState.rafId = requestAnimationFrame(frame);
+  }
+  driveState.rafId = requestAnimationFrame(frame);
+}
+
+function cancelDriveLoop() {
+  if (driveState && driveState.rafId) {
+    cancelAnimationFrame(driveState.rafId);
+    driveState.rafId = null;
+  }
+}
+
+function checkDriveCollisions() {
+  for (const c of driveState.cities) {
+    if (Math.hypot(c.x - driveState.x, c.y - driveState.y) < DRIVE_CAR_R + DRIVE_CITY_R) {
+      driveState.paused = true;
+      state.driveReturnPending = true;
+      goToIntro(c.id, false);
+      return;
+    }
+  }
+  for (const o of driveState.obstacles) {
+    if (Math.hypot(o.x - driveState.x, o.y - driveState.y) < DRIVE_CAR_R + DRIVE_OBSTACLE_R) {
+      driveState.obstacles = driveState.obstacles.filter(x => x !== o);
+      const el = document.getElementById("drive-" + o.id);
+      if (el) el.remove();
+      showDriveQuestion();
+      return;
+    }
+  }
+}
+
+// Builds a quick multiple-choice question from any of the chapter
+// generators — same content, lighter presentation (no round/steps),
+// since a driving pit-stop should be a 5-second beat, not a full round.
+function buildQuickMc(q) {
+  if (q.prompt.startsWith("Compare")) {
+    return { prompt: q.prompt, options: ["<", "=", ">"], correctLabel: q.answer };
+  }
+  const correctNum = Number(String(q.answer).replace(/[^\d.-]/g, ""));
+  if (!isNaN(correctNum) && /\d/.test(String(q.answer))) {
+    const options = new Set([correctNum]);
+    let guard = 0;
+    while (options.size < 4 && guard++ < 30) {
+      const delta = Math.max(1, Math.round(Math.abs(correctNum) * (0.1 + Math.random() * 0.3))) * (Math.random() < 0.5 ? -1 : 1);
+      const cand = correctNum + delta;
+      if (cand >= 0) options.add(cand);
+    }
+    return { prompt: q.prompt, options: shuffle([...options]).map(n => n.toLocaleString("en-US")), correctLabel: correctNum.toLocaleString("en-US") };
+  }
+  return { prompt: q.prompt, options: [String(q.answer)], correctLabel: String(q.answer) };
+}
+
+function showDriveQuestion() {
+  driveState.paused = true;
+  const key = DRIVE_QUICK_GEN_KEYS[rand(0, DRIVE_QUICK_GEN_KEYS.length - 1)];
+  const raw = MATHVILLE_GENERATORS[key]();
+  const step = buildQuickMc(raw);
+
+  $("drive-question-prompt").textContent = step.prompt;
+  const grid = $("drive-question-options");
+  grid.innerHTML = "";
+  step.options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "mc-btn";
+    btn.textContent = opt;
+    btn.addEventListener("click", () => {
+      const isCorrect = labelsEqual(opt, step.correctLabel);
+      grid.querySelectorAll(".mc-btn").forEach(b => {
+        b.disabled = true;
+        if (labelsEqual(b.textContent, step.correctLabel)) b.classList.add("correct");
+        else if (b === btn) b.classList.add("wrong");
+      });
+      if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "drive-mode", isCorrect);
+      setTimeout(() => {
+        $("drive-question-overlay").classList.add("hidden");
+        if (driveState) driveState.paused = false;
+      }, 900);
+    });
+    grid.appendChild(btn);
+  });
+  $("drive-question-overlay").classList.remove("hidden");
+}
+
+$("btn-drive").addEventListener("click", goToDrive);
+document.querySelectorAll(".dpad-btn").forEach(btn => {
+  const dir = btn.dataset.dir;
+  const setDir = val => {
+    if (driveState) driveState.held[dir] = val;
+    btn.classList.toggle("active", val);
+  };
+  btn.addEventListener("pointerdown", e => { e.preventDefault(); setDir(true); });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(evt => btn.addEventListener(evt, () => setDir(false)));
+});
 
 /* =================================================================
    3. ROUND BUILDER
@@ -876,7 +1114,13 @@ function showReward(stars) {
   updateXpBadge();
   showScreen("screen-reward");
   loadAiHint();
-  $("btn-reward-continue").onclick = goToMap;
+  // If this chapter was entered by driving into its building, Continue
+  // should drop the player back into the driving world (with that city
+  // now shown complete) instead of the tap-map.
+  $("btn-reward-continue").onclick = () => {
+    if (state.driveReturnPending) { state.driveReturnPending = false; goToDrive(); }
+    else goToMap();
+  };
 }
 
 function showWaitingForOthers() {

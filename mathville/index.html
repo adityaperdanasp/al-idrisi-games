@@ -27,13 +27,14 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=7" />
+<link rel="stylesheet" href="style.css?v=9" />
 </head>
 <body>
 
 <header class="topbar">
   <button id="btn-home" class="icon-btn" aria-label="Home" title="Home">🏠</button>
   <div id="btn-map" class="icon-btn hidden" aria-label="Map" title="Map">🗺️</div>
+  <div id="btn-drive" class="icon-btn hidden" aria-label="Drive Mode" title="Drive Mode">🚗</div>
   <div class="topbar-spacer"></div>
   <div id="xp-badge" class="xp-badge"><span>✨</span><span id="xp-total">0</span> XP</div>
 </header>
@@ -109,6 +110,39 @@
     </div>
     <div id="town-map" class="town-map">
       <div id="town-map-inner" class="town-map-inner"></div>
+    </div>
+  </section>
+
+  <!-- ===============================================================
+       SCREEN: Drive Mode — free-roam single-screen world, d-pad steers
+       the truck, bumping an obstacle pops a quick question, bumping a
+       building enters that chapter. Alternate to the tap-map above —
+       everything else (chapter flow, progress, AI hint) is unchanged.
+       =============================================================== -->
+  <section id="screen-drive" class="screen">
+    <div class="map-header">
+      <div>
+        <h2 class="title-lg">Drive Mode</h2>
+        <p class="subtitle-sm">Steer into a building to start it, or a cone for a quick question!</p>
+      </div>
+    </div>
+    <div id="drive-world" class="drive-world">
+      <div id="drive-car" class="drive-car">🚚</div>
+    </div>
+    <div class="dpad" id="dpad">
+      <button class="dpad-btn dpad-up" data-dir="up" aria-label="Up">▲</button>
+      <button class="dpad-btn dpad-left" data-dir="left" aria-label="Left">◀</button>
+      <button class="dpad-btn dpad-right" data-dir="right" aria-label="Right">▶</button>
+      <button class="dpad-btn dpad-down" data-dir="down" aria-label="Down">▼</button>
+    </div>
+
+    <!-- Quick obstacle question — a lightweight MC popup, separate from
+         the full chapter question screen. -->
+    <div id="drive-question-overlay" class="drive-question-overlay hidden">
+      <div class="drive-question-card">
+        <div class="drive-question-prompt" id="drive-question-prompt"></div>
+        <div class="mc-grid" id="drive-question-options"></div>
+      </div>
     </div>
   </section>
 
@@ -199,6 +233,6 @@
 <script src="questions.js?v=1"></script>
 <script src="generators.js?v=1"></script>
 <script src="bgm.js"></script>
-<script src="script.js?v=10"></script>
+<script src="script.js?v=12"></script>
 </body>
 </html>
