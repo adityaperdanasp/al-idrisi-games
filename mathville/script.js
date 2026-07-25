@@ -466,8 +466,8 @@ function goToIntro(chapterId, isMp) {
    chapter (same flow as the tap-map), bumping a cone pops one quick
    question from the same generators the chapters already use.
    ================================================================= */
-const DRIVE_SPEED = 0.486;    // % of world per animation frame, at full joystick deflection (-10% again)
-const DINO_SPEED = DRIVE_SPEED * 1.1 * 0.8; // 10% faster than the car's top speed, then -20%
+const DRIVE_SPEED = 0.3888;   // % of world per animation frame, at full joystick deflection (-20% again)
+const DINO_SPEED = DRIVE_SPEED * 1.1 * 0.8; // 10% faster than the car's top speed, then -20% (scales with DRIVE_SPEED, so this drops 20% too)
 const DRIVE_DINO_AVOID_RANGE_PX = 55; // real pixels — was a raw % distance, which on this
                                        // tall (non-square) field meant the avoid check
                                        // triggered at very different real distances depending

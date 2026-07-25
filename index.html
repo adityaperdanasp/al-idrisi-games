@@ -42,7 +42,7 @@
       </svg>
     </div>
   </div>
-  <div id="roam-car" class="roam-car" title="Tap to race!">
+  <a id="roam-car" class="roam-car" href="mathville/?drive=1" title="Drive!">
     <svg viewBox="0 0 26 40" width="23" height="36">
       <rect x="3" y="1" width="20" height="38" rx="8" fill="#E4572E" stroke="#C6431F" stroke-width="1.5" />
       <rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" />
@@ -51,7 +51,7 @@
       <rect x="0" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
       <rect x="22" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
     </svg>
-  </div>
+  </a>
 </div>
 
 <!-- "Sticker Craft" design — used at every viewport width now (the
@@ -507,12 +507,12 @@
     setTimeout(() => bubble.remove(), 1100);
   }
 
-  document.getElementById("roam-car").addEventListener("click", () => {
-    // Jumps straight into MathVille's Drive Mode (the car-being-chased
-    // gameplay this whole illustration is a teaser for) instead of
-    // Math Race, which has no thematic link to it.
-    window.location.href = "mathville/?drive=1";
-  });
+  // roam-car is now a real <a href> (see markup) instead of a JS-driven
+  // location.href jump — on iOS Safari, JS navigation doesn't get the
+  // "keep the old page visible while the new one loads" treatment a
+  // genuine link tap gets, which showed up as an ugly flash of gray
+  // between pages. A real anchor tap avoids it, matching how the other
+  // game cards already navigate cleanly.
 
   renderPicker();
   if (AIGPlayer.getPlayer()) {
