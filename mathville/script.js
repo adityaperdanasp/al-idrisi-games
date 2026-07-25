@@ -463,10 +463,12 @@ function goToIntro(chapterId, isMp) {
    question from the same generators the chapters already use.
    ================================================================= */
 const DRIVE_SPEED = 0.486;    // % of world per animation frame, at full joystick deflection (-10% again)
-const DINO_SPEED = DRIVE_SPEED * 1.1; // dino always pursues 10% faster than the car's top speed
+const DINO_SPEED = DRIVE_SPEED * 1.1 * 0.8; // 10% faster than the car's top speed, then -20%
+const DRIVE_DINO_AVOID_RANGE = 14;   // % distance at which the dino starts steering around an obstacle
 const DRIVE_SCORE_TARGET = 25;
 const DRIVE_MAX_BITES = 3;
 const DRIVE_BITE_COOLDOWN_MS = 1500;
+const DRIVE_BITE_KNOCKBACK = 16;     // % distance the dino is pushed back after a bite, so it can't insta-rebite
 // Collision radii in real PIXELS (not %) — the world isn't square, so
 // mixing raw % units in one hypot() distorted distance depending on
 // approach angle. Roughly matched to each icon's actual visual
@@ -534,10 +536,14 @@ function goToDrive(resume) {
     biteCooldownUntil: 0,
     cities: [], obstacles: [], rafId: null, paused: false, worldRect: null, ended: false
   };
-  renderDriveScenery();
-  buildDriveWorld();
+  // The world must be visible (display:block, not display:none) before
+  // getBoundingClientRect() returns real dimensions — measure it before
+  // placing obstacles, since their spawn-exclusion zones need real
+  // pixels too (see buildDriveWorld).
   showScreen("screen-drive");
   driveState.worldRect = $("drive-world").getBoundingClientRect();
+  renderDriveScenery();
+  buildDriveWorld();
   $("drive-car").style.transform = "rotate(0deg)"; // top-down sprite is drawn nose-up already
   $("drive-dino").style.left = driveState.dino.x + "%";
   $("drive-dino").style.top = driveState.dino.y + "%";
@@ -578,10 +584,14 @@ function buildDriveWorld() {
   let guard = 0;
   while (driveState.obstacles.length < targetCount && guard++ < 300) {
     const cand = { x: rand(6, 94), y: rand(12, 92) };
-    const tooCloseToCity = driveState.cities.some(c => Math.hypot(c.x - cand.x, c.y - cand.y) < 15);
-    const tooCloseToObstacle = driveState.obstacles.some(o => Math.hypot(o.x - cand.x, o.y - cand.y) < 13);
-    const tooCloseToStart = Math.hypot(cand.x - DRIVE_CAR_START.x, cand.y - DRIVE_CAR_START.y) < 13;
-    const tooCloseToDino = Math.hypot(cand.x - DRIVE_DINO_START.x, cand.y - DRIVE_DINO_START.y) < 13;
+    // Real pixels, not raw % — the world is much taller than it's wide,
+    // so a %-only check could pass "far enough" while actually landing
+    // inside real collision range (this let obstacles spawn right on
+    // top of the car's start point).
+    const tooCloseToCity = driveState.cities.some(c => drivePxDist(c.x, c.y, cand.x, cand.y) < 40);
+    const tooCloseToObstacle = driveState.obstacles.some(o => drivePxDist(o.x, o.y, cand.x, cand.y) < 34);
+    const tooCloseToStart = drivePxDist(DRIVE_CAR_START.x, DRIVE_CAR_START.y, cand.x, cand.y) < 36;
+    const tooCloseToDino = drivePxDist(DRIVE_DINO_START.x, DRIVE_DINO_START.y, cand.x, cand.y) < 36;
     const underJoystick = cand.x < 28 && cand.y > 74; // bottom-left corner, covered by the on-screen joystick
     if (!tooCloseToCity && !tooCloseToObstacle && !tooCloseToStart && !tooCloseToDino && !underJoystick) {
       driveState.obstacles.push({ id: "obs" + driveState.obstacles.length, x: cand.x, y: cand.y });
@@ -624,6 +634,25 @@ function renderDriveWorld() {
 // that makes a sprite's nose point the way it's actually moving.
 function driveHeadingCss(angleRad) { return (angleRad * 180 / Math.PI) + 90; }
 
+// Steers the dino's pursuit angle away from the single closest obstacle
+// ahead of it, so it curves around obstacles instead of running a
+// straight line through them. Not full pathfinding — just enough to
+// read as "alive" rather than a robot beeline.
+function dinoSteerAngle(dino, desiredAngle, obstacles) {
+  let nearest = null, nearestDist = Infinity;
+  for (const o of obstacles) {
+    const d = Math.hypot(o.x - dino.x, o.y - dino.y);
+    if (d < DRIVE_DINO_AVOID_RANGE && d < nearestDist) { nearest = o; nearestDist = d; }
+  }
+  if (!nearest) return desiredAngle;
+  const toObstacle = Math.atan2(nearest.y - dino.y, nearest.x - dino.x);
+  const diff = Math.atan2(Math.sin(toObstacle - desiredAngle), Math.cos(toObstacle - desiredAngle));
+  if (Math.abs(diff) > Math.PI / 2.2) return desiredAngle; // obstacle isn't roughly ahead — ignore it
+  const avoidStrength = (DRIVE_DINO_AVOID_RANGE - nearestDist) / DRIVE_DINO_AVOID_RANGE;
+  const turn = diff >= 0 ? -1 : 1; // veer away from whichever side the obstacle is on
+  return desiredAngle + turn * (Math.PI / 3) * avoidStrength;
+}
+
 function startDriveLoop() {
   cancelDriveLoop();
   function frame() {
@@ -639,19 +668,23 @@ function startDriveLoop() {
         car.style.top = driveState.y + "%";
         car.style.transform = `rotate(${driveHeadingCss(angle)}deg)`;
       }
-      // The dino always pursues the car's current spot, a bit faster
-      // than the car's own top speed.
+      // The dino pursues the car's current spot, steering around any
+      // obstacle that's close and roughly in its path instead of
+      // cutting straight through it.
       const dx = driveState.x - driveState.dino.x, dy = driveState.y - driveState.dino.y;
       const dist = Math.hypot(dx, dy);
+      const dinoEl = $("drive-dino");
       if (dist > 0.5) {
-        const dAngle = Math.atan2(dy, dx);
+        const dAngle = dinoSteerAngle(driveState.dino, Math.atan2(dy, dx), driveState.obstacles);
         const step = Math.min(dist, DINO_SPEED);
-        driveState.dino.x += Math.cos(dAngle) * step;
-        driveState.dino.y += Math.sin(dAngle) * step;
-        const dinoEl = $("drive-dino");
+        driveState.dino.x = Math.max(0, Math.min(100, driveState.dino.x + Math.cos(dAngle) * step));
+        driveState.dino.y = Math.max(0, Math.min(100, driveState.dino.y + Math.sin(dAngle) * step));
         dinoEl.style.left = driveState.dino.x + "%";
         dinoEl.style.top = driveState.dino.y + "%";
         dinoEl.style.transform = `rotate(${driveHeadingCss(dAngle)}deg)`;
+        dinoEl.classList.add("walking");
+      } else {
+        dinoEl.classList.remove("walking");
       }
       checkDriveCollisions();
     }
@@ -710,14 +743,32 @@ function checkDriveCollisions() {
     const car = $("drive-car");
     car.classList.add("bitten");
     setTimeout(() => car.classList.remove("bitten"), DRIVE_BITE_COOLDOWN_MS);
+    // Without a knockback, the dino stays adjacent and re-bites the
+    // instant the cooldown clears — which read as an instant 3-bite
+    // loss on a single close call. Push it back so the player actually
+    // gets the cooldown window to escape.
+    const kAngle = Math.atan2(driveState.dino.y - driveState.y, driveState.dino.x - driveState.x);
+    driveState.dino.x = Math.max(0, Math.min(100, driveState.dino.x + Math.cos(kAngle) * DRIVE_BITE_KNOCKBACK));
+    driveState.dino.y = Math.max(0, Math.min(100, driveState.dino.y + Math.sin(kAngle) * DRIVE_BITE_KNOCKBACK));
+    const livesLeft = DRIVE_MAX_BITES - driveSession.bites;
+    if (livesLeft > 0) showDriveToast(`Bitten! ${livesLeft} ${livesLeft === 1 ? "life" : "lives"} left`);
     if (driveSession.bites >= DRIVE_MAX_BITES) showDriveEnd(false);
   }
+}
+
+function showDriveToast(msg) {
+  const world = $("drive-world");
+  const toast = document.createElement("div");
+  toast.className = "drive-toast";
+  toast.textContent = msg;
+  world.appendChild(toast);
+  setTimeout(() => toast.remove(), 1300);
 }
 
 function showDriveEnd(won) {
   driveState.ended = true;
   driveState.paused = true;
-  const name = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().name) || "Kamu";
+  const name = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().name) || "you";
   const overlay = $("drive-end-overlay");
   overlay.classList.toggle("won", won);
   overlay.classList.toggle("lost", !won);
@@ -752,6 +803,28 @@ function rollDriveQuestion() {
   return MATHVILLE_GENERATORS.rounding(); // always clean — guaranteed fallback
 }
 
+// Place-value questions ("value of the digit 9 in 92,678?") need
+// distractors that are actually OTHER place values of that same digit
+// (9,000 / 90,000 / 900,000...) — generic ± jittered numbers like
+// "62,022" don't test (or even relate to) place-value understanding.
+function buildPlaceValueMc(q) {
+  const m = q.prompt.match(/value of the digit (\d) in/);
+  const digit = Number(m[1]);
+  const correctNum = Number(String(q.answer).replace(/,/g, ""));
+  const power = Math.round(Math.log10(correctNum / digit));
+  const powers = new Set([power]);
+  for (const p of [power - 1, power + 1, power - 2, power + 2, power - 3, power + 3]) {
+    if (powers.size >= 4) break;
+    if (p >= 0) powers.add(p);
+  }
+  const options = [...powers].map(p => digit * Math.pow(10, p));
+  return {
+    prompt: q.prompt,
+    options: shuffle(options).map(n => n.toLocaleString("en-US")),
+    correctLabel: correctNum.toLocaleString("en-US")
+  };
+}
+
 // Builds a quick multiple-choice question from any of the chapter
 // generators — same content, lighter presentation (no round/steps),
 // since a driving pit-stop should be a 5-second beat, not a full round.
@@ -759,6 +832,7 @@ function buildQuickMc(q) {
   if (q.prompt.startsWith("Compare")) {
     return { prompt: q.prompt, options: shuffle(["<", "=", ">"]), correctLabel: q.answer };
   }
+  if (q.prompt.includes("value of the digit")) return buildPlaceValueMc(q);
   const m = String(q.answer).trim().match(/^(-?[\d,]+(?:\.\d+)?)(\s+[a-zA-Z]+)?$/);
   const correctNum = Number(m[1].replace(/,/g, ""));
   const suffix = m[2] || "";

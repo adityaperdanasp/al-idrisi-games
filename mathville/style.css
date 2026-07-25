@@ -246,6 +246,24 @@ button { font-family: inherit; }
   filter: drop-shadow(0 3px 4px rgba(59,42,26,.35)); z-index: 4;
   transition: transform .12s ease-out;
 }
+.dino-leg { transform-box: fill-box; transform-origin: top center; }
+.drive-dino.walking .dino-leg-l { animation: dinoLegSwing .3s ease-in-out infinite; }
+.drive-dino.walking .dino-leg-r { animation: dinoLegSwing .3s ease-in-out infinite reverse; }
+@keyframes dinoLegSwing {
+  0%, 100% { transform: rotate(-20deg); }
+  50% { transform: rotate(20deg); }
+}
+.drive-toast {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  background: var(--bad); color: #fff; font: 700 13px "Fredoka", sans-serif;
+  padding: 6px 14px; border-radius: 14px; z-index: 9;
+  box-shadow: 0 3px 8px rgba(0,0,0,.25);
+  animation: driveToastPop .3s ease-out;
+}
+@keyframes driveToastPop {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
 .drive-obstacle {
   position: absolute; width: 32px; height: 32px; margin-left: -16px; margin-top: -16px;
   display: flex; align-items: center; justify-content: center; font-size: 22px; z-index: 3;
