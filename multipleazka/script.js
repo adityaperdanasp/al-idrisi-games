@@ -235,11 +235,27 @@ const ROAM_MIN_DIST = 70;         // px — the dino is physically barred from g
 let roamState = null;
 let roamRafId = null;
 
+// Picks the car's next wander point biased toward its CURRENT heading
+// (±135°) instead of fully random 360° — a fully random pick often put
+// the next target behind the car, which read as it reversing rather
+// than driving. Occasional wide turns still happen, just no U-turns.
 function pickNewRoamTarget() {
   const margin = 36;
   const w = Math.max(10, roamState.rect.width - margin * 2);
   const h = Math.max(10, roamState.rect.height - margin * 2);
-  roamState.carTarget = { x: margin + Math.random() * w, y: margin + Math.random() * h };
+  const spread = Math.PI * 0.75;
+  let tx, ty;
+  for (let tries = 0; tries < 10; tries++) {
+    const angle = roamState.heading + (Math.random() * 2 - 1) * spread;
+    const dist = 90 + Math.random() * Math.max(90, Math.min(w, h) * 0.6);
+    tx = roamState.car.x + Math.cos(angle) * dist;
+    ty = roamState.car.y + Math.sin(angle) * dist;
+    if (tx >= margin && tx <= margin + w && ty >= margin && ty <= margin + h) break;
+  }
+  roamState.carTarget = {
+    x: Math.max(margin, Math.min(margin + w, tx)),
+    y: Math.max(margin, Math.min(margin + h, ty))
+  };
 }
 
 function startRoamAnimation() {
@@ -252,14 +268,16 @@ function startRoamAnimation() {
     car: { x: rect.width * 0.5, y: rect.height * 0.22 },
     dino: { x: rect.width * 0.5, y: rect.height * 0.06 },
     carTarget: null,
+    heading: Math.PI / 2, // starts heading "down" the page
     startTime: performance.now()
   };
   pickNewRoamTarget();
   scheduleRoamSmoke();
+  scheduleRoamRawr();
 
   function frame(now) {
     if (!roamState) return;
-    const carEl = $("roam-car"), dinoEl = $("roam-dino");
+    const carEl = $("roam-car"), dinoEl = $("roam-dino"), dinoSpriteEl = $("roam-dino-sprite");
 
     const ct = roamState.carTarget;
     const cdx = ct.x - roamState.car.x, cdy = ct.y - roamState.car.y;
@@ -269,6 +287,7 @@ function startRoamAnimation() {
     } else {
       const step = Math.min(cdist, ROAM_CAR_SPEED);
       const cAngle = Math.atan2(cdy, cdx);
+      roamState.heading = cAngle;
       roamState.car.x += Math.cos(cAngle) * step;
       roamState.car.y += Math.sin(cAngle) * step;
       // Sprite is drawn nose-up (top-down view) — rotate by heading+90°
@@ -276,11 +295,16 @@ function startRoamAnimation() {
       carEl.style.transform = `translate(${roamState.car.x}px, ${roamState.car.y}px) rotate(${cAngle * 180 / Math.PI + 90}deg)`;
     }
 
+    // Dino always pursues, speed oscillating (faster/slower/repeat),
+    // but its own step is capped so it never closes past ROAM_MIN_DIST.
+    // No "push the dino away" correction here on purpose — that made
+    // it look like it was fleeing the car whenever the car approached,
+    // which is backwards for something that's supposed to be chasing.
     const t = (now - roamState.startTime) / 1000;
     const dinoSpeed = Math.max(0, ROAM_DINO_BASE_SPEED + Math.sin(t * 1.3) * ROAM_DINO_AMPLITUDE);
-    let ddx = roamState.car.x - roamState.dino.x, ddy = roamState.car.y - roamState.dino.y;
-    let ddist = Math.hypot(ddx, ddy);
-    let dAngle = Math.atan2(ddy, ddx);
+    const ddx = roamState.car.x - roamState.dino.x, ddy = roamState.car.y - roamState.dino.y;
+    const ddist = Math.hypot(ddx, ddy);
+    const dAngle = Math.atan2(ddy, ddx);
     let dinoMoved = false;
     if (ddist > ROAM_MIN_DIST) {
       const step = Math.min(ddist - ROAM_MIN_DIST, dinoSpeed);
@@ -288,19 +312,10 @@ function startRoamAnimation() {
       roamState.dino.y += Math.sin(dAngle) * step;
       dinoMoved = step > 0.02;
     }
-    // The clamp above only stops the DINO's own step from closing the
-    // gap — but the car wanders on its own and can drift toward the
-    // dino too, shrinking the distance from the other side. Re-check
-    // after both have moved and push the dino back out if needed, so
-    // "never caught" holds regardless of which one caused the close call.
-    ddx = roamState.car.x - roamState.dino.x; ddy = roamState.car.y - roamState.dino.y;
-    ddist = Math.hypot(ddx, ddy);
-    if (ddist < ROAM_MIN_DIST) {
-      dAngle = ddist < 0.01 ? Math.random() * Math.PI * 2 : Math.atan2(ddy, ddx);
-      roamState.dino.x = roamState.car.x - Math.cos(dAngle) * ROAM_MIN_DIST;
-      roamState.dino.y = roamState.car.y - Math.sin(dAngle) * ROAM_MIN_DIST;
-    }
-    dinoEl.style.transform = `translate(${roamState.dino.x}px, ${roamState.dino.y}px) rotate(${dAngle * 180 / Math.PI + 90}deg)`;
+    // Translate lives on the outer wrapper, rotate on the inner sprite
+    // only — keeps the ground shadow flat instead of spinning with it.
+    dinoEl.style.transform = `translate(${roamState.dino.x}px, ${roamState.dino.y}px)`;
+    dinoSpriteEl.style.transform = `rotate(${dAngle * 180 / Math.PI + 90}deg)`;
     dinoEl.classList.toggle("walking", dinoMoved);
 
     roamRafId = requestAnimationFrame(frame);
@@ -314,6 +329,7 @@ function stopRoamAnimation() {
   roamRafId = null;
   roamState = null;
   clearTimeout(roamSmokeTimeoutId);
+  clearTimeout(roamRawrTimeoutId);
 }
 
 // Occasional little exhaust puff behind the car — purely cosmetic,
@@ -333,6 +349,24 @@ function spawnRoamSmoke() {
   puff.style.top = roamState.car.y + "px";
   $("roam-layer").appendChild(puff);
   setTimeout(() => puff.remove(), 700);
+}
+
+// Occasional "RAWR!" comic bubble over the dino.
+let roamRawrTimeoutId = null;
+function scheduleRoamRawr() {
+  roamRawrTimeoutId = setTimeout(() => {
+    if (roamState) spawnRoamRawr();
+    scheduleRoamRawr();
+  }, 4000 + Math.random() * 5000);
+}
+function spawnRoamRawr() {
+  const bubble = document.createElement("div");
+  bubble.className = "roam-rawr";
+  bubble.textContent = "RAWR!";
+  bubble.style.left = roamState.dino.x + "px";
+  bubble.style.top = roamState.dino.y + "px";
+  $("roam-layer").appendChild(bubble);
+  setTimeout(() => bubble.remove(), 1100);
 }
 
 $("roam-car").addEventListener("click", () => $("btn-lets-race").click());
