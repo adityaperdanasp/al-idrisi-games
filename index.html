@@ -594,10 +594,28 @@
   document.getElementById("sc-auth-submit").addEventListener("click", handleAuthSubmit);
   document.getElementById("sc-auth-pin").addEventListener("keydown", e => { if (e.key === "Enter") handleAuthSubmit(); });
 
-  renderPicker();
-  if (AIGPlayer.getPlayer()) {
-    showLanding();
+  // A saved identity from BEFORE the Sign Up/Sign In switch (the old
+  // static-roster picker, e.g. "azka") never got a testerAccounts
+  // record — no PIN was ever set for it. Rather than silently
+  // skipping straight to the landing screen for those, force a
+  // one-time trip through the new Sign Up flow so every active player
+  // ends up with a real account. Anyone who already signed up the new
+  // way has a record and keeps skipping straight in as before.
+  async function checkSavedIdentity() {
+    const current = AIGPlayer.getPlayer();
+    if (!current) return;
+    const lookupId = current.role === "parent" ? current.childId : current.id;
+    try {
+      const snap = await aigDb.ref(`testerAccounts/${lookupId}`).get();
+      if (snap.exists()) showLanding();
+      else AIGPlayer.clearPlayer(); // pre-existing identity — start over through Sign Up
+    } catch (e) {
+      showLanding(); // Firebase unreachable — fail open rather than lock someone out
+    }
   }
+
+  renderPicker();
+  checkSavedIdentity();
   document.getElementById("sc-player-chip").addEventListener("click", showSelect);
 </script>
 
