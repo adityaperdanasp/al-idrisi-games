@@ -159,6 +159,10 @@ function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   $(id).classList.add("active");
   $("btn-map").classList.toggle("hidden", id === "screen-landing" || id === "screen-pair");
+  // The map's width can only be measured once the screen is actually
+  // visible (display:none reports clientWidth 0) — re-fit right after
+  // it becomes active, regardless of which code path got us here.
+  if (id === "screen-map") requestAnimationFrame(mvFitMapScale);
 }
 
 $("btn-home").addEventListener("click", () => { window.location.href = "../"; });
@@ -230,7 +234,7 @@ $("theme-btn-boy").addEventListener("click", () => setMathvilleTheme("boy"));
 $("theme-btn-girl").addEventListener("click", () => setMathvilleTheme("girl"));
 
 function renderTownMap() {
-  const wrap = $("town-map");
+  const wrap = $("town-map-inner");
   wrap.innerHTML = "";
   wrap.style.height = MAP_HEIGHT + "px";
   const chapters = MATHVILLE_BANK.chapters;
@@ -269,7 +273,25 @@ function renderTownMap() {
   });
 
   mvPlaceTraveler(chapters, nextIdx === -1 ? chapters.length - 1 : nextIdx);
+  mvFitMapScale();
 }
+
+// The map's road/stops are laid out in a fixed 440px-wide coordinate space
+// (matches CHAPTER_META's mapX/mapY and the SVG path math) — this scales
+// that whole canvas down via CSS transform to fit whatever width is
+// actually available, so it never overflows a narrow phone screen.
+function mvFitMapScale() {
+  const outer = $("town-map");
+  const inner = $("town-map-inner");
+  if (!outer || !inner) return;
+  const availWidth = outer.clientWidth || 440;
+  const scale = Math.min(1, availWidth / 440);
+  inner.style.transform = `scale(${scale})`;
+  outer.style.height = (MAP_HEIGHT * scale) + "px";
+}
+window.addEventListener("resize", () => {
+  if ($("screen-map").classList.contains("active")) mvFitMapScale();
+});
 
 /* =================================================================
    MAP TRAVELER — a little walking figure that follows the actual road
@@ -278,11 +300,11 @@ function renderTownMap() {
    hopping segment by segment and arriving before the chapter opens.
    ================================================================= */
 let mvTravelerIdx = null;
-const MV_HOP_MS = 320; // per road segment — a multi-stop trip is still snappy
+const MV_HOP_MS = 2800; // per road segment — matches SolarQuest's ~3s ship hop
 
 function mvPlaceTraveler(chapters, defaultIdx) {
   if (mvTravelerIdx === null || mvTravelerIdx >= chapters.length) mvTravelerIdx = defaultIdx;
-  const wrap = $("town-map");
+  const wrap = $("town-map-inner");
   let traveler = document.getElementById("map-traveler");
   if (!traveler) {
     traveler = document.createElement("div");
@@ -1062,7 +1084,7 @@ function mvDetachListener() {
 }
 
 function renderMpTownMap(game) {
-  const wrap = $("town-map");
+  const wrap = $("town-map-inner");
   wrap.innerHTML = "";
   wrap.style.height = MAP_HEIGHT + "px";
   const chapters = MATHVILLE_BANK.chapters;
@@ -1100,6 +1122,7 @@ function renderMpTownMap(game) {
   });
 
   mvPlaceTraveler(chapters, nextIdx === -1 ? chapters.length - 1 : nextIdx);
+  mvFitMapScale();
 }
 
 function mvHostStartChapter(chapterId) {

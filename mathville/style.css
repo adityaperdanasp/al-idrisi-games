@@ -131,13 +131,21 @@ button { font-family: inherit; }
 #theme-btn-girl { color: #C23E82; background: rgba(224,70,138,.12); }
 #theme-btn-girl.active { background: #C23E82; color: #fff; }
 
+/* .town-map is the responsive VIEWPORT (real width, clips overflow);
+   .town-map-inner is a fixed 440px-wide canvas that gets scaled down via
+   JS (transform: scale) to fit whatever width is actually available —
+   every child stays laid out in the same 440px coordinate space the road
+   curve and traveler math already use, just visually shrunk to fit. */
 .town-map {
-  position: relative; width: 440px; max-width: 100%; margin: 12px auto 0;
+  position: relative; width: 100%; margin: 12px auto 0; overflow: hidden;
+}
+.town-map-inner {
+  position: relative; width: 440px; transform-origin: top left;
 }
 .map-stop {
   position: absolute; transform: translate(-50%, -50%);
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  width: 130px; text-align: center; cursor: pointer; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: 128px; text-align: center; cursor: pointer; z-index: 1;
 }
 .map-stop-node {
   width: 64px; height: 64px; border-radius: 20px;
@@ -159,7 +167,10 @@ button { font-family: inherit; }
   0%, 100% { box-shadow: 0 0 0 4px rgba(var(--pulse-color), .22); }
   50% { box-shadow: 0 0 0 10px rgba(var(--pulse-color), .35); }
 }
-.map-stop-title { font: 700 12px "Fredoka", sans-serif; color: var(--ink-soft); line-height: 1.25; }
+.map-stop-title {
+  font: 700 12px "Fredoka", sans-serif; color: var(--ink-soft); line-height: 1.3;
+  background: rgba(247,238,224,.92); padding: 2px 7px; border-radius: 8px;
+}
 .map-stop-stars { font-size: 12px; color: var(--gold); letter-spacing: 1px; }
 
 @keyframes mvDrift { 0% { transform: translateX(0); } 50% { transform: translateX(14px); } 100% { transform: translateX(0); } }
