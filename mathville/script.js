@@ -722,10 +722,10 @@ function showDriveEnd(won) {
   overlay.classList.toggle("won", won);
   overlay.classList.toggle("lost", !won);
   $("drive-end-emoji").textContent = won ? "🏆" : "🦖";
-  $("drive-end-title").textContent = won ? `You did it, ${name}!` : "Digigit Dino 3x!";
+  $("drive-end-title").textContent = won ? `You did it, ${name}!` : "Caught by the dino 3x!";
   $("drive-end-sub").textContent = won
-    ? `${DRIVE_SCORE_TARGET} poin tercapai — mantap!`
-    : `Yuk coba lagi, ${name}!`;
+    ? `${DRIVE_SCORE_TARGET} points reached — great job!`
+    : `Give it another go, ${name}!`;
   overlay.classList.remove("hidden");
   if (won && typeof confetti === "function") {
     confetti({ particleCount: 100, spread: 100, origin: { y: 0.4 } });
