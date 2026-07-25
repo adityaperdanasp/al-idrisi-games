@@ -22,6 +22,38 @@
 </head>
 <body>
 
+<!-- Decorative roaming car+dino, hub landing screen only — the dino
+     never actually catches the car (its own forward step is capped so
+     it can't close the gap). Tapping the car jumps straight into Math
+     Race. Same top-down art as Math Race's own landing screen. -->
+<div id="roam-layer" class="roam-layer hidden" aria-hidden="true">
+  <div id="roam-dino" class="roam-dino">
+    <div class="roam-dino-shadow"></div>
+    <div id="roam-dino-sprite" class="roam-dino-sprite">
+      <svg viewBox="0 0 30 40" width="27" height="36">
+        <path d="M15 39 Q9 34 15 29 Q21 34 15 39 Z" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.2" />
+        <ellipse cx="15" cy="24" rx="9" ry="10" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.5" />
+        <rect class="dino-leg dino-leg-l" x="4" y="27" width="4" height="8" rx="2" fill="#3F7A3D" />
+        <rect class="dino-leg dino-leg-r" x="22" y="27" width="4" height="8" rx="2" fill="#3F7A3D" />
+        <path d="M15 2 Q9 2.5 8.5 9 Q8 15 15 17.5 Q22 15 21.5 9 Q21 2.5 15 2 Z"
+              fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.5" />
+        <circle cx="9.3" cy="9.5" r="1.5" fill="#1B2B1A" />
+        <circle cx="20.7" cy="9.5" r="1.5" fill="#1B2B1A" />
+      </svg>
+    </div>
+  </div>
+  <div id="roam-car" class="roam-car" title="Tap to race!">
+    <svg viewBox="0 0 26 40" width="23" height="36">
+      <rect x="3" y="1" width="20" height="38" rx="8" fill="#E4572E" stroke="#C6431F" stroke-width="1.5" />
+      <rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" />
+      <rect x="0" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" />
+      <rect x="22" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" />
+      <rect x="0" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
+      <rect x="22" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
+    </svg>
+  </div>
+</div>
+
 <!-- "Sticker Craft" design — used at every viewport width now (the
      landscape-hero desktop layout has been retired). -->
 <main class="hub sc-page">
@@ -310,6 +342,7 @@
     document.getElementById("sc-player-name").textContent = current.name;
     document.getElementById("sc-screen-select").classList.remove("active");
     document.getElementById("sc-screen-landing").classList.add("active");
+    startRoamAnimation();
 
     const SC_GREETING_COLORS = ["blue", "pink", "green"];
     const firstName = current.name.replace(/^(Ms\.|Mrs\.)\s*/, "");
@@ -337,7 +370,146 @@
   function showSelect() {
     document.getElementById("sc-screen-landing").classList.remove("active");
     document.getElementById("sc-screen-select").classList.add("active");
+    stopRoamAnimation();
   }
+
+  /* ===============================================================
+     ROAMING CAR + DINO — decorative, landing screen only. Same
+     behavior/art as Math Race's own landing screen: the car wanders
+     at random, the dino chases at an oscillating speed but its own
+     step is capped so it can never close the gap. Tapping the car
+     jumps straight into Math Race.
+     =============================================================== */
+  const ROAM_CAR_SPEED = 0.9;
+  const ROAM_DINO_BASE_SPEED = 0.65;
+  const ROAM_DINO_AMPLITUDE = 0.55;
+  const ROAM_MIN_DIST = 70;
+  let roamState = null;
+  let roamRafId = null;
+  let roamSmokeTimeoutId = null;
+  let roamRawrTimeoutId = null;
+
+  function pickNewRoamTarget() {
+    const margin = 36;
+    const w = Math.max(10, roamState.rect.width - margin * 2);
+    const h = Math.max(10, roamState.rect.height - margin * 2);
+    const spread = Math.PI * 0.75;
+    let tx, ty;
+    for (let tries = 0; tries < 10; tries++) {
+      const angle = roamState.heading + (Math.random() * 2 - 1) * spread;
+      const dist = 90 + Math.random() * Math.max(90, Math.min(w, h) * 0.6);
+      tx = roamState.car.x + Math.cos(angle) * dist;
+      ty = roamState.car.y + Math.sin(angle) * dist;
+      if (tx >= margin && tx <= margin + w && ty >= margin && ty <= margin + h) break;
+    }
+    roamState.carTarget = {
+      x: Math.max(margin, Math.min(margin + w, tx)),
+      y: Math.max(margin, Math.min(margin + h, ty))
+    };
+  }
+
+  function startRoamAnimation() {
+    const layer = document.getElementById("roam-layer");
+    layer.classList.remove("hidden");
+    if (roamRafId) return;
+    const rect = layer.getBoundingClientRect();
+    roamState = {
+      rect,
+      car: { x: rect.width * 0.5, y: rect.height * 0.22 },
+      dino: { x: rect.width * 0.5, y: rect.height * 0.06 },
+      carTarget: null,
+      heading: Math.PI / 2,
+      startTime: performance.now()
+    };
+    pickNewRoamTarget();
+    scheduleRoamSmoke();
+    scheduleRoamRawr();
+
+    function frame(now) {
+      if (!roamState) return;
+      const carEl = document.getElementById("roam-car");
+      const dinoEl = document.getElementById("roam-dino");
+      const dinoSpriteEl = document.getElementById("roam-dino-sprite");
+
+      const ct = roamState.carTarget;
+      const cdx = ct.x - roamState.car.x, cdy = ct.y - roamState.car.y;
+      const cdist = Math.hypot(cdx, cdy);
+      if (cdist < 6) {
+        pickNewRoamTarget();
+      } else {
+        const step = Math.min(cdist, ROAM_CAR_SPEED);
+        const cAngle = Math.atan2(cdy, cdx);
+        roamState.heading = cAngle;
+        roamState.car.x += Math.cos(cAngle) * step;
+        roamState.car.y += Math.sin(cAngle) * step;
+        carEl.style.transform = `translate(${roamState.car.x}px, ${roamState.car.y}px) rotate(${cAngle * 180 / Math.PI + 90}deg)`;
+      }
+
+      const t = (now - roamState.startTime) / 1000;
+      const dinoSpeed = Math.max(0, ROAM_DINO_BASE_SPEED + Math.sin(t * 1.3) * ROAM_DINO_AMPLITUDE);
+      const ddx = roamState.car.x - roamState.dino.x, ddy = roamState.car.y - roamState.dino.y;
+      const ddist = Math.hypot(ddx, ddy);
+      const dAngle = Math.atan2(ddy, ddx);
+      let dinoMoved = false;
+      if (ddist > ROAM_MIN_DIST) {
+        const step = Math.min(ddist - ROAM_MIN_DIST, dinoSpeed);
+        roamState.dino.x += Math.cos(dAngle) * step;
+        roamState.dino.y += Math.sin(dAngle) * step;
+        dinoMoved = step > 0.02;
+      }
+      dinoEl.style.transform = `translate(${roamState.dino.x}px, ${roamState.dino.y}px)`;
+      dinoSpriteEl.style.transform = `rotate(${dAngle * 180 / Math.PI + 90}deg)`;
+      dinoEl.classList.toggle("walking", dinoMoved);
+
+      roamRafId = requestAnimationFrame(frame);
+    }
+    roamRafId = requestAnimationFrame(frame);
+  }
+
+  function stopRoamAnimation() {
+    document.getElementById("roam-layer").classList.add("hidden");
+    if (roamRafId) cancelAnimationFrame(roamRafId);
+    roamRafId = null;
+    roamState = null;
+    clearTimeout(roamSmokeTimeoutId);
+    clearTimeout(roamRawrTimeoutId);
+  }
+
+  function scheduleRoamSmoke() {
+    roamSmokeTimeoutId = setTimeout(() => {
+      if (roamState) spawnRoamSmoke();
+      scheduleRoamSmoke();
+    }, 1800 + Math.random() * 2400);
+  }
+  function spawnRoamSmoke() {
+    const puff = document.createElement("div");
+    puff.className = "roam-smoke";
+    puff.textContent = "💨";
+    puff.style.left = roamState.car.x + "px";
+    puff.style.top = roamState.car.y + "px";
+    document.getElementById("roam-layer").appendChild(puff);
+    setTimeout(() => puff.remove(), 700);
+  }
+
+  function scheduleRoamRawr() {
+    roamRawrTimeoutId = setTimeout(() => {
+      if (roamState) spawnRoamRawr();
+      scheduleRoamRawr();
+    }, 4000 + Math.random() * 5000);
+  }
+  function spawnRoamRawr() {
+    const bubble = document.createElement("div");
+    bubble.className = "roam-rawr";
+    bubble.textContent = "RAWR!";
+    bubble.style.left = roamState.dino.x + "px";
+    bubble.style.top = roamState.dino.y + "px";
+    document.getElementById("roam-layer").appendChild(bubble);
+    setTimeout(() => bubble.remove(), 1100);
+  }
+
+  document.getElementById("roam-car").addEventListener("click", () => {
+    window.location.href = "multipleazka/";
+  });
 
   renderPicker();
   if (AIGPlayer.getPlayer()) {

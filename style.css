@@ -491,3 +491,58 @@ body {
 .sc-whois-btn:active { transform: scale(0.96); }
 #sc-whois-child { background: #C1E1C1; }
 #sc-whois-parent { background: #C1D4F6; }
+
+/* ---------- Roaming car+dino (landing screen only) ---------- */
+/* Above the card's own content (z-index 1) so the pair can pass over
+   it instead of vanishing behind — below the "who's playing" modal
+   (200) so that always wins if it's open. */
+.roam-layer { position: fixed; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; }
+.roam-layer.hidden { display: none; }
+.roam-car, .roam-dino {
+  position: absolute; left: 0; top: 0; width: 34px; height: 34px;
+  margin-left: -17px; margin-top: -17px;
+  will-change: transform;
+}
+.roam-car {
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: auto; cursor: pointer;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.25));
+}
+.roam-dino { pointer-events: none; }
+.roam-dino-sprite {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.25));
+}
+.roam-dino-shadow {
+  position: absolute; left: 50%; bottom: -2px; transform: translateX(-50%);
+  width: 20px; height: 6px; border-radius: 50%;
+  background: rgba(20,30,20,.28); filter: blur(.5px);
+}
+.dino-leg { transform-box: fill-box; transform-origin: top center; }
+.roam-dino.walking .dino-leg-l { animation: roamLegSwing .3s ease-in-out infinite; }
+.roam-dino.walking .dino-leg-r { animation: roamLegSwing .3s ease-in-out infinite reverse; }
+@keyframes roamLegSwing {
+  0%, 100% { transform: rotate(-20deg); }
+  50% { transform: rotate(20deg); }
+}
+.roam-smoke {
+  position: absolute; left: 0; top: 0; font-size: 16px; pointer-events: none;
+  animation: roamSmokePuff .7s ease-out forwards;
+}
+@keyframes roamSmokePuff {
+  0% { transform: translate(-50%, -50%) scale(.6); opacity: .8; }
+  100% { transform: translate(-50%, -50%) translateY(-16px) scale(1.5); opacity: 0; }
+}
+.roam-rawr {
+  position: absolute; left: 0; top: 0; transform: translate(-50%, -100%);
+  font: 800 11px "Baloo 2", sans-serif; color: #fff; white-space: nowrap;
+  background: #FF8A3D; padding: 2px 8px; border-radius: 9px 9px 9px 2px;
+  pointer-events: none; animation: roamRawrPop 1.1s ease-out forwards;
+}
+@keyframes roamRawrPop {
+  0% { opacity: 0; transform: translate(-50%, -85%) scale(.5); }
+  25% { opacity: 1; transform: translate(-50%, -115%) scale(1.1); }
+  35% { transform: translate(-50%, -110%) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -130%) scale(1); }
+}
