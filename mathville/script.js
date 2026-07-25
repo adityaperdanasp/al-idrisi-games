@@ -468,10 +468,15 @@ function goToIntro(chapterId, isMp) {
    ================================================================= */
 const DRIVE_SPEED = 0.486;    // % of world per animation frame, at full joystick deflection (-10% again)
 const DINO_SPEED = DRIVE_SPEED * 1.1 * 0.8; // 10% faster than the car's top speed, then -20%
-const DRIVE_DINO_AVOID_RANGE = 14;   // % distance at which the dino starts steering around an obstacle
+const DRIVE_DINO_AVOID_RANGE_PX = 55; // real pixels — was a raw % distance, which on this
+                                       // tall (non-square) field meant the avoid check
+                                       // triggered at very different real distances depending
+                                       // on whether the obstacle was mostly-sideways or
+                                       // mostly-ahead, so avoidance worked on some obstacles
+                                       // and not others.
 const DRIVE_SCORE_TARGET = 25;
 const DRIVE_MAX_BITES = 3;
-const DRIVE_BITE_COOLDOWN_MS = 1500;
+const DRIVE_BITE_COOLDOWN_MS = 3000;  // 3s of immunity after a bite
 const DRIVE_BITE_KNOCKBACK = 16;     // % distance the dino is pushed back after a bite, so it can't insta-rebite
 // Collision radii in real PIXELS (not %) — the world isn't square, so
 // mixing raw % units in one hypot() distorted distance depending on
@@ -545,7 +550,17 @@ function goToDrive(resume) {
   // placing obstacles, since their spawn-exclusion zones need real
   // pixels too (see buildDriveWorld).
   showScreen("screen-drive");
-  driveState.worldRect = $("drive-world").getBoundingClientRect();
+  const rect = $("drive-world").getBoundingClientRect();
+  if (rect.width === 0) {
+    // The ?drive=1 deep-link calls this synchronously on page load,
+    // before the browser has painted anything — getBoundingClientRect
+    // is unreliable that early. Retry once real layout exists instead
+    // of building the world (and every obstacle spawn-exclusion check)
+    // against a bogus 0-width rect.
+    requestAnimationFrame(() => goToDrive(resume));
+    return;
+  }
+  driveState.worldRect = rect;
   renderDriveScenery();
   buildDriveWorld();
   $("drive-car").style.transform = "rotate(0deg)"; // top-down sprite is drawn nose-up already
@@ -643,16 +658,18 @@ function driveHeadingCss(angleRad) { return (angleRad * 180 / Math.PI) + 90; }
 // straight line through them. Not full pathfinding — just enough to
 // read as "alive" rather than a robot beeline.
 function dinoSteerAngle(dino, desiredAngle, obstacles) {
+  const rect = driveState.worldRect;
   let nearest = null, nearestDist = Infinity;
   for (const o of obstacles) {
-    const d = Math.hypot(o.x - dino.x, o.y - dino.y);
-    if (d < DRIVE_DINO_AVOID_RANGE && d < nearestDist) { nearest = o; nearestDist = d; }
+    // Real pixels, not raw % — see DRIVE_DINO_AVOID_RANGE_PX.
+    const d = Math.hypot((o.x - dino.x) / 100 * rect.width, (o.y - dino.y) / 100 * rect.height);
+    if (d < DRIVE_DINO_AVOID_RANGE_PX && d < nearestDist) { nearest = o; nearestDist = d; }
   }
   if (!nearest) return desiredAngle;
   const toObstacle = Math.atan2(nearest.y - dino.y, nearest.x - dino.x);
   const diff = Math.atan2(Math.sin(toObstacle - desiredAngle), Math.cos(toObstacle - desiredAngle));
   if (Math.abs(diff) > Math.PI / 2.2) return desiredAngle; // obstacle isn't roughly ahead — ignore it
-  const avoidStrength = (DRIVE_DINO_AVOID_RANGE - nearestDist) / DRIVE_DINO_AVOID_RANGE;
+  const avoidStrength = (DRIVE_DINO_AVOID_RANGE_PX - nearestDist) / DRIVE_DINO_AVOID_RANGE_PX;
   const turn = diff >= 0 ? -1 : 1; // veer away from whichever side the obstacle is on
   return desiredAngle + turn * (Math.PI / 3) * avoidStrength;
 }
@@ -918,12 +935,21 @@ function playDriveCountdown(onDone) {
   showStep();
 }
 
-$("btn-drive").addEventListener("click", () => {
+function launchDriveMode() {
   goToDrive(false);
   driveState.paused = true;
   playDriveCountdown(() => { if (driveState) driveState.paused = false; });
-});
+}
+
+$("btn-drive").addEventListener("click", launchDriveMode);
 $("drive-end-replay").addEventListener("click", () => goToDrive(false));
+
+// Deep link from the hub's landing-page roaming car (?drive=1) — jump
+// straight into Drive Mode instead of the Solo/Multiplayer picker.
+if (new URLSearchParams(location.search).get("drive") === "1") {
+  state.mode = "solo";
+  launchDriveMode();
+}
 
 // Analog joystick: drag anywhere inside (pointer capture lets the finger
 // wander outside the circle without losing the drag), knob position is

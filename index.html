@@ -508,7 +508,10 @@
   }
 
   document.getElementById("roam-car").addEventListener("click", () => {
-    window.location.href = "multipleazka/";
+    // Jumps straight into MathVille's Drive Mode (the car-being-chased
+    // gameplay this whole illustration is a teaser for) instead of
+    // Math Race, which has no thematic link to it.
+    window.location.href = "mathville/?drive=1";
   });
 
   renderPicker();
