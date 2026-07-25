@@ -67,6 +67,38 @@ function catmullRomPath(pts) {
   return d;
 }
 
+// Same curve as catmullRomPath, but as one standalone "d" string per
+// segment (chapter i -> i+1) so the traveler can sample points along the
+// exact segment it's walking via getPointAtLength — following the curve
+// instead of cutting a straight diagonal across it.
+function catmullRomSegments(pts) {
+  const segs = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 5, cp1y = p1.y + (p2.y - p0.y) / 5;
+    const cp2x = p2.x - (p3.x - p1.x) / 5, cp2y = p2.y - (p3.y - p1.y) / 5;
+    segs.push(`M${p1.x},${p1.y} C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x},${p2.y}`);
+  }
+  return segs;
+}
+
+// Draws the dashed road as individual per-segment <path> elements
+// (id="mv-path-seg-N") so the traveler can later sample points along
+// whichever exact segment it's walking.
+function drawMapPathSvg(wrap, chapters) {
+  const svgNs = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNs, "svg");
+  svg.setAttribute("width", "440");
+  svg.setAttribute("height", String(MAP_HEIGHT));
+  svg.style.cssText = "position:absolute;top:0;left:0;max-width:100%;";
+  const pts = chapters.map(ch => ({ x: CHAPTER_META[ch.id].mapX, y: CHAPTER_META[ch.id].mapY }));
+  const segs = catmullRomSegments(pts);
+  svg.innerHTML = segs.map((d, i) =>
+    `<path id="mv-path-seg-${i}" d="${d}" fill="none" stroke="#D8C7AE" stroke-width="7" stroke-linecap="round" stroke-dasharray="1 18"/>`
+  ).join("");
+  wrap.appendChild(svg);
+}
+
 function ornamentSvg(o) {
   const shapes = {
     cloud: `<svg viewBox="0 0 40 22" width="${o.size}" height="${o.size}"><path d="M9 20 a7 7 0 0 1 -1 -13.9 A9 9 0 0 1 25 4 a7 7 0 0 1 6 16 z" fill="${o.color}"/></svg>`,
@@ -186,14 +218,7 @@ function renderTownMap() {
   // gets a gentle pulse as a "start here" suggestion.
   const nextIdx = chapters.findIndex(ch => !(PROGRESS.chapters[ch.id] || {}).completed);
 
-  const svgNs = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(svgNs, "svg");
-  svg.setAttribute("width", "440");
-  svg.setAttribute("height", String(MAP_HEIGHT));
-  svg.style.cssText = "position:absolute;top:0;left:0;max-width:100%;";
-  const pathD = catmullRomPath(chapters.map(ch => ({ x: CHAPTER_META[ch.id].mapX, y: CHAPTER_META[ch.id].mapY })));
-  svg.innerHTML = `<path d="${pathD}" fill="none" stroke="#D8C7AE" stroke-width="7" stroke-linecap="round" stroke-dasharray="1 18"/>`;
-  wrap.appendChild(svg);
+  drawMapPathSvg(wrap, chapters);
 
   MAP_ORNAMENTS.forEach((o, i) => {
     const el = document.createElement("div");
@@ -217,14 +242,110 @@ function renderTownMap() {
       <div class="map-stop-title">${ch.title}</div>
       ${prog.completed ? `<div class="map-stop-stars">${"★".repeat(prog.stars)}${"☆".repeat(3 - prog.stars)}</div>` : ""}
     `;
-    stop.addEventListener("click", () => goToIntro(ch.id, false));
+    stop.addEventListener("click", () => mvWalkTo(i, () => goToIntro(ch.id, false)));
     wrap.appendChild(stop);
   });
+
+  mvPlaceTraveler(chapters, nextIdx === -1 ? chapters.length - 1 : nextIdx);
+}
+
+/* =================================================================
+   MAP TRAVELER — a little walking figure that follows the actual road
+   (samples points along the SVG curve via getPointAtLength, same
+   technique SolarQuest's rocket ship uses) whenever a stop is tapped,
+   hopping segment by segment and arriving before the chapter opens.
+   ================================================================= */
+let mvTravelerIdx = null;
+const MV_HOP_MS = 320; // per road segment — a multi-stop trip is still snappy
+
+function mvPlaceTraveler(chapters, defaultIdx) {
+  if (mvTravelerIdx === null || mvTravelerIdx >= chapters.length) mvTravelerIdx = defaultIdx;
+  const wrap = $("town-map");
+  let traveler = document.getElementById("map-traveler");
+  if (!traveler) {
+    traveler = document.createElement("div");
+    traveler.id = "map-traveler";
+    traveler.className = "map-traveler";
+    traveler.innerHTML = "🚚";
+  }
+  const meta = CHAPTER_META[chapters[mvTravelerIdx].id];
+  traveler.style.left = meta.mapX + "px";
+  traveler.style.top = (meta.mapY - 46) + "px";
+  wrap.appendChild(traveler);
+}
+
+// Point at fraction `t` (0..1) along road segment `index`, walked in its
+// natural start-to-end direction (chapter i -> i+1) unless `reversed`.
+function mvPointOnSeg(index, t, reversed) {
+  const el = document.getElementById("mv-path-seg-" + index);
+  if (!el) return null;
+  const len = el.getTotalLength();
+  const p = el.getPointAtLength(len * Math.max(0, Math.min(1, reversed ? 1 - t : t)));
+  return { x: p.x, y: p.y };
+}
+
+function mvWalkTo(targetIdx, onComplete) {
+  const chapters = MATHVILLE_BANK.chapters;
+  if (mvTravelerIdx === null) mvTravelerIdx = targetIdx;
+  if (mvTravelerIdx === targetIdx) { onComplete(); return; }
+  const traveler = document.getElementById("map-traveler");
+  if (!traveler) { mvTravelerIdx = targetIdx; onComplete(); return; }
+
+  const from = mvTravelerIdx;
+  const dir = targetIdx > from ? 1 : -1;
+  const hops = [];
+  for (let n = from; n !== targetIdx; n += dir) hops.push({ segIndex: dir === 1 ? n : n - 1, reversed: dir === -1 });
+
+  traveler.classList.add("walking");
+
+  function runHop(hopIdx) {
+    if (hopIdx >= hops.length) {
+      mvTravelerIdx = targetIdx;
+      traveler.classList.remove("walking");
+      onComplete();
+      return;
+    }
+    const { segIndex, reversed } = hops[hopIdx];
+    const segStart = mvPointOnSeg(segIndex, 0, reversed);
+    const segEnd = mvPointOnSeg(segIndex, 1, reversed);
+    if (segEnd && segStart) traveler.classList.toggle("facing-left", segEnd.x < segStart.x);
+
+    const startTime = performance.now();
+    function frame(now) {
+      const t = Math.min(1, (now - startTime) / MV_HOP_MS);
+      const p = mvPointOnSeg(segIndex, t, reversed);
+      if (p) {
+        traveler.style.left = p.x + "px";
+        traveler.style.top = (p.y - 46) + "px";
+      }
+      if (t < 1) requestAnimationFrame(frame);
+      else runHop(hopIdx + 1);
+    }
+    requestAnimationFrame(frame);
+  }
+  runHop(0);
 }
 function hexToRgb(hex) {
   const n = parseInt(hex.slice(1), 16);
   return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
 }
+
+// Small illustrative examples shown under the intro text for chapters where
+// seeing one worked example up front helps before the round starts.
+const INTRO_DEMOS = {
+  "place-value": {
+    label: "5.985.465 — one digit, one job",
+    cells: [
+      { d: "5", place: "Millions", sep: true },
+      { d: "9", place: "Hundred Thousands" },
+      { d: "8", place: "Ten Thousands" },
+      { d: "5", place: "Thousands", sep: true },
+      { d: "4", place: "Hundreds" },
+      { d: "6", place: "Tens" },
+      { d: "5", place: "Ones" }
+    ]
+  }
+};
 
 function goToIntro(chapterId, isMp) {
   const chapterData = MATHVILLE_BANK.chapters.find(c => c.id === chapterId);
@@ -233,6 +354,27 @@ function goToIntro(chapterId, isMp) {
   $("intro-title").textContent = chapterData.title;
   $("intro-location").textContent = meta.location;
   $("intro-text").textContent = chapterData.intro;
+
+  const demo = INTRO_DEMOS[chapterId];
+  $("intro-demo").classList.toggle("hidden", !demo);
+  if (demo) {
+    $("intro-demo-label").textContent = demo.label;
+    const row = $("intro-demo-row");
+    row.innerHTML = "";
+    demo.cells.forEach(cell => {
+      const cellEl = document.createElement("div");
+      cellEl.className = "intro-demo-cell";
+      cellEl.innerHTML = `<div class="intro-demo-digit">${cell.d}</div><div class="intro-demo-place">${cell.place}</div>`;
+      row.appendChild(cellEl);
+      if (cell.sep) {
+        const dot = document.createElement("div");
+        dot.className = "intro-demo-sep";
+        dot.textContent = ".";
+        row.appendChild(dot);
+      }
+    });
+  }
+
   showScreen("screen-intro");
 
   $("btn-start-questions").onclick = () => {
@@ -907,14 +1049,7 @@ function renderMpTownMap(game) {
   const accent = mvThemeAccent();
   const nextIdx = chapters.findIndex(ch => !completed[ch.id]);
 
-  const svgNs = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(svgNs, "svg");
-  svg.setAttribute("width", "440");
-  svg.setAttribute("height", String(MAP_HEIGHT));
-  svg.style.cssText = "position:absolute;top:0;left:0;max-width:100%;";
-  const pathD = catmullRomPath(chapters.map(ch => ({ x: CHAPTER_META[ch.id].mapX, y: CHAPTER_META[ch.id].mapY })));
-  svg.innerHTML = `<path d="${pathD}" fill="none" stroke="#D8C7AE" stroke-width="7" stroke-linecap="round" stroke-dasharray="1 18"/>`;
-  wrap.appendChild(svg);
+  drawMapPathSvg(wrap, chapters);
 
   MAP_ORNAMENTS.forEach((o, i) => {
     const el = document.createElement("div");
@@ -938,9 +1073,11 @@ function renderMpTownMap(game) {
       </div>
       <div class="map-stop-title">${ch.title}${waitTag}</div>
     `;
-    if (isHost) stop.addEventListener("click", () => mvHostStartChapter(ch.id));
+    if (isHost) stop.addEventListener("click", () => mvWalkTo(i, () => mvHostStartChapter(ch.id)));
     wrap.appendChild(stop);
   });
+
+  mvPlaceTraveler(chapters, nextIdx === -1 ? chapters.length - 1 : nextIdx);
 }
 
 function mvHostStartChapter(chapterId) {
