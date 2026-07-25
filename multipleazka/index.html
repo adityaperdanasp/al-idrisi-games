@@ -32,40 +32,6 @@
 <!-- Floating home button — jumps back to the Al Idrisi Games hub. -->
 <button id="home-btn" class="home-btn" title="Back to Al Idrisi Games">🏠</button>
 
-<!-- Decorative roaming car+dino, Role screen only — the dino never
-     actually catches the car (hard-clamped minimum distance). Tapping
-     the car is a fun alternate way to trigger "Let's Race!". Top-down
-     sprites (same art as MathVille's Drive Mode) so it reads as an
-     overhead chase, not a sideways-sliding emoji. -->
-<div id="roam-layer" class="roam-layer hidden" aria-hidden="true">
-  <div id="roam-dino" class="roam-dino">
-    <div class="roam-dino-shadow"></div>
-    <div id="roam-dino-sprite" class="roam-dino-sprite">
-      <svg viewBox="0 0 30 40" width="27" height="36">
-        <path d="M15 39 Q9 34 15 29 Q21 34 15 39 Z" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.2" />
-        <ellipse cx="15" cy="24" rx="9" ry="10" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.5" />
-        <rect class="dino-leg dino-leg-l" x="4" y="27" width="4" height="8" rx="2" fill="#3F7A3D" />
-        <rect class="dino-leg dino-leg-r" x="22" y="27" width="4" height="8" rx="2" fill="#3F7A3D" />
-        <!-- Elongated snout (narrow nose, wide eye-ridge, narrow neck) —
-             a plain circle here read as a tadpole, not a T-Rex. -->
-        <path d="M15 2 Q9 2.5 8.5 9 Q8 15 15 17.5 Q22 15 21.5 9 Q21 2.5 15 2 Z"
-              fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.5" />
-        <circle cx="9.3" cy="9.5" r="1.5" fill="#1B2B1A" />
-        <circle cx="20.7" cy="9.5" r="1.5" fill="#1B2B1A" />
-      </svg>
-    </div>
-  </div>
-  <div id="roam-car" class="roam-car" title="Tap to race!">
-    <svg viewBox="0 0 26 40" width="23" height="36">
-      <rect x="3" y="1" width="20" height="38" rx="8" fill="#E4572E" stroke="#C6431F" stroke-width="1.5" />
-      <rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" />
-      <rect x="0" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" />
-      <rect x="22" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" />
-      <rect x="0" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
-      <rect x="22" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
-    </svg>
-  </div>
-</div>
 
 <div id="app">
 
