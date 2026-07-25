@@ -124,10 +124,12 @@ button { font-family: inherit; }
 .theme-toggle { display: flex; background: var(--cream); border-radius: 20px; padding: 3px; gap: 2px; flex: none; }
 .theme-btn {
   padding: 7px 16px; border: none; border-radius: 16px; background: transparent;
-  font: 700 12px "Fredoka", sans-serif; color: var(--ink-soft); cursor: pointer;
+  font: 700 12px "Fredoka", sans-serif; cursor: pointer;
 }
-.theme-btn.active { background: #3B82C4; color: #fff; }
-#theme-btn-girl.active { background: #FF6F9F; }
+#theme-btn-boy { color: #3B82C4; background: rgba(59,130,196,.12); }
+#theme-btn-boy.active { background: #2E6BA3; color: #fff; }
+#theme-btn-girl { color: #C23E82; background: rgba(224,70,138,.12); }
+#theme-btn-girl.active { background: #C23E82; color: #fff; }
 
 .town-map {
   position: relative; width: 440px; max-width: 100%; margin: 12px auto 0;
@@ -157,7 +159,7 @@ button { font-family: inherit; }
   0%, 100% { box-shadow: 0 0 0 4px rgba(var(--pulse-color), .22); }
   50% { box-shadow: 0 0 0 10px rgba(var(--pulse-color), .35); }
 }
-.map-stop-title { font: 700 12px "Fredoka", sans-serif; color: var(--ink); line-height: 1.25; }
+.map-stop-title { font: 700 12px "Fredoka", sans-serif; color: var(--ink-soft); line-height: 1.25; }
 .map-stop-stars { font-size: 12px; color: var(--gold); letter-spacing: 1px; }
 
 @keyframes mvDrift { 0% { transform: translateX(0); } 50% { transform: translateX(14px); } 100% { transform: translateX(0); } }
@@ -166,9 +168,8 @@ button { font-family: inherit; }
 
 .map-traveler {
   position: absolute; width: 40px; height: 40px; margin-left: -20px;
-  border-radius: 50%; background: var(--cherry); color: #fff;
-  display: flex; align-items: center; justify-content: center; font-size: 20px;
-  box-shadow: 0 3px 8px rgba(59,42,26,.3); z-index: 2; pointer-events: none;
+  display: flex; align-items: center; justify-content: center; font-size: 30px;
+  filter: drop-shadow(0 3px 4px rgba(59,42,26,.35)); z-index: 2; pointer-events: none;
   animation: mvIdleBob 1.6s ease-in-out infinite;
 }
 .map-traveler.facing-left { transform: scaleX(-1); }

@@ -43,17 +43,25 @@ const MAP_HEIGHT = 1190;
 // Decorative scenery scattered along the road — purely cosmetic, recolored
 // to the Blockville wood/gold/cherry/taupe palette.
 const MAP_ORNAMENTS = [
-  { x: 150, y: 10, shape: "cloud", color: "#E8D9C4", size: 52, kind: "drift" },
+  { x: 150, y: 6, shape: "cloud", color: "#E8D9C4", size: 52, kind: "drift" },
+  { x: -14, y: 40, shape: "mountain", color: "#A88E6B", size: 64, kind: "still" },
   { x: 8, y: 150, shape: "tree", color: "#8FAE6B", size: 40, kind: "sway" },
   { x: 400, y: 120, shape: "bush", color: "#C1793E", size: 44, kind: "sway" },
   { x: 400, y: 300, shape: "house", color: "#E4572E", size: 34, kind: "bob" },
+  { x: 370, y: 250, shape: "bird", color: "#8a6a4a", size: 24, kind: "drift" },
   { x: 8, y: 410, shape: "bush", color: "#F7C548", size: 38, kind: "sway" },
+  { x: -10, y: 460, shape: "wave", color: "#8FBFC4", size: 60, kind: "still" },
   { x: 400, y: 560, shape: "cloud", color: "#D8C7AE", size: 46, kind: "drift" },
+  { x: 4, y: 610, shape: "deer", color: "#B48A5A", size: 40, kind: "still" },
   { x: 8, y: 670, shape: "tree", color: "#8FAE6B", size: 34, kind: "sway" },
   { x: 400, y: 640, shape: "house", color: "#F7C548", size: 32, kind: "bob" },
+  { x: 400, y: 760, shape: "mountain", color: "#8B9E7A", size: 56, kind: "still" },
   { x: 8, y: 800, shape: "tree", color: "#C1793E", size: 38, kind: "sway" },
+  { x: 400, y: 890, shape: "wave", color: "#A7CEC8", size: 54, kind: "still" },
   { x: 400, y: 940, shape: "bush", color: "#E4572E", size: 42, kind: "sway" },
-  { x: 8, y: 1130, shape: "tree", color: "#8FAE6B", size: 36, kind: "sway" }
+  { x: 20, y: 1010, shape: "bird", color: "#8a6a4a", size: 22, kind: "drift" },
+  { x: 8, y: 1130, shape: "tree", color: "#8FAE6B", size: 36, kind: "sway" },
+  { x: 380, y: 1160, shape: "deer", color: "#B48A5A", size: 38, kind: "still" }
 ];
 
 function catmullRomPath(pts) {
@@ -104,11 +112,25 @@ function ornamentSvg(o) {
     cloud: `<svg viewBox="0 0 40 22" width="${o.size}" height="${o.size}"><path d="M9 20 a7 7 0 0 1 -1 -13.9 A9 9 0 0 1 25 4 a7 7 0 0 1 6 16 z" fill="${o.color}"/></svg>`,
     tree: `<svg viewBox="0 0 24 32" width="${o.size}" height="${o.size}"><rect x="10" y="22" width="4" height="9" fill="${o.color}"/><circle cx="12" cy="12" r="11" fill="${o.color}"/></svg>`,
     bush: `<svg viewBox="0 0 32 18" width="${o.size}" height="${o.size}"><circle cx="9" cy="11" r="8" fill="${o.color}"/><circle cx="20" cy="8" r="9" fill="${o.color}"/><circle cx="27" cy="12" r="6" fill="${o.color}"/></svg>`,
-    house: `<svg viewBox="0 0 28 26" width="${o.size}" height="${o.size}"><path d="M14 1 L27 12 H21 V25 H7 V12 H1 Z" fill="${o.color}"/></svg>`
+    house: `<svg viewBox="0 0 28 26" width="${o.size}" height="${o.size}"><path d="M14 1 L27 12 H21 V25 H7 V12 H1 Z" fill="${o.color}"/></svg>`,
+    mountain: `<svg viewBox="0 0 48 28" width="${o.size}" height="${o.size}">
+      <path d="M0 28 L14 6 L22 18 L30 2 L48 28 Z" fill="${o.color}"/>
+      <path d="M30 2 L36 12 L33 12 L36 8 L39 12 L36 12" fill="#fff" opacity=".7"/>
+    </svg>`,
+    wave: `<svg viewBox="0 0 60 16" width="${o.size}" height="${o.size}"><path d="M0 8 Q7.5 1 15 8 T30 8 T45 8 T60 8 V16 H0 Z" fill="${o.color}"/></svg>`,
+    deer: `<svg viewBox="0 0 32 30" width="${o.size}" height="${o.size}">
+      <path d="M9 4 L7 10 M9 4 L11 9 M23 4 L25 10 M23 4 L21 9" stroke="${o.color}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <ellipse cx="16" cy="16" rx="7" ry="6" fill="${o.color}"/>
+      <circle cx="16" cy="8" r="5" fill="${o.color}"/>
+      <rect x="14" y="21" width="2" height="7" fill="${o.color}"/><rect x="18" y="21" width="2" height="7" fill="${o.color}"/>
+    </svg>`,
+    bird: `<svg viewBox="0 0 30 18" width="${o.size}" height="${o.size}">
+      <path d="M2 10 Q8 2 15 9 Q22 2 28 10" stroke="${o.color}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    </svg>`
   };
   return shapes[o.shape] || "";
 }
-const ORNAMENT_ANIM = { drift: "mvDrift", sway: "mvSway", bob: "mvBob" };
+const ORNAMENT_ANIM = { drift: "mvDrift", sway: "mvSway", bob: "mvBob", still: "none" };
 const PLACE_NAMES = ["Ones", "Tens", "Hundreds", "Thousands", "Ten Thousands", "Hundred Thousands", "Millions"];
 const ROUND_SIZE = 6;
 
@@ -196,7 +218,7 @@ function goToMap() {
 state.theme = localStorage.getItem("mathville.theme") || "boy";
 $("theme-btn-boy").classList.toggle("active", state.theme === "boy");
 $("theme-btn-girl").classList.toggle("active", state.theme === "girl");
-function mvThemeAccent() { return state.theme === "girl" ? "#FF6F9F" : "#3B82C4"; }
+function mvThemeAccent() { return state.theme === "girl" ? "#C23E82" : "#3B82C4"; }
 function setMathvilleTheme(t) {
   state.theme = t;
   localStorage.setItem("mathville.theme", t);
