@@ -418,10 +418,12 @@ h1, h2 { margin: 0 0 8px; }
   will-change: left;
   z-index: 2;
 }
-/* Unlike the car/truck/ship/train art, the small-airplane emoji's default
-   orientation already leans toward the finish line — the blanket flip
-   above turns it backwards, so undo it just for this one ride. */
-.car[data-vehicle="plane"] {
+/* Unlike the car/truck/bus/train art, the small-airplane and ocean-liner
+   emoji already lean toward the finish line — the blanket flip above turns
+   them backwards (verified by rendering both at large size), so undo it
+   just for these two rides. */
+.car[data-vehicle="plane"],
+.car[data-vehicle="ship"] {
   transform: translateY(-50%) scaleX(1);
 }
 
