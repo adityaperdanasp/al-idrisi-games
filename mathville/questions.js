@@ -149,11 +149,11 @@ window.MATHVILLE_BANK = {
         { prompt: "Find the LCM of the set 5, 6, and 10.", answer: "30" },
         { prompt: "Find the LCM of the set 11, 3, and 6.", answer: "66" },
         {
-          prompt: "Oliver sorts sweets into piles of 12, James into piles of 9, and they have the same total. What is the minimum number of sweets they could each have?",
+          prompt: "Sota sorts sweets into piles of 12, Liam into piles of 9, and they have the same total. What is the minimum number of sweets they could each have?",
           answer: "36"
         },
         {
-          prompt: "Kofi buys bread rolls in packs of 8 and burgers in packs of 6. What is the minimum number of packs of each so every roll has a burger?",
+          prompt: "Do-yoon buys bread rolls in packs of 8 and burgers in packs of 6. What is the minimum number of packs of each so every roll has a burger?",
           answer: "24 rolls and 24 burgers (buy 3 packs of rolls, 4 packs of burgers)"
         },
         {
@@ -271,7 +271,7 @@ window.MATHVILLE_BANK = {
       intro: "Real-life problems don't tell you which operation to use — you have to figure it out! This short chapter mixes addition, subtraction, multiplication, and division in word problems about a busy clinic (and beyond).",
       questions: [
         {
-          prompt: "A clinic has 4 doctors, each with 2 nurses, plus 2 receptionists (Jay and Molly). How many people work at the clinic?",
+          prompt: "A clinic has 4 doctors, each with 2 nurses, plus 2 receptionists (Ren and Ha-eun). How many people work at the clinic?",
           answer: "14"
         },
         {
@@ -279,7 +279,7 @@ window.MATHVILLE_BANK = {
           answer: "86 (23×4 = 92, minus 6 no-shows)"
         },
         {
-          prompt: "On Tuesday, Jay answered 45 calls and Molly answered 12 more calls than Jay. How many calls were answered in total?",
+          prompt: "On Tuesday, Ren answered 45 calls and Ha-eun answered 12 more calls than Ren. How many calls were answered in total?",
           answer: "102 (45 + 57)"
         },
         {
@@ -332,17 +332,17 @@ window.MATHVILLE_BANK = {
           answer: "5 m"
         },
         {
-          prompt: "Katie has 4 pieces of ribbon, each 50 cm long. How much ribbon does she have in total?",
+          prompt: "Grace has 4 pieces of ribbon, each 50 cm long. How much ribbon does she have in total?",
           answer: "200 cm (2 m)"
         },
         {
-          prompt: "Josh is building a 48 m fence and can finish 8 m per day. How many days will it take?",
+          prompt: "Ethan is building a 48 m fence and can finish 8 m per day. How many days will it take?",
           answer: "6 days"
         },
         { prompt: "Which unit would you use to weigh an eraser: grams or kilograms?", answer: "Grams" },
         { prompt: "Which unit would you use to weigh a baby: grams or kilograms?", answer: "Kilograms" },
         { prompt: "Which unit would you use to weigh a truck: grams or kilograms?", answer: "Kilograms" },
-        { prompt: "Kevin weighs 32 kilograms. Express his weight in grams.", answer: "32,000 g" }
+        { prompt: "Riku weighs 32 kilograms. Express his weight in grams.", answer: "32,000 g" }
       ]
     },
     {
