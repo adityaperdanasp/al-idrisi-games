@@ -48,8 +48,8 @@ Dashboard (`dashboard/dashboard.js`, `dashboard/index.html`): nambahin game baru
 AI Tutor hint: `api/generate-hint.js` (Vercel serverless, Claude Haiku, `ANTHROPIC_API_KEY` server-side only). Dipakai multipleazka/azkacraft/azkauniverse/mathville — gagal API = card hint disembunyiin, gak pernah nge-block game.
 
 ## Yang masih perlu ditindaklanjuti
-1. MathVille: testing 2-device multiplayer fisik beneran (baru divalidasi via kode+simulasi/single-device).
-2. MathVille: vehicle icons (ship/train/truck/bus) selain plane belum dicek arahnya.
+1. MathVille: 2-device multiplayer sudah divalidasi via 2 tab browser independen (join, map sync, shared round questions, simultaneous play, hasil akhir dgn "me" highlight, semua real lewat Firebase) — tapi masih same-profile/same-engine, BUKAN 2 iPhone fisik beneran (iOS Simulator sempat dicoba buat device kedua tapi crash). Real-device test masih worth dilakuin kalau ada waktu, tapi risiko sync-logic-nya udah jauh lebih rendah sekarang.
+2. Vehicle icons — ternyata ini soal `multipleazka` (Math Race), bukan MathVille (MathVille cuma punya 1 ikon 🚚 di town map, gak ada pilihan vehicle). Dicek render besar tiap emoji (🏎️🛩️🚢🚌🚚🚂): ship (🚢) kebalik — bow-nya udah default ke kanan tapi kena blanket `scaleX(-1)` jadi mundur. Sudah difix (`.car[data-vehicle="ship"]` disamain dgn plane, gak di-flip) + deploy ke hub & `multipleazka.fun`. Truck/train dicek juga, orientasinya udah benar. Bus gak kekliatan jelas arahnya dari emoji (nyaris simetris depan-belakang) — belum bisa dipastikan.
 3. Dashboard: `parentEmail` baru keisi 1 dari ~25 murid (perlu Adit isi manual).
 4. AI Tutor cost monitoring — belum ada alert/budget cap di Anthropic API.
 
