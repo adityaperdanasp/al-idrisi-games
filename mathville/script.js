@@ -1266,9 +1266,9 @@ function buildRound(chapterId) {
   } else if (chapterId === "prime-numbers") {
     pickN(chapterData.questions.filter(q => !q.skipInRound), ROUND_SIZE).forEach(q => {
       if (/prime or not prime/i.test(q.prompt)) {
-        steps.push({ uiType: "tap", prompt: q.prompt, options: ["Prime", "Not Prime"], correctLabel: /^not prime/i.test(q.answer) ? "Not Prime" : "Prime" });
+        steps.push({ uiType: "tap", prompt: q.prompt, options: ["Prime", "Not Prime"], correctLabel: /^not prime/i.test(q.answer) ? "Not Prime" : "Prime", image: q.image });
       } else {
-        steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer });
+        steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer, image: q.image });
       }
     });
 
@@ -1281,15 +1281,15 @@ function buildRound(chapterId) {
 
   } else if (chapterId === "multiplication") {
     const statics = pickN(chapterData.staticQuestions, 2);
-    statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer }));
+    statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer, image: s.image }));
     for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
       const q = MATHVILLE_GENERATORS.multiplication();
       steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer });
     }
 
   } else if (chapterId === "division") {
-    const statics = pickN(chapterData.staticQuestions.filter(q => !q.skipInRound), 1);
-    statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer }));
+    const statics = pickN(chapterData.staticQuestions.filter(q => !q.skipInRound), 2);
+    statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer, image: s.image }));
     for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
       const q = MATHVILLE_GENERATORS.division();
       steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer });
@@ -1297,11 +1297,11 @@ function buildRound(chapterId) {
 
   } else if (chapterId === "mixed-operation") {
     pickN(chapterData.questions, Math.min(ROUND_SIZE, chapterData.questions.length))
-      .forEach(q => steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer }));
+      .forEach(q => steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer, image: q.image }));
 
   } else if (chapterId === "measurement") {
     const statics = pickN(chapterData.staticQuestions, 2);
-    statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer }));
+    statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer, image: s.image }));
     for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
       const q = MATHVILLE_GENERATORS.measurement();
       if (q.prompt.startsWith("Compare")) {
@@ -1387,6 +1387,7 @@ function submitAnswer(isCorrect, prompt, answerForHint) {
 let typedValue = "";
 function renderTypeinStep(step) {
   $("ui-typein").classList.remove("hidden");
+  $("typein-image").innerHTML = step.image || "";
   $("typein-prompt").textContent = step.prompt;
   $("typein-reveal").textContent = "";
   $("typein-display").classList.remove("correct-flash", "wrong-flash");
@@ -1431,6 +1432,7 @@ function updateTypeinDisplay() {
 /* ---- mc (2-4 option grid) ---- */
 function renderMcStep(step) {
   $("ui-mc").classList.remove("hidden");
+  $("mc-image").innerHTML = step.image || "";
   $("mc-prompt").textContent = step.prompt;
   const grid = $("mc-grid");
   grid.innerHTML = "";
@@ -1454,6 +1456,7 @@ function renderMcStep(step) {
 /* ---- tap (pill markers, 2-7 options) ---- */
 function renderTapStep(step) {
   $("ui-tap").classList.remove("hidden");
+  $("tap-image").innerHTML = step.image || "";
   $("tap-prompt").textContent = step.prompt;
   const wrap = $("tap-markers");
   wrap.innerHTML = "";

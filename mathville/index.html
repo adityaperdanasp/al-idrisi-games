@@ -28,7 +28,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=16" />
+<link rel="stylesheet" href="style.css?v=17" />
 </head>
 <body>
 
@@ -251,6 +251,7 @@
 
     <!-- typein: prompt + keypad -->
     <div id="ui-typein" class="ui-block hidden">
+      <div class="q-image" id="typein-image"></div>
       <div class="q-prompt" id="typein-prompt"></div>
       <div class="keypad-display" id="typein-display"></div>
       <div id="typein-reveal"></div>
@@ -260,12 +261,14 @@
 
     <!-- mc: prompt + 2x2 button grid -->
     <div id="ui-mc" class="ui-block hidden">
+      <div class="q-image" id="mc-image"></div>
       <div class="q-prompt" id="mc-prompt"></div>
       <div class="mc-grid" id="mc-grid"></div>
     </div>
 
     <!-- tap: prompt + circular tap markers -->
     <div id="ui-tap" class="ui-block hidden">
+      <div class="q-image" id="tap-image"></div>
       <div class="q-prompt" id="tap-prompt"></div>
       <div class="tap-markers" id="tap-markers"></div>
     </div>
@@ -305,9 +308,9 @@
 
 </main>
 
-<script src="questions.js?v=1"></script>
+<script src="questions.js?v=2"></script>
 <script src="generators.js?v=2"></script>
 <script src="bgm.js"></script>
-<script src="script.js?v=24"></script>
+<script src="script.js?v=25"></script>
 </body>
 </html>

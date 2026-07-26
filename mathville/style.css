@@ -390,6 +390,9 @@ button { font-family: inherit; }
 /* ---------- Question screen ---------- */
 .q-label { font: 700 12px "Fredoka", sans-serif; color: var(--ink-soft); margin-bottom: 14px; }
 .q-prompt { font: 700 21px/1.4 "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 20px; }
+.q-image:empty { display: none; }
+.q-image { margin-bottom: 16px; text-align: center; }
+.q-image svg { max-width: 100%; width: 260px; height: auto; display: inline-block; }
 .ui-block { }
 
 /* typein */
