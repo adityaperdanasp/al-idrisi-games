@@ -949,9 +949,16 @@ function finishLevel() {
 /* =================================================================
    8. QUESTION TYPE RENDERERS
    ================================================================= */
+// Optional inline-SVG diagram shown above a question — used for the
+// occasional visual question (labeled diagrams, comparisons) so a
+// level isn't 100% read-and-answer text. q.image is a raw <svg> string.
+function questionImageHtml(q) {
+  return q.image ? `<div class="q-image">${q.image}</div>` : "";
+}
+
 function renderMC(stage, q) {
   const wrap = document.createElement("div");
-  wrap.innerHTML = `<p class="question-text">${q.question}</p><div class="options-grid"></div>`;
+  wrap.innerHTML = `${questionImageHtml(q)}<p class="question-text">${q.question}</p><div class="options-grid"></div>`;
   const grid = wrap.querySelector(".options-grid");
 
   // Shuffle option order each time this question is shown (doesn't mutate q).
@@ -990,6 +997,7 @@ function renderMC(stage, q) {
 function renderFill(stage, q) {
   const wrap = document.createElement("div");
   wrap.innerHTML = `
+    ${questionImageHtml(q)}
     <p class="question-text">${q.question}</p>
     <div class="fill-form">
       <input type="text" class="fill-input" id="fill-input" autocomplete="off" placeholder="Type your answer" />

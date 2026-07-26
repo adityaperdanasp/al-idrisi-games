@@ -672,6 +672,11 @@ button:focus-visible {
   min-height: 260px;
 }
 
+.q-image {
+  display: flex; justify-content: center; margin-bottom: 16px;
+}
+.q-image svg { max-width: 100%; height: auto; }
+
 .question-text {
   font-size: 1.25rem;
   font-weight: 600;
