@@ -28,7 +28,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=15" />
+<link rel="stylesheet" href="style.css?v=16" />
 </head>
 <body>
 
@@ -157,6 +157,30 @@
       </div>
     </div>
 
+    <!-- Difficulty picker, shown before every fresh Drive Mode entry
+         (topbar click or the hub's ?drive=1 deep link) — remembered in
+         localStorage but always re-offered in case they want to change it. -->
+    <div id="drive-difficulty-overlay" class="drive-question-overlay hidden">
+      <div class="drive-question-card drive-difficulty-card">
+        <div class="drive-difficulty-title">Pick a difficulty</div>
+        <button class="drive-difficulty-btn" data-level="easy">
+          <span class="drive-difficulty-emoji">😊</span>
+          <span class="drive-difficulty-name">Easy</span>
+          <span class="drive-difficulty-desc">Head math only</span>
+        </button>
+        <button class="drive-difficulty-btn" data-level="medium">
+          <span class="drive-difficulty-emoji">🙂</span>
+          <span class="drive-difficulty-name">Medium</span>
+          <span class="drive-difficulty-desc">A little thinking</span>
+        </button>
+        <button class="drive-difficulty-btn" data-level="hard">
+          <span class="drive-difficulty-emoji">🤓</span>
+          <span class="drive-difficulty-name">Hard</span>
+          <span class="drive-difficulty-desc">Full challenge</span>
+        </button>
+      </div>
+    </div>
+
     <!-- 3-2-1-GO countdown, shown right after entering Drive Mode fresh
          from the topbar — the car/dino stay frozen (driveState.paused)
          until it finishes. -->
@@ -170,6 +194,19 @@
       <div class="drive-question-card">
         <div class="drive-question-prompt" id="drive-question-prompt"></div>
         <div class="mc-grid" id="drive-question-options"></div>
+      </div>
+    </div>
+
+    <!-- Occasional drag-to-match variant of the obstacle quiz — 3 pairs,
+         same drag/line mechanics as the main game's match questions. -->
+    <div id="drive-match-overlay" class="drive-question-overlay hidden">
+      <div class="drive-question-card">
+        <div class="drive-question-prompt">Match each question to its answer!</div>
+        <div class="match-wrap" id="drive-match-wrap">
+          <svg id="drive-match-svg" class="match-svg"></svg>
+          <div id="drive-match-left" class="match-col match-col-left"></div>
+          <div id="drive-match-right" class="match-col match-col-right"></div>
+        </div>
       </div>
     </div>
 
@@ -269,8 +306,8 @@
 </main>
 
 <script src="questions.js?v=1"></script>
-<script src="generators.js?v=1"></script>
+<script src="generators.js?v=2"></script>
 <script src="bgm.js"></script>
-<script src="script.js?v=23"></script>
+<script src="script.js?v=24"></script>
 </body>
 </html>

@@ -513,6 +513,9 @@ const DRIVE_CITY_ICONS = {
   "measurement": "📏",
   "rounding": "🎯"
 };
+// A little variety so obstacles don't all look like the same yellow
+// barrier — purely cosmetic, doesn't affect collision size/behavior.
+const DRIVE_OBSTACLE_ICONS = ["🚧", "🪨", "🚦", "🪵", "⚠️", "🧱"];
 // Purely cosmetic backdrop scenery for the drive world, in % coordinates —
 // same palette/shapes as the town-map ornaments, so the two screens feel
 // like one continuous countryside instead of the drive screen being bare.
@@ -613,7 +616,10 @@ function buildDriveWorld() {
     const tooCloseToDino = drivePxDist(DRIVE_DINO_START.x, DRIVE_DINO_START.y, cand.x, cand.y) < 36;
     const underJoystick = cand.x < 28 && cand.y > 74; // bottom-left corner, covered by the on-screen joystick
     if (!tooCloseToCity && !tooCloseToObstacle && !tooCloseToStart && !tooCloseToDino && !underJoystick) {
-      driveState.obstacles.push({ id: "obs" + driveState.obstacles.length, x: cand.x, y: cand.y });
+      driveState.obstacles.push({
+        id: "obs" + driveState.obstacles.length, x: cand.x, y: cand.y,
+        icon: DRIVE_OBSTACLE_ICONS[rand(0, DRIVE_OBSTACLE_ICONS.length - 1)]
+      });
     }
   }
   renderDriveWorld();
@@ -639,7 +645,7 @@ function renderDriveWorld() {
     el.id = "drive-" + o.id;
     el.style.left = o.x + "%";
     el.style.top = o.y + "%";
-    el.textContent = "🚧";
+    el.textContent = o.icon;
     world.appendChild(el);
   });
 
@@ -815,13 +821,35 @@ function isCleanQuickAnswer(q) {
   return /^-?[\d,]+(\.\d+)?(\s+[a-zA-Z]+)?$/.test(String(q.answer).trim());
 }
 
-function rollDriveQuestion() {
+// All hand-authored word problems across every chapter, pooled once for
+// Drive Mode's "soal cerita" variety — these are calibrated for full
+// grade-4 depth and can't be dialed down like the generators, so they
+// only ever show up on Medium/Hard (see rollDriveQuestion).
+let driveWordProblemPool = null;
+function getDriveWordProblemPool() {
+  if (driveWordProblemPool) return driveWordProblemPool;
+  driveWordProblemPool = [];
+  MATHVILLE_BANK.chapters.forEach(ch => {
+    (ch.staticQuestions || ch.questions || []).forEach(q => {
+      if (!q.skipInRound && isCleanQuickAnswer(q)) driveWordProblemPool.push(q);
+    });
+  });
+  return driveWordProblemPool;
+}
+
+function rollDriveQuestion(difficulty) {
+  // Word problems are fixed-difficulty (hand-written), so Easy — which
+  // promises "solvable in your head" — never draws one.
+  if (difficulty !== "easy" && Math.random() < 0.35) {
+    const pool = getDriveWordProblemPool();
+    if (pool.length) return pool[rand(0, pool.length - 1)];
+  }
   for (let i = 0; i < 8; i++) {
     const key = DRIVE_QUICK_GEN_KEYS[rand(0, DRIVE_QUICK_GEN_KEYS.length - 1)];
-    const raw = MATHVILLE_GENERATORS[key]();
+    const raw = MATHVILLE_GENERATORS[key](difficulty);
     if (isCleanQuickAnswer(raw)) return raw;
   }
-  return MATHVILLE_GENERATORS.rounding(); // always clean — guaranteed fallback
+  return MATHVILLE_GENERATORS.rounding(difficulty); // always clean — guaranteed fallback
 }
 
 // Place-value questions ("value of the digit 9 in 92,678?") need
@@ -873,9 +901,35 @@ function buildQuickMc(q) {
   };
 }
 
+// Occasionally serves a 3-pair drag-to-match round instead of a single
+// MC question — reuses the same generators, just paired as
+// {left: prompt, right: answer} instead of one prompt + 4 options.
+// Only on Medium/Hard: matching 3 pairs takes longer than tapping one
+// button, which works against Easy's "quick head-math beat" goal.
+function shouldRollDriveMatch(difficulty) {
+  return difficulty !== "easy" && Math.random() < 0.25;
+}
+
+function buildDriveMatchRound(difficulty) {
+  const pairs = [];
+  let guard = 0;
+  while (pairs.length < 3 && guard++ < 30) {
+    const key = DRIVE_QUICK_GEN_KEYS[rand(0, DRIVE_QUICK_GEN_KEYS.length - 1)];
+    const raw = MATHVILLE_GENERATORS[key](difficulty);
+    if (!isCleanQuickAnswer(raw) || raw.prompt.startsWith("Compare")) continue;
+    if (pairs.some(p => p.left === raw.prompt)) continue; // no duplicate prompts in one round
+    pairs.push({ left: raw.prompt, right: raw.answer });
+  }
+  return pairs;
+}
+
 function showDriveQuestion() {
   driveState.paused = true;
-  const raw = rollDriveQuestion();
+  if (shouldRollDriveMatch(driveDifficulty)) {
+    const pairs = buildDriveMatchRound(driveDifficulty);
+    if (pairs.length === 3) { renderDriveMatch(pairs); return; }
+  }
+  const raw = rollDriveQuestion(driveDifficulty);
   const step = buildQuickMc(raw);
 
   $("drive-question-prompt").textContent = step.prompt;
@@ -901,6 +955,122 @@ function showDriveQuestion() {
     grid.appendChild(btn);
   });
   $("drive-question-overlay").classList.remove("hidden");
+}
+
+// Lightweight drag-to-match round for Drive Mode's obstacle quiz — the
+// same drag/line-drawing mechanics as the main game's match questions
+// (renderMatchStep), but self-contained: no state.mistakes, no
+// goToNextStep, just "resume driving" once all 3 pairs connect.
+function renderDriveMatch(pairs) {
+  const overlay = $("drive-match-overlay");
+  const rightOrder = shuffle(pairs.map((_, i) => i));
+  const rowH = 56;
+  const svg = $("drive-match-svg");
+  const leftWrap = $("drive-match-left");
+  const rightWrap = $("drive-match-right");
+  const wrapEl = $("drive-match-wrap");
+  leftWrap.innerHTML = ""; rightWrap.innerHTML = "";
+  wrapEl.style.height = (pairs.length * rowH + 24) + "px";
+
+  const connections = [];
+  let dragFromIdx = null;
+
+  pairs.forEach((p, i) => {
+    const row = document.createElement("div");
+    row.className = "match-item";
+    row.style.top = (i * rowH) + "px";
+    row.innerHTML = `<div class="match-dot" data-idx="${i}"></div><div class="match-label">${escapeHtml(p.left)}</div>`;
+    leftWrap.appendChild(row);
+  });
+  rightOrder.forEach((pairIdx, slot) => {
+    const row = document.createElement("div");
+    row.className = "match-item";
+    row.style.top = (slot * rowH) + "px";
+    row.innerHTML = `<div class="match-label">${escapeHtml(pairs[pairIdx].right)}</div><div class="match-dot" data-slot="${slot}"></div>`;
+    rightWrap.appendChild(row);
+  });
+
+  function dotCenter(dot, wrapRect) {
+    const r = dot.getBoundingClientRect();
+    return { x: r.left + r.width / 2 - wrapRect.left, y: r.top + r.height / 2 - wrapRect.top };
+  }
+  function redraw(dragPoint) {
+    const wrapRect = wrapEl.getBoundingClientRect();
+    svg.setAttribute("width", wrapRect.width);
+    svg.setAttribute("height", wrapRect.height);
+    let s = "";
+    connections.forEach(c => {
+      const ld = leftWrap.querySelector(`.match-dot[data-idx="${c.leftIdx}"]`);
+      const rd = rightWrap.querySelector(`.match-dot[data-slot="${c.rightSlot}"]`);
+      const p1 = dotCenter(ld, wrapRect), p2 = dotCenter(rd, wrapRect);
+      s += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#C1793E" stroke-width="4" stroke-linecap="round"/>`;
+    });
+    if (dragPoint && dragFromIdx !== null) {
+      const ld = leftWrap.querySelector(`.match-dot[data-idx="${dragFromIdx}"]`);
+      const p1 = dotCenter(ld, wrapRect);
+      s += `<line x1="${p1.x}" y1="${p1.y}" x2="${dragPoint.x}" y2="${dragPoint.y}" stroke="#E4572E" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 6"/>`;
+    }
+    svg.innerHTML = s;
+  }
+  redraw();
+
+  function finish() {
+    if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "drive-mode", true);
+    setTimeout(() => {
+      overlay.classList.add("hidden");
+      if (driveState) driveState.paused = false;
+    }, 500);
+  }
+
+  leftWrap.querySelectorAll(".match-dot").forEach(dot => {
+    dot.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      const idx = Number(dot.dataset.idx);
+      if (connections.some(c => c.leftIdx === idx)) return;
+      dragFromIdx = idx;
+
+      const move = ev => {
+        const rect = wrapEl.getBoundingClientRect();
+        redraw({ x: ev.clientX - rect.left, y: ev.clientY - rect.top });
+      };
+      const up = ev => {
+        document.removeEventListener("pointermove", move);
+        document.removeEventListener("pointerup", up);
+        const rect = wrapEl.getBoundingClientRect();
+        const relX = ev.clientX - rect.left, relY = ev.clientY - rect.top;
+        let closestSlot = null, closestDist = Infinity;
+        rightWrap.querySelectorAll(".match-dot").forEach(rd => {
+          const c = dotCenter(rd, rect);
+          const dist = Math.hypot(c.x - relX, c.y - relY);
+          if (dist < closestDist) { closestDist = dist; closestSlot = Number(rd.dataset.slot); }
+        });
+        const from = dragFromIdx;
+        dragFromIdx = null;
+        if (closestSlot !== null && closestDist < 60 && !connections.some(c => c.rightSlot === closestSlot)) {
+          const rightPairIdx = rightOrder[closestSlot];
+          if (rightPairIdx === from) {
+            connections.push({ leftIdx: from, rightSlot: closestSlot });
+            leftWrap.querySelector(`.match-dot[data-idx="${from}"]`).classList.add("connected");
+            rightWrap.querySelector(`.match-dot[data-slot="${closestSlot}"]`).classList.add("connected");
+            redraw();
+            if (connections.length === pairs.length) finish();
+          } else {
+            if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "drive-mode", false);
+            const rd = rightWrap.querySelector(`.match-dot[data-slot="${closestSlot}"]`);
+            rd.classList.add("wrong-flash");
+            setTimeout(() => rd.classList.remove("wrong-flash"), 500);
+            redraw();
+          }
+        } else {
+          redraw();
+        }
+      };
+      document.addEventListener("pointermove", move);
+      document.addEventListener("pointerup", up);
+    });
+  });
+
+  overlay.classList.remove("hidden");
 }
 
 // 3-2-1-GO before a fresh Drive Mode entry — a token guards against a
@@ -935,10 +1105,32 @@ function playDriveCountdown(onDone) {
   showStep();
 }
 
+// Remembered across visits (not per-session) so a returning player
+// doesn't have to re-pick every single time — but it's still shown on
+// every fresh entry in case they want to change it.
+const DRIVE_DIFFICULTY_KEY = "mathville.driveDifficulty";
+let driveDifficulty = localStorage.getItem(DRIVE_DIFFICULTY_KEY) || "medium";
+
+function playDriveDifficultyPicker(onPicked) {
+  const overlay = $("drive-difficulty-overlay");
+  overlay.classList.remove("hidden");
+  const buttons = document.querySelectorAll(".drive-difficulty-btn");
+  function handler(e) {
+    driveDifficulty = e.currentTarget.dataset.level;
+    localStorage.setItem(DRIVE_DIFFICULTY_KEY, driveDifficulty);
+    overlay.classList.add("hidden");
+    buttons.forEach(b => b.removeEventListener("click", handler));
+    onPicked();
+  }
+  buttons.forEach(b => b.addEventListener("click", handler));
+}
+
 function launchDriveMode() {
-  goToDrive(false);
-  driveState.paused = true;
-  playDriveCountdown(() => { if (driveState) driveState.paused = false; });
+  playDriveDifficultyPicker(() => {
+    goToDrive(false);
+    driveState.paused = true;
+    playDriveCountdown(() => { if (driveState) driveState.paused = false; });
+  });
 }
 
 $("btn-drive").addEventListener("click", launchDriveMode);
