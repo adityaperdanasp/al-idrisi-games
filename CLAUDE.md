@@ -47,6 +47,16 @@ Dashboard (`dashboard/dashboard.js`, `dashboard/index.html`): nambahin game baru
 
 AI Tutor hint: `api/generate-hint.js` (Vercel serverless, Claude Haiku, `ANTHROPIC_API_KEY` server-side only). Dipakai multipleazka/azkacraft/azkauniverse/mathville — gagal API = card hint disembunyiin, gak pernah nge-block game.
 
+## Android app (TWA)
+
+Hub punya versi Android via Bubblewrap (Trusted Web Activity, bukan native app terpisah — cuma wrapper yang buka `playalidrisi.fun` fullscreen).
+- Package: `fun.playalidrisi.twa`. Project + keystore ada di `~/Documents/al-idrisi-games-android-keystore/` (di LUAR repo ini, jangan commit ke sini).
+- Keystore password ada di `PASSWORD_KEEP_SAFE.txt` di folder yang sama — **jangan pernah hilang**, kalau hilang gak bisa update app itu lagi selamanya (harus rilis app baru dengan package id lain).
+- Domain verification (`.well-known/assetlinks.json` di repo ini) udah live, jadi app-nya buka fullscreen tanpa address bar.
+- Tooling: JDK 17 + Android SDK cmdline-tools ke-install via Homebrew (`brew install openjdk@17`, `brew install --cask android-commandlinetools`) — BUKAN via bubblewrap sendiri (biar gak download ulang berkali-kali). `~/.bubblewrap/config.json` udah di-point ke situ. Catatan environment quirk: bubblewrap butuh symlink `$ANDROID_HOME/bin -> cmdline-tools/latest/bin` (dibuat manual) biar validasi path-nya lolos, dan jdkPath di config HARUS ke folder `.jdk` root (bukan `.../Contents/Home` — bubblewrap nambahin itu sendiri di macOS).
+- ⚠️ Google Play policy: TWA gak boleh dipakai buat app yang target anak di bawah 13 tahun (Play for Families policy) — APK-nya tetep jalan buat sideload/testing, tapi kalau mau submit ke Play Store beneran perlu app format lain atau ikutin ketentuan Families program.
+- Ada project Android SERUPA buat `brain-box` (app terpisah, bukan bagian repo ini) di `~/Documents/brain-box-android-keystore/` — package `lol.brainbox.twa`, udah ada APK signed juga dari sesi sebelumnya.
+
 ## Yang masih perlu ditindaklanjuti
 1. MathVille: 2-device multiplayer sudah divalidasi via 2 tab browser independen (join, map sync, shared round questions, simultaneous play, hasil akhir dgn "me" highlight, semua real lewat Firebase) — tapi masih same-profile/same-engine, BUKAN 2 iPhone fisik beneran (iOS Simulator sempat dicoba buat device kedua tapi crash). Real-device test masih worth dilakuin kalau ada waktu, tapi risiko sync-logic-nya udah jauh lebih rendah sekarang.
 2. Vehicle icons — ternyata ini soal `multipleazka` (Math Race), bukan MathVille (MathVille cuma punya 1 ikon 🚚 di town map, gak ada pilihan vehicle). Dicek render besar tiap emoji (🏎️🛩️🚢🚌🚚🚂): ship (🚢) kebalik — bow-nya udah default ke kanan tapi kena blanket `scaleX(-1)` jadi mundur. Sudah difix (`.car[data-vehicle="ship"]` disamain dgn plane, gak di-flip) + deploy ke hub & `multipleazka.fun`. Truck/train dicek juga, orientasinya udah benar. Bus gak kekliatan jelas arahnya dari emoji (nyaris simetris depan-belakang) — belum bisa dipastikan.
