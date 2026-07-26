@@ -119,7 +119,7 @@
       </div>
       <div style="text-align:center;">
         <div class="sc-title">Welcome!</div>
-        <div class="sc-subtitle">Sign up or sign in to start playing</div>
+        <div class="sc-subtitle" id="sc-auth-subtitle">Create your account to start playing!</div>
       </div>
 
       <div class="sc-auth-toggle">
@@ -534,9 +534,14 @@
   // player id everywhere else (players/{id}/badges/..., etc.) — same
   // shape the old static roster ids already used.
   // ===============================================================
+  const AUTH_SUBTITLES = {
+    signup: "Create your account to start playing!",
+    signin: "Welcome back! Enter your name and PIN."
+  };
   document.querySelectorAll(".sc-auth-tab").forEach(tab => {
     tab.addEventListener("click", () => {
       document.querySelectorAll(".sc-auth-tab").forEach(t => t.classList.toggle("active", t === tab));
+      document.getElementById("sc-auth-subtitle").textContent = AUTH_SUBTITLES[tab.dataset.mode];
       clearAuthError();
     });
   });
