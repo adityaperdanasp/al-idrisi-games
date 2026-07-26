@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "fun.playalidrisi.twa",
+    "sha256_cert_fingerprints": [
+      "50:BC:A7:F4:FA:B9:8F:7B:72:50:4B:7F:3D:07:B4:ED:5C:23:48:3A:80:5C:43:14:67:1A:AB:67:17:64:52:70"
+    ]
+  }
+}]
