@@ -1126,6 +1126,14 @@ function playDriveDifficultyPicker(onPicked) {
 }
 
 function launchDriveMode() {
+  // The difficulty picker overlay lives INSIDE #screen-drive's markup, so
+  // it stays invisible (display:none, inherited from its non-active
+  // ancestor) until that section is actually the active screen — without
+  // this, un-hiding the overlay alone does nothing visible at all,
+  // whether launched from the map's drive button or the hub's ?drive=1
+  // deep link. goToDrive() (called after a difficulty is picked) also
+  // sets this same screen active, so this is a harmless no-op there.
+  showScreen("screen-drive");
   playDriveDifficultyPicker(() => {
     goToDrive(false);
     driveState.paused = true;
