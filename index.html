@@ -744,6 +744,17 @@
       PushNotifications.addListener("registration", token => {
         console.log("BrainBox push token:", token.value);
         showPushTokenOverlay(token.value);
+        // Persist so the daily reminder cron (api/send-push-reminder.js) has
+        // something to broadcast to. Keyed by a sanitized token (not
+        // playerId) since this fires before Sign Up/Sign In on first
+        // launch, when there's no player identity yet.
+        const key = token.value.replace(/[.#$[\]/]/g, "_");
+        const player = window.AIGPlayer && AIGPlayer.getPlayer();
+        aigDb.ref("pushTokens/" + key).set({
+          token: token.value,
+          playerId: player ? player.id : null,
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        });
       });
       PushNotifications.addListener("registrationError", err => {
         console.error("BrainBox push registration error:", err);
