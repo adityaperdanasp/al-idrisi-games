@@ -1,6 +1,5 @@
 {
   "_comment": "SolarQuest question bank. Levels are played in array order below (see levels.json order). Each level has an id, display name, emoji icon, and a `questions` array. Question `type` must be one of: mc | fill | match | flashcard. Keep the type sequence rotating (no repeats back to back) when you add more questions -- the game engine also enforces this automatically at runtime. See README.md for the full field reference per type.",
-
   "levels": [
     {
       "id": "star-lifecycle",
@@ -11,23 +10,43 @@
         {
           "type": "mc",
           "question": "What is a large cloud of gas and dust in space called?",
-          "options": ["Nebula", "Protostar", "Supernova", "Meteor"],
+          "options": [
+            "Nebula",
+            "Protostar",
+            "Supernova",
+            "Meteor"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The Sun is currently a _____ sequence star.",
           "answer": "main",
-          "acceptable": ["main", "main sequence"]
+          "acceptable": [
+            "main",
+            "main sequence"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each word to its meaning.",
           "pairs": [
-            { "term": "Nebula", "match": "A cloud of gas and dust" },
-            { "term": "Protostar", "match": "The earliest stage of a star" },
-            { "term": "White dwarf", "match": "Leftover core after a red giant" },
-            { "term": "Supernova", "match": "Explosion of a dying massive star" }
+            {
+              "term": "Nebula",
+              "match": "A cloud of gas and dust"
+            },
+            {
+              "term": "Protostar",
+              "match": "The earliest stage of a star"
+            },
+            {
+              "term": "White dwarf",
+              "match": "Leftover core after a red giant"
+            },
+            {
+              "term": "Supernova",
+              "match": "Explosion of a dying massive star"
+            }
           ]
         },
         {
@@ -38,23 +57,42 @@
         {
           "type": "mc",
           "question": "What do we call the explosion of a dying massive star?",
-          "options": ["Supernova", "Nebula", "Eclipse", "Protostar"],
+          "options": [
+            "Supernova",
+            "Nebula",
+            "Eclipse",
+            "Protostar"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The most massive stars can collapse into a _____ _____ after they die.",
           "answer": "black hole",
-          "acceptable": ["black hole"]
+          "acceptable": [
+            "black hole"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each word to its meaning.",
           "pairs": [
-            { "term": "Red giant", "match": "Stars the size of the Sun swell into this" },
-            { "term": "Neutron star", "match": "Leftover core of a supernova" },
-            { "term": "Black hole", "match": "Gravity so strong not even light escapes" },
-            { "term": "Black dwarf", "match": "The cold, dead remains of a white dwarf" }
+            {
+              "term": "Red giant",
+              "match": "Stars the size of the Sun swell into this"
+            },
+            {
+              "term": "Neutron star",
+              "match": "Leftover core of a supernova"
+            },
+            {
+              "term": "Black hole",
+              "match": "Gravity so strong not even light escapes"
+            },
+            {
+              "term": "Black dwarf",
+              "match": "The cold, dead remains of a white dwarf"
+            }
           ]
         },
         {
@@ -65,23 +103,42 @@
         {
           "type": "mc",
           "question": "What is the name of the gas cloud that forms when a red giant's outer layers drift into space?",
-          "options": ["Planetary nebula", "Solar nebula", "Supernova remnant", "Protostar"],
+          "options": [
+            "Planetary nebula",
+            "Solar nebula",
+            "Supernova remnant",
+            "Protostar"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Stars are pulled together by _____, which increases pressure and causes protostars to heat up.",
           "answer": "gravity",
-          "acceptable": ["gravity"]
+          "acceptable": [
+            "gravity"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each term to its meaning.",
           "pairs": [
-            { "term": "Red supergiant", "match": "What a star much more massive than the Sun becomes" },
-            { "term": "Iron", "match": "The heaviest element normal fusion inside a star can make" },
-            { "term": "Elements heavier than iron", "match": "Only created during a supernova explosion" },
-            { "term": "Nuclear fusion", "match": "Hydrogen nuclei joining together to form helium, releasing energy" }
+            {
+              "term": "Red supergiant",
+              "match": "What a star much more massive than the Sun becomes"
+            },
+            {
+              "term": "Iron",
+              "match": "The heaviest element normal fusion inside a star can make"
+            },
+            {
+              "term": "Elements heavier than iron",
+              "match": "Only created during a supernova explosion"
+            },
+            {
+              "term": "Nuclear fusion",
+              "match": "Hydrogen nuclei joining together to form helium, releasing energy"
+            }
           ]
         },
         {
@@ -92,23 +149,42 @@
         {
           "type": "mc",
           "question": "What does a star emit due to the nuclear fusion happening in its core?",
-          "options": ["Light and infrared radiation", "Only light", "Sound waves", "Radio waves only"],
+          "options": [
+            "Light and infrared radiation",
+            "Only light",
+            "Sound waves",
+            "Radio waves only"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The earliest stage of a star's life, when a contracting cloud starts to heat up and glow, is called a _____.",
           "answer": "protostar",
-          "acceptable": ["protostar"]
+          "acceptable": [
+            "protostar"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each stage to what happens.",
           "pairs": [
-            { "term": "Protostar", "match": "Gravity and pressure make the collapsing cloud heat up and glow" },
-            { "term": "Main sequence star", "match": "Hydrogen fuses into helium in a stable, balanced star" },
-            { "term": "Red giant", "match": "A Sun-sized star swells and cools as it runs low on hydrogen" },
-            { "term": "White dwarf", "match": "The small, hot leftover core after a red giant's outer layers drift away" }
+            {
+              "term": "Protostar",
+              "match": "Gravity and pressure make the collapsing cloud heat up and glow"
+            },
+            {
+              "term": "Main sequence star",
+              "match": "Hydrogen fuses into helium in a stable, balanced star"
+            },
+            {
+              "term": "Red giant",
+              "match": "A Sun-sized star swells and cools as it runs low on hydrogen"
+            },
+            {
+              "term": "White dwarf",
+              "match": "The small, hot leftover core after a red giant's outer layers drift away"
+            }
           ]
         },
         {
@@ -119,23 +195,42 @@
         {
           "type": "mc",
           "question": "Which is true about the Sun?",
-          "options": ["It is a main sequence star", "It is a red giant", "It is a white dwarf", "It is a black hole"],
+          "options": [
+            "It is a main sequence star",
+            "It is a red giant",
+            "It is a white dwarf",
+            "It is a black hole"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The larger a star is, the _____ and brighter it will be.",
           "answer": "hotter",
-          "acceptable": ["hotter"]
+          "acceptable": [
+            "hotter"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each term to its meaning.",
           "pairs": [
-            { "term": "Supernova", "match": "The explosion of a dying red supergiant" },
-            { "term": "Neutron star", "match": "A very dense core left behind after most supernovae" },
-            { "term": "Shockwave", "match": "What causes a red supergiant's core to explode" },
-            { "term": "Fusion", "match": "Does NOT occur once a star becomes a neutron star" }
+            {
+              "term": "Supernova",
+              "match": "The explosion of a dying red supergiant"
+            },
+            {
+              "term": "Neutron star",
+              "match": "A very dense core left behind after most supernovae"
+            },
+            {
+              "term": "Shockwave",
+              "match": "What causes a red supergiant's core to explode"
+            },
+            {
+              "term": "Fusion",
+              "match": "Does NOT occur once a star becomes a neutron star"
+            }
           ]
         },
         {
@@ -146,35 +241,61 @@
         {
           "type": "mc",
           "question": "What happens to a red giant's outer layers at the end of its life?",
-          "options": ["They're expelled into space as a planetary nebula", "They explode in a supernova", "They turn into a black hole", "They freeze solid"],
+          "options": [
+            "They're expelled into space as a planetary nebula",
+            "They explode in a supernova",
+            "They turn into a black hole",
+            "They freeze solid"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "A white dwarf eventually cools and dims until it becomes a _____ dwarf, and finally a black dwarf.",
           "answer": "brown",
-          "acceptable": ["brown"]
+          "acceptable": [
+            "brown"
+          ]
         },
         {
           "type": "mc",
           "question": "Which of these is the correct order for a star about the size of the Sun?",
-          "options": ["Nebula, protostar, main sequence, red giant, white dwarf, black dwarf", "Nebula, red giant, protostar, supernova", "Protostar, nebula, white dwarf, red giant", "Main sequence, nebula, protostar, black hole"],
+          "options": [
+            "Nebula, protostar, main sequence, red giant, white dwarf, black dwarf",
+            "Nebula, red giant, protostar, supernova",
+            "Protostar, nebula, white dwarf, red giant",
+            "Main sequence, nebula, protostar, black hole"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Fusion of nuclei up to the size of _____ happens inside a red supergiant before it runs out of fuel.",
           "answer": "iron",
-          "acceptable": ["iron"]
+          "acceptable": [
+            "iron"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each object to how it forms.",
           "pairs": [
-            { "term": "Planetary nebula", "match": "Gas cloud formed when a red giant's outer layers drift into space" },
-            { "term": "White dwarf", "match": "Leftover hot core after a low or medium mass star's outer layers escape" },
-            { "term": "Neutron star", "match": "Forms when most supernovae collapse" },
-            { "term": "Black hole", "match": "Forms when the largest supernovae collapse" }
+            {
+              "term": "Planetary nebula",
+              "match": "Gas cloud formed when a red giant's outer layers drift into space"
+            },
+            {
+              "term": "White dwarf",
+              "match": "Leftover hot core after a low or medium mass star's outer layers escape"
+            },
+            {
+              "term": "Neutron star",
+              "match": "Forms when most supernovae collapse"
+            },
+            {
+              "term": "Black hole",
+              "match": "Forms when the largest supernovae collapse"
+            }
           ]
         },
         {
@@ -185,23 +306,42 @@
         {
           "type": "mc",
           "question": "What must happen before a cloud of gas and dust can become a protostar?",
-          "options": ["Gravity pulls it together, increasing pressure and heat", "It must explode first", "It must cool down completely", "It must lose all its hydrogen"],
+          "options": [
+            "Gravity pulls it together, increasing pressure and heat",
+            "It must explode first",
+            "It must cool down completely",
+            "It must lose all its hydrogen"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Once a star has 'turned on' through nuclear fusion, it is known as a _____ _____ star.",
           "answer": "main sequence",
-          "acceptable": ["main sequence"]
+          "acceptable": [
+            "main sequence"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each star type to its fate.",
           "pairs": [
-            { "term": "Stars about the size of the Sun", "match": "Become a red giant, then a white dwarf" },
-            { "term": "Stars much more massive than the Sun", "match": "Become a red supergiant, then explode in a supernova" },
-            { "term": "Most supernovae", "match": "Collapse into a neutron star" },
-            { "term": "The most massive supernovae", "match": "Collapse into a black hole" }
+            {
+              "term": "Stars about the size of the Sun",
+              "match": "Become a red giant, then a white dwarf"
+            },
+            {
+              "term": "Stars much more massive than the Sun",
+              "match": "Become a red supergiant, then explode in a supernova"
+            },
+            {
+              "term": "Most supernovae",
+              "match": "Collapse into a neutron star"
+            },
+            {
+              "term": "The most massive supernovae",
+              "match": "Collapse into a black hole"
+            }
           ]
         },
         {
@@ -230,23 +370,42 @@
         {
           "type": "mc",
           "question": "What are the tiny building blocks that make up everything around us?",
-          "options": ["Atoms", "Cells", "Molecules only", "Planets"],
+          "options": [
+            "Atoms",
+            "Cells",
+            "Molecules only",
+            "Planets"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The center of an atom is called the _____.",
           "answer": "nucleus",
-          "acceptable": ["nucleus"]
+          "acceptable": [
+            "nucleus"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each particle to its description.",
           "pairs": [
-            { "term": "Proton", "match": "Positively charged particle" },
-            { "term": "Neutron", "match": "Neutral particle with no charge" },
-            { "term": "Electron", "match": "Negatively charged particle that zips around the nucleus" },
-            { "term": "Nucleus", "match": "The core of the atom" }
+            {
+              "term": "Proton",
+              "match": "Positively charged particle"
+            },
+            {
+              "term": "Neutron",
+              "match": "Neutral particle with no charge"
+            },
+            {
+              "term": "Electron",
+              "match": "Negatively charged particle that zips around the nucleus"
+            },
+            {
+              "term": "Nucleus",
+              "match": "The core of the atom"
+            }
           ]
         },
         {
@@ -257,23 +416,42 @@
         {
           "type": "mc",
           "question": "What chart lists all the known elements in order?",
-          "options": ["Periodic table", "Star chart", "Atlas", "Almanac"],
+          "options": [
+            "Periodic table",
+            "Star chart",
+            "Atlas",
+            "Almanac"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The atomic number tells you how many _____ an atom has.",
           "answer": "protons",
-          "acceptable": ["protons"]
+          "acceptable": [
+            "protons"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each term to its meaning on the periodic table.",
           "pairs": [
-            { "term": "Atomic number", "match": "Number of protons in an element" },
-            { "term": "Mass number", "match": "Total protons plus neutrons" },
-            { "term": "Group", "match": "A vertical column on the periodic table" },
-            { "term": "Period", "match": "A horizontal row on the periodic table" }
+            {
+              "term": "Atomic number",
+              "match": "Number of protons in an element"
+            },
+            {
+              "term": "Mass number",
+              "match": "Total protons plus neutrons"
+            },
+            {
+              "term": "Group",
+              "match": "A vertical column on the periodic table"
+            },
+            {
+              "term": "Period",
+              "match": "A horizontal row on the periodic table"
+            }
           ]
         },
         {
@@ -284,23 +462,42 @@
         {
           "type": "mc",
           "question": "What force holds the protons and neutrons tightly together in the nucleus?",
-          "options": ["Electromagnetic force", "Gravity", "Magnetism only", "Wind"],
+          "options": [
+            "Electromagnetic force",
+            "Gravity",
+            "Magnetism only",
+            "Wind"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The element symbol for lead is Pb, taken from its old Latin name '_____'.",
           "answer": "plumbum",
-          "acceptable": ["plumbum"]
+          "acceptable": [
+            "plumbum"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each term to its meaning.",
           "pairs": [
-            { "term": "Element symbol", "match": "Usually the first letter (or first two letters) of an element's name" },
-            { "term": "Quantum mechanics", "match": "The study of atoms and even tinier particles" },
-            { "term": "Electron cloud", "match": "The area around the nucleus where electrons zip around" },
-            { "term": "Neutrons", "match": "Found by subtracting the atomic number from the mass number" }
+            {
+              "term": "Element symbol",
+              "match": "Usually the first letter (or first two letters) of an element's name"
+            },
+            {
+              "term": "Quantum mechanics",
+              "match": "The study of atoms and even tinier particles"
+            },
+            {
+              "term": "Electron cloud",
+              "match": "The area around the nucleus where electrons zip around"
+            },
+            {
+              "term": "Neutrons",
+              "match": "Found by subtracting the atomic number from the mass number"
+            }
           ]
         },
         {
@@ -311,23 +508,42 @@
         {
           "type": "mc",
           "question": "What are atoms the building blocks of?",
-          "options": ["Molecules, which combine to make everything", "Only stars", "Only liquids", "Nothing -- they are the smallest thing that exists"],
+          "options": [
+            "Molecules, which combine to make everything",
+            "Only stars",
+            "Only liquids",
+            "Nothing -- they are the smallest thing that exists"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The Ancient Greek word 'atomos' means something that cannot be _____ any further.",
           "answer": "divided",
-          "acceptable": ["divided"]
+          "acceptable": [
+            "divided"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each particle to its charge.",
           "pairs": [
-            { "term": "Proton", "match": "Positive charge" },
-            { "term": "Neutron", "match": "No charge (neutral)" },
-            { "term": "Electron", "match": "Negative charge" },
-            { "term": "Nucleus", "match": "Made of protons and neutrons" }
+            {
+              "term": "Proton",
+              "match": "Positive charge"
+            },
+            {
+              "term": "Neutron",
+              "match": "No charge (neutral)"
+            },
+            {
+              "term": "Electron",
+              "match": "Negative charge"
+            },
+            {
+              "term": "Nucleus",
+              "match": "Made of protons and neutrons"
+            }
           ]
         },
         {
@@ -338,23 +554,42 @@
         {
           "type": "mc",
           "question": "What decides which chemical element an atom is?",
-          "options": ["Its number of protons", "Its number of electrons", "Its color", "Its temperature"],
+          "options": [
+            "Its number of protons",
+            "Its number of electrons",
+            "Its color",
+            "Its temperature"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The number of _____ in an atom defines its chemical properties, like melting and boiling point.",
           "answer": "electrons",
-          "acceptable": ["electrons"]
+          "acceptable": [
+            "electrons"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each periodic table term to its meaning.",
           "pairs": [
-            { "term": "Group", "match": "A vertical column of elements with similar properties" },
-            { "term": "Period", "match": "A horizontal row of elements on the table" },
-            { "term": "Atomic number", "match": "The number of protons in an atom" },
-            { "term": "Mass number", "match": "The total number of protons and neutrons" }
+            {
+              "term": "Group",
+              "match": "A vertical column of elements with similar properties"
+            },
+            {
+              "term": "Period",
+              "match": "A horizontal row of elements on the table"
+            },
+            {
+              "term": "Atomic number",
+              "match": "The number of protons in an atom"
+            },
+            {
+              "term": "Mass number",
+              "match": "The total number of protons and neutrons"
+            }
           ]
         },
         {
@@ -365,23 +600,42 @@
         {
           "type": "mc",
           "question": "How is an element's symbol usually written?",
-          "options": ["First letter capital, second letter (if any) lowercase", "All letters capital", "All letters lowercase", "Numbers only"],
+          "options": [
+            "First letter capital, second letter (if any) lowercase",
+            "All letters capital",
+            "All letters lowercase",
+            "Numbers only"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The study of atoms and even tinier particles is called quantum _____.",
           "answer": "mechanics",
-          "acceptable": ["mechanics"]
+          "acceptable": [
+            "mechanics"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each element symbol to its element.",
           "pairs": [
-            { "term": "C", "match": "Carbon" },
-            { "term": "Ne", "match": "Neon" },
-            { "term": "K", "match": "Potassium" },
-            { "term": "Pb", "match": "Lead" }
+            {
+              "term": "C",
+              "match": "Carbon"
+            },
+            {
+              "term": "Ne",
+              "match": "Neon"
+            },
+            {
+              "term": "K",
+              "match": "Potassium"
+            },
+            {
+              "term": "Pb",
+              "match": "Lead"
+            }
           ]
         },
         {
@@ -392,23 +646,43 @@
         {
           "type": "mc",
           "question": "What can atoms be classified into, based on the article 'An Atom Apart'?",
-          "options": ["Elements, like oxygen, carbon, or hydrogen", "Colors only", "Sizes only", "Planets"],
+          "options": [
+            "Elements, like oxygen, carbon, or hydrogen",
+            "Colors only",
+            "Sizes only",
+            "Planets"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Carbon's element symbol is C, its atomic number is 6, and its mass number is _____.",
           "answer": "12",
-          "acceptable": ["12", "twelve"]
+          "acceptable": [
+            "12",
+            "twelve"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each part of an atom to where it's found.",
           "pairs": [
-            { "term": "Protons", "match": "In the nucleus" },
-            { "term": "Neutrons", "match": "In the nucleus" },
-            { "term": "Electrons", "match": "In a cloud around the nucleus" },
-            { "term": "Nucleus", "match": "The core, or center, of the atom" }
+            {
+              "term": "Protons",
+              "match": "In the nucleus"
+            },
+            {
+              "term": "Neutrons",
+              "match": "In the nucleus"
+            },
+            {
+              "term": "Electrons",
+              "match": "In a cloud around the nucleus"
+            },
+            {
+              "term": "Nucleus",
+              "match": "The core, or center, of the atom"
+            }
           ]
         },
         {
@@ -419,27 +693,44 @@
         {
           "type": "mc",
           "question": "If you know an element's atomic number, what else can you figure out?",
-          "options": ["Its number of electrons (they're equal in a neutral atom)", "Its exact color", "Its exact temperature", "Nothing else"],
+          "options": [
+            "Its number of electrons (they're equal in a neutral atom)",
+            "Its exact color",
+            "Its exact temperature",
+            "Nothing else"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "To find the number of neutrons in an atom, subtract the atomic number from the _____ number.",
           "answer": "mass",
-          "acceptable": ["mass"]
+          "acceptable": [
+            "mass"
+          ]
         },
         {
           "type": "mc",
           "question": "Look at the diagram. What does the part labeled ① point to?",
           "image": "<svg viewBox=\"0 0 260 200\" width=\"220\" height=\"170\" xmlns=\"http://www.w3.org/2000/svg\"><ellipse cx=\"130\" cy=\"100\" rx=\"110\" ry=\"40\" fill=\"none\" stroke=\"#1266d8\" stroke-width=\"2.5\" opacity=\"0.55\"/><ellipse cx=\"130\" cy=\"100\" rx=\"40\" ry=\"90\" fill=\"none\" stroke=\"#1266d8\" stroke-width=\"2.5\" opacity=\"0.55\"/><circle cx=\"126\" cy=\"98\" r=\"13\" fill=\"#ff5d8f\"/><circle cx=\"140\" cy=\"90\" r=\"13\" fill=\"#ffd93d\"/><circle cx=\"114\" cy=\"108\" r=\"13\" fill=\"#ff5d8f\"/><circle cx=\"130\" cy=\"16\" r=\"7\" fill=\"#2ecc71\"/><g font-weight=\"800\" font-size=\"13\" fill=\"#201a3e\"><circle cx=\"126\" cy=\"155\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"126\" y=\"159\" text-anchor=\"middle\">1</text><line x1=\"126\" y1=\"144\" x2=\"126\" y2=\"112\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><circle cx=\"205\" cy=\"88\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"205\" y=\"92\" text-anchor=\"middle\">2</text><line x1=\"194\" y1=\"88\" x2=\"142\" y2=\"89\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><circle cx=\"55\" cy=\"135\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"55\" y=\"139\" text-anchor=\"middle\">3</text><line x1=\"63\" y1=\"127\" x2=\"112\" y2=\"110\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><circle cx=\"185\" cy=\"20\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"185\" y=\"24\" text-anchor=\"middle\">4</text><line x1=\"174\" y1=\"20\" x2=\"134\" y2=\"17\" stroke=\"#201a3e\" stroke-width=\"1.5\"/></g></svg>",
-          "options": ["The nucleus (the core cluster)", "A single electron", "The electron cloud", "A ray of light"],
+          "options": [
+            "The nucleus (the core cluster)",
+            "A single electron",
+            "The electron cloud",
+            "A ray of light"
+          ],
           "answer": 0
         },
         {
           "type": "mc",
           "question": "In that same diagram, what does the part labeled ④ point to?",
           "image": "<svg viewBox=\"0 0 260 200\" width=\"220\" height=\"170\" xmlns=\"http://www.w3.org/2000/svg\"><ellipse cx=\"130\" cy=\"100\" rx=\"110\" ry=\"40\" fill=\"none\" stroke=\"#1266d8\" stroke-width=\"2.5\" opacity=\"0.55\"/><ellipse cx=\"130\" cy=\"100\" rx=\"40\" ry=\"90\" fill=\"none\" stroke=\"#1266d8\" stroke-width=\"2.5\" opacity=\"0.55\"/><circle cx=\"126\" cy=\"98\" r=\"13\" fill=\"#ff5d8f\"/><circle cx=\"140\" cy=\"90\" r=\"13\" fill=\"#ffd93d\"/><circle cx=\"114\" cy=\"108\" r=\"13\" fill=\"#ff5d8f\"/><circle cx=\"130\" cy=\"16\" r=\"7\" fill=\"#2ecc71\"/><g font-weight=\"800\" font-size=\"13\" fill=\"#201a3e\"><circle cx=\"126\" cy=\"155\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"126\" y=\"159\" text-anchor=\"middle\">1</text><line x1=\"126\" y1=\"144\" x2=\"126\" y2=\"112\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><circle cx=\"205\" cy=\"88\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"205\" y=\"92\" text-anchor=\"middle\">2</text><line x1=\"194\" y1=\"88\" x2=\"142\" y2=\"89\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><circle cx=\"55\" cy=\"135\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"55\" y=\"139\" text-anchor=\"middle\">3</text><line x1=\"63\" y1=\"127\" x2=\"112\" y2=\"110\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><circle cx=\"185\" cy=\"20\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"185\" y=\"24\" text-anchor=\"middle\">4</text><line x1=\"174\" y1=\"20\" x2=\"134\" y2=\"17\" stroke=\"#201a3e\" stroke-width=\"1.5\"/></g></svg>",
-          "options": ["An electron", "A proton", "A neutron", "The nucleus"],
+          "options": [
+            "An electron",
+            "A proton",
+            "A neutron",
+            "The nucleus"
+          ],
           "answer": 0
         }
       ],
@@ -463,23 +754,42 @@
         {
           "type": "mc",
           "question": "How long does it take Earth to complete one full rotation?",
-          "options": ["24 hours", "365 days", "1 hour", "7 days"],
+          "options": [
+            "24 hours",
+            "365 days",
+            "1 hour",
+            "7 days"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Earth's _____ causes day and night.",
           "answer": "rotation",
-          "acceptable": ["rotation"]
+          "acceptable": [
+            "rotation"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each word to its meaning.",
           "pairs": [
-            { "term": "Rotation", "match": "Earth spinning on its axis (24 hours)" },
-            { "term": "Revolution", "match": "Earth orbiting the Sun (365 days)" },
-            { "term": "Axis", "match": "The imaginary line Earth spins around" },
-            { "term": "Seasons", "match": "Caused by Earth's tilt and revolution" }
+            {
+              "term": "Rotation",
+              "match": "Earth spinning on its axis (24 hours)"
+            },
+            {
+              "term": "Revolution",
+              "match": "Earth orbiting the Sun (365 days)"
+            },
+            {
+              "term": "Axis",
+              "match": "The imaginary line Earth spins around"
+            },
+            {
+              "term": "Seasons",
+              "match": "Caused by Earth's tilt and revolution"
+            }
           ]
         },
         {
@@ -490,23 +800,42 @@
         {
           "type": "mc",
           "question": "How long does it take Earth to revolve once around the Sun?",
-          "options": ["365 days", "24 hours", "30 days", "100 days"],
+          "options": [
+            "365 days",
+            "24 hours",
+            "30 days",
+            "100 days"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The imaginary line Earth spins around is called its _____.",
           "answer": "axis",
-          "acceptable": ["axis"]
+          "acceptable": [
+            "axis"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each moon phase to its description.",
           "pairs": [
-            { "term": "New moon", "match": "Moon looks completely dark" },
-            { "term": "Full moon", "match": "Moon looks like a complete bright circle" },
-            { "term": "Waxing crescent", "match": "A thin sliver that is growing bigger" },
-            { "term": "Waning gibbous", "match": "Almost a full moon, but shrinking" }
+            {
+              "term": "New moon",
+              "match": "Moon looks completely dark"
+            },
+            {
+              "term": "Full moon",
+              "match": "Moon looks like a complete bright circle"
+            },
+            {
+              "term": "Waxing crescent",
+              "match": "A thin sliver that is growing bigger"
+            },
+            {
+              "term": "Waning gibbous",
+              "match": "Almost a full moon, but shrinking"
+            }
           ]
         },
         {
@@ -517,23 +846,42 @@
         {
           "type": "mc",
           "question": "Which direction does the Sun appear to rise?",
-          "options": ["East", "West", "North", "South"],
+          "options": [
+            "East",
+            "West",
+            "North",
+            "South"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The curved path Earth takes around the Sun is called its _____.",
           "answer": "orbit",
-          "acceptable": ["orbit"]
+          "acceptable": [
+            "orbit"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each term to its meaning.",
           "pairs": [
-            { "term": "Polaris (North Star)", "match": "Located above the North Pole -- it barely seems to move" },
-            { "term": "Leap year", "match": "An extra day added because a year is really 365 1/4 days" },
-            { "term": "Orbit", "match": "The curved path Earth takes around the Sun" },
-            { "term": "Sunset direction", "match": "West" }
+            {
+              "term": "Polaris (North Star)",
+              "match": "Located above the North Pole -- it barely seems to move"
+            },
+            {
+              "term": "Leap year",
+              "match": "An extra day added because a year is really 365 1/4 days"
+            },
+            {
+              "term": "Orbit",
+              "match": "The curved path Earth takes around the Sun"
+            },
+            {
+              "term": "Sunset direction",
+              "match": "West"
+            }
           ]
         },
         {
@@ -544,23 +892,42 @@
         {
           "type": "mc",
           "question": "True or false: the side of Earth NOT reached by the Sun's rays experiences daytime.",
-          "options": ["False -- that side experiences nighttime", "True", "Only during winter", "Only at the equator"],
+          "options": [
+            "False -- that side experiences nighttime",
+            "True",
+            "Only during winter",
+            "Only at the equator"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Earth's movement through _____ affects life on Earth, including causing day and night.",
           "answer": "space",
-          "acceptable": ["space"]
+          "acceptable": [
+            "space"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each moon phase to its description.",
           "pairs": [
-            { "term": "First-quarter moon", "match": "Half the moon is lit, right after waxing crescent" },
-            { "term": "Third-quarter moon", "match": "Half the moon is lit, after waning gibbous" },
-            { "term": "Waning crescent", "match": "A thin sliver that is shrinking, right before new moon" },
-            { "term": "New moon", "match": "The moon looks completely dark" }
+            {
+              "term": "First-quarter moon",
+              "match": "Half the moon is lit, right after waxing crescent"
+            },
+            {
+              "term": "Third-quarter moon",
+              "match": "Half the moon is lit, after waning gibbous"
+            },
+            {
+              "term": "Waning crescent",
+              "match": "A thin sliver that is shrinking, right before new moon"
+            },
+            {
+              "term": "New moon",
+              "match": "The moon looks completely dark"
+            }
           ]
         },
         {
@@ -571,23 +938,42 @@
         {
           "type": "mc",
           "question": "True or false: it takes Earth 369 days to orbit the Sun.",
-          "options": ["False -- it takes about 365 days", "True", "It takes 269 days", "It takes 30 days"],
+          "options": [
+            "False -- it takes about 365 days",
+            "True",
+            "It takes 269 days",
+            "It takes 30 days"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "A year with one extra day added is called a _____ year.",
           "answer": "leap",
-          "acceptable": ["leap"]
+          "acceptable": [
+            "leap"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each term to its correct meaning.",
           "pairs": [
-            { "term": "Revolving", "match": "Moving in a path around something, like Earth around the Sun" },
-            { "term": "Rotating", "match": "Spinning in place on an axis" },
-            { "term": "Axis", "match": "An imaginary line through the North and South Poles" },
-            { "term": "Orbit", "match": "The curved path a planet takes around the Sun" }
+            {
+              "term": "Revolving",
+              "match": "Moving in a path around something, like Earth around the Sun"
+            },
+            {
+              "term": "Rotating",
+              "match": "Spinning in place on an axis"
+            },
+            {
+              "term": "Axis",
+              "match": "An imaginary line through the North and South Poles"
+            },
+            {
+              "term": "Orbit",
+              "match": "The curved path a planet takes around the Sun"
+            }
           ]
         },
         {
@@ -598,23 +984,42 @@
         {
           "type": "mc",
           "question": "Why do some groups of stars seem to circle around Polaris, the North Star, at night?",
-          "options": ["Because Earth rotates on its axis once each day", "Because Polaris is moving", "Because stars orbit the moon", "Because of leap years"],
+          "options": [
+            "Because Earth rotates on its axis once each day",
+            "Because Polaris is moving",
+            "Because stars orbit the moon",
+            "Because of leap years"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Polaris doesn't seem to move much in the night sky because it is located above the _____ Pole.",
           "answer": "North",
-          "acceptable": ["north"]
+          "acceptable": [
+            "north"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each statement to True or False.",
           "pairs": [
-            { "term": "There are four seasons: Spring, Summer, Autumn, and Winter", "match": "True" },
-            { "term": "The occurrence of day and night is caused by Earth's rotation", "match": "True" },
-            { "term": "Revolving means to move up and down", "match": "False" },
-            { "term": "It takes the Sun 24 hours to rotate around Earth", "match": "False -- Earth rotates, not the Sun" }
+            {
+              "term": "There are four seasons: Spring, Summer, Autumn, and Winter",
+              "match": "True"
+            },
+            {
+              "term": "The occurrence of day and night is caused by Earth's rotation",
+              "match": "True"
+            },
+            {
+              "term": "Revolving means to move up and down",
+              "match": "False"
+            },
+            {
+              "term": "It takes the Sun 24 hours to rotate around Earth",
+              "match": "False -- Earth rotates, not the Sun"
+            }
           ]
         },
         {
@@ -625,23 +1030,43 @@
         {
           "type": "mc",
           "question": "What is the imaginary line that Earth spins around, running through the North and South Poles?",
-          "options": ["Its axis", "The equator", "Its orbit", "The horizon"],
+          "options": [
+            "Its axis",
+            "The equator",
+            "Its orbit",
+            "The horizon"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "One full Earth _____ takes about 365 and a quarter days, which is why we add a leap day every 4 years.",
           "answer": "revolution",
-          "acceptable": ["revolution", "orbit"]
+          "acceptable": [
+            "revolution",
+            "orbit"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each cause to its effect.",
           "pairs": [
-            { "term": "Earth rotating on its axis", "match": "Day and night" },
-            { "term": "Earth revolving around the Sun", "match": "One year passing" },
-            { "term": "Earth's tilt as it revolves", "match": "The four seasons" },
-            { "term": "The Moon orbiting Earth", "match": "The changing moon phases" }
+            {
+              "term": "Earth rotating on its axis",
+              "match": "Day and night"
+            },
+            {
+              "term": "Earth revolving around the Sun",
+              "match": "One year passing"
+            },
+            {
+              "term": "Earth's tilt as it revolves",
+              "match": "The four seasons"
+            },
+            {
+              "term": "The Moon orbiting Earth",
+              "match": "The changing moon phases"
+            }
           ]
         },
         {
@@ -652,27 +1077,44 @@
         {
           "type": "mc",
           "question": "Earth's axis is an invisible line that intersects Earth through both the North and _____ Poles.",
-          "options": ["South", "East", "West", "Central"],
+          "options": [
+            "South",
+            "East",
+            "West",
+            "Central"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The different shapes the Moon appears to have in the sky are called moon _____.",
           "answer": "phases",
-          "acceptable": ["phases"]
+          "acceptable": [
+            "phases"
+          ]
         },
         {
           "type": "mc",
           "question": "Look at the diagram. Which letter shows Earth's ROTATION (spinning on its own axis)?",
           "image": "<svg viewBox=\"0 0 260 140\" width=\"230\" height=\"124\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"65\" cy=\"60\" r=\"30\" fill=\"#1266d8\"/><path d=\"M 65 25 A 35 35 0 1 1 34 78\" fill=\"none\" stroke=\"#201a3e\" stroke-width=\"3\" marker-end=\"url(#arrowhead)\"/><text x=\"65\" y=\"65\" text-anchor=\"middle\" font-size=\"22\" font-weight=\"800\" fill=\"#fff\">A</text><text x=\"65\" y=\"120\" text-anchor=\"middle\" font-size=\"13\" fill=\"#201a3e\" font-weight=\"700\">24 hours</text><ellipse cx=\"195\" cy=\"60\" rx=\"55\" ry=\"25\" fill=\"none\" stroke=\"#201a3e\" stroke-width=\"3\"/><circle cx=\"195\" cy=\"60\" r=\"12\" fill=\"#ffd93d\"/><circle cx=\"250\" cy=\"60\" r=\"8\" fill=\"#2ecc71\"/><text x=\"250\" y=\"40\" text-anchor=\"middle\" font-size=\"22\" font-weight=\"800\" fill=\"#201a3e\">B</text><text x=\"195\" y=\"120\" text-anchor=\"middle\" font-size=\"13\" fill=\"#201a3e\" font-weight=\"700\">365 days</text><defs><marker id=\"arrowhead\" markerWidth=\"9\" markerHeight=\"9\" refX=\"4\" refY=\"4\" orient=\"auto\"><path d=\"M0,0 L8,4 L0,8 z\" fill=\"#201a3e\"/></marker></defs></svg>",
-          "options": ["A", "B", "Both A and B", "Neither"],
+          "options": [
+            "A",
+            "B",
+            "Both A and B",
+            "Neither"
+          ],
           "answer": 0
         },
         {
           "type": "mc",
           "question": "In that same diagram, which letter shows Earth's REVOLUTION (orbiting the Sun)?",
           "image": "<svg viewBox=\"0 0 260 140\" width=\"230\" height=\"124\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"65\" cy=\"60\" r=\"30\" fill=\"#1266d8\"/><path d=\"M 65 25 A 35 35 0 1 1 34 78\" fill=\"none\" stroke=\"#201a3e\" stroke-width=\"3\" marker-end=\"url(#arrowhead2)\"/><text x=\"65\" y=\"65\" text-anchor=\"middle\" font-size=\"22\" font-weight=\"800\" fill=\"#fff\">A</text><text x=\"65\" y=\"120\" text-anchor=\"middle\" font-size=\"13\" fill=\"#201a3e\" font-weight=\"700\">24 hours</text><ellipse cx=\"195\" cy=\"60\" rx=\"55\" ry=\"25\" fill=\"none\" stroke=\"#201a3e\" stroke-width=\"3\"/><circle cx=\"195\" cy=\"60\" r=\"12\" fill=\"#ffd93d\"/><circle cx=\"250\" cy=\"60\" r=\"8\" fill=\"#2ecc71\"/><text x=\"250\" y=\"40\" text-anchor=\"middle\" font-size=\"22\" font-weight=\"800\" fill=\"#201a3e\">B</text><text x=\"195\" y=\"120\" text-anchor=\"middle\" font-size=\"13\" fill=\"#201a3e\" font-weight=\"700\">365 days</text><defs><marker id=\"arrowhead2\" markerWidth=\"9\" markerHeight=\"9\" refX=\"4\" refY=\"4\" orient=\"auto\"><path d=\"M0,0 L8,4 L0,8 z\" fill=\"#201a3e\"/></marker></defs></svg>",
-          "options": ["B", "A", "Both A and B", "Neither"],
+          "options": [
+            "B",
+            "A",
+            "Both A and B",
+            "Neither"
+          ],
           "answer": 0
         }
       ],
@@ -696,23 +1138,42 @@
         {
           "type": "mc",
           "question": "What is the imaginary line that divides Earth into Northern and Southern halves?",
-          "options": ["Equator", "Prime Meridian", "Axis", "Tropic"],
+          "options": [
+            "Equator",
+            "Prime Meridian",
+            "Axis",
+            "Tropic"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Lines that run east-west around the globe, like the equator, are called lines of _____.",
           "answer": "latitude",
-          "acceptable": ["latitude"]
+          "acceptable": [
+            "latitude"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each term to what it means.",
           "pairs": [
-            { "term": "Equator", "match": "Divides Earth into North and South halves" },
-            { "term": "Prime Meridian", "match": "Divides Earth into East and West halves" },
-            { "term": "North Pole", "match": "The very top of the Earth" },
-            { "term": "International Date Line", "match": "Opposite side of the globe from the Prime Meridian" }
+            {
+              "term": "Equator",
+              "match": "Divides Earth into North and South halves"
+            },
+            {
+              "term": "Prime Meridian",
+              "match": "Divides Earth into East and West halves"
+            },
+            {
+              "term": "North Pole",
+              "match": "The very top of the Earth"
+            },
+            {
+              "term": "International Date Line",
+              "match": "Opposite side of the globe from the Prime Meridian"
+            }
           ]
         },
         {
@@ -723,23 +1184,43 @@
         {
           "type": "mc",
           "question": "On a map, which direction is usually at the top?",
-          "options": ["North", "South", "East", "West"],
+          "options": [
+            "North",
+            "South",
+            "East",
+            "West"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "A map's _____ explains what each symbol on the map means.",
           "answer": "key",
-          "acceptable": ["key", "legend"]
+          "acceptable": [
+            "key",
+            "legend"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each compass letter to its direction.",
           "pairs": [
-            { "term": "N", "match": "North" },
-            { "term": "S", "match": "South" },
-            { "term": "E", "match": "East" },
-            { "term": "W", "match": "West" }
+            {
+              "term": "N",
+              "match": "North"
+            },
+            {
+              "term": "S",
+              "match": "South"
+            },
+            {
+              "term": "E",
+              "match": "East"
+            },
+            {
+              "term": "W",
+              "match": "West"
+            }
           ]
         },
         {
@@ -750,23 +1231,42 @@
         {
           "type": "mc",
           "question": "About what fraction of Earth's surface is covered by land?",
-          "options": ["About 1/4", "About 1/2", "About 3/4", "Almost all of it"],
+          "options": [
+            "About 1/4",
+            "About 1/2",
+            "About 3/4",
+            "Almost all of it"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Because Earth has more water than land, it's nicknamed the '_____ Planet'.",
           "answer": "blue",
-          "acceptable": ["blue"]
+          "acceptable": [
+            "blue"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each term to its meaning.",
           "pairs": [
-            { "term": "Tropic of Cancer", "match": "A line north of the equator" },
-            { "term": "Tropic of Capricorn", "match": "A line south of the equator" },
-            { "term": "Northern Hemisphere", "match": "The top half of the Earth" },
-            { "term": "Southern Hemisphere", "match": "The bottom half of the Earth" }
+            {
+              "term": "Tropic of Cancer",
+              "match": "A line north of the equator"
+            },
+            {
+              "term": "Tropic of Capricorn",
+              "match": "A line south of the equator"
+            },
+            {
+              "term": "Northern Hemisphere",
+              "match": "The top half of the Earth"
+            },
+            {
+              "term": "Southern Hemisphere",
+              "match": "The bottom half of the Earth"
+            }
           ]
         },
         {
@@ -777,23 +1277,42 @@
         {
           "type": "mc",
           "question": "Which planet is Earth, counting outward from the Sun?",
-          "options": ["The third planet", "The first planet", "The fifth planet", "The last planet"],
+          "options": [
+            "The third planet",
+            "The first planet",
+            "The fifth planet",
+            "The last planet"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The equator sits at 0 degrees _____.",
           "answer": "latitude",
-          "acceptable": ["latitude"]
+          "acceptable": [
+            "latitude"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each term to its meaning.",
           "pairs": [
-            { "term": "International Date Line", "match": "Roughly on the opposite side of the globe from the Prime Meridian" },
-            { "term": "Prime Meridian", "match": "The line of longitude at 0 degrees" },
-            { "term": "Equator", "match": "The line of latitude at 0 degrees" },
-            { "term": "Hemisphere", "match": "One half of the Earth" }
+            {
+              "term": "International Date Line",
+              "match": "Roughly on the opposite side of the globe from the Prime Meridian"
+            },
+            {
+              "term": "Prime Meridian",
+              "match": "The line of longitude at 0 degrees"
+            },
+            {
+              "term": "Equator",
+              "match": "The line of latitude at 0 degrees"
+            },
+            {
+              "term": "Hemisphere",
+              "match": "One half of the Earth"
+            }
           ]
         },
         {
@@ -804,23 +1323,43 @@
         {
           "type": "mc",
           "question": "Which continent lies completely within the Southern Hemisphere?",
-          "options": ["Australia", "North America", "Asia", "Europe"],
+          "options": [
+            "Australia",
+            "North America",
+            "Asia",
+            "Europe"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "A map's key or _____ explains what each symbol on the map represents.",
           "answer": "legend",
-          "acceptable": ["legend", "key"]
+          "acceptable": [
+            "legend",
+            "key"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each direction to its position on a standard map.",
           "pairs": [
-            { "term": "North", "match": "Usually at the top" },
-            { "term": "South", "match": "Usually at the bottom" },
-            { "term": "East", "match": "Usually on the right" },
-            { "term": "West", "match": "Usually on the left" }
+            {
+              "term": "North",
+              "match": "Usually at the top"
+            },
+            {
+              "term": "South",
+              "match": "Usually at the bottom"
+            },
+            {
+              "term": "East",
+              "match": "Usually on the right"
+            },
+            {
+              "term": "West",
+              "match": "Usually on the left"
+            }
           ]
         },
         {
@@ -831,23 +1370,42 @@
         {
           "type": "mc",
           "question": "In which ocean does the Prime Meridian cross the equator?",
-          "options": ["The Atlantic Ocean", "The Pacific Ocean", "The Indian Ocean", "The Arctic Ocean"],
+          "options": [
+            "The Atlantic Ocean",
+            "The Pacific Ocean",
+            "The Indian Ocean",
+            "The Arctic Ocean"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Longitude lines run from the North Pole to the South Pole and measure distance east and _____.",
           "answer": "west",
-          "acceptable": ["west"]
+          "acceptable": [
+            "west"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each term to its meaning.",
           "pairs": [
-            { "term": "North Pole", "match": "The very top of the Northern Hemisphere" },
-            { "term": "South Pole", "match": "The very bottom of the Southern Hemisphere" },
-            { "term": "Equator", "match": "The dividing line between the two hemispheres" },
-            { "term": "Compass rose", "match": "A map symbol showing N, S, E, and W" }
+            {
+              "term": "North Pole",
+              "match": "The very top of the Northern Hemisphere"
+            },
+            {
+              "term": "South Pole",
+              "match": "The very bottom of the Southern Hemisphere"
+            },
+            {
+              "term": "Equator",
+              "match": "The dividing line between the two hemispheres"
+            },
+            {
+              "term": "Compass rose",
+              "match": "A map symbol showing N, S, E, and W"
+            }
           ]
         },
         {
@@ -858,23 +1416,42 @@
         {
           "type": "mc",
           "question": "What does a compass rose show on a map?",
-          "options": ["The four main directions: North, South, East, West", "The distance between two cities", "The population of a country", "The temperature"],
+          "options": [
+            "The four main directions: North, South, East, West",
+            "The distance between two cities",
+            "The population of a country",
+            "The temperature"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "The imaginary line dividing Earth into Eastern and Western halves is called the Prime _____.",
           "answer": "meridian",
-          "acceptable": ["meridian"]
+          "acceptable": [
+            "meridian"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each term to its meaning.",
           "pairs": [
-            { "term": "Latitude", "match": "Lines running east-west, parallel to the equator" },
-            { "term": "Longitude", "match": "Lines running north-south, pole to pole" },
-            { "term": "Northern Hemisphere", "match": "The half of Earth above the equator" },
-            { "term": "Southern Hemisphere", "match": "The half of Earth below the equator" }
+            {
+              "term": "Latitude",
+              "match": "Lines running east-west, parallel to the equator"
+            },
+            {
+              "term": "Longitude",
+              "match": "Lines running north-south, pole to pole"
+            },
+            {
+              "term": "Northern Hemisphere",
+              "match": "The half of Earth above the equator"
+            },
+            {
+              "term": "Southern Hemisphere",
+              "match": "The half of Earth below the equator"
+            }
           ]
         },
         {
@@ -885,28 +1462,177 @@
         {
           "type": "mc",
           "question": "About how much of Earth's surface has oxygen present on it?",
-          "options": ["Its entire surface", "Only over the oceans", "Only over the land", "Only at the poles"],
+          "options": [
+            "Its entire surface",
+            "Only over the oceans",
+            "Only over the land",
+            "Only at the poles"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Earth is often called the 'Blue Planet' and is the only known planet with _____.",
           "answer": "life",
-          "acceptable": ["life"]
+          "acceptable": [
+            "life"
+          ]
         },
         {
           "type": "mc",
           "question": "Look at the globe. What does the line labeled ① point to?",
           "image": "<svg viewBox=\"0 0 220 200\" width=\"190\" height=\"172\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"110\" cy=\"100\" r=\"80\" fill=\"#1266d8\" opacity=\"0.15\" stroke=\"#1266d8\" stroke-width=\"2.5\"/><line x1=\"30\" y1=\"100\" x2=\"190\" y2=\"100\" stroke=\"#ff5d8f\" stroke-width=\"3\"/><line x1=\"110\" y1=\"20\" x2=\"110\" y2=\"180\" stroke=\"#2ecc71\" stroke-width=\"3\"/><circle cx=\"110\" cy=\"20\" r=\"6\" fill=\"#ffd93d\"/><circle cx=\"110\" cy=\"180\" r=\"6\" fill=\"#ffd93d\"/><g font-weight=\"800\" font-size=\"13\" fill=\"#201a3e\"><circle cx=\"30\" cy=\"140\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"30\" y=\"144\" text-anchor=\"middle\">1</text><line x1=\"30\" y1=\"129\" x2=\"55\" y2=\"102\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><circle cx=\"170\" cy=\"55\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"170\" y=\"59\" text-anchor=\"middle\">2</text><line x1=\"159\" y1=\"55\" x2=\"112\" y2=\"60\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><circle cx=\"150\" cy=\"15\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"150\" y=\"19\" text-anchor=\"middle\">3</text><line x1=\"150\" y1=\"26\" x2=\"113\" y2=\"23\" stroke=\"#201a3e\" stroke-width=\"1.5\"/></g></svg>",
-          "options": ["The equator", "The Prime Meridian", "The North Pole", "The International Date Line"],
+          "options": [
+            "The equator",
+            "The Prime Meridian",
+            "The North Pole",
+            "The International Date Line"
+          ],
           "answer": 0
         },
         {
           "type": "mc",
           "question": "In that same globe, what does ③ point to?",
           "image": "<svg viewBox=\"0 0 220 200\" width=\"190\" height=\"172\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"110\" cy=\"100\" r=\"80\" fill=\"#1266d8\" opacity=\"0.15\" stroke=\"#1266d8\" stroke-width=\"2.5\"/><line x1=\"30\" y1=\"100\" x2=\"190\" y2=\"100\" stroke=\"#ff5d8f\" stroke-width=\"3\"/><line x1=\"110\" y1=\"20\" x2=\"110\" y2=\"180\" stroke=\"#2ecc71\" stroke-width=\"3\"/><circle cx=\"110\" cy=\"20\" r=\"6\" fill=\"#ffd93d\"/><circle cx=\"110\" cy=\"180\" r=\"6\" fill=\"#ffd93d\"/><g font-weight=\"800\" font-size=\"13\" fill=\"#201a3e\"><circle cx=\"30\" cy=\"140\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"30\" y=\"144\" text-anchor=\"middle\">1</text><line x1=\"30\" y1=\"129\" x2=\"55\" y2=\"102\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><circle cx=\"170\" cy=\"55\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"170\" y=\"59\" text-anchor=\"middle\">2</text><line x1=\"159\" y1=\"55\" x2=\"112\" y2=\"60\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><circle cx=\"150\" cy=\"15\" r=\"11\" fill=\"#fff\" stroke=\"#201a3e\" stroke-width=\"1.5\"/><text x=\"150\" y=\"19\" text-anchor=\"middle\">3</text><line x1=\"150\" y1=\"26\" x2=\"113\" y2=\"23\" stroke=\"#201a3e\" stroke-width=\"1.5\"/></g></svg>",
-          "options": ["The North Pole", "The equator", "The South Pole", "The Prime Meridian"],
+          "options": [
+            "The North Pole",
+            "The equator",
+            "The South Pole",
+            "The Prime Meridian"
+          ],
           "answer": 0
+        },
+        {
+          "type": "match",
+          "prompt": "Match each geography word to its meaning.",
+          "pairs": [
+            {
+              "term": "Equator",
+              "match": "The imaginary line at 0 degrees latitude"
+            },
+            {
+              "term": "Tropic of Cancer",
+              "match": "The line north of the equator marking the sun's furthest reach north"
+            },
+            {
+              "term": "Tropic of Capricorn",
+              "match": "The line south of the equator marking the sun's furthest reach south"
+            },
+            {
+              "term": "Prime Meridian",
+              "match": "The imaginary line at 0 degrees longitude"
+            },
+            {
+              "term": "Hemisphere",
+              "match": "Half of the Earth, divided by the equator or a meridian"
+            }
+          ]
+        },
+        {
+          "type": "mc",
+          "question": "Look at the globe. What is the solid line labeled ① called?",
+          "image": "<svg viewBox=\"0 0 260 200\" width=\"220\" height=\"170\" xmlns=\"http://www.w3.org/2000/svg\"><ellipse cx=\"130\" cy=\"100\" rx=\"110\" ry=\"90\" fill=\"none\" stroke=\"#1266d8\" stroke-width=\"2.5\" opacity=\"0.5\"/><line x1=\"20\" y1=\"100\" x2=\"240\" y2=\"100\" stroke=\"#22b573\" stroke-width=\"3\"/><line x1=\"35\" y1=\"65\" x2=\"225\" y2=\"65\" stroke=\"#8a6d3a\" stroke-width=\"2\" stroke-dasharray=\"6,4\"/><line x1=\"35\" y1=\"135\" x2=\"225\" y2=\"135\" stroke=\"#8a6d3a\" stroke-width=\"2\" stroke-dasharray=\"6,4\"/><text x=\"130\" y=\"95\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"700\" fill=\"#22b573\">①</text></svg>",
+          "options": [
+            "The Equator",
+            "The Prime Meridian",
+            "The Tropic of Cancer",
+            "The Arctic Circle"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "fill",
+          "question": "The equator divides the Earth into the Northern and Southern _____.",
+          "answer": "hemispheres",
+          "acceptable": [
+            "hemispheres",
+            "hemisphere"
+          ]
+        },
+        {
+          "type": "mc",
+          "question": "Look at the globe. The dashed line labeled ②, above the equator, is called the:",
+          "image": "<svg viewBox=\"0 0 260 200\" width=\"220\" height=\"170\" xmlns=\"http://www.w3.org/2000/svg\"><ellipse cx=\"130\" cy=\"100\" rx=\"110\" ry=\"90\" fill=\"none\" stroke=\"#1266d8\" stroke-width=\"2.5\" opacity=\"0.5\"/><line x1=\"20\" y1=\"100\" x2=\"240\" y2=\"100\" stroke=\"#3d2e22\" stroke-width=\"3\"/><line x1=\"35\" y1=\"65\" x2=\"225\" y2=\"65\" stroke=\"#e07a2e\" stroke-width=\"2.5\" stroke-dasharray=\"6,4\"/><line x1=\"35\" y1=\"135\" x2=\"225\" y2=\"135\" stroke=\"#8a6d3a\" stroke-width=\"2\" stroke-dasharray=\"6,4\"/><text x=\"130\" y=\"60\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"700\" fill=\"#e07a2e\">②</text></svg>",
+          "options": [
+            "Tropic of Capricorn",
+            "Tropic of Cancer",
+            "Prime Meridian",
+            "South Pole"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "flashcard",
+          "front": "Why do mapmakers draw lines of latitude and longitude on maps and globes?",
+          "back": "They form a grid, so any exact spot on Earth can be described with just two numbers -- its latitude and longitude -- no matter where in the world you are!"
+        },
+        {
+          "type": "mc",
+          "question": "Look at the globe. The dashed line labeled ③, below the equator, is called the:",
+          "image": "<svg viewBox=\"0 0 260 200\" width=\"220\" height=\"170\" xmlns=\"http://www.w3.org/2000/svg\"><ellipse cx=\"130\" cy=\"100\" rx=\"110\" ry=\"90\" fill=\"none\" stroke=\"#1266d8\" stroke-width=\"2.5\" opacity=\"0.5\"/><line x1=\"20\" y1=\"100\" x2=\"240\" y2=\"100\" stroke=\"#3d2e22\" stroke-width=\"3\"/><line x1=\"35\" y1=\"65\" x2=\"225\" y2=\"65\" stroke=\"#8a6d3a\" stroke-width=\"2\" stroke-dasharray=\"6,4\"/><line x1=\"35\" y1=\"135\" x2=\"225\" y2=\"135\" stroke=\"#9b6bff\" stroke-width=\"2.5\" stroke-dasharray=\"6,4\"/><text x=\"130\" y=\"150\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"700\" fill=\"#9b6bff\">③</text></svg>",
+          "options": [
+            "Tropic of Cancer",
+            "Prime Meridian",
+            "Tropic of Capricorn",
+            "North Pole"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "fill",
+          "question": "Lines of latitude run east-west; lines of longitude run pole to pole, which is also called _____-_____.",
+          "answer": "north-south",
+          "acceptable": [
+            "north-south",
+            "north to south",
+            "north south"
+          ]
+        },
+        {
+          "type": "mc",
+          "question": "Look at the map grid. A city sits at about 40°N latitude and 105°W longitude -- that's closest to which real U.S. city?",
+          "image": "<svg viewBox=\"0 0 260 200\" width=\"230\" height=\"180\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"10\" y=\"10\" width=\"240\" height=\"180\" fill=\"none\" stroke=\"#3d2e22\" stroke-width=\"1.5\"/><line x1=\"90\" y1=\"10\" x2=\"90\" y2=\"190\" stroke=\"#c2ac91\" stroke-width=\"1\"/><line x1=\"170\" y1=\"10\" x2=\"170\" y2=\"190\" stroke=\"#c2ac91\" stroke-width=\"1\"/><line x1=\"10\" y1=\"70\" x2=\"250\" y2=\"70\" stroke=\"#c2ac91\" stroke-width=\"1\"/><line x1=\"10\" y1=\"130\" x2=\"250\" y2=\"130\" stroke=\"#c2ac91\" stroke-width=\"1\"/><circle cx=\"170\" cy=\"70\" r=\"5\" fill=\"#e2685f\"/><text x=\"10\" y=\"65\" font-size=\"11\" fill=\"#3d2e22\">40°N</text><text x=\"10\" y=\"125\" font-size=\"11\" fill=\"#3d2e22\">30°N</text><text x=\"80\" y=\"200\" font-size=\"11\" fill=\"#3d2e22\">105°W</text><text x=\"0\" y=\"200\" font-size=\"11\" fill=\"#3d2e22\">115°W</text></svg>",
+          "options": [
+            "Denver",
+            "Miami",
+            "Boston",
+            "Seattle"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "match",
+          "prompt": "Match each compass direction to what it points toward.",
+          "pairs": [
+            {
+              "term": "North",
+              "match": "Toward the top of most maps"
+            },
+            {
+              "term": "South",
+              "match": "Toward the bottom of most maps"
+            },
+            {
+              "term": "East",
+              "match": "The direction the sun rises from"
+            },
+            {
+              "term": "West",
+              "match": "The direction the sun sets toward"
+            }
+          ]
+        },
+        {
+          "type": "mc",
+          "question": "Look at the campsite map. If you walk from the campfire toward the rowboats, which direction are you mostly heading?",
+          "image": "<svg viewBox=\"0 0 260 200\" width=\"230\" height=\"180\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"10\" y=\"10\" width=\"240\" height=\"180\" rx=\"10\" fill=\"#eaf3ff\" stroke=\"#3d2e22\" stroke-width=\"1.5\"/><g transform=\"translate(210,45)\"><line x1=\"0\" y1=\"-22\" x2=\"0\" y2=\"22\" stroke=\"#3d2e22\" stroke-width=\"2\"/><line x1=\"-22\" y1=\"0\" x2=\"22\" y2=\"0\" stroke=\"#3d2e22\" stroke-width=\"2\"/><text x=\"0\" y=\"-26\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"700\">N</text><text x=\"0\" y=\"34\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"700\">S</text><text x=\"28\" y=\"4\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"700\">E</text><text x=\"-28\" y=\"4\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"700\">W</text></g><text x=\"60\" y=\"70\" font-size=\"22\">🏕️</text><text x=\"45\" y=\"88\" font-size=\"11\">Campfire</text><text x=\"150\" y=\"150\" font-size=\"22\">🚣</text><text x=\"140\" y=\"168\" font-size=\"11\">Rowboats</text></svg>",
+          "options": [
+            "Northwest",
+            "Southeast",
+            "Northeast",
+            "Southwest"
+          ],
+          "answer": 1
         }
       ],
       "funFacts": [
@@ -929,23 +1655,43 @@
         {
           "type": "mc",
           "question": "In the 24-hour clock, what time is 7:25 p.m.?",
-          "options": ["19:25", "07:25", "17:25", "09:25"],
+          "options": [
+            "19:25",
+            "07:25",
+            "17:25",
+            "09:25"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Noon means it is _____ o'clock in the daytime.",
           "answer": "12",
-          "acceptable": ["12", "twelve"]
+          "acceptable": [
+            "12",
+            "twelve"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each term to its meaning.",
           "pairs": [
-            { "term": "a.m.", "match": "Time before noon" },
-            { "term": "p.m.", "match": "Time after noon" },
-            { "term": "Noon", "match": "12:00 in the middle of the day" },
-            { "term": "Midnight", "match": "00:00 in the middle of the night" }
+            {
+              "term": "a.m.",
+              "match": "Time before noon"
+            },
+            {
+              "term": "p.m.",
+              "match": "Time after noon"
+            },
+            {
+              "term": "Noon",
+              "match": "12:00 in the middle of the day"
+            },
+            {
+              "term": "Midnight",
+              "match": "00:00 in the middle of the night"
+            }
           ]
         },
         {
@@ -956,23 +1702,43 @@
         {
           "type": "mc",
           "question": "What time is midnight on the 24-hour clock?",
-          "options": ["00:00", "12:00", "06:00", "24:30"],
+          "options": [
+            "00:00",
+            "12:00",
+            "06:00",
+            "24:30"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "A digital clock shows time using numbers, while an _____ clock uses moving hands.",
           "answer": "analogue",
-          "acceptable": ["analogue", "analog"]
+          "acceptable": [
+            "analogue",
+            "analog"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each 24-hour clock time to the correct a.m./p.m. time.",
           "pairs": [
-            { "term": "08:40", "match": "8:40 a.m." },
-            { "term": "19:25", "match": "7:25 p.m." },
-            { "term": "21:05", "match": "9:05 p.m." },
-            { "term": "10:25", "match": "10:25 a.m." }
+            {
+              "term": "08:40",
+              "match": "8:40 a.m."
+            },
+            {
+              "term": "19:25",
+              "match": "7:25 p.m."
+            },
+            {
+              "term": "21:05",
+              "match": "9:05 p.m."
+            },
+            {
+              "term": "10:25",
+              "match": "10:25 a.m."
+            }
           ]
         },
         {
@@ -983,23 +1749,43 @@
         {
           "type": "mc",
           "question": "Which is longer: 1 hour and 10 minutes, or 80 minutes?",
-          "options": ["80 minutes is longer", "They are exactly the same", "1 hour 10 minutes is longer", "Cannot tell"],
+          "options": [
+            "80 minutes is longer",
+            "They are exactly the same",
+            "1 hour 10 minutes is longer",
+            "Cannot tell"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Another word for 'noon', or 12:00 in the middle of the day, is _____.",
           "answer": "midday",
-          "acceptable": ["midday", "noon"]
+          "acceptable": [
+            "midday",
+            "noon"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each time to its 24-hour clock equivalent.",
           "pairs": [
-            { "term": "7:00 p.m.", "match": "19:00" },
-            { "term": "11:00 a.m.", "match": "11:00" },
-            { "term": "Midday", "match": "12:00" },
-            { "term": "Midnight", "match": "00:00" }
+            {
+              "term": "7:00 p.m.",
+              "match": "19:00"
+            },
+            {
+              "term": "11:00 a.m.",
+              "match": "11:00"
+            },
+            {
+              "term": "Midday",
+              "match": "12:00"
+            },
+            {
+              "term": "Midnight",
+              "match": "00:00"
+            }
           ]
         },
         {
@@ -1010,23 +1796,43 @@
         {
           "type": "mc",
           "question": "What is 08:40 p.m. written as in 24-hour time?",
-          "options": ["20:40", "08:40", "18:40", "10:40"],
+          "options": [
+            "20:40",
+            "08:40",
+            "18:40",
+            "10:40"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "14:15 in 24-hour time is the same as _____:15 p.m.",
           "answer": "2",
-          "acceptable": ["2", "02"]
+          "acceptable": [
+            "2",
+            "02"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each 12-hour time to its 24-hour clock equivalent.",
           "pairs": [
-            { "term": "8:20 p.m.", "match": "20:20" },
-            { "term": "6:40 p.m.", "match": "18:40" },
-            { "term": "2:15 p.m.", "match": "14:15" },
-            { "term": "11:00 a.m.", "match": "11:00" }
+            {
+              "term": "8:20 p.m.",
+              "match": "20:20"
+            },
+            {
+              "term": "6:40 p.m.",
+              "match": "18:40"
+            },
+            {
+              "term": "2:15 p.m.",
+              "match": "14:15"
+            },
+            {
+              "term": "11:00 a.m.",
+              "match": "11:00"
+            }
           ]
         },
         {
@@ -1037,23 +1843,44 @@
         {
           "type": "mc",
           "question": "If it is 10 weeks and 2 days until Christmas, how many days is that?",
-          "options": ["72 days", "70 days", "82 days", "12 days"],
+          "options": [
+            "72 days",
+            "70 days",
+            "82 days",
+            "12 days"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "Your bus leaves at 9:30 a.m. and you must arrive 20 minutes early. What time must you arrive at school?",
           "answer": "9:10",
-          "acceptable": ["9:10", "9:10am", "9:10 a.m."]
+          "acceptable": [
+            "9:10",
+            "9:10am",
+            "9:10 a.m."
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each activity time to how long it takes.",
           "pairs": [
-            { "term": "5 minutes and 12 seconds", "match": "312 seconds" },
-            { "term": "1 hour and 10 minutes", "match": "70 minutes" },
-            { "term": "80 minutes", "match": "1 hour and 20 minutes" },
-            { "term": "10 weeks and 2 days", "match": "72 days" }
+            {
+              "term": "5 minutes and 12 seconds",
+              "match": "312 seconds"
+            },
+            {
+              "term": "1 hour and 10 minutes",
+              "match": "70 minutes"
+            },
+            {
+              "term": "80 minutes",
+              "match": "1 hour and 20 minutes"
+            },
+            {
+              "term": "10 weeks and 2 days",
+              "match": "72 days"
+            }
           ]
         },
         {
@@ -1064,23 +1891,42 @@
         {
           "type": "mc",
           "question": "A bike race starts at 11:30 a.m. Your friend crosses the finish line at 1:10 p.m. How long were they cycling for?",
-          "options": ["1 hour 40 minutes", "1 hour 10 minutes", "2 hours", "40 minutes"],
+          "options": [
+            "1 hour 40 minutes",
+            "1 hour 10 minutes",
+            "2 hours",
+            "40 minutes"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "How many days are in the month of March? _____ days.",
           "answer": "31",
-          "acceptable": ["31"]
+          "acceptable": [
+            "31"
+          ]
         },
         {
           "type": "match",
           "prompt": "Using the March 2020 calendar (March 1 is a Sunday), match each date to its day of the week.",
           "pairs": [
-            { "term": "March 20", "match": "Friday" },
-            { "term": "March 18", "match": "Wednesday" },
-            { "term": "March 1", "match": "Sunday" },
-            { "term": "March 31", "match": "Tuesday" }
+            {
+              "term": "March 20",
+              "match": "Friday"
+            },
+            {
+              "term": "March 18",
+              "match": "Wednesday"
+            },
+            {
+              "term": "March 1",
+              "match": "Sunday"
+            },
+            {
+              "term": "March 31",
+              "match": "Tuesday"
+            }
           ]
         },
         {
@@ -1091,23 +1937,42 @@
         {
           "type": "mc",
           "question": "How many Fridays are in March 2020, based on the calendar (March 1 is a Sunday)?",
-          "options": ["4 Fridays", "5 Fridays", "3 Fridays", "6 Fridays"],
+          "options": [
+            "4 Fridays",
+            "5 Fridays",
+            "3 Fridays",
+            "6 Fridays"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "An analogue clock shows time using moving _____, while a digital clock shows time using numbers.",
           "answer": "hands",
-          "acceptable": ["hands"]
+          "acceptable": [
+            "hands"
+          ]
         },
         {
           "type": "match",
           "prompt": "Match each clock time description to what it means.",
           "pairs": [
-            { "term": "a.m.", "match": "Any time before noon" },
-            { "term": "p.m.", "match": "Any time after noon" },
-            { "term": "Noon / midday", "match": "12:00 in the middle of the day" },
-            { "term": "Midnight", "match": "00:00 in the middle of the night" }
+            {
+              "term": "a.m.",
+              "match": "Any time before noon"
+            },
+            {
+              "term": "p.m.",
+              "match": "Any time after noon"
+            },
+            {
+              "term": "Noon / midday",
+              "match": "12:00 in the middle of the day"
+            },
+            {
+              "term": "Midnight",
+              "match": "00:00 in the middle of the night"
+            }
           ]
         },
         {
@@ -1118,14 +1983,122 @@
         {
           "type": "mc",
           "question": "To change a p.m. time into 24-hour time, what do you do?",
-          "options": ["Add 12 to the hour", "Subtract 12 from the hour", "Multiply the hour by 2", "Do nothing, it's already correct"],
+          "options": [
+            "Add 12 to the hour",
+            "Subtract 12 from the hour",
+            "Multiply the hour by 2",
+            "Do nothing, it's already correct"
+          ],
           "answer": 0
         },
         {
           "type": "fill",
           "question": "10 weeks and 2 days is the same as 72 _____.",
           "answer": "days",
-          "acceptable": ["days"]
+          "acceptable": [
+            "days"
+          ]
+        },
+        {
+          "type": "mc",
+          "question": "7 o'clock in the evening is the same as which 24-hour clock time?",
+          "options": [
+            "07:00",
+            "17:00",
+            "19:00",
+            "21:00"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "fill",
+          "question": "14:15 on the 24-hour clock is 2:15 _____ on the 12-hour clock.",
+          "answer": "p.m.",
+          "acceptable": [
+            "p.m.",
+            "pm",
+            "p.m"
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each time word to its meaning.",
+          "pairs": [
+            {
+              "term": "Noon",
+              "match": "12:00 in the middle of the day"
+            },
+            {
+              "term": "Midnight",
+              "match": "00:00 in the middle of the night"
+            },
+            {
+              "term": "a.m.",
+              "match": "Any time between midnight and noon"
+            },
+            {
+              "term": "p.m.",
+              "match": "Any time between noon and midnight"
+            }
+          ]
+        },
+        {
+          "type": "mc",
+          "question": "Which of these is midnight, written on the 24-hour clock?",
+          "options": [
+            "12:00",
+            "00:00",
+            "11:59",
+            "10:00"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "flashcard",
+          "front": "Why do airports, hospitals, and the military often use the 24-hour clock instead of a.m./p.m.?",
+          "back": "Because every hour of the day gets its own unique number (0 to 23), so there's never any confusion about whether a time means morning or night!"
+        },
+        {
+          "type": "fill",
+          "question": "6:40 p.m. written on the 24-hour clock is _____.",
+          "answer": "18:40",
+          "acceptable": [
+            "18:40",
+            "1840"
+          ]
+        },
+        {
+          "type": "mc",
+          "question": "What does \"a.m.\" stand for?",
+          "options": [
+            "Ante meridiem (before midday)",
+            "After midday",
+            "Around midnight",
+            "All morning"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "match",
+          "prompt": "Match each spoken time to the matching digital time.",
+          "pairs": [
+            {
+              "term": "Half past 3",
+              "match": "3:30"
+            },
+            {
+              "term": "Quarter past 8",
+              "match": "8:15"
+            },
+            {
+              "term": "Quarter to 6",
+              "match": "5:45"
+            },
+            {
+              "term": "Ten past 11",
+              "match": "11:10"
+            }
+          ]
         }
       ],
       "funFacts": [
