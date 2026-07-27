@@ -368,12 +368,39 @@ function buildQuestionOrder(questions) {
       }
     }
   }
+  // A reading passage must always come before its own comprehension
+  // questions, so pin it to the front regardless of the shuffle above.
+  const passageIdx = list.findIndex(q => q.type === "passage");
+  if (passageIdx > 0) {
+    const [passage] = list.splice(passageIdx, 1);
+    list.unshift(passage);
+  }
   return list;
 }
 
 // Picks a random subset from the chapter's larger question pool so each
 // playthrough draws a fresh 5-question set instead of the whole bank.
+//
+// Some chapters (e.g. Reading Comprehension) tag questions with a
+// `passageId` so they only make sense alongside their own passage text.
+// For those, pick ONE passageId's group (passage + its own questions)
+// instead of sampling the whole pool, so a kid always gets the story
+// before being asked about it -- never a random mix of unrelated
+// passages' questions in the same 5-question session.
 function pickSessionQuestions(pool, count) {
+  const grouped = pool.filter(q => q.passageId);
+  if (grouped.length > 0) {
+    const passageIds = [...new Set(grouped.map(q => q.passageId))];
+    const chosenId = passageIds[Math.floor(Math.random() * passageIds.length)];
+    const passageEntry = pool.find(q => q.type === "passage" && q.passageId === chosenId);
+    const related = shuffle(pool.filter(q => q.passageId === chosenId && q.type !== "passage"));
+    const questions = related.slice(0, count);
+    if (questions.length < count) {
+      const ungrouped = shuffle(pool.filter(q => !q.passageId));
+      questions.push(...ungrouped.slice(0, count - questions.length));
+    }
+    return passageEntry ? [passageEntry, ...questions] : questions;
+  }
   return shuffle(pool).slice(0, Math.min(count, pool.length));
 }
 
@@ -447,6 +474,7 @@ function renderCurrentQuestion() {
     case "craft-match": renderMatch(q, area, true); break;
     case "flashcard": renderFlashcard(q, area); break;
     case "sentence-builder": renderSentenceBuilder(q, area); break;
+    case "passage": renderPassage(q, area); break;
     default: area.textContent = "Unsupported question type.";
   }
 }
@@ -629,6 +657,22 @@ function renderFlashcard(q, area) {
     session.score += 5;
     session.correctCount++;
     nextQuestion(1500);
+  });
+}
+
+/* ----- Passage (reading-comprehension intro, self-check like flashcard) ----- */
+function renderPassage(q, area) {
+  area.innerHTML = `
+    <div class="passage-card">
+      <div class="passage-title">${q.title}</div>
+      <div class="passage-body">${q.body}</div>
+      <button id="passage-continue" class="btn btn-primary">I've read it — let's go! →</button>
+    </div>
+  `;
+  document.getElementById("passage-continue").addEventListener("click", () => {
+    session.score += 5;
+    session.correctCount++;
+    nextQuestion(300);
   });
 }
 

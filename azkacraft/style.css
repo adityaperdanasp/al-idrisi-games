@@ -735,6 +735,30 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
 .match-row.row-wrong { border-color: #d1443c; background: #fde0df; }
 .match-row .row-correction { grid-column: 1 / -1; font-weight: 600; color: #1c6b34; }
 
+/* Passage (reading-comprehension intro, shown before its own questions) */
+.passage-card { padding: 6px 2px; }
+.passage-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--brand);
+  margin-bottom: 14px;
+  text-align: center;
+}
+.passage-body {
+  max-height: 46vh;
+  overflow-y: auto;
+  line-height: 1.6;
+  font-size: 1rem;
+  background: var(--bg-1);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  white-space: pre-line;
+}
+.passage-body p { margin: 0 0 12px; }
+.passage-body p:last-child { margin-bottom: 0; }
+
 /* Flashcard */
 .flashcard {
   text-align: center;

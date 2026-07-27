@@ -548,6 +548,102 @@
             "school"
           ],
           "answer": "Aoi dislikes school"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the suffix -less: \"This broken toy is a ___ piece of junk.\" (without worth)",
+          "answer": "worthless"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the suffix -ful: \"Did you see the ___ rainbow in the sky?\" (full of color)",
+          "answer": "colorful"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the prefix un-: \"Mrs. Wu said she does not want ___ homework handed in.\" (not finished)",
+          "answer": "unfinished"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'pre-' means...",
+          "options": [
+            "before",
+            "after",
+            "two",
+            "wrong"
+          ],
+          "answer": "before"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which word uses the prefix 'bi-', meaning two?",
+          "options": [
+            "bicycle",
+            "dislike",
+            "unhappy",
+            "prehistoric"
+          ],
+          "answer": "bicycle"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the suffix -ing: \"Kenji is ___ to the park today.\" (doing now: cycle)",
+          "answer": "cycling"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the suffix -est: \"That is the ___ building in town.\" (most: tall)",
+          "answer": "tallest"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the suffix -er: \"My brother is ___ than me.\" (more: tall)",
+          "answer": "taller"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the suffix -er: \"Ms. Lin is my favorite ___ at school.\" (someone whose job is to teach)",
+          "answer": "teacher"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete using the suffix -ly: \"The rabbit hopped ___ across the yard.\" (how: in a quick way)",
+          "answer": "quickly"
+        },
+        {
+          "type": "flashcard",
+          "word": "over-",
+          "definition": "A prefix meaning too much.",
+          "example": "Adding 'over-' to 'cook' makes 'overcook' — to cook too much."
+        },
+        {
+          "type": "flashcard",
+          "word": "mis-",
+          "definition": "A prefix meaning wrongly.",
+          "example": "Adding 'mis-' to 'behave' makes 'misbehave' — to behave wrongly."
+        },
+        {
+          "type": "match",
+          "prompt": "Match each prefix or suffix to its meaning.",
+          "pairs": [
+            {
+              "left": "re-",
+              "right": "to do again"
+            },
+            {
+              "left": "bi-",
+              "right": "two"
+            },
+            {
+              "left": "un-",
+              "right": "not"
+            },
+            {
+              "left": "-ful",
+              "right": "full of"
+            }
+          ]
         }
       ]
     },
@@ -847,6 +943,12 @@
       "stickerId": "sticker-reading",
       "questions": [
         {
+          "type": "passage",
+          "passageId": "jane-goodall",
+          "title": "Jane Goodall",
+          "body": "<p>Jane Goodall was born on 3rd April 1934 in London, England, to her parents Margaret Joseph and Mortimer Morris-Goodall. As a little girl, her father once gave her a stuffed toy chimpanzee named Jubilee instead of a teddy bear — and Jane still has it today, even though she's all grown up!</p><p>That gift sparked a lifelong love of animals. In 1957, Jane travelled to Kenya, where she met a scientist named Louis Leakey. He taught her all about chimpanzees, and Jane went on to live alongside them in the wild for over 55 years.</p><p>Unlike other scientists, who only gave the chimps numbers, Jane gave each one a name — like David Greybeard, named for his grey chin. Naming them helped her notice that every chimpanzee had its own personality: some were loud, some quiet, some kind, and some grumpy, just like people!</p><p>Jane made several surprising discoveries. She once watched a chimpanzee poke a blade of grass into a termite mound and lick off the insects — the very first time anyone had seen an animal use a tool. She also learned that chimpanzees eat meat as well as plants, and that they show real feelings like happiness, sadness, and anger.</p><p>Remember: chimpanzees are apes, not monkeys — gorillas and orangutans are apes too! In 2002, Jane was honoured with an award for her decades spent helping animals and wildlife around the world.</p>"
+        },
+        {
           "type": "mc",
           "prompt": "According to the text, what animal does Jane Goodall know a lot about?",
           "options": [
@@ -855,7 +957,8 @@
             "monkeys",
             "stuffed animals"
           ],
-          "answer": "chimpanzees"
+          "answer": "chimpanzees",
+          "passageId": "jane-goodall"
         },
         {
           "type": "mc",
@@ -866,12 +969,14 @@
             "A book about Africa",
             "A camera"
           ],
-          "answer": "A stuffed chimpanzee"
+          "answer": "A stuffed chimpanzee",
+          "passageId": "jane-goodall"
         },
         {
           "type": "fill",
           "prompt": "Jane's stuffed chimpanzee was named ___.",
-          "answer": "Jubilee"
+          "answer": "Jubilee",
+          "passageId": "jane-goodall"
         },
         {
           "type": "mc",
@@ -882,7 +987,8 @@
             "apes",
             "humans"
           ],
-          "answer": "apes"
+          "answer": "apes",
+          "passageId": "jane-goodall"
         },
         {
           "type": "mc",
@@ -893,12 +999,14 @@
             "Nigeria",
             "Morocco"
           ],
-          "answer": "Kenya"
+          "answer": "Kenya",
+          "passageId": "jane-goodall"
         },
         {
           "type": "fill",
           "prompt": "The scientist Jane met in Africa, who knew a lot about chimpanzees, was named ___.",
-          "answer": "Louis Leakey"
+          "answer": "Louis Leakey",
+          "passageId": "jane-goodall"
         },
         {
           "type": "mc",
@@ -909,7 +1017,8 @@
             "It was easier to remember",
             "The chimps chose their own names"
           ],
-          "answer": "It helped her get to know and understand them better"
+          "answer": "It helped her get to know and understand them better",
+          "passageId": "jane-goodall"
         },
         {
           "type": "mc",
@@ -920,7 +1029,8 @@
             "He couldn't use tools",
             "He lived alone"
           ],
-          "answer": "He had a grey chin"
+          "answer": "He had a grey chin",
+          "passageId": "jane-goodall"
         },
         {
           "type": "mc",
@@ -931,32 +1041,36 @@
             "Playing with it",
             "Sleeping on it"
           ],
-          "answer": "Using it like a spoon to eat insects"
+          "answer": "Using it like a spoon to eat insects",
+          "passageId": "jane-goodall"
         },
         {
           "type": "mc",
           "prompt": "In the story 'The Curse of Cogston House', who are the two main characters?",
           "options": [
-            "Daniel and Kenta",
-            "Kenji and Danny",
-            "Daniel and Kenji"
+            "Jack and Lucas",
+            "Luca and Jake",
+            "Jack and Luca"
           ],
-          "answer": "Daniel and Kenji"
+          "answer": "Jack and Luca",
+          "passageId": "cogston-house"
         },
         {
           "type": "mc",
-          "prompt": "Where were Daniel and Kenji heading in the story?",
+          "prompt": "Where were Jack and Luca heading in the story?",
           "options": [
             "The park",
             "Cogston House",
             "The swings"
           ],
-          "answer": "Cogston House"
+          "answer": "Cogston House",
+          "passageId": "cogston-house"
         },
         {
           "type": "fill",
           "prompt": "In the story, fifty-foot-high ___ encased the crumbling walls of Cogston House.",
-          "answer": "scaffolding"
+          "answer": "scaffolding",
+          "passageId": "cogston-house"
         },
         {
           "type": "mc",
@@ -967,7 +1081,8 @@
             "About a hundred years ago",
             "It has always been empty"
           ],
-          "answer": "About thirty years ago"
+          "answer": "About thirty years ago",
+          "passageId": "cogston-house"
         },
         {
           "type": "match",
@@ -985,7 +1100,8 @@
               "left": "The Bear and the Bees",
               "right": "A bear is stung after disturbing a beehive"
             }
-          ]
+          ],
+          "passageId": "fables"
         },
         {
           "type": "mc",
@@ -996,7 +1112,8 @@
             "The water inside was dirty",
             "There were worms in the water"
           ],
-          "answer": "It was high with a narrow neck"
+          "answer": "It was high with a narrow neck",
+          "passageId": "fables"
         },
         {
           "type": "mc",
@@ -1007,7 +1124,8 @@
             "He ate all the food before the Stork arrived",
             "He invited the Stork but never showed up"
           ],
-          "answer": "He served soup in a shallow dish the Stork could not eat from"
+          "answer": "He served soup in a shallow dish the Stork could not eat from",
+          "passageId": "fables"
         },
         {
           "type": "mc",
@@ -1018,7 +1136,8 @@
             "To catch fish",
             "To wash off honey"
           ],
-          "answer": "To escape the swarm of angry bees"
+          "answer": "To escape the swarm of angry bees",
+          "passageId": "fables"
         },
         {
           "type": "flashcard",
@@ -1049,7 +1168,20 @@
             "Cogston",
             "House"
           ],
-          "answer": "Everyone had a story about Cogston House"
+          "answer": "Everyone had a story about Cogston House",
+          "passageId": "cogston-house"
+        },
+        {
+          "type": "passage",
+          "passageId": "cogston-house",
+          "title": "The Curse of Cogston House",
+          "body": "<p>Jack and Luca, both eleven years old, usually spent their evenings on the swings at the park. But today, Jack had a different idea. “Come on, this is going to be epic!” he said, pushing through the overgrown bushes toward a part of the park everyone called ‘The Top End’.</p><p>Luca followed more slowly. He wasn't sure he wanted to leave the swings behind, and he liked The Top End even less — but he didn't want to be left behind either, so he pushed on through the nettles and brambles after his friend.</p><p>Eventually the two boys reached a clearing, and there it was: Cogston House, wrapped from top to bottom in rusty scaffolding that looked like it was the only thing holding the crumbling walls together. Nearly a hundred years old, the house had once belonged to a wealthy family, but nobody had lived there for about thirty years. Ivy crept over the broken bricks, and the whole place felt heavy with sadness.</p><p>Everybody in town seemed to have their own story about Cogston House — some said it was cursed, some said it was haunted — but no one really knew which parts were true and which were just rumours. Luca, for one, wasn't keen to stick around and find out.</p>"
+        },
+        {
+          "type": "passage",
+          "passageId": "fables",
+          "title": "Three Aesop's Fables",
+          "body": "<p><strong>The Crow and the Pitcher</strong><br>During a dry spell, a thirsty crow found a pitcher with a little water in it. But the pitcher was tall with a narrow neck, and no matter how hard he tried, the crow couldn't reach the water. Then he had a clever idea: he began dropping small pebbles into the pitcher, one by one. Each pebble made the water rise a little higher, until at last it was high enough for the crow to drink.</p><p><strong>The Fox and the Stork</strong><br>A fox once decided to play a trick on his neighbor, the stork. “Come and dine with me today,” he said, smiling to himself. When the stork arrived, hungry and looking forward to a good meal, the fox served soup in a wide, shallow dish. The fox lapped it up easily, but the stork could only wet the tip of his long bill — not a single drop passed his lips. Rather than getting angry, the calm stork invited the fox to dine with him in return. This time, the meal was served in a tall jar with a narrow neck. The stork ate happily with his long bill, while the fox could only sniff at the delicious smell from outside the jar. “Don't play tricks on your neighbors,” the stork said calmly, “unless you can take the same trick yourself.”</p><p><strong>The Bear and the Bees</strong><br>While wandering through the woods hunting for berries, a bear stumbled upon a fallen log full of honey, buzzing with a swarm of bees. He sniffed carefully around the log, wondering if the bees were home. Just then, a bee returning from the fields spotted him, guessed exactly what he was after, and stung him sharply before disappearing back into the log. Furious, the bear lost his temper at once — he clawed at the log to destroy the whole nest. But that only brought the entire swarm out after him, and the poor bear had to run for his life, finally escaping by diving straight into a pool of water.</p>"
         }
       ]
     },

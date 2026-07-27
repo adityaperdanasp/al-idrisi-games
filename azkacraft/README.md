@@ -55,6 +55,7 @@ Each question has a `"type"` field. Supported types and their shape:
 - **`match`** / **`craft-match`** — `{ type, prompt, pairs: [{ left, right }, ...] }`
 - **`flashcard`** — `{ type, word, definition, example }` (self-check, no wrong state)
 - **`sentence-builder`** — `{ type, prompt, words: [...], answer }` (words are shuffled and shown as tappable chips)
+- **`passage`** — `{ type, passageId, title, body }` (a reading-comprehension text card, self-check like `flashcard` — no wrong state)
 
 To add real content: open `questions.json`, find the chapter by `id`, and
 add to its `questions` array — the more questions in a chapter's pool, the
@@ -63,6 +64,17 @@ unlock sequentially as each is completed. Each playthrough, `script.js`
 (`pickSessionQuestions`) randomly draws `QUESTIONS_PER_SESSION` (5) questions
 from that chapter's full pool, then mixes their types so the same type never
 repeats twice in a row.
+
+**Reading passages (`passageId`)**: any `mc`/`fill`/`match` question whose
+answer depends on a specific story or article must be tagged with the same
+`passageId` as its `passage` entry (see chapter 6). `pickSessionQuestions`
+detects this and, instead of sampling the whole pool, picks ONE `passageId`
+group per session (the passage + its own questions) so a kid always reads
+the story before being quizzed on it — never a random mix of unrelated
+passages. `buildQuestionOrder` also always pins the `passage` card to the
+front of the session, regardless of the shuffle. Questions with no
+`passageId` (flashcards, sentence-builders, etc.) are unaffected and can
+still be drawn to top up the session if a passage's own pool is short.
 
 ## Voice lines (praise / encouragement)
 
