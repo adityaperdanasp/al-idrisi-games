@@ -1,4 +1,4 @@
-// Al Idrisi Games — roster of teachers & students.
+// BrainBox — roster of teachers & students.
 // Edit this list any time; no other code needs to change.
 // parentEmail: fill in for students so the dashboard can send approved
 // insights to parents. Leave "" if not set yet — the dashboard just won't

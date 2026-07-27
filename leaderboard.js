@@ -1,4 +1,4 @@
-// Al Idrisi Games — shared leaderboard write/read helper.
+// BrainBox — shared leaderboard write/read helper.
 // Connects to the hub's OWN Firebase project via a secondary named app
 // ("aig"), so it never collides with each game's own default Firebase app
 // (each game keeps using its own project for multiplayer, unaffected).

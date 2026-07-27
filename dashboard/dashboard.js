@@ -1,4 +1,4 @@
-// Al Idrisi Games — Teacher/Parent Dashboard.
+// BrainBox — Teacher/Parent Dashboard.
 // Implements design_handoff_teacher_dashboard/README.md against this app's
 // real Firebase data (via AIGLeaderboard.db, same project as leaderboard.js)
 // — no separate backend, no build step, no framework (matches the rest of

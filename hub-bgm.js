@@ -1,4 +1,4 @@
-// Al Idrisi Games hub — background music
+// BrainBox hub — background music
 // One soft looping track for the "who's playing" + landing screens.
 // Volume goes through the Web Audio API (GainNode), not the <audio>
 // element's own .volume — iOS Safari ignores that property entirely (only

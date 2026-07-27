@@ -1,4 +1,4 @@
-// Al Idrisi Games — hub-wide Firebase project (separate from each game's
+// BrainBox — hub-wide Firebase project (separate from each game's
 // own Firebase project). Used for the shared leaderboard/player data and
 // Google Analytics. The 3 games keep using their own original projects for
 // multiplayer pairing — this file/project never touches those.

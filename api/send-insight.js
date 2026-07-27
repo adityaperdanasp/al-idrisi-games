@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: "Server not configured: RESEND_API_KEY missing" });
     return;
   }
-  const from = process.env.RESEND_FROM || "Al Idrisi Games <onboarding@resend.dev>";
+  const from = process.env.RESEND_FROM || "BrainBox <onboarding@resend.dev>";
 
   try {
     const resendRes = await fetch("https://api.resend.com/emails", {
@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
       body: JSON.stringify({
         from,
         to: recipients,
-        subject: `Progress ${studentName || "anak Anda"} di Al Idrisi Games`,
+        subject: `Progress ${studentName || "anak Anda"} di BrainBox`,
         text: draft
       })
     });
