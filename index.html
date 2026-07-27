@@ -702,5 +702,32 @@
   }
 </script>
 
+<!-- Push notifications -- ONLY runs inside the native BrainBox Android app
+     (Capacitor), never for regular browser visitors. There's no server
+     wired up to actually send anything yet -- this just registers the
+     device and surfaces its token so it can be pasted into Firebase
+     Console → Cloud Messaging → "Send test message" for manual testing. -->
+<script>
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+    const { PushNotifications } = window.Capacitor.Plugins;
+    if (PushNotifications) {
+      PushNotifications.requestPermissions().then(result => {
+        if (result.receive === "granted") PushNotifications.register();
+      });
+      PushNotifications.addListener("registration", token => {
+        console.log("BrainBox push token:", token.value);
+        // prompt() (not alert()) so the token text is selectable/copyable on Android.
+        window.prompt("Push token (copy this for Firebase Console test send):", token.value);
+      });
+      PushNotifications.addListener("registrationError", err => {
+        console.error("BrainBox push registration error:", err);
+      });
+      PushNotifications.addListener("pushNotificationReceived", notification => {
+        console.log("BrainBox push received while app open:", notification);
+      });
+    }
+  }
+</script>
+
 </body>
 </html>
