@@ -26,8 +26,13 @@ Verifikasi cepat: `diff <(curl -s https://playalidrisi.fun/{game}/somefile.js) <
 
 ## Data & arsitektur
 
-- **`player.js`** — localStorage key `aig_player`, `{id, name, role}`. `AIGPlayer.deriveParentPlayer(child)` derive identitas ortu tanpa entry baru.
-- **`players.js`** — `window.AIG_PLAYERS`, roster statis. `parentEmail` baru keisi Azka doang.
+- **Login hub sekarang Sign Up / Sign In** (`index.html`, layar `#sc-screen-select`), BUKAN lagi picker roster statis — diganti karena hub udah dibuka ke tester luar + gak ada parental consent buat nampilin nama murid publik. Nama bebas diketik + PIN 4 digit. Akun disimpen di Firebase `testerAccounts/{nameKey}` (`nameKey` = nama di-lowercase + sanitize non-alfanumerik jadi `-`), dan `nameKey` itu jugalah player id yang dipakai di semua tempat lain (`players/{id}/badges/...`, dst) — bentuknya sama kayak id roster statis yang lama, jadi skema data downstream (badges/topicStats/leaderboard) gak perlu berubah.
+  - Sign Up: tolak kalau nama (key) udah dipakai, tulis `{name, pin, createdAt}`, langsung login.
+  - Sign In: cocokin `pin` sama yang tersimpan.
+  - Identitas lama dari SEBELUM switch ini (dari roster statis, gak punya PIN) dipaksa logout otomatis & harus Sign Up ulang sekali (`checkSavedIdentity()`) — deteksinya dengan cek apakah id itu punya record di `testerAccounts`.
+  - Avatar color: dulu index-based dari posisi di roster (bug: id baru yang gak ada di roster jadi `-1`/invisible), sekarang **hash function** dari nama — jadi otomatis kerja buat nama baru apapun tanpa perlu didaftarin dulu.
+- **`player.js`** — localStorage key `aig_player`, `{id, name, role}`. `AIGPlayer.deriveParentPlayer(child)` masih ada buat identitas "orang tua" turunan, TAPI belum jelas apa masih ada jalur UI buat munculin opsi ini di flow Sign Up/Sign In yang baru (dulu dari tap kartu murid di picker lama) — cek lagi kalau mau andalin fitur parent-identity, kemungkinan perlu di-wire ulang.
+- **`players.js`** (`window.AIG_PLAYERS`) — roster statis LAMA, sekarang **gak lagi drive tampilan picker hub** (`renderPicker()` jadi no-op karena elemen DOM target-nya udah gak ada — ada komentar "MOCKUP NOTE" di kode persis soal ini). Masih ke-load & kepake di tempat lain yang belum diaudit ulang (kemungkinan: dashboard guru buat daftar murid, `parentEmail`). Anggap ini transisi belum tuntas — kalau nemu bug aneh soal murid/guru yang "gak muncul", cek dulu apa itu masih gantungan ke roster statis yang gak sinkron sama akun `testerAccounts` yang baru.
 - **`firebase.js`** — Firebase project `al-idrisi-games` (hub), dipakai bareng oleh mathrace/azkacraft/azkauniverse/mathville buat multiplayer + progress. `dinorace` pakai Firebase project sendiri (`dinorace-d9b8c`).
 - **`leaderboard.js`** — semua fungsi guard `player.role === "parent"` terpusat.
 - **MathVille multiplayer** (keputusan eksplisit): numpang Firebase project hub di path baru `mathvilleGames/{code}`, BUKAN project Firebase terpisah kayak game lain.
@@ -60,9 +65,8 @@ Hub punya versi Android via Bubblewrap (Trusted Web Activity, bukan native app t
 
 ## Yang masih perlu ditindaklanjuti
 1. MathVille: 2-device multiplayer sudah divalidasi via 2 tab browser independen (join, map sync, shared round questions, simultaneous play, hasil akhir dgn "me" highlight, semua real lewat Firebase) — tapi masih same-profile/same-engine, BUKAN 2 iPhone fisik beneran (iOS Simulator sempat dicoba buat device kedua tapi crash). Real-device test masih worth dilakuin kalau ada waktu, tapi risiko sync-logic-nya udah jauh lebih rendah sekarang.
-2. Vehicle icons — ternyata ini soal `multipleazka` (Math Race), bukan MathVille (MathVille cuma punya 1 ikon 🚚 di town map, gak ada pilihan vehicle). Dicek render besar tiap emoji (🏎️🛩️🚢🚌🚚🚂): ship (🚢) kebalik — bow-nya udah default ke kanan tapi kena blanket `scaleX(-1)` jadi mundur. Sudah difix (`.car[data-vehicle="ship"]` disamain dgn plane, gak di-flip) + deploy ke hub & `multipleazka.fun`. Truck/train dicek juga, orientasinya udah benar. Bus gak kekliatan jelas arahnya dari emoji (nyaris simetris depan-belakang) — belum bisa dipastikan.
-3. Dashboard: `parentEmail` baru keisi 1 dari ~25 murid (perlu Adit isi manual).
-4. AI Tutor cost monitoring — belum ada alert/budget cap di Anthropic API.
+2. Vehicle icons — **closed**. Ship sudah difix sesi sebelumnya. Bus dicek ulang (render 🚌 normal vs `scaleX(-1)` side-by-side): dua-duanya identik secara visual di font emoji yang ada di environment ini (Noto-style, kemungkinan sama kayak Android WebView) — emoji-nya emang genuinely symmetric depan-belakang, bukan bug rendering. Keputusan: biarin pakai blanket flip yang sama kayak car/truck/train (konsisten dgn keluarga emoji-nya), gak ada perubahan kode yang diperlukan. iOS Simulator dicoba buat cek versi Apple Color Emoji tapi crash-loop lagi (sama kayak sesi multiplayer test) — kalau suatu saat mau dipastiin di Apple emoji, screenshot dari iPhone beneran diperlukan.
+3. AI Tutor cost monitoring — **closed via Anthropic Console, bukan kode**. Anthropic sudah punya built-in spend limit/usage alert per workspace/API key (Console → Settings → Limits / Usage & Cost), jadi gak perlu custom budget-cap code di `api/generate-hint.js`. Ini setting akun yang Adit perlu set sendiri login ke [console.anthropic.com](https://console.anthropic.com) — Claude gak bisa login/ubah billing setting atas nama Adit. Langkah: Console → workspace terkait → Limits → set monthly spend cap + email alert threshold.
 
 ## Gaya kerja user (penting)
 - Adit komunikasi campur Indonesia-Inggris.
