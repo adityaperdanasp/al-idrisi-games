@@ -692,5 +692,15 @@
   document.getElementById("sc-player-chip").addEventListener("click", showSelect);
 </script>
 
+<!-- Offline support (network-first, falls back to cache only when there's
+     no connectivity) -- see sw.js for the caching strategy. -->
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
+</script>
+
 </body>
 </html>
