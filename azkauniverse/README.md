@@ -59,16 +59,20 @@ Each entry in `levels` is one topic:
 }
 ```
 
-Each question has a `type` of `mc`, `fill`, `match`, or `flashcard`.
-Keep the types rotating (don't repeat the same type twice in a row) —
-the existing levels alternate `mc → fill → match → flashcard` twice
-per topic (8 questions), which is a good template to copy.
+Each question has a `type` of `mc`, `fill`, `match`, `line`, or
+`flashcard`. Keep the types rotating (don't repeat the same type
+twice in a row) — the existing levels alternate `mc → fill → match →
+flashcard` twice per topic (8 questions), which is a good template
+to copy.
 
 **Multiple choice (`mc`)**
 ```json
 { "type": "mc", "question": "...", "options": ["A", "B", "C", "D"], "answer": 0 }
 ```
-`answer` is the zero-based index of the correct option.
+`answer` is the zero-based index of the correct option. Add an
+`image` field (a raw inline `<svg>...</svg>` string) to show a
+diagram above the question — see the `atom-structure` or
+`globes-maps` levels for examples.
 
 **Fill in the blank (`fill`)**
 ```json
@@ -87,7 +91,24 @@ per topic (8 questions), which is a good template to copy.
   ]
 }
 ```
-Add as many `pairs` as you like (3–5 works well on screen).
+Add as many `pairs` as you like (3–5 works well on screen). Answered
+by picking from a dropdown per row.
+
+**Drag-a-line matching (`line`)**
+```json
+{
+  "type": "line",
+  "prompt": "Draw a line to match each spoken time to its digital time.",
+  "pairs": [
+    { "term": "Half past 3", "match": "3:30" }
+  ]
+}
+```
+Same `pairs` shape as `match`, but rendered as two columns the kid
+connects by dragging an actual line from a left term to its right
+match (touch/mouse/pen all work via Pointer Events). Use this when
+you want the physical drag motion instead of a dropdown — it's the
+same data, just a different renderer.
 
 **Flashcard (`flashcard`)**
 ```json

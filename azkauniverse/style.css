@@ -775,6 +775,64 @@ button:focus-visible {
   text-align: center;
 }
 
+/* Drag-a-line matching: two columns of buttons with an SVG overlay drawing
+   the lines the kid drags between them. */
+.line-match-wrap {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 60px;
+  padding: 4px 0;
+  touch-action: none;
+}
+.line-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+.line-conn { stroke: var(--secondary); stroke-width: 3; stroke-linecap: round; }
+.line-conn.correct { stroke: var(--success); }
+.line-conn.wrong { stroke: var(--accent-pink); }
+.line-conn.temp { stroke: var(--accent-yellow); stroke-dasharray: 6,5; }
+
+.line-col {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.line-item {
+  background: var(--gentle-bg);
+  border: 3px solid transparent;
+  border-radius: 14px;
+  padding: 12px 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-align: center;
+  cursor: pointer;
+  color: var(--text-on-light);
+  user-select: none;
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+.line-item:active { transform: scale(0.96); }
+.line-item.connected { border-color: var(--secondary); }
+.line-item.correct { border-color: var(--success); background: var(--success-bg); }
+.line-item.wrong { border-color: var(--accent-pink); }
+.line-item.disabled { cursor: default; }
+
+.line-correct-reveal {
+  margin-top: 10px;
+  color: #1b7a43;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
 .flashcard {
   min-height: 200px;
   border-radius: 18px;

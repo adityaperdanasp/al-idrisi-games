@@ -845,6 +845,7 @@ function renderQuestion() {
   if (q.type === "mc") renderMC(stage, q);
   else if (q.type === "fill") renderFill(stage, q);
   else if (q.type === "match") renderMatch(stage, q);
+  else if (q.type === "line") renderLine(stage, q);
   else if (q.type === "flashcard") renderFlashcard(stage, q);
 }
 
@@ -1128,6 +1129,188 @@ function renderMatch(stage, q) {
         kidAnswer: firstWrong.given || null,
         topic: state.levelId
       };
+    }
+
+    // Wrong pairs stay revealed for 7s (instead of the usual 1.5s) so
+    // Azka has time to read every correct match before moving on.
+    handleAnswer(allCorrect, allCorrect ? undefined : 7000);
+  });
+}
+
+// Drag-a-line matching: left column stays in prompt order, right column is
+// shuffled. Kid drags a finger/mouse from a left item to a right item; a
+// connection is stored as leftIndex -> rightPair-original-index, so a
+// connection is correct exactly when those two indices are equal.
+function renderLine(stage, q) {
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <p class="question-text">${q.prompt}</p>
+    <div class="line-match-wrap" id="line-wrap">
+      <svg class="line-svg" id="line-svg"></svg>
+      <div class="line-col" id="line-col-left"></div>
+      <div class="line-col" id="line-col-right"></div>
+    </div>
+    <div class="stage-actions"><button class="btn btn-primary" id="line-submit">Check</button></div>
+  `;
+  stage.appendChild(wrap);
+
+  const lineWrap = $("line-wrap");
+  const svg = $("line-svg");
+  const colLeft = $("line-col-left");
+  const colRight = $("line-col-right");
+
+  q.pairs.forEach((pair, i) => {
+    const btn = document.createElement("button");
+    btn.className = "line-item";
+    btn.textContent = pair.term;
+    btn.dataset.side = "left";
+    btn.dataset.index = i;
+    colLeft.appendChild(btn);
+  });
+
+  const rightOrder = shuffle(q.pairs.map((_, i) => i));
+  rightOrder.forEach(origIndex => {
+    const btn = document.createElement("button");
+    btn.className = "line-item";
+    btn.textContent = q.pairs[origIndex].match;
+    btn.dataset.side = "right";
+    btn.dataset.origIndex = origIndex;
+    colRight.appendChild(btn);
+  });
+
+  const connections = {}; // leftIndex -> { rightEl, rightOrigIndex, lineEl }
+
+  function anchorPoint(el, side) {
+    const wrapRect = lineWrap.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    const x = side === "left" ? r.right - wrapRect.left : r.left - wrapRect.left;
+    const y = r.top + r.height / 2 - wrapRect.top;
+    return { x, y };
+  }
+
+  function redrawConnection(leftIndex) {
+    const conn = connections[leftIndex];
+    if (!conn) return;
+    const leftEl = colLeft.querySelector(`[data-index="${leftIndex}"]`);
+    const a = anchorPoint(leftEl, "left");
+    const b = anchorPoint(conn.rightEl, "right");
+    conn.lineEl.setAttribute("x1", a.x);
+    conn.lineEl.setAttribute("y1", a.y);
+    conn.lineEl.setAttribute("x2", b.x);
+    conn.lineEl.setAttribute("y2", b.y);
+  }
+
+  function removeConnection(leftIndex) {
+    const conn = connections[leftIndex];
+    if (!conn) return;
+    conn.lineEl.remove();
+    conn.rightEl.classList.remove("connected");
+    colLeft.querySelector(`[data-index="${leftIndex}"]`).classList.remove("connected");
+    delete connections[leftIndex];
+  }
+
+  function connect(leftIndex, rightEl) {
+    // Each side can only hold one line at a time -- drop whatever it was
+    // previously tied to before making the new connection.
+    removeConnection(leftIndex);
+    const existingLeftForRight = Object.keys(connections).find(li => connections[li].rightEl === rightEl);
+    if (existingLeftForRight !== undefined) removeConnection(Number(existingLeftForRight));
+
+    const lineEl = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    lineEl.setAttribute("class", "line-conn");
+    svg.appendChild(lineEl);
+    connections[leftIndex] = { rightEl, rightOrigIndex: Number(rightEl.dataset.origIndex), lineEl };
+    colLeft.querySelector(`[data-index="${leftIndex}"]`).classList.add("connected");
+    rightEl.classList.add("connected");
+    redrawConnection(leftIndex);
+  }
+
+  let dragging = null; // { leftIndex, leftEl, tempLine }
+
+  function pointerToWrapXY(e) {
+    const wrapRect = lineWrap.getBoundingClientRect();
+    return { x: e.clientX - wrapRect.left, y: e.clientY - wrapRect.top };
+  }
+
+  function startDrag(leftEl, e) {
+    if (state.locked) return;
+    const leftIndex = Number(leftEl.dataset.index);
+    const tempLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    tempLine.setAttribute("class", "line-conn temp");
+    svg.appendChild(tempLine);
+    dragging = { leftIndex, leftEl, tempLine };
+    const a = anchorPoint(leftEl, "left");
+    tempLine.setAttribute("x1", a.x);
+    tempLine.setAttribute("y1", a.y);
+    const p = pointerToWrapXY(e);
+    tempLine.setAttribute("x2", p.x);
+    tempLine.setAttribute("y2", p.y);
+  }
+
+  function moveDrag(e) {
+    if (!dragging) return;
+    const p = pointerToWrapXY(e);
+    dragging.tempLine.setAttribute("x2", p.x);
+    dragging.tempLine.setAttribute("y2", p.y);
+  }
+
+  function endDrag(e) {
+    if (!dragging) return;
+    const { leftIndex, tempLine } = dragging;
+    dragging = null;
+    tempLine.remove();
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    const rightEl = target && target.closest('.line-item[data-side="right"]');
+    if (rightEl) connect(leftIndex, rightEl);
+  }
+
+  colLeft.querySelectorAll('.line-item[data-side="left"]').forEach(leftEl => {
+    leftEl.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      startDrag(leftEl, e);
+    });
+  });
+  lineWrap.addEventListener("pointermove", moveDrag);
+  lineWrap.addEventListener("pointerup", endDrag);
+  lineWrap.addEventListener("pointercancel", endDrag);
+
+  $("line-submit").addEventListener("click", () => {
+    if (state.locked) return;
+    const allConnected = q.pairs.every((_, i) => connections[i]);
+    if (!allConnected) return; // let them keep connecting the remaining terms
+
+    let allCorrect = true;
+    let firstWrong = null;
+    colLeft.querySelectorAll('.line-item[data-side="left"]').forEach(leftEl => {
+      leftEl.classList.add("disabled");
+    });
+    colRight.querySelectorAll('.line-item[data-side="right"]').forEach(rightEl => {
+      rightEl.classList.add("disabled");
+    });
+
+    q.pairs.forEach((pair, leftIndex) => {
+      const conn = connections[leftIndex];
+      const rowCorrect = conn.rightOrigIndex === leftIndex;
+      if (!rowCorrect) {
+        allCorrect = false;
+        if (!firstWrong) firstWrong = { term: pair.term, correct: pair.match, given: conn.rightEl.textContent };
+      }
+      conn.lineEl.classList.add(rowCorrect ? "correct" : "wrong");
+      colLeft.querySelector(`[data-index="${leftIndex}"]`).classList.add(rowCorrect ? "correct" : "wrong");
+      conn.rightEl.classList.add(rowCorrect ? "correct" : "wrong");
+    });
+
+    if (firstWrong) {
+      state.lastWrong = {
+        question: `Match: ${firstWrong.term}`,
+        correctAnswer: firstWrong.correct,
+        kidAnswer: firstWrong.given || null,
+        topic: state.levelId
+      };
+      const reveal = document.createElement("div");
+      reveal.className = "line-correct-reveal";
+      reveal.textContent = "✓ " + q.pairs.map(p => `${p.term} → ${p.match}`).join("  •  ");
+      wrap.appendChild(reveal);
     }
 
     // Wrong pairs stay revealed for 7s (instead of the usual 1.5s) so

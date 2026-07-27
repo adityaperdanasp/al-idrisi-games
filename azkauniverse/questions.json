@@ -1503,7 +1503,7 @@
           "answer": 0
         },
         {
-          "type": "match",
+          "type": "line",
           "prompt": "Match each geography word to its meaning.",
           "pairs": [
             {
@@ -2079,7 +2079,7 @@
           "answer": 0
         },
         {
-          "type": "match",
+          "type": "line",
           "prompt": "Match each spoken time to the matching digital time.",
           "pairs": [
             {
