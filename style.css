@@ -35,7 +35,12 @@ body {
   display: flex;
   flex-direction: row;
   justify-content: center;
-  align-items: flex-start;
+  /* flex-start (top-aligned) made sense when the card always stretched to
+     fill the viewport, but on a large tablet in portrait (e.g. an 11"
+     Android tablet, ~1400px tall CSS viewport) the card's content is much
+     shorter than that -- centering avoids it looking like a mostly-empty
+     top-anchored box with dead space beneath. */
+  align-items: center;
   padding: calc(28px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
   background: linear-gradient(180deg, #fdedd3 0%, #e9dcc5 55%, #dccba9 100%);
   overflow: hidden;
@@ -86,7 +91,7 @@ body {
 .sc-card {
   width: 100%;
   max-width: 430px;
-  min-height: calc(100dvh - 56px);
+  min-height: min(calc(100dvh - 56px), 900px);
   border-radius: 32px;
   overflow: hidden;
   box-shadow: 0 24px 60px rgba(60, 40, 20, 0.2);
