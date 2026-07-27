@@ -402,9 +402,8 @@ body {
   line-height: 1.05;
 }
 
-.sc-hero-title .w1 { color: #e8735a; display: inline-block; transform: rotate(-4deg); }
+.sc-hero-title .w1 { color: #8c2f6b; display: inline-block; transform: rotate(-4deg); }
 .sc-hero-title .w2 { color: #2f4c8c; display: inline-block; transform: rotate(3deg); }
-.sc-hero-title .w3 { color: #3f7a4e; display: inline-block; transform: rotate(-3deg); }
 
 .sc-hero-tagline {
   font-family: "Baloo 2", sans-serif;
