@@ -56,15 +56,22 @@ body {
   background: #fff;
   border-radius: 999px;
   box-shadow: 0 3px 10px rgba(18, 102, 216, 0.1);
+  /* 4+ tabs (Math Race / Lang & Arts / SolarQuest / MathVille, and any
+     future game) can't always fit one row at this font size on a narrow
+     phone -- scroll instead of forcing each tab to squeeze/overflow the
+     pill's rounded edge. */
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.lb-tabs::-webkit-scrollbar { display: none; }
 
 .lb-tab {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 9px 8px;
+  padding: 9px 12px;
   border-radius: 999px;
   font-size: 0.74rem;
   font-weight: 700;

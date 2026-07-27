@@ -743,7 +743,13 @@
       });
       PushNotifications.addListener("registration", token => {
         console.log("BrainBox push token:", token.value);
-        showPushTokenOverlay(token.value);
+        // Only show the copyable overlay once ever (per device) -- it was
+        // popping up on every single app open, which got old fast once
+        // testing was done. Still logs + persists to DB every launch.
+        if (!localStorage.getItem("aig_push_token_shown")) {
+          showPushTokenOverlay(token.value);
+          localStorage.setItem("aig_push_token_shown", "1");
+        }
         // Persist so the daily reminder cron (api/send-push-reminder.js) has
         // something to broadcast to. Keyed by a sanitized token (not
         // playerId) since this fires before Sign Up/Sign In on first
@@ -761,6 +767,14 @@
       });
       PushNotifications.addListener("pushNotificationReceived", notification => {
         console.log("BrainBox push received while app open:", notification);
+        // Android never shows the system tray banner for a "notification"
+        // payload while the app is in the foreground (platform behavior,
+        // not a bug) -- so show something visible in-app too.
+        const banner = document.createElement("div");
+        banner.style.cssText = "position:fixed;top:16px;left:16px;right:16px;z-index:99999;background:#2f4c8c;color:#fff;padding:14px 16px;border-radius:12px;font-family:sans-serif;box-shadow:0 4px 12px rgba(0,0,0,0.3);";
+        banner.textContent = (notification.title ? notification.title + ": " : "") + (notification.body || "");
+        document.body.appendChild(banner);
+        setTimeout(() => banner.remove(), 5000);
       });
     }
   }
