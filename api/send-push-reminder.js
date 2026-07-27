@@ -22,16 +22,12 @@ function base64url(input) {
     .replace(/=+$/, "");
 }
 
-function signJwt(serviceAccount) {
+function signJwt(serviceAccount, scope) {
   const header = { alg: "RS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
   const claims = {
     iss: serviceAccount.client_email,
-    // Both scopes: messaging to send pushes, database to read /pushTokens
-    // (whose security rules deny anonymous reads -- a service-account
-    // bearer token authenticates as full admin, same as the Admin SDK,
-    // bypassing those rules).
-    scope: "https://www.googleapis.com/auth/firebase.messaging https://www.googleapis.com/auth/firebase.database",
+    scope,
     aud: "https://oauth2.googleapis.com/token",
     iat: now,
     exp: now + 3600
@@ -49,8 +45,8 @@ function signJwt(serviceAccount) {
   return `${unsigned}.${signature}`;
 }
 
-async function getAccessToken(serviceAccount) {
-  const jwt = signJwt(serviceAccount);
+async function getAccessToken(serviceAccount, scope) {
+  const jwt = signJwt(serviceAccount, scope);
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -60,7 +56,7 @@ async function getAccessToken(serviceAccount) {
     })
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description || "Failed to get FCM access token");
+  if (!res.ok) throw new Error(data.error_description || `Failed to get access token for scope ${scope}`);
   return data.access_token;
 }
 
@@ -86,17 +82,19 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const accessToken = await getAccessToken(serviceAccount);
+    const dbToken = await getAccessToken(serviceAccount, "https://www.googleapis.com/auth/firebase.database");
 
     const dbUrl = "https://al-idrisi-games-default-rtdb.asia-southeast1.firebasedatabase.app";
     const tokensRes = await fetch(`${dbUrl}/pushTokens.json`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
+      headers: { Authorization: `Bearer ${dbToken}` }
     });
     const tokensData = await tokensRes.json();
     if (tokensData && tokensData.error) {
       throw new Error(`Firebase RTDB read failed: ${tokensData.error}`);
     }
     const entries = Object.values(tokensData || {}).filter(e => e && e.token);
+
+    const fcmToken = await getAccessToken(serviceAccount, "https://www.googleapis.com/auth/firebase.messaging");
 
     let sent = 0;
     let failed = 0;
@@ -106,7 +104,7 @@ module.exports = async (req, res) => {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${fcmToken}`,
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
