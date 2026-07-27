@@ -9,8 +9,16 @@
 // api/ functions, which are all plain fetch-based) and calls the current
 // FCM HTTP v1 API directly.
 //
+// Reading /pushTokens needs full admin access (its security rules deny
+// anonymous reads) -- tried a service-account OAuth2 token first, but the
+// RTDB REST API rejected it with "Unauthorized request." even with the
+// firebase.database scope alone (likely an IAM role gap on this specific
+// service account). The legacy RTDB database secret sidesteps that
+// entirely via a `?auth=` query param, so that's what's used here instead.
+//
 // Env vars (Vercel dashboard only, never committed):
-//   FIREBASE_SERVICE_ACCOUNT_JSON — the full service-account JSON, as one string
+//   FIREBASE_SERVICE_ACCOUNT_JSON — the full service-account JSON, as one string (FCM send only)
+//   FIREBASE_DATABASE_SECRET — legacy RTDB secret, Project Settings -> Service accounts -> Database secrets
 //   CRON_SECRET — matched against the Authorization header Vercel Cron sends
 const crypto = require("crypto");
 
@@ -81,13 +89,15 @@ module.exports = async (req, res) => {
     return;
   }
 
-  try {
-    const dbToken = await getAccessToken(serviceAccount, "https://www.googleapis.com/auth/firebase.database");
+  const dbSecret = process.env.FIREBASE_DATABASE_SECRET;
+  if (!dbSecret) {
+    res.status(500).json({ error: "Server not configured: FIREBASE_DATABASE_SECRET missing" });
+    return;
+  }
 
+  try {
     const dbUrl = "https://al-idrisi-games-default-rtdb.asia-southeast1.firebasedatabase.app";
-    const tokensRes = await fetch(`${dbUrl}/pushTokens.json`, {
-      headers: { Authorization: `Bearer ${dbToken}` }
-    });
+    const tokensRes = await fetch(`${dbUrl}/pushTokens.json?auth=${dbSecret}`);
     const tokensData = await tokensRes.json();
     if (tokensData && tokensData.error) {
       throw new Error(`Firebase RTDB read failed: ${tokensData.error}`);
