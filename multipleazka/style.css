@@ -106,6 +106,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 html, body {
   margin: 0;
   height: 100%;
+  color-scheme: light;
 }
 
 body {

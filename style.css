@@ -11,6 +11,7 @@ html,
 body {
   margin: 0;
   background: linear-gradient(180deg, #fdedd3 0%, #e9dcc5 55%, #dccba9 100%);
+  color-scheme: light;
 }
 
 .hub {

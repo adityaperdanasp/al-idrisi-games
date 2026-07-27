@@ -5,6 +5,7 @@
    ========================================================= */
 
 :root {
+  color-scheme: light;
   /* Fallback (Boy / Sky Explorer) — used only until JS applies the saved
      data-gender/data-palette attributes on the very first paint. */
   --brand: #2F6FED; --brand-dark: #1E56C4;
