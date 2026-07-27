@@ -407,8 +407,8 @@ body {
 }
 
 .sc-hero-icon {
-  width: 48px;
-  height: 48px;
+  width: 45.6px;
+  height: 45.6px;
   flex-shrink: 0;
   transform-origin: 50% 90%;
   animation: sc-badge-wiggle 1.8s ease-in-out infinite;
@@ -452,7 +452,7 @@ body {
 }
 
 .sc-greeting {
-  margin: 6px 24px 24px;
+  margin: 200px 24px 24px;
   padding: 4px 18px;
   font-family: "Baloo 2", sans-serif;
   font-size: 0.95rem;
