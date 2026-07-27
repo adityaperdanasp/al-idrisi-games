@@ -1,6 +1,6 @@
 {
-  "name": "Al Idrisi Games",
-  "short_name": "Al Idrisi Games",
+  "name": "BrainBox",
+  "short_name": "BrainBox",
   "description": "Pick a game: Math Race, Language & Arts, or SolarQuest.",
   "start_url": "./",
   "display": "standalone",
