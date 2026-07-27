@@ -396,10 +396,22 @@ body {
 }
 
 .sc-hero-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   font-family: "Baloo 2", sans-serif;
   font-weight: 800;
   font-size: 2.375rem;
   line-height: 1.05;
+}
+
+.sc-hero-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  transform-origin: 50% 90%;
+  animation: sc-badge-wiggle 1.8s ease-in-out infinite;
 }
 
 .sc-hero-title .w1 { color: #8c2f6b; display: inline-block; transform: rotate(-4deg); }
