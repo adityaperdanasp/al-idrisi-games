@@ -27,7 +27,11 @@ function signJwt(serviceAccount) {
   const now = Math.floor(Date.now() / 1000);
   const claims = {
     iss: serviceAccount.client_email,
-    scope: "https://www.googleapis.com/auth/firebase.messaging",
+    // Both scopes: messaging to send pushes, database to read /pushTokens
+    // (whose security rules deny anonymous reads -- a service-account
+    // bearer token authenticates as full admin, same as the Admin SDK,
+    // bypassing those rules).
+    scope: "https://www.googleapis.com/auth/firebase.messaging https://www.googleapis.com/auth/firebase.database",
     aud: "https://oauth2.googleapis.com/token",
     iat: now,
     exp: now + 3600
@@ -85,8 +89,13 @@ module.exports = async (req, res) => {
     const accessToken = await getAccessToken(serviceAccount);
 
     const dbUrl = "https://al-idrisi-games-default-rtdb.asia-southeast1.firebasedatabase.app";
-    const tokensRes = await fetch(`${dbUrl}/pushTokens.json`);
+    const tokensRes = await fetch(`${dbUrl}/pushTokens.json`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
     const tokensData = await tokensRes.json();
+    if (tokensData && tokensData.error) {
+      throw new Error(`Firebase RTDB read failed: ${tokensData.error}`);
+    }
     const entries = Object.values(tokensData || {}).filter(e => e && e.token);
 
     let sent = 0;
