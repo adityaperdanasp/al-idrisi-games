@@ -11,6 +11,26 @@ this file is more "what happened and why", CLAUDE.md is "how the project works".
 
 ---
 
+## 2026-07-27 (follow-up)
+
+**Closed 2 open threads from previous session**
+- Bus vehicle icon (Math Race): rendered 🚌 normal vs `scaleX(-1)` side-by-side in
+  browser — visually identical in this environment's emoji font, confirming
+  it's genuinely symmetric (not an unverified guess). iOS Simulator was tried
+  to double-check against Apple Color Emoji specifically but hit the same
+  crash-loop as the earlier multiplayer test session — abandoned rather than
+  retried. Decision: leave the existing blanket `scaleX(-1)` flip as-is
+  (consistent with car/truck/train), no code change. Only a real iPhone
+  screenshot could fully settle the Apple-emoji case if it matters later.
+- AI Tutor cost monitoring: resolved by pointing to Anthropic Console's
+  built-in per-workspace spend limit/usage alert feature instead of writing
+  custom budget-cap code — Adit needs to set this himself in
+  console.anthropic.com (Settings → Limits), not something doable from here.
+- Dropped the `parentEmail` dashboard backfill item per Adit's call (manual
+  data entry, not a coding task worth tracking here).
+
+---
+
 ## 2026-07-26 — 2026-07-27
 
 **Sign Up / Sign In system** (replaces old static-roster picker)
