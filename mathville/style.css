@@ -451,6 +451,28 @@ button { font-family: inherit; }
 .intro-demo-place { font: 700 9px/1.2 "Fredoka", sans-serif; color: var(--ink); text-align: center; }
 .intro-demo-sep { font: 800 24px "Baloo 2", sans-serif; color: var(--taupe); align-self: flex-start; margin-top: 6px; }
 
+/* "steps" demo type: a short vertical worked-example walkthrough,
+   used by every chapter except Place Value (which keeps its own
+   digit/place-label grid above). */
+.intro-demo-row-steps {
+  display: flex; flex-direction: column; gap: 6px; align-items: stretch;
+}
+.intro-demo-step {
+  font: 600 14px "Fredoka", sans-serif; color: var(--ink-soft);
+  padding: 4px 2px;
+}
+.intro-demo-step-final {
+  font-weight: 800; color: var(--wood-dark);
+  border-top: 2px dashed var(--taupe); padding-top: 8px; margin-top: 2px;
+}
+/* Column arithmetic (addition/subtraction/multiplication/measurement)
+   reads best right-aligned in a monospace font so the digits actually
+   line up like they would on paper. */
+.intro-demo-row-mono .intro-demo-step {
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  text-align: right; white-space: pre; font-size: 15px;
+}
+
 /* ---------- Question screen ---------- */
 .q-label { font: 700 12px "Fredoka", sans-serif; color: var(--ink-soft); margin-bottom: 14px; }
 .q-prompt { font: 700 21px/1.4 "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 20px; }

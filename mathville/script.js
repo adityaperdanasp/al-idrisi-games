@@ -400,10 +400,18 @@ function hexToRgb(hex) {
   return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
 }
 
-// Small illustrative examples shown under the intro text for chapters where
-// seeing one worked example up front helps before the round starts.
+// Small illustrative examples shown under the intro text for every
+// chapter, so a kid sees one worked example before the round starts
+// instead of jumping straight into practice questions.
+//
+// Two shapes:
+//   "grid"  -- place-value's original digit/place-label boxes.
+//   "steps" -- a short vertical sequence of lines walking through one
+//              worked example. `mono: true` right-aligns them in a
+//              monospace column (for actual column arithmetic).
 const INTRO_DEMOS = {
   "place-value": {
+    type: "grid",
     label: "5.985.465 — one digit, one job",
     cells: [
       { d: "5", place: "Millions", sep: true },
@@ -413,6 +421,62 @@ const INTRO_DEMOS = {
       { d: "4", place: "Hundreds" },
       { d: "6", place: "Tens" },
       { d: "5", place: "Ones" }
+    ]
+  },
+  "addition-subtraction": {
+    type: "steps",
+    mono: true,
+    label: "12,456 + 8,738 — carry when a column tops 9",
+    lines: ["  12456", "+  8738", "———————", "  21194"]
+  },
+  "prime-numbers": {
+    type: "steps",
+    label: "Breaking 24 down into its prime factors",
+    lines: ["24 = 2 × 12", "12 = 2 × 6", "6 = 2 × 3", "24 = 2 × 2 × 2 × 3"]
+  },
+  "gcf-lcm": {
+    type: "steps",
+    label: "GCF and LCM of 12 and 18",
+    lines: [
+      "Factors of 12: 1, 2, 3, 4, 6, 12",
+      "Factors of 18: 1, 2, 3, 6, 9, 18",
+      "GCF = 6 (biggest factor they share)",
+      "LCM = 36 (smallest multiple they share)"
+    ]
+  },
+  "multiplication": {
+    type: "steps",
+    mono: true,
+    label: "6 × 47 using the distributive property",
+    lines: ["6 × 47", "= 6×40 + 6×7", "= 240 + 42", "= 282"]
+  },
+  "division": {
+    type: "steps",
+    label: "Is 348 divisible by 4? Check the last 2 digits",
+    lines: ["Last 2 digits of 348 → 48", "48 ÷ 4 = 12, no remainder", "So yes — 348 divides evenly by 4!"]
+  },
+  "mixed-operation": {
+    type: "steps",
+    label: "\"The clinic has 84 masks, split evenly into 4 boxes\"",
+    lines: [
+      "Splitting into equal groups means DIVIDE",
+      "84 ÷ 4 = 21",
+      "21 masks in each box"
+    ]
+  },
+  "measurement": {
+    type: "steps",
+    mono: true,
+    label: "Converting 3 kilometers to meters",
+    lines: ["1 km = 1000 m", "3 km = 3 × 1000", "3 km = 3000 m"]
+  },
+  "rounding": {
+    type: "steps",
+    label: "Round 4,672 to the nearest hundred",
+    lines: [
+      "Look at the tens digit of 4,672 → it's 7",
+      "7 is 5 or more, so round UP",
+      "4,672 → 4,700"
     ]
   }
 };
@@ -431,18 +495,29 @@ function goToIntro(chapterId, isMp) {
     $("intro-demo-label").textContent = demo.label;
     const row = $("intro-demo-row");
     row.innerHTML = "";
-    demo.cells.forEach(cell => {
-      const cellEl = document.createElement("div");
-      cellEl.className = "intro-demo-cell";
-      cellEl.innerHTML = `<div class="intro-demo-digit">${cell.d}</div><div class="intro-demo-place">${cell.place}</div>`;
-      row.appendChild(cellEl);
-      if (cell.sep) {
-        const dot = document.createElement("div");
-        dot.className = "intro-demo-sep";
-        dot.textContent = ".";
-        row.appendChild(dot);
-      }
-    });
+    row.classList.toggle("intro-demo-row-steps", demo.type === "steps");
+    row.classList.toggle("intro-demo-row-mono", !!demo.mono);
+    if (demo.type === "steps") {
+      demo.lines.forEach((line, i) => {
+        const lineEl = document.createElement("div");
+        lineEl.className = "intro-demo-step" + (i === demo.lines.length - 1 ? " intro-demo-step-final" : "");
+        lineEl.textContent = line;
+        row.appendChild(lineEl);
+      });
+    } else {
+      demo.cells.forEach(cell => {
+        const cellEl = document.createElement("div");
+        cellEl.className = "intro-demo-cell";
+        cellEl.innerHTML = `<div class="intro-demo-digit">${cell.d}</div><div class="intro-demo-place">${cell.place}</div>`;
+        row.appendChild(cellEl);
+        if (cell.sep) {
+          const dot = document.createElement("div");
+          dot.className = "intro-demo-sep";
+          dot.textContent = ".";
+          row.appendChild(dot);
+        }
+      });
+    }
   }
 
   showScreen("screen-intro");
