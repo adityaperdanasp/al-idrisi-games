@@ -1949,7 +1949,19 @@ function appendAiHintMessage(text, from) {
   const thread = $("ai-hint-thread");
   const div = document.createElement("div");
   div.className = "ai-hint-msg ai-hint-msg-" + from;
-  div.textContent = text;
+  if (from === "ai") {
+    // Bo's little avatar next to each of his own messages -- the kid's
+    // own messages don't need one, same convention as any chat UI.
+    const avatar = document.createElement("img");
+    avatar.className = "ai-hint-avatar";
+    avatar.src = "../icon-192.png";
+    avatar.alt = "Bo";
+    div.appendChild(avatar);
+  }
+  const textEl = document.createElement("span");
+  textEl.className = "ai-hint-msg-text";
+  textEl.textContent = text;
+  div.appendChild(textEl);
   thread.appendChild(div);
   thread.scrollTop = thread.scrollHeight;
 }
