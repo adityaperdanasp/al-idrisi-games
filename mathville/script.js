@@ -489,6 +489,32 @@ const DRIVE_CITY_PX_R = 17;
 const DRIVE_DINO_PX_R = 13;
 const DRIVE_CAR_START = { x: 50, y: 93 };
 const DRIVE_DINO_START = { x: 100 - DRIVE_CAR_START.x, y: 100 - DRIVE_CAR_START.y }; // opposite corner from the car
+// Hard difficulty's 2nd dino starts in a different corner from the 1st
+// (DRIVE_CAR_START.x is 50 -- dead center -- so mirroring only the y
+// axis like DRIVE_DINO_START does would land both dinos on the exact
+// same spot; this picks a distinct top corner instead).
+const DRIVE_DINO2_START = { x: 12, y: 100 - DRIVE_CAR_START.y };
+
+// --- Nitro boost: hold to go faster, drains a fuel meter that only
+// refills while NOT boosting. Simple push-your-luck resource, no ammo
+// counter to read mid-race. ---
+const DRIVE_NITRO_MULT = 1.6;       // speed multiplier while boosting
+const DRIVE_NITRO_DRAIN_PER_MS = 100 / 2500;  // empty in 2.5s of continuous boost
+const DRIVE_NITRO_REGEN_PER_MS = 100 / 6000;  // full refill in 6s of not boosting
+
+// --- Water gun: aim with the right-thumb stick, hold to stream. A dino
+// caught in the cone accumulates "wet" time; 3 accumulated seconds
+// triggers a temporary slow. The tank empties after a short continuous
+// stream and needs a cooldown before it can fire again (limits it
+// without a literal ammo count). ---
+const DRIVE_WATER_RANGE_PX = 85;
+const DRIVE_WATER_CONE_RAD = Math.PI / 5; // half-angle, ~36° total cone
+const DRIVE_WATER_WET_NEEDED_MS = 3000;
+const DRIVE_WATER_SLOW_MS = 2000;
+const DRIVE_WATER_SLOW_MULT = 0.7; // -30% speed
+const DRIVE_WATER_MAX_STREAM_MS = 1500;
+const DRIVE_WATER_COOLDOWN_MS = 1500;
+const DRIVE_AIM_DEADZONE = 0.3; // joystick must be pushed this far out before it counts as "aiming"
 // Spread across the now much-bigger play field (roughly a 3x3 grid),
 // keeping clear of the joystick's bottom-left overlay.
 const DRIVE_CITY_POS = [
@@ -534,6 +560,8 @@ const DRIVE_SCENERY = [
 
 let driveState = null;
 let driveJoyVec = { x: 0, y: 0 }; // normalized -1..1, magnitude = joystick deflection
+let driveAimVec = { x: 0, y: 0 }; // right-thumb stick, same convention as driveJoyVec
+let driveBoosting = false; // held down = true, drives nitro drain/regen each frame
 // Score + bite count survive a side-trip into a chapter (city collision
 // routes there and back) — only a *fresh* Drive Mode entry resets them.
 let driveSession = null;
@@ -542,10 +570,21 @@ let driveSession = null;
 // false/omitted for a brand-new session from the topbar button.
 function goToDrive(resume) {
   if (!resume || !driveSession) driveSession = { score: 0, bites: 0 };
+  // Hard difficulty gets a 2nd dino from a different starting corner.
+  // Each dino tracks its own bite cooldown and water "wet" progress
+  // independently, so dousing one doesn't affect the other.
+  const dinoStarts = driveDifficulty === "hard"
+    ? [DRIVE_DINO_START, DRIVE_DINO2_START]
+    : [DRIVE_DINO_START];
   driveState = {
     x: DRIVE_CAR_START.x, y: DRIVE_CAR_START.y,
-    dino: { x: DRIVE_DINO_START.x, y: DRIVE_DINO_START.y },
-    biteCooldownUntil: 0,
+    dinos: dinoStarts.map((pos, i) => ({
+      id: "drive-dino" + (i === 0 ? "" : "-" + (i + 1)),
+      x: pos.x, y: pos.y,
+      biteCooldownUntil: 0, wetMs: 0, slowUntil: 0
+    })),
+    nitroFuel: 100,
+    water: { streamMsLeft: DRIVE_WATER_MAX_STREAM_MS, coolUntil: 0 },
     cities: [], obstacles: [], rafId: null, paused: false, worldRect: null, ended: false
   };
   // The world must be visible (display:block, not display:none) before
@@ -565,13 +604,34 @@ function goToDrive(resume) {
   }
   driveState.worldRect = rect;
   renderDriveScenery();
+  buildDriveDinoElements();
   buildDriveWorld();
   $("drive-car").style.transform = "rotate(0deg)"; // top-down sprite is drawn nose-up already
-  $("drive-dino").style.left = driveState.dino.x + "%";
-  $("drive-dino").style.top = driveState.dino.y + "%";
+  driveState.dinos.forEach(d => {
+    const el = $(d.id);
+    el.style.left = d.x + "%";
+    el.style.top = d.y + "%";
+  });
   $("drive-end-overlay").classList.add("hidden");
+  $("drive-water-stream").classList.add("hidden");
   updateDriveHud();
   startDriveLoop();
+}
+
+// The 2nd dino (hard difficulty only) doesn't exist in the static HTML —
+// create/remove its element to match however many dinos this run has,
+// reusing the same markup/classes as the always-present 1st dino.
+function buildDriveDinoElements() {
+  const world = $("drive-world");
+  world.querySelectorAll(".drive-dino-extra").forEach(el => el.remove());
+  const template = $("drive-dino");
+  driveState.dinos.forEach((d, i) => {
+    if (i === 0) return; // #drive-dino already exists in the markup
+    const el = template.cloneNode(true);
+    el.id = d.id;
+    el.classList.add("drive-dino-extra");
+    world.appendChild(el);
+  });
 }
 
 function updateDriveHud() {
@@ -613,9 +673,10 @@ function buildDriveWorld() {
     const tooCloseToCity = driveState.cities.some(c => drivePxDist(c.x, c.y, cand.x, cand.y) < 40);
     const tooCloseToObstacle = driveState.obstacles.some(o => drivePxDist(o.x, o.y, cand.x, cand.y) < 34);
     const tooCloseToStart = drivePxDist(DRIVE_CAR_START.x, DRIVE_CAR_START.y, cand.x, cand.y) < 36;
-    const tooCloseToDino = drivePxDist(DRIVE_DINO_START.x, DRIVE_DINO_START.y, cand.x, cand.y) < 36;
-    const underJoystick = cand.x < 28 && cand.y > 74; // bottom-left corner, covered by the on-screen joystick
-    if (!tooCloseToCity && !tooCloseToObstacle && !tooCloseToStart && !tooCloseToDino && !underJoystick) {
+    const tooCloseToDino = driveState.dinos.some(d => drivePxDist(d.x, d.y, cand.x, cand.y) < 36);
+    const underJoystick = cand.x < 28 && cand.y > 74; // bottom-left corner, covered by the steering joystick
+    const underAimStick = cand.x > 72 && cand.y > 74; // bottom-right corner, covered by the aim joystick
+    if (!tooCloseToCity && !tooCloseToObstacle && !tooCloseToStart && !tooCloseToDino && !underJoystick && !underAimStick) {
       driveState.obstacles.push({
         id: "obs" + driveState.obstacles.length, x: cand.x, y: cand.y,
         icon: DRIVE_OBSTACLE_ICONS[rand(0, DRIVE_OBSTACLE_ICONS.length - 1)]
@@ -680,44 +741,125 @@ function dinoSteerAngle(dino, desiredAngle, obstacles) {
   return desiredAngle + turn * (Math.PI / 3) * avoidStrength;
 }
 
+const DRIVE_FRAME_MS = 1000 / 60; // requestAnimationFrame assumed ~60fps, matching DRIVE_SPEED's own "per frame" units
+
 function startDriveLoop() {
   cancelDriveLoop();
   function frame() {
     if (!driveState || driveState.ended) return;
     if (!driveState.paused) {
+      driveNitroTick();
+      const speedMult = driveBoosting && driveState.nitroFuel > 0 ? DRIVE_NITRO_MULT : 1;
       const mag = Math.min(1, Math.hypot(driveJoyVec.x, driveJoyVec.y));
       if (mag > 0.05) {
         const angle = Math.atan2(driveJoyVec.y, driveJoyVec.x); // 0=right,90=down (screen coords)
-        driveState.x = Math.max(0, Math.min(100, driveState.x + Math.cos(angle) * DRIVE_SPEED * mag));
-        driveState.y = Math.max(0, Math.min(100, driveState.y + Math.sin(angle) * DRIVE_SPEED * mag));
+        driveState.x = Math.max(0, Math.min(100, driveState.x + Math.cos(angle) * DRIVE_SPEED * speedMult * mag));
+        driveState.y = Math.max(0, Math.min(100, driveState.y + Math.sin(angle) * DRIVE_SPEED * speedMult * mag));
         const car = $("drive-car");
         car.style.left = driveState.x + "%";
         car.style.top = driveState.y + "%";
         car.style.transform = `rotate(${driveHeadingCss(angle)}deg)`;
       }
-      // The dino pursues the car's current spot, steering around any
-      // obstacle that's close and roughly in its path instead of
-      // cutting straight through it.
-      const dx = driveState.x - driveState.dino.x, dy = driveState.y - driveState.dino.y;
-      const dist = Math.hypot(dx, dy);
-      const dinoEl = $("drive-dino");
-      if (dist > 0.5) {
-        const dAngle = dinoSteerAngle(driveState.dino, Math.atan2(dy, dx), driveState.obstacles);
-        const step = Math.min(dist, DINO_SPEED);
-        driveState.dino.x = Math.max(0, Math.min(100, driveState.dino.x + Math.cos(dAngle) * step));
-        driveState.dino.y = Math.max(0, Math.min(100, driveState.dino.y + Math.sin(dAngle) * step));
-        dinoEl.style.left = driveState.dino.x + "%";
-        dinoEl.style.top = driveState.dino.y + "%";
-        dinoEl.style.transform = `rotate(${driveHeadingCss(dAngle)}deg)`;
-        dinoEl.classList.add("walking");
-      } else {
-        dinoEl.classList.remove("walking");
-      }
+      driveWaterTick();
+      // Each dino pursues the car's current spot independently, steering
+      // around any obstacle that's close and roughly in its path instead
+      // of cutting straight through it. A dino currently soaked by the
+      // water stream moves at a reduced speed.
+      const now = performance.now();
+      driveState.dinos.forEach(d => {
+        const dx = driveState.x - d.x, dy = driveState.y - d.y;
+        const dist = Math.hypot(dx, dy);
+        const dinoEl = $(d.id);
+        if (dist > 0.5) {
+          const dAngle = dinoSteerAngle(d, Math.atan2(dy, dx), driveState.obstacles);
+          const slowed = d.slowUntil > now;
+          const step = Math.min(dist, DINO_SPEED * (slowed ? DRIVE_WATER_SLOW_MULT : 1));
+          d.x = Math.max(0, Math.min(100, d.x + Math.cos(dAngle) * step));
+          d.y = Math.max(0, Math.min(100, d.y + Math.sin(dAngle) * step));
+          dinoEl.style.left = d.x + "%";
+          dinoEl.style.top = d.y + "%";
+          dinoEl.style.transform = `rotate(${driveHeadingCss(dAngle)}deg)`;
+          dinoEl.classList.add("walking");
+        } else {
+          dinoEl.classList.remove("walking");
+        }
+        dinoEl.classList.toggle("soaked", d.slowUntil > now);
+      });
       checkDriveCollisions();
     }
     driveState.rafId = requestAnimationFrame(frame);
   }
   driveState.rafId = requestAnimationFrame(frame);
+}
+
+function driveNitroTick() {
+  if (driveBoosting && driveState.nitroFuel > 0) {
+    driveState.nitroFuel = Math.max(0, driveState.nitroFuel - DRIVE_NITRO_DRAIN_PER_MS * DRIVE_FRAME_MS);
+  } else if (!driveBoosting) {
+    driveState.nitroFuel = Math.min(100, driveState.nitroFuel + DRIVE_NITRO_REGEN_PER_MS * DRIVE_FRAME_MS);
+  }
+  $("drive-nitro-fill").style.height = driveState.nitroFuel + "%";
+  $("drive-nitro-btn").classList.toggle("empty", driveState.nitroFuel <= 0);
+}
+
+// Streams water in the aim-stick's direction whenever it's deflected past
+// the deadzone and the tank isn't empty/cooling. Any dino inside the
+// stream's cone-and-range accumulates "wet" progress toward a slow.
+// The tank (1.5s) empties well before 3s of wet-time can build up in one
+// go, so this is deliberately cumulative ACROSS bursts -- wet progress
+// only drains while actively streaming but missing the dino, never
+// while the tank is idle/refilling/cooling down. Otherwise the slow
+// would be mathematically unreachable (tested: it was, before this).
+function driveWaterTick() {
+  const water = driveState.water;
+  const now = performance.now();
+  const aimMag = Math.min(1, Math.hypot(driveAimVec.x, driveAimVec.y));
+  const wantsToFire = aimMag > DRIVE_AIM_DEADZONE;
+  const canFire = wantsToFire && water.streamMsLeft > 0 && now >= water.coolUntil;
+
+  const stream = $("drive-water-stream");
+  if (canFire) {
+    const aimAngle = Math.atan2(driveAimVec.y, driveAimVec.x);
+    stream.classList.remove("hidden");
+    // The stream shape's un-rotated CSS default already points "down"
+    // (angle 90° in this file's screen convention: 0=right, 90=down) --
+    // driveHeadingCss is calibrated for nose-UP sprites instead, so this
+    // needs its own conversion rather than reusing that helper.
+    stream.style.transform = `rotate(${(aimAngle * 180 / Math.PI) - 90}deg)`;
+    stream.style.left = driveState.x + "%";
+    stream.style.top = driveState.y + "%";
+
+    water.streamMsLeft = Math.max(0, water.streamMsLeft - DRIVE_FRAME_MS);
+    if (water.streamMsLeft <= 0) water.coolUntil = now + DRIVE_WATER_COOLDOWN_MS;
+
+    driveState.dinos.forEach(d => {
+      const dx = d.x - driveState.x, dy = d.y - driveState.y;
+      const distPx = drivePxDist(driveState.x, driveState.y, d.x, d.y);
+      const angleToDino = Math.atan2(dy, dx);
+      const angleDiff = Math.abs(Math.atan2(Math.sin(angleToDino - aimAngle), Math.cos(angleToDino - aimAngle)));
+      const inCone = distPx <= DRIVE_WATER_RANGE_PX && angleDiff <= DRIVE_WATER_CONE_RAD;
+      if (inCone) {
+        d.wetMs = Math.min(DRIVE_WATER_WET_NEEDED_MS, d.wetMs + DRIVE_FRAME_MS);
+        if (d.wetMs >= DRIVE_WATER_WET_NEEDED_MS) {
+          d.wetMs = 0;
+          d.slowUntil = now + DRIVE_WATER_SLOW_MS;
+          showDriveToast("Splash! Dino slowed 💦");
+        }
+      } else {
+        d.wetMs = Math.max(0, d.wetMs - DRIVE_FRAME_MS);
+      }
+    });
+  } else {
+    stream.classList.add("hidden");
+    // Refills once the cooldown from a previous empty-out has elapsed --
+    // regardless of whether the aim stick is still being held (an actual
+    // cooldown timer, not something that requires letting go first).
+    if (water.streamMsLeft < DRIVE_WATER_MAX_STREAM_MS && now >= water.coolUntil) {
+      water.streamMsLeft = DRIVE_WATER_MAX_STREAM_MS;
+    }
+  }
+  $("drive-water-fill").style.height = (water.streamMsLeft / DRIVE_WATER_MAX_STREAM_MS * 100) + "%";
+  $("drive-aim-joystick").classList.toggle("cooling", now < water.coolUntil);
 }
 
 function cancelDriveLoop() {
@@ -762,24 +904,27 @@ function checkDriveCollisions() {
     }
   }
   const now = performance.now();
-  if (now >= driveState.biteCooldownUntil &&
-      drivePxDist(driveState.dino.x, driveState.dino.y, driveState.x, driveState.y) < DRIVE_CAR_PX_R + DRIVE_DINO_PX_R) {
-    driveState.biteCooldownUntil = now + DRIVE_BITE_COOLDOWN_MS;
-    driveSession.bites++;
-    updateDriveHud();
-    const car = $("drive-car");
-    car.classList.add("bitten");
-    setTimeout(() => car.classList.remove("bitten"), DRIVE_BITE_COOLDOWN_MS);
-    // Without a knockback, the dino stays adjacent and re-bites the
-    // instant the cooldown clears — which read as an instant 3-bite
-    // loss on a single close call. Push it back so the player actually
-    // gets the cooldown window to escape.
-    const kAngle = Math.atan2(driveState.dino.y - driveState.y, driveState.dino.x - driveState.x);
-    driveState.dino.x = Math.max(0, Math.min(100, driveState.dino.x + Math.cos(kAngle) * DRIVE_BITE_KNOCKBACK));
-    driveState.dino.y = Math.max(0, Math.min(100, driveState.dino.y + Math.sin(kAngle) * DRIVE_BITE_KNOCKBACK));
-    const livesLeft = DRIVE_MAX_BITES - driveSession.bites;
-    if (livesLeft > 0) showDriveToast(`Bitten! ${livesLeft} ${livesLeft === 1 ? "life" : "lives"} left`);
-    if (driveSession.bites >= DRIVE_MAX_BITES) showDriveEnd(false);
+  for (const d of driveState.dinos) {
+    if (now >= d.biteCooldownUntil &&
+        drivePxDist(d.x, d.y, driveState.x, driveState.y) < DRIVE_CAR_PX_R + DRIVE_DINO_PX_R) {
+      d.biteCooldownUntil = now + DRIVE_BITE_COOLDOWN_MS;
+      driveSession.bites++;
+      updateDriveHud();
+      const car = $("drive-car");
+      car.classList.add("bitten");
+      setTimeout(() => car.classList.remove("bitten"), DRIVE_BITE_COOLDOWN_MS);
+      // Without a knockback, the dino stays adjacent and re-bites the
+      // instant the cooldown clears — which read as an instant 3-bite
+      // loss on a single close call. Push it back so the player actually
+      // gets the cooldown window to escape.
+      const kAngle = Math.atan2(d.y - driveState.y, d.x - driveState.x);
+      d.x = Math.max(0, Math.min(100, d.x + Math.cos(kAngle) * DRIVE_BITE_KNOCKBACK));
+      d.y = Math.max(0, Math.min(100, d.y + Math.sin(kAngle) * DRIVE_BITE_KNOCKBACK));
+      const livesLeft = DRIVE_MAX_BITES - driveSession.bites;
+      if (livesLeft > 0) showDriveToast(`Bitten! ${livesLeft} ${livesLeft === 1 ? "life" : "lives"} left`);
+      if (driveSession.bites >= DRIVE_MAX_BITES) { showDriveEnd(false); return; }
+      return; // one bite per frame is enough even with 2 dinos nearby
+    }
   }
 }
 
@@ -1154,10 +1299,12 @@ if (new URLSearchParams(location.search).get("drive") === "1") {
 // Analog joystick: drag anywhere inside (pointer capture lets the finger
 // wander outside the circle without losing the drag), knob position is
 // clamped to JOY_MAX px from center and read as a -1..1 vector each frame.
+// Shared by both sticks (left = steer, right = aim the water gun) --
+// `setVec` is however the caller wants to store the resulting vector.
 const JOY_MAX = 28; // matches the smaller 92px joystick track
-(function setupDriveJoystick() {
-  const joy = $("joystick");
-  const knob = $("joystick-knob");
+function setupAnalogStick(joyId, knobId, setVec) {
+  const joy = $(joyId);
+  const knob = $(knobId);
   if (!joy || !knob) return;
   let activeId = null;
 
@@ -1170,12 +1317,12 @@ const JOY_MAX = 28; // matches the smaller 92px joystick track
     const angle = Math.atan2(dy, dx);
     const kx = Math.cos(angle) * clamped, ky = Math.sin(angle) * clamped;
     knob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
-    driveJoyVec = { x: kx / JOY_MAX, y: ky / JOY_MAX };
+    setVec({ x: kx / JOY_MAX, y: ky / JOY_MAX });
   }
   function release(e) {
     if (activeId === null || e.pointerId !== activeId) return;
     activeId = null;
-    driveJoyVec = { x: 0, y: 0 };
+    setVec({ x: 0, y: 0 });
     knob.style.transform = "translate(-50%, -50%)";
   }
   joy.addEventListener("pointerdown", e => {
@@ -1190,6 +1337,19 @@ const JOY_MAX = 28; // matches the smaller 92px joystick track
   });
   joy.addEventListener("pointerup", release);
   joy.addEventListener("pointercancel", release);
+}
+setupAnalogStick("joystick", "joystick-knob", v => { driveJoyVec = v; });
+setupAnalogStick("drive-aim-joystick", "drive-aim-knob", v => { driveAimVec = v; });
+
+// Nitro: hold to boost, release to stop -- fuel drain/regen happens every
+// frame in driveNitroTick() regardless of which of these fired last.
+(function setupDriveNitroButton() {
+  const btn = $("drive-nitro-btn");
+  if (!btn) return;
+  btn.addEventListener("pointerdown", e => { e.preventDefault(); driveBoosting = true; });
+  btn.addEventListener("pointerup", () => { driveBoosting = false; });
+  btn.addEventListener("pointercancel", () => { driveBoosting = false; });
+  btn.addEventListener("pointerleave", () => { driveBoosting = false; });
 })();
 
 /* =================================================================
