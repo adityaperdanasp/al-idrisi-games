@@ -469,12 +469,15 @@ function goToIntro(chapterId, isMp) {
 const DRIVE_SPEED = 0.3888;   // % of world per animation frame, at full joystick deflection (-20% again)
 const DINO_SPEED = DRIVE_SPEED * 1.1 * 0.8; // 10% faster than the car's top speed, then -20% (scales with DRIVE_SPEED, so this drops 20% too)
 const DRIVE_HARD_DINO_SLOW_MULT = 0.95; // Hard-only: -5% more, per feedback after playtesting nitro/water-gun/2-dinos together
-const DRIVE_DINO_AVOID_RANGE_PX = 55; // real pixels — was a raw % distance, which on this
+const DRIVE_DINO_AVOID_RANGE_PX = 80; // real pixels — was a raw % distance, which on this
                                        // tall (non-square) field meant the avoid check
                                        // triggered at very different real distances depending
                                        // on whether the obstacle was mostly-sideways or
                                        // mostly-ahead, so avoidance worked on some obstacles
-                                       // and not others.
+                                       // and not others. Bumped from 55 -> 80 (dinos were
+                                       // still visibly clipping obstacles -- reacting only
+                                       // that close left too little room to actually turn
+                                       // away in time at DINO_SPEED).
 const DRIVE_SCORE_TARGET = 25;
 const DRIVE_MAX_BITES = 3;
 const DRIVE_BITE_COOLDOWN_MS = 3000;  // 3s of immunity after a bite
@@ -572,8 +575,10 @@ let driveSession = null;
 function goToDrive(resume) {
   if (!resume || !driveSession) driveSession = { score: 0, bites: 0 };
   // Hard difficulty gets a 2nd dino from a different starting corner.
-  // Each dino tracks its own bite cooldown and water "wet" progress
-  // independently, so dousing one doesn't affect the other.
+  // Each dino tracks its own water "wet" progress independently (dousing
+  // one doesn't affect the other), but bite immunity is car-wide (see
+  // carImmuneUntil below) -- being bitten protects against every dino,
+  // not just whichever one bit.
   const dinoStarts = driveDifficulty === "hard"
     ? [DRIVE_DINO_START, DRIVE_DINO2_START]
     : [DRIVE_DINO_START];
@@ -582,8 +587,9 @@ function goToDrive(resume) {
     dinos: dinoStarts.map((pos, i) => ({
       id: "drive-dino" + (i === 0 ? "" : "-" + (i + 1)),
       x: pos.x, y: pos.y,
-      biteCooldownUntil: 0, wetMs: 0, slowUntil: 0
+      wetMs: 0, slowUntil: 0
     })),
+    carImmuneUntil: 0,
     nitroFuel: 100,
     water: { streamMsLeft: DRIVE_WATER_MAX_STREAM_MS, coolUntil: 0 },
     cities: [], obstacles: [], rafId: null, paused: false, worldRect: null, ended: false
@@ -739,7 +745,10 @@ function dinoSteerAngle(dino, desiredAngle, obstacles) {
   if (Math.abs(diff) > Math.PI / 2.2) return desiredAngle; // obstacle isn't roughly ahead — ignore it
   const avoidStrength = (DRIVE_DINO_AVOID_RANGE_PX - nearestDist) / DRIVE_DINO_AVOID_RANGE_PX;
   const turn = diff >= 0 ? -1 : 1; // veer away from whichever side the obstacle is on
-  return desiredAngle + turn * (Math.PI / 3) * avoidStrength;
+  // Max turn sharpened from 60° (PI/3) to ~78° (PI/2.3) -- with the wider
+  // detection range above, a shallow turn still wasn't enough to clear an
+  // obstacle the dino was closing on nearly head-on.
+  return desiredAngle + turn * (Math.PI / 2.3) * avoidStrength;
 }
 
 const DRIVE_FRAME_MS = 1000 / 60; // requestAnimationFrame assumed ~60fps, matching DRIVE_SPEED's own "per frame" units
@@ -906,10 +915,14 @@ function checkDriveCollisions() {
     }
   }
   const now = performance.now();
+  // Immunity is car-wide, not per-dino -- with 2 dinos on Hard, a bite from
+  // one used to leave the OTHER dino's independent cooldown untouched,
+  // letting it bite again on the very next frame instead of the player
+  // actually getting a 3s breather from every dino.
+  if (now < driveState.carImmuneUntil) return;
   for (const d of driveState.dinos) {
-    if (now >= d.biteCooldownUntil &&
-        drivePxDist(d.x, d.y, driveState.x, driveState.y) < DRIVE_CAR_PX_R + DRIVE_DINO_PX_R) {
-      d.biteCooldownUntil = now + DRIVE_BITE_COOLDOWN_MS;
+    if (drivePxDist(d.x, d.y, driveState.x, driveState.y) < DRIVE_CAR_PX_R + DRIVE_DINO_PX_R) {
+      driveState.carImmuneUntil = now + DRIVE_BITE_COOLDOWN_MS;
       driveSession.bites++;
       updateDriveHud();
       const car = $("drive-car");
