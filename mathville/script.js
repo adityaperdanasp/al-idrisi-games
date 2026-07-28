@@ -467,7 +467,7 @@ function goToIntro(chapterId, isMp) {
    question from the same generators the chapters already use.
    ================================================================= */
 const DRIVE_SPEED = 0.3888;   // % of world per animation frame, at full joystick deflection (-20% again)
-const DINO_SPEED = DRIVE_SPEED * 1.1 * 0.8; // 10% faster than the car's top speed, then -20% (scales with DRIVE_SPEED, so this drops 20% too)
+const DINO_SPEED = DRIVE_SPEED * 1.1 * 0.8 * 0.95; // 10% faster than the car's top speed, then -20%, then -5% more per feedback after trying nitro/water-gun
 const DRIVE_DINO_AVOID_RANGE_PX = 55; // real pixels — was a raw % distance, which on this
                                        // tall (non-square) field meant the avoid check
                                        // triggered at very different real distances depending
