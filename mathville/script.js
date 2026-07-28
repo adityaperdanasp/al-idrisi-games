@@ -467,7 +467,8 @@ function goToIntro(chapterId, isMp) {
    question from the same generators the chapters already use.
    ================================================================= */
 const DRIVE_SPEED = 0.3888;   // % of world per animation frame, at full joystick deflection (-20% again)
-const DINO_SPEED = DRIVE_SPEED * 1.1 * 0.8 * 0.95; // 10% faster than the car's top speed, then -20%, then -5% more per feedback after trying nitro/water-gun
+const DINO_SPEED = DRIVE_SPEED * 1.1 * 0.8; // 10% faster than the car's top speed, then -20% (scales with DRIVE_SPEED, so this drops 20% too)
+const DRIVE_HARD_DINO_SLOW_MULT = 0.95; // Hard-only: -5% more, per feedback after playtesting nitro/water-gun/2-dinos together
 const DRIVE_DINO_AVOID_RANGE_PX = 55; // real pixels — was a raw % distance, which on this
                                        // tall (non-square) field meant the avoid check
                                        // triggered at very different real distances depending
@@ -773,7 +774,8 @@ function startDriveLoop() {
         if (dist > 0.5) {
           const dAngle = dinoSteerAngle(d, Math.atan2(dy, dx), driveState.obstacles);
           const slowed = d.slowUntil > now;
-          const step = Math.min(dist, DINO_SPEED * (slowed ? DRIVE_WATER_SLOW_MULT : 1));
+          const baseSpeed = DINO_SPEED * (driveDifficulty === "hard" ? DRIVE_HARD_DINO_SLOW_MULT : 1);
+          const step = Math.min(dist, baseSpeed * (slowed ? DRIVE_WATER_SLOW_MULT : 1));
           d.x = Math.max(0, Math.min(100, d.x + Math.cos(dAngle) * step));
           d.y = Math.max(0, Math.min(100, d.y + Math.sin(dAngle) * step));
           dinoEl.style.left = d.x + "%";
