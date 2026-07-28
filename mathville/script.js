@@ -1923,6 +1923,21 @@ async function sendAiHintFollowUp(text) {
 document.querySelectorAll(".ai-hint-chip").forEach(btn => {
   btn.addEventListener("click", () => sendAiHintFollowUp(btn.dataset.ask));
 });
+// Handles Enter directly on the input rather than relying on the
+// browser's implicit "Enter submits the form" behavior -- on a real
+// device, that implicit submit reached this form's default GET-to-self
+// action instead of being caught here, reloading the whole page (which
+// lands a returning signed-in player back on the map, not the reward
+// screen). preventDefault()/stopPropagation() here run BEFORE that can
+// happen. The submit listener stays too as a fallback (e.g. if a future
+// change adds a real submit-type trigger some other way).
+$("ai-hint-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    e.stopPropagation();
+    sendAiHintFollowUp($("ai-hint-input").value);
+  }
+});
 $("ai-hint-form").addEventListener("submit", e => {
   e.preventDefault();
   sendAiHintFollowUp($("ai-hint-input").value);
