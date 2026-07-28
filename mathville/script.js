@@ -507,8 +507,8 @@ const DRIVE_NITRO_REGEN_PER_MS = 100 / 6000;  // full refill in 6s of not boosti
 // triggers a temporary slow. The tank empties after a short continuous
 // stream and needs a cooldown before it can fire again (limits it
 // without a literal ammo count). ---
-const DRIVE_WATER_RANGE_PX = 85;
-const DRIVE_WATER_CONE_RAD = Math.PI / 5; // half-angle, ~36° total cone
+const DRIVE_WATER_RANGE_PX = 128; // +50% from the original 85 -- a fire-truck-hose jet, not a splash cone
+const DRIVE_WATER_CONE_RAD = Math.PI / 10; // half-angle, ~18° total cone -- -50% width from the original 36°
 const DRIVE_WATER_WET_NEEDED_MS = 3000;
 const DRIVE_WATER_SLOW_MS = 2000;
 const DRIVE_WATER_SLOW_MULT = 0.7; // -30% speed

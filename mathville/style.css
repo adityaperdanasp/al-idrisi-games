@@ -323,9 +323,6 @@ button { font-family: inherit; }
   overflow: hidden;
 }
 .drive-aim-joystick.cooling { opacity: .5; }
-.drive-aim-knob {
-  display: flex; align-items: center; justify-content: center; font-size: 18px;
-}
 /* Radial water-tank gauge: a bottom-up fill clipped to the stick's circle. */
 .drive-water-fill-track {
   position: absolute; inset: 0; border-radius: 50%; overflow: hidden; pointer-events: none;
@@ -354,16 +351,20 @@ button { font-family: inherit; }
   transition: height .1s linear;
 }
 
-/* Water stream cone: a simple CSS triangle tinted blue, anchored at the
-   car and rotated to the aim angle each frame. rotate(0) here points
-   "up" the screen, matching driveHeadingCss's own up=0 convention. */
+/* Water stream: a narrow, long CSS triangle (fire-truck-hose jet, not a
+   splash cone) tinted blue, anchored at the car and rotated to the aim
+   angle each frame. Un-rotated, it points "down" the screen (see the
+   rotation math in driveWaterTick, which is calibrated to that default
+   rather than driveHeadingCss's nose-up convention). Size matches
+   DRIVE_WATER_RANGE_PX/DRIVE_WATER_CONE_RAD in script.js -- keep both
+   in sync if either changes. */
 .drive-water-stream {
   position: absolute; width: 0; height: 0; z-index: 6; pointer-events: none;
-  border-left: 20px solid transparent;
-  border-right: 20px solid transparent;
-  border-bottom: 85px solid rgba(120, 200, 240, 0.4);
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 128px solid rgba(120, 200, 240, 0.4);
   transform-origin: 50% 0%;
-  margin-left: -20px;
+  margin-left: -10px;
   animation: driveWaterFlow .25s linear infinite;
 }
 @keyframes driveWaterFlow {
