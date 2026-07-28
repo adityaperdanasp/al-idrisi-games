@@ -483,6 +483,60 @@ button:focus-visible {
 }
 .ship-marker svg { width: 100%; height: 100%; }
 
+/* MOCKUP ONLY — ship stays as-is; just a "Bo here!" popup + tap zone.
+   Bo himself (in his astronaut helmet) only shows up once the chat
+   panel opens, mirroring the hub landing page's popup pattern. */
+.ship-bo-wrap {
+  position: absolute; inset: -8px; border-radius: 50%;
+  pointer-events: auto; cursor: pointer;
+}
+.ship-bo-hint {
+  position: absolute; left: 50%; bottom: 100%; margin-bottom: 2px;
+  font: 800 9px "Baloo 2", "Fredoka", sans-serif; color: #fff; white-space: nowrap;
+  background: #FF8A3D; padding: 1px 6px; border-radius: 8px 8px 8px 2px;
+  pointer-events: none; animation: shipBoHintPop 3.2s ease-out infinite;
+}
+@keyframes shipBoHintPop {
+  0% { opacity: 0; transform: translate(-50%, 10%) scale(.5); }
+  10% { opacity: 1; transform: translate(-50%, -15%) scale(1.1); }
+  15% { transform: translate(-50%, -10%) scale(1); }
+  35% { opacity: 1; }
+  45%, 100% { opacity: 0; transform: translate(-50%, -25%) scale(1); }
+}
+
+.sc-bo-chat {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+  width: max-content; max-width: min(80%, 260px);
+  background: #fff; border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,.3);
+  z-index: 200; padding: 10px 30px 8px 12px;
+  display: flex; align-items: center; gap: 8px; text-align: left;
+  animation: scBoChatPopIn .22s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes scBoChatPopIn {
+  0% { opacity: 0; transform: translateX(-50%) scale(.85) translateY(8px); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+}
+.sc-bo-chat-close {
+  position: absolute; top: 6px; right: 6px; width: 18px; height: 18px;
+  border-radius: 50%; border: none; background: rgba(0,0,0,.06);
+  font-size: 10px; line-height: 1; cursor: pointer; color: #1266d8;
+  display: flex; align-items: center; justify-content: center;
+}
+.sc-bo-chat-avatar-wrap { position: relative; width: 30px; height: 30px; flex-shrink: 0; }
+.sc-bo-chat-avatar {
+  width: 30px; height: 30px; border-radius: 50%; display: block;
+  box-shadow: 0 2px 5px rgba(0,0,0,.15);
+  animation: shipBoWiggle 1.8s ease-in-out infinite;
+}
+.sc-bo-helmet-ring {
+  position: absolute; inset: -2px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.9);
+  box-shadow: 0 0 4px rgba(255,255,255,.7), inset 0 -3px 4px rgba(120,170,255,.4);
+}
+.sc-bo-chat-text { display: flex; flex-direction: column; gap: 2px; }
+.sc-bo-chat-prompt { font: 700 12px "Fredoka", sans-serif; color: #333; line-height: 1.25; }
+.sc-bo-chat-note { font: 600 9px "Fredoka", sans-serif; color: #9aa3c2; font-style: italic; }
+
 .path-node-name { font-weight: 700; font-size: 0.9rem; color: var(--text-on-dark); }
 .path-node.locked .path-node-name { color: var(--locked-color); }
 .path-node-stars { font-size: 0.8rem; letter-spacing: 2px; color: var(--star-filled); }

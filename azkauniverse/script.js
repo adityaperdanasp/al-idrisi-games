@@ -78,6 +78,45 @@ const PRAISE_WRONG = [
 
 const BURST_EMOJI = ["✨", "⭐", "🎉", "🌟", "💫"];
 
+// MOCKUP ONLY — rotating prompt lines for the Bo chat placeholder panel,
+// so Bo doesn't feel canned. Not wired to the real AI yet.
+const BO_CHAT_PROMPTS = [
+  "What's on your mind?", "What confuses you?", "Got a tricky question?",
+  "Need a hint?", "What's puzzling you?", "Stuck on something?",
+  "Ask me anything!", "What do you have in mind?", "Need a helping hand?",
+  "What's tricky right now?", "Wanna talk it through?", "What's bugging you?",
+  "Something not clicking?", "What can I explain?", "Need a nudge?",
+  "What's the mystery today?", "Tell me what's up!", "What's got you stuck?",
+  "Need backup?", "What should we figure out?", "What's swirling in your brain?",
+  "Ready to solve something?", "What's the puzzle?", "Need a brain boost?",
+  "What's tricky today?", "Whatcha thinking?", "Need a clue?",
+  "What's the challenge?", "Want a hint from me?", "What's on your quest?",
+  "Ready for a question?", "What's bugging your brain?", "Need some help?",
+  "What's confusing right now?", "Let's untangle it!", "What's the tough part?",
+  "Curious about something?", "What do you need help with?", "Wanna crack this together?",
+  "What's the big question?", "Need me to explain?", "What's got you scratching your head?",
+  "Something feel tricky?", "What's the holdup?", "Ready to ask?",
+  "What's the sticking point?", "Need a spark of an idea?", "What's next on your mind?",
+  "Whatcha stuck on?", "Let's figure it out!", "What's the brain teaser?",
+  "Got a question for me?", "What's not making sense?", "Need some clarity?",
+  "What's the tricky bit?", "Ready to dig in?", "What's your question?",
+  "Need a boost of brainpower?", "What's puzzling your brain?", "Let's crack the code!",
+  "What's tripping you up?", "Need a friendly nudge?", "What's the head-scratcher?",
+  "Ready to explore?", "What's got you wondering?", "Need help connecting the dots?",
+  "What's the missing piece?", "Let's solve this together!", "What's the tricky question?",
+  "Need a fresh explanation?", "What's bugging your mind?", "Ready for some help?",
+  "What's the puzzle piece?", "Need me to break it down?", "What's the confusing part?",
+  "Let's chat about it!", "What's the question of the day?", "Need a different angle?",
+  "What's the tricky spot?", "Ready to figure it out?", "What's on your brain?",
+  "Need a lightbulb moment?", "What's the stumper?", "Let's tackle it together!",
+  "What's got you curious?", "Need help untangling this?", "What's the roadblock?",
+  "Ready to ask away?", "What's the mystery to solve?", "Need a spark?",
+  "What's the sticky part?", "Let's break it down!", "What's the question on your mind?",
+  "Need a boost?", "What's confusing about this?", "Ready to chat?",
+  "What's the tricky idea?", "Need help with something?", "What's the puzzle today?",
+  "Let's figure this out together!"
+];
+
 const QUESTION_DELAY_MS = 1500; // pause after answering before advancing
 
 const QUESTIONS_PER_ROUND = 5; // random subset of each topic's bank shown per play
@@ -540,8 +579,35 @@ function renderQuestPathMap(container) {
         <path d="M27 22 L34 31 L27 27 Z" fill="#ff5d8f"/>
         <path d="M17 25 L20 36 L23 25 Z" fill="#ffd93d"/>
       </svg>
+      <!-- MOCKUP ONLY — ship stays as-is, just a "Bo here!" popup hint.
+           Bo himself only appears (in his astronaut helmet) once the
+           chat panel opens. -->
+      <div class="ship-bo-wrap" id="ship-bo-wrap">
+        <span class="ship-bo-hint" id="ship-bo-hint">Bo here!</span>
+      </div>
     </div>
   `);
+
+  // MOCKUP ONLY — tap Bo to open the placeholder chat panel.
+  const shipBoWrap = document.getElementById("ship-bo-wrap");
+  const shipBoChat = document.getElementById("ship-bo-chat");
+  if (shipBoWrap && shipBoChat) {
+    shipBoWrap.addEventListener("click", (e) => {
+      e.stopPropagation();
+      shipBoChat.hidden = false;
+      document.getElementById("ship-bo-hint").style.display = "none";
+      const promptEl = document.getElementById("ship-bo-chat-prompt");
+      if (promptEl) promptEl.textContent = BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)];
+    });
+    const closeBtn = document.getElementById("ship-bo-chat-close");
+    if (closeBtn && !closeBtn.dataset.wired) {
+      closeBtn.dataset.wired = "1";
+      closeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        shipBoChat.hidden = true;
+      });
+    }
+  }
 
   levels.forEach((level, i) => {
     const pos = PATH_NODE_POS[i];

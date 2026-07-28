@@ -241,6 +241,58 @@ button { font-family: inherit; }
   0%, 100% { filter: drop-shadow(0 3px 4px rgba(59,42,26,.35)); }
   50% { filter: drop-shadow(0 0 8px var(--bad)) brightness(1.3); }
 }
+
+/* MOCKUP ONLY — Bo riding in the windshield + tap hint, mirrors the
+   hub landing page's Bo avatar + "RAWR!"-style popup. */
+.drive-bo-face {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  width: 13px; height: 13px; border-radius: 50%; pointer-events: none;
+  animation: sc-badge-wiggle 1.8s ease-in-out infinite;
+}
+.drive-bo-hint {
+  position: absolute; left: 50%; bottom: 100%; margin-bottom: 2px;
+  font: 800 9px "Baloo 2", sans-serif; color: #fff; white-space: nowrap;
+  background: #FF8A3D; padding: 1px 6px; border-radius: 8px 8px 8px 2px;
+  pointer-events: none; animation: driveBoHintPop 3.2s ease-out infinite;
+}
+@keyframes sc-badge-wiggle {
+  0%, 100% { transform: translateX(-50%) rotate(-8deg); }
+  50% { transform: translateX(-50%) rotate(8deg); }
+}
+@keyframes driveBoHintPop {
+  0% { opacity: 0; transform: translate(-50%, 10%) scale(.5); }
+  10% { opacity: 1; transform: translate(-50%, -15%) scale(1.1); }
+  15% { transform: translate(-50%, -10%) scale(1); }
+  35% { opacity: 1; }
+  45%, 100% { opacity: 0; transform: translate(-50%, -25%) scale(1); }
+}
+
+.sc-bo-chat {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+  width: max-content; max-width: min(80%, 260px);
+  background: #fff; border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,.18);
+  z-index: 200; padding: 10px 30px 8px 12px;
+  display: flex; align-items: center; gap: 8px; text-align: left;
+  animation: scBoChatPopIn .22s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes scBoChatPopIn {
+  0% { opacity: 0; transform: translateX(-50%) scale(.85) translateY(8px); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+}
+.sc-bo-chat-close {
+  position: absolute; top: 6px; right: 6px; width: 18px; height: 18px;
+  border-radius: 50%; border: none; background: rgba(0,0,0,.06);
+  font-size: 10px; line-height: 1; cursor: pointer; color: #8a6d3a;
+  display: flex; align-items: center; justify-content: center;
+}
+.sc-bo-chat-avatar {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(0,0,0,.15);
+  animation: sc-badge-wiggle 1.8s ease-in-out infinite;
+}
+.sc-bo-chat-text { display: flex; flex-direction: column; gap: 2px; }
+.sc-bo-chat-prompt { font: 700 12px "Baloo 2", sans-serif; color: #6b5a3e; line-height: 1.25; }
+.sc-bo-chat-note { font: 600 9px "Baloo 2", sans-serif; color: #b9a98a; font-style: italic; }
 .drive-dino {
   position: absolute; width: 34px; height: 34px; margin-left: -17px; margin-top: -17px;
   display: flex; align-items: center; justify-content: center;

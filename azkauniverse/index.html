@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-<link rel="stylesheet" href="style.css?v=14" />
+<link rel="stylesheet" href="style.css?v=15" />
 </head>
 <body>
 
@@ -95,6 +95,20 @@
     <div id="quest-map" class="quest-map"></div>
     <button class="btn btn-secondary" data-back="screen-landing">Back</button>
   </section>
+
+  <!-- MOCKUP ONLY — placeholder panel, not wired to AI yet. Bo wears a
+       little astronaut helmet here to match the SolarQuest theme. -->
+  <div class="sc-bo-chat" id="ship-bo-chat" hidden>
+    <button class="sc-bo-chat-close" id="ship-bo-chat-close">✕</button>
+    <span class="sc-bo-chat-avatar-wrap">
+      <img src="../icon-192.png" alt="Bo" class="sc-bo-chat-avatar">
+      <span class="sc-bo-helmet-ring"></span>
+    </span>
+    <div class="sc-bo-chat-text">
+      <div class="sc-bo-chat-prompt" id="ship-bo-chat-prompt">What's confusing you?</div>
+      <div class="sc-bo-chat-note">psst — mockup, not connected yet</div>
+    </div>
+  </div>
 
   <!-- ===============================================================
        SCREEN: Sticker Book
@@ -349,7 +363,7 @@
 </script>
 
 <script src="bgm.js"></script>
-<script src="script.js?v=14"></script>
+<script src="script.js?v=15"></script>
 
 </body>
 </html>
