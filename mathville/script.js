@@ -1824,41 +1824,109 @@ function showWaitingForOthers() {
   $("btn-reward-continue").classList.add("hidden");
 }
 
+// Keeps growing across follow-ups within one reward screen so each new
+// AI reply has the full back-and-forth for context. Reset on every
+// loadAiHint() call (i.e. every fresh reward screen).
+let aiHintHistory = [];
+let aiHintMissed = null;
+
 async function loadAiHint() {
-  const card = $("ai-hint-card"), loading = $("ai-hint-loading"), result = $("ai-hint-result");
-  const missed = state.lastWrong;
-  if (!missed) { card.classList.add("hidden"); return; }
+  const card = $("ai-hint-card"), loading = $("ai-hint-loading"), thread = $("ai-hint-thread");
+  const followups = $("ai-hint-followups"), form = $("ai-hint-form");
+  aiHintMissed = state.lastWrong;
+  aiHintHistory = [];
+  thread.innerHTML = "";
+  followups.classList.add("hidden");
+  form.classList.add("hidden");
+  if (!aiHintMissed) { card.classList.add("hidden"); return; }
 
   card.classList.remove("hidden");
   loading.classList.remove("hidden");
-  result.classList.add("hidden");
+
+  // Best-effort personalization -- if this fails or there's no history
+  // yet for this topic, the hint just skips that context entirely.
+  let topicStats = null;
+  try {
+    if (window.AIGLeaderboard) topicStats = await AIGLeaderboard.getTopicStats("mathville", state.chapterId);
+  } catch (e) { /* no topicStats context, hint still works without it */ }
 
   try {
-    const res = await fetch("/api/generate-hint", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        studentName: CHILD_NAME,
-        gameLabel: "MathVille",
-        question: missed.prompt,
-        correctAnswer: missed.answer,
-        kidAnswer: null,
-        topic: state.chapterId
-      })
+    const data = await callAiHint({
+      studentName: CHILD_NAME,
+      gameLabel: "MathVille",
+      question: aiHintMissed.prompt,
+      correctAnswer: aiHintMissed.answer,
+      kidAnswer: null,
+      topic: state.chapterId,
+      topicStats
     });
-    const data = await res.json();
-    if (!res.ok || !data.hint) throw new Error(data.error || "no hint");
-
-    result.textContent = data.hint;
+    appendAiHintMessage(data.hint, "ai");
+    aiHintHistory.push({ role: "assistant", content: data.hint });
     loading.classList.add("hidden");
-    result.style.animation = "none";
-    result.classList.remove("hidden");
-    void result.offsetWidth;
-    result.style.animation = "";
+    followups.classList.remove("hidden");
+    form.classList.remove("hidden");
   } catch (e) {
     card.classList.add("hidden"); // fails silently — never blocks the reward screen
   }
 }
+
+function appendAiHintMessage(text, from) {
+  const thread = $("ai-hint-thread");
+  const div = document.createElement("div");
+  div.className = "ai-hint-msg ai-hint-msg-" + from;
+  div.textContent = text;
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
+}
+
+async function callAiHint(body) {
+  const res = await fetch("/api/generate-hint", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok || !data.hint) throw new Error(data.error || "no hint");
+  return data;
+}
+
+async function sendAiHintFollowUp(text) {
+  if (!text || !text.trim() || !aiHintMissed) return;
+  const loading = $("ai-hint-loading"), followups = $("ai-hint-followups"), input = $("ai-hint-input");
+  appendAiHintMessage(text, "kid");
+  const historyBeforeThisTurn = aiHintHistory.slice();
+  aiHintHistory.push({ role: "user", content: text });
+  input.value = "";
+  loading.classList.remove("hidden");
+  followups.classList.add("hidden");
+  try {
+    const data = await callAiHint({
+      studentName: CHILD_NAME,
+      gameLabel: "MathVille",
+      question: aiHintMissed.prompt,
+      correctAnswer: aiHintMissed.answer,
+      kidAnswer: null,
+      topic: state.chapterId,
+      history: historyBeforeThisTurn,
+      followUp: text
+    });
+    appendAiHintMessage(data.hint, "ai");
+    aiHintHistory.push({ role: "assistant", content: data.hint });
+  } catch (e) {
+    appendAiHintMessage("Hmm, I'm having trouble thinking right now. Try again in a bit!", "ai");
+  } finally {
+    loading.classList.add("hidden");
+    followups.classList.remove("hidden");
+  }
+}
+
+document.querySelectorAll(".ai-hint-chip").forEach(btn => {
+  btn.addEventListener("click", () => sendAiHintFollowUp(btn.dataset.ask));
+});
+$("ai-hint-form").addEventListener("submit", e => {
+  e.preventDefault();
+  sendAiHintFollowUp($("ai-hint-input").value);
+});
 
 /* =================================================================
    MULTIPLAYER — solo/2/3 players via the hub's own Firebase project

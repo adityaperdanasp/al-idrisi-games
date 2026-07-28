@@ -116,5 +116,17 @@
     ref.child("streak").transaction(cur => isCorrect ? (cur || 0) + 1 : 0);
   }
 
-  window.AIGLeaderboard = { recordPlay, watchGame, getProgress, setProgress, recordTopicAttempt, db: aigDb };
+  // Reads back one topic's {correct, wrong, streak} so the AI Tutor hint
+  // can be personalized to a real pattern of mistakes, not just the one
+  // question that was just missed. Returns null for a parent identity or
+  // if there's no data yet (a brand-new topic) — callers should treat
+  // both as "no extra context available" rather than an error.
+  async function getTopicStats(gameId, topicKey) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`players/${player.id}/topicStats/${gameId}/${topicKey}`).get();
+    return snap.exists() ? snap.val() : null;
+  }
+
+  window.AIGLeaderboard = { recordPlay, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats, db: aigDb };
 })();
