@@ -357,14 +357,21 @@
         </div>
       </div>
 
-      <!-- MOCKUP ONLY — placeholder panel, not wired to AI yet -->
+      <!-- Real chat with Bo (api/bo-chat.js) — kids can ask anything. -->
       <div class="sc-bo-chat" id="sc-bo-chat" hidden>
-        <button class="sc-bo-chat-close" id="sc-bo-chat-close">✕</button>
-        <img src="icon-192.png" alt="Bo" class="sc-bo-chat-avatar">
-        <div class="sc-bo-chat-text">
-          <div class="sc-bo-chat-prompt" id="sc-bo-chat-prompt">What's confusing you?</div>
-          <div class="sc-bo-chat-note">psst — mockup, not connected yet</div>
+        <div class="sc-bo-chat-header">
+          <img src="icon-192.png" alt="Bo" class="sc-bo-chat-avatar">
+          <span class="sc-bo-chat-title">Bo</span>
+          <button class="sc-bo-chat-close" id="sc-bo-chat-close">✕</button>
         </div>
+        <div class="sc-bo-chat-thread" id="sc-bo-chat-thread"></div>
+        <div class="sc-bo-chat-loading hidden" id="sc-bo-chat-loading">
+          <span></span><span></span><span></span>
+        </div>
+        <form class="sc-bo-chat-form" id="sc-bo-chat-form">
+          <input class="sc-bo-chat-input" id="sc-bo-chat-input" placeholder="Ask Bo anything..." autocomplete="off" maxlength="200">
+          <button class="sc-bo-chat-send" type="submit" aria-label="Send">➤</button>
+        </form>
       </div>
     </div>
 
@@ -567,24 +574,109 @@
     "Let's figure this out together!"
   ];
 
-  (function setupBoChatMockup() {
-    const greeting = document.getElementById("sc-greeting");
-    const chat = document.getElementById("sc-bo-chat");
-    const hint = document.getElementById("sc-greeting-hint");
-    const closeBtn = document.getElementById("sc-bo-chat-close");
-    const promptEl = document.getElementById("sc-bo-chat-prompt");
-    if (!greeting || !chat) return;
-    greeting.addEventListener("click", () => {
+  // Real Bo chat (api/bo-chat.js) -- shared setup used by the hub landing
+  // page. Each open starts a fresh thread (history not persisted across
+  // opens) with Bo's rotating prompt as the opening line.
+  function setupBoChat({ triggerEl, hintEl, chatEl, closeId, threadId, loadingId, formId, inputId, avatarSrc }) {
+    const chat = document.getElementById(chatEl);
+    const closeBtn = document.getElementById(closeId);
+    const thread = document.getElementById(threadId);
+    const loading = document.getElementById(loadingId);
+    const form = document.getElementById(formId);
+    const input = document.getElementById(inputId);
+    if (!triggerEl || !chat) return;
+
+    let history = [];
+
+    function appendMsg(text, from) {
+      const div = document.createElement("div");
+      div.className = "sc-bo-msg sc-bo-msg-" + from;
+      if (from === "bo") {
+        const avatar = document.createElement("img");
+        avatar.className = "sc-bo-msg-avatar";
+        avatar.src = avatarSrc;
+        avatar.alt = "Bo";
+        div.appendChild(avatar);
+      }
+      const textEl = document.createElement("span");
+      textEl.className = "sc-bo-msg-text";
+      textEl.textContent = text;
+      div.appendChild(textEl);
+      thread.appendChild(div);
+      thread.scrollTop = thread.scrollHeight;
+    }
+
+    async function sendMessage(message) {
+      appendMsg(message, "kid");
+      history.push({ role: "user", content: message });
+      loading.classList.remove("hidden");
+      try {
+        const player = window.AIGPlayer && AIGPlayer.getPlayer();
+        const res = await fetch("/api/bo-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentName: player ? player.name : undefined,
+            message,
+            history: history.slice(0, -1)
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.reply) {
+          appendMsg(data.reply, "bo");
+          history.push({ role: "assistant", content: data.reply });
+        } else {
+          appendMsg("Hmm, my brain hiccuped! Try asking again?", "bo");
+        }
+      } catch (e) {
+        appendMsg("Oops, I couldn't hear that. Try again?", "bo");
+      } finally {
+        loading.classList.add("hidden");
+      }
+    }
+
+    triggerEl.addEventListener("click", () => {
       chat.hidden = false;
-      hint.style.display = "none";
+      if (hintEl) hintEl.style.display = "none";
       localStorage.setItem("aig_bo_chat_hint_seen", "1");
-      promptEl.textContent = BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)];
+      thread.innerHTML = "";
+      history = [];
+      appendMsg(BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)], "bo");
+      setTimeout(() => input.focus(), 50);
     });
     closeBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       chat.hidden = true;
     });
-  })();
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const message = input.value.trim();
+      if (!message) return;
+      input.value = "";
+      sendMessage(message);
+    });
+    // Same real-device gotcha as the AI Tutor input: don't rely on the
+    // form's submit event alone to catch Enter -- catch keydown directly.
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        form.requestSubmit();
+      }
+    });
+  }
+
+  setupBoChat({
+    triggerEl: document.getElementById("sc-greeting"),
+    hintEl: document.getElementById("sc-greeting-hint"),
+    chatEl: "sc-bo-chat",
+    closeId: "sc-bo-chat-close",
+    threadId: "sc-bo-chat-thread",
+    loadingId: "sc-bo-chat-loading",
+    formId: "sc-bo-chat-form",
+    inputId: "sc-bo-chat-input",
+    avatarSrc: "icon-192.png"
+  });
 
   function showSelect() {
     document.getElementById("sc-screen-landing").classList.remove("active");

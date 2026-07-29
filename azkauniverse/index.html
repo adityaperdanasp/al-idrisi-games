@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-<link rel="stylesheet" href="style.css?v=15" />
+<link rel="stylesheet" href="style.css?v=16" />
 </head>
 <body>
 
@@ -96,18 +96,25 @@
     <button class="btn btn-secondary" data-back="screen-landing">Back</button>
   </section>
 
-  <!-- MOCKUP ONLY — placeholder panel, not wired to AI yet. Bo wears a
-       little astronaut helmet here to match the SolarQuest theme. -->
+  <!-- Real chat with Bo (api/bo-chat.js). Bo wears a little astronaut
+       helmet here to match the SolarQuest theme. -->
   <div class="sc-bo-chat" id="ship-bo-chat" hidden>
-    <button class="sc-bo-chat-close" id="ship-bo-chat-close">✕</button>
-    <span class="sc-bo-chat-avatar-wrap">
-      <img src="../icon-192.png" alt="Bo" class="sc-bo-chat-avatar">
-      <span class="sc-bo-helmet-ring"></span>
-    </span>
-    <div class="sc-bo-chat-text">
-      <div class="sc-bo-chat-prompt" id="ship-bo-chat-prompt">What's confusing you?</div>
-      <div class="sc-bo-chat-note">psst — mockup, not connected yet</div>
+    <div class="sc-bo-chat-header">
+      <span class="sc-bo-chat-avatar-wrap">
+        <img src="../icon-192.png" alt="Bo" class="sc-bo-chat-avatar">
+        <span class="sc-bo-helmet-ring"></span>
+      </span>
+      <span class="sc-bo-chat-title">Bo</span>
+      <button class="sc-bo-chat-close" id="ship-bo-chat-close">✕</button>
     </div>
+    <div class="sc-bo-chat-thread" id="ship-bo-chat-thread"></div>
+    <div class="sc-bo-chat-loading hidden" id="ship-bo-chat-loading">
+      <span></span><span></span><span></span>
+    </div>
+    <form class="sc-bo-chat-form" id="ship-bo-chat-form">
+      <input class="sc-bo-chat-input" id="ship-bo-chat-input" placeholder="Ask Bo anything..." autocomplete="off" maxlength="200">
+      <button class="sc-bo-chat-send" type="submit" aria-label="Send">➤</button>
+    </form>
   </div>
 
   <!-- ===============================================================
@@ -363,7 +370,7 @@
 </script>
 
 <script src="bgm.js"></script>
-<script src="script.js?v=15"></script>
+<script src="script.js?v=16"></script>
 
 </body>
 </html>

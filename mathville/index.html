@@ -29,7 +29,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=24" />
+<link rel="stylesheet" href="style.css?v=25" />
 </head>
 <body>
 
@@ -179,14 +179,21 @@
       </div>
     </div>
 
-    <!-- MOCKUP ONLY — placeholder panel, not wired to AI yet. -->
+    <!-- Real chat with Bo (api/bo-chat.js) -->
     <div class="sc-bo-chat" id="drive-bo-chat" hidden>
-      <button class="sc-bo-chat-close" id="drive-bo-chat-close">✕</button>
-      <img src="../icon-192.png" alt="Bo" class="sc-bo-chat-avatar">
-      <div class="sc-bo-chat-text">
-        <div class="sc-bo-chat-prompt" id="drive-bo-chat-prompt">What's confusing you?</div>
-        <div class="sc-bo-chat-note">psst — mockup, not connected yet</div>
+      <div class="sc-bo-chat-header">
+        <img src="../icon-192.png" alt="Bo" class="sc-bo-chat-avatar">
+        <span class="sc-bo-chat-title">Bo</span>
+        <button class="sc-bo-chat-close" id="drive-bo-chat-close">✕</button>
       </div>
+      <div class="sc-bo-chat-thread" id="drive-bo-chat-thread"></div>
+      <div class="sc-bo-chat-loading hidden" id="drive-bo-chat-loading">
+        <span></span><span></span><span></span>
+      </div>
+      <form class="sc-bo-chat-form" id="drive-bo-chat-form">
+        <input class="sc-bo-chat-input" id="drive-bo-chat-input" placeholder="Ask Bo anything..." autocomplete="off" maxlength="200">
+        <button class="sc-bo-chat-send" type="submit" aria-label="Send">➤</button>
+      </form>
     </div>
 
     <!-- Difficulty picker, shown before every fresh Drive Mode entry
@@ -352,6 +359,6 @@
 <script src="questions.js?v=2"></script>
 <script src="generators.js?v=2"></script>
 <script src="bgm.js"></script>
-<script src="script.js?v=35"></script>
+<script src="script.js?v=36"></script>
 </body>
 </html>

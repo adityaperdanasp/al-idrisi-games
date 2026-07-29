@@ -588,16 +588,100 @@ function renderQuestPathMap(container) {
     </div>
   `);
 
-  // MOCKUP ONLY — tap Bo to open the placeholder chat panel.
+  // Real chat with Bo (api/bo-chat.js) — tap the ship to open. #ship-bo-wrap
+  // is recreated fresh every renderQuestPathMap() call (container.innerHTML
+  // reset above), so its click listener is safe to re-attach each time.
+  // The chat panel itself (close/form/input) is static page markup though,
+  // so those get a dataset.wired guard to avoid stacking duplicate listeners.
   const shipBoWrap = document.getElementById("ship-bo-wrap");
   const shipBoChat = document.getElementById("ship-bo-chat");
   if (shipBoWrap && shipBoChat) {
+    const thread = document.getElementById("ship-bo-chat-thread");
+    const loading = document.getElementById("ship-bo-chat-loading");
+    const form = document.getElementById("ship-bo-chat-form");
+    const input = document.getElementById("ship-bo-chat-input");
+
+    if (form && !form.dataset.wired) {
+      form.dataset.wired = "1";
+      let history = [];
+
+      function appendMsg(text, from) {
+        const div = document.createElement("div");
+        div.className = "sc-bo-msg sc-bo-msg-" + from;
+        if (from === "bo") {
+          const avatar = document.createElement("img");
+          avatar.className = "sc-bo-msg-avatar";
+          avatar.src = "../icon-192.png";
+          avatar.alt = "Bo";
+          div.appendChild(avatar);
+        }
+        const textEl = document.createElement("span");
+        textEl.className = "sc-bo-msg-text";
+        textEl.textContent = text;
+        div.appendChild(textEl);
+        thread.appendChild(div);
+        thread.scrollTop = thread.scrollHeight;
+      }
+
+      async function sendMessage(message) {
+        appendMsg(message, "kid");
+        history.push({ role: "user", content: message });
+        loading.classList.remove("hidden");
+        try {
+          const player = window.AIGPlayer && AIGPlayer.getPlayer();
+          const res = await fetch("/api/bo-chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              studentName: player ? player.name : undefined,
+              message,
+              history: history.slice(0, -1)
+            })
+          });
+          const data = await res.json();
+          if (res.ok && data.reply) {
+            appendMsg(data.reply, "bo");
+            history.push({ role: "assistant", content: data.reply });
+          } else {
+            appendMsg("Hmm, my brain hiccuped! Try asking again?", "bo");
+          }
+        } catch (e) {
+          appendMsg("Oops, I couldn't hear that. Try again?", "bo");
+        } finally {
+          loading.classList.add("hidden");
+        }
+      }
+
+      shipBoChat._openBoChat = () => {
+        thread.innerHTML = "";
+        history = [];
+        appendMsg(BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)], "bo");
+        setTimeout(() => input.focus(), 50);
+      };
+
+      form.addEventListener("submit", e => {
+        e.preventDefault();
+        const message = input.value.trim();
+        if (!message) return;
+        input.value = "";
+        sendMessage(message);
+      });
+      // Same real-device gotcha as the AI Tutor input: don't rely on the
+      // form's submit event alone to catch Enter -- catch keydown directly.
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.stopPropagation();
+          form.requestSubmit();
+        }
+      });
+    }
+
     shipBoWrap.addEventListener("click", (e) => {
       e.stopPropagation();
       shipBoChat.hidden = false;
       document.getElementById("ship-bo-hint").style.display = "none";
-      const promptEl = document.getElementById("ship-bo-chat-prompt");
-      if (promptEl) promptEl.textContent = BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)];
+      if (shipBoChat._openBoChat) shipBoChat._openBoChat();
     });
     const closeBtn = document.getElementById("ship-bo-chat-close");
     if (closeBtn && !closeBtn.dataset.wired) {

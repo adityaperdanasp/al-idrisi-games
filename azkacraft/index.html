@@ -230,19 +230,26 @@
 
   <div id="question-area" class="question-area"></div>
 
-  <!-- MOCKUP ONLY — simple Bo, same as the hub landing page. No hint
-       text while answering (kids already know him from there); tap
-       opens the same placeholder chat concept. -->
+  <!-- Simple Bo, same as the hub landing page. No hint text while
+       answering (kids already know him from there); tap opens a real
+       chat with Bo (api/bo-chat.js). -->
   <div class="game-bo" id="game-bo" role="button" tabindex="0">
     <img class="game-bo-face" src="../icon-192.png" alt="Bo">
   </div>
   <div class="sc-bo-chat" id="game-bo-chat" hidden>
-    <button class="sc-bo-chat-close" id="game-bo-chat-close">✕</button>
-    <img src="../icon-192.png" alt="Bo" class="sc-bo-chat-avatar">
-    <div class="sc-bo-chat-text">
-      <div class="sc-bo-chat-prompt" id="game-bo-chat-prompt">What's confusing you?</div>
-      <div class="sc-bo-chat-note">psst — mockup, not connected yet</div>
+    <div class="sc-bo-chat-header">
+      <img src="../icon-192.png" alt="Bo" class="sc-bo-chat-avatar">
+      <span class="sc-bo-chat-title">Bo</span>
+      <button class="sc-bo-chat-close" id="game-bo-chat-close">✕</button>
     </div>
+    <div class="sc-bo-chat-thread" id="game-bo-chat-thread"></div>
+    <div class="sc-bo-chat-loading hidden" id="game-bo-chat-loading">
+      <span></span><span></span><span></span>
+    </div>
+    <form class="sc-bo-chat-form" id="game-bo-chat-form">
+      <input class="sc-bo-chat-input" id="game-bo-chat-input" placeholder="Ask Bo anything..." autocomplete="off" maxlength="200">
+      <button class="sc-bo-chat-send" type="submit" aria-label="Send">➤</button>
+    </form>
   </div>
   </div>
   </div>
