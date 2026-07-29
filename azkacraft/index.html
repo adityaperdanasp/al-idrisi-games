@@ -230,16 +230,15 @@
 
   <div id="question-area" class="question-area"></div>
 
-  <!-- Simple Bo, same as the hub landing page. No hint text while
-       answering (kids already know him from there); tap opens a real
-       chat with Bo (api/bo-chat.js). -->
+  <!-- Simple Bo, same as the hub landing page. Tap opens a real chat
+       with Bo (api/bo-chat.js). -->
   <div class="game-bo" id="game-bo" role="button" tabindex="0">
+    <span class="game-bo-hint" id="game-bo-hint">Bo here!</span>
     <img class="game-bo-face" src="../icon-192.png" alt="Bo">
   </div>
   <div class="sc-bo-chat" id="game-bo-chat" hidden>
     <div class="sc-bo-chat-header">
       <img src="../icon-192.png" alt="Bo" class="sc-bo-chat-avatar">
-      <span class="sc-bo-chat-title">Bo</span>
       <button class="sc-bo-chat-close" id="game-bo-chat-close">✕</button>
     </div>
     <div class="sc-bo-chat-thread" id="game-bo-chat-thread"></div>

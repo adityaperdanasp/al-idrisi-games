@@ -284,7 +284,6 @@ button { font-family: inherit; }
   box-shadow: 0 2px 5px rgba(0,0,0,.15);
   animation: sc-badge-wiggle 1.8s ease-in-out infinite;
 }
-.sc-bo-chat-title { font: 800 13px "Baloo 2", sans-serif; color: #8a6d3a; }
 .sc-bo-chat-close {
   margin-left: auto; width: 20px; height: 20px;
   border-radius: 50%; border: none; background: rgba(0,0,0,.08);

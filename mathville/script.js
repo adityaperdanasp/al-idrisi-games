@@ -1548,7 +1548,7 @@ const BO_CHAT_PROMPTS = [
     if (hint) hint.style.display = "none";
     thread.innerHTML = "";
     history = [];
-    appendMsg(BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)], "bo");
+    appendMsg("Bo here! " + BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)], "bo");
     setTimeout(() => input.focus(), 50);
   });
   if (closeBtn) closeBtn.addEventListener("click", e => { e.stopPropagation(); chat.hidden = true; });
@@ -1598,7 +1598,11 @@ function buildPlaceValueStep() {
     numStr = String(rand(min, max));
     idx = rand(0, numStr.length - 1);
     digit = numStr[idx];
-  } while (digit === "0");
+    // Reject "0" (no place-value question asks about a zero digit) AND
+    // reject any digit that repeats elsewhere in the number -- e.g.
+    // asking "which place is the 7 in 9,793,708" is ambiguous since 7
+    // shows up twice, so a kid pointing at either spot is defensibly right.
+  } while (digit === "0" || numStr.indexOf(digit) !== numStr.lastIndexOf(digit));
   const power = numStr.length - 1 - idx;
   const placeName = PLACE_NAMES[power];
   const fmtNum = Number(numStr).toLocaleString("en-US");

@@ -1049,11 +1049,13 @@ const BO_CHAT_PROMPTS = [
     }
   }
 
+  const hint = document.getElementById("game-bo-hint");
   bo.addEventListener("click", () => {
     chat.hidden = false;
+    if (hint) hint.style.display = "none";
     thread.innerHTML = "";
     history = [];
-    appendMsg(BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)], "bo");
+    appendMsg("Bo here! " + BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)], "bo");
     setTimeout(() => input.focus(), 50);
   });
   if (closeBtn) closeBtn.addEventListener("click", e => { e.stopPropagation(); chat.hidden = true; });

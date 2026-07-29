@@ -284,8 +284,7 @@ button {
   transform: scale(0.9);
 }
 
-/* MOCKUP ONLY — simple Bo on the gameplay screen, tap opens the same
-   placeholder chat concept as the hub landing page. */
+/* Simple Bo on the gameplay screen, tap opens a real chat (api/bo-chat.js). */
 .game-bo {
   position: fixed;
   bottom: calc(22px + env(safe-area-inset-bottom, 0px));
@@ -300,6 +299,19 @@ button {
   background: #fff;
   box-shadow: 0 3px 10px rgba(0,0,0,.18);
   animation: gameBoWiggle 1.8s ease-in-out infinite;
+}
+.game-bo-hint {
+  position: absolute; left: 50%; bottom: 100%; margin-bottom: 2px;
+  font: 800 9px inherit; color: #fff; white-space: nowrap;
+  background: #FF8A3D; padding: 1px 6px; border-radius: 8px 8px 8px 2px;
+  pointer-events: none; animation: gameBoHintPop 3.2s ease-out infinite;
+}
+@keyframes gameBoHintPop {
+  0% { opacity: 0; transform: translate(-50%, 10%) scale(.5); }
+  10% { opacity: 1; transform: translate(-50%, -15%) scale(1.1); }
+  15% { transform: translate(-50%, -10%) scale(1); }
+  35% { opacity: 1; }
+  45%, 100% { opacity: 0; transform: translate(-50%, -25%) scale(1); }
 }
 @keyframes gameBoWiggle {
   0%, 100% { transform: rotate(-8deg); }
@@ -318,7 +330,6 @@ button {
   100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
 }
 .sc-bo-chat-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--card-border, #f3e6ee); }
-.sc-bo-chat-title { font: 800 13px inherit; color: #7a2f5e; }
 .sc-bo-chat-close {
   margin-left: auto; width: 20px; height: 20px;
   border-radius: 50%; border: none; background: rgba(0,0,0,.08);

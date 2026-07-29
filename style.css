@@ -541,11 +541,6 @@ body {
   animation: sc-badge-wiggle 1.8s ease-in-out infinite;
 }
 
-.sc-bo-chat-title {
-  font: 800 13px "Baloo 2", sans-serif;
-  color: #8a6d3a;
-}
-
 .sc-bo-chat-close {
   margin-left: auto;
   width: 20px;

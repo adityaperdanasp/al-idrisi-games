@@ -662,7 +662,7 @@ function renderQuestPathMap(container) {
       shipBoChat._openBoChat = () => {
         thread.innerHTML = "";
         history = [];
-        appendMsg(BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)], "bo");
+        appendMsg("Bo here! " + BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)], "bo");
         setTimeout(() => input.focus(), 50);
       };
 
