@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/send-push-reminder", "schedule": "0 13 * * *" }
+    { "path": "/api/send-push-reminder", "schedule": "0 13 * * *" },
+    { "path": "/api/send-player-count-digest", "schedule": "0 0 * * *" }
   ]
 }
