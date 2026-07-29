@@ -11,7 +11,13 @@
 // account. FIREBASE_SERVICE_ACCOUNT_JSON is for signing FCM sends only,
 // unrelated to reading the RTDB.
 //
-// Auth: header `x-cron-secret: <CRON_SECRET>` or `Authorization: Bearer <CRON_SECRET>`.
+// Auth: header `x-cron-secret: <PLAYER_COUNT_SECRET>` or `Authorization: Bearer <PLAYER_COUNT_SECRET>`.
+// Deliberately its OWN secret, separate from CRON_SECRET (which also
+// gates send-push-reminder.js — a broadcast-to-every-device endpoint).
+// A read-only reporting endpoint like this one should never share a
+// credential with something that can push notifications to every kid's
+// phone; if this one leaks, blast radius is just "can read a headcount".
+//
 // Query: ?date=YYYY-MM-DD (Asia/Jakarta calendar day; defaults to yesterday).
 //
 // Response: { date, uniquePlayers, totalPlays, perGame: { [gameId]: { uniquePlayers, totalPlays } } }
@@ -34,10 +40,14 @@ function yesterdayDateStr() {
 }
 
 module.exports = async (req, res) => {
-  const cronSecret = process.env.CRON_SECRET;
+  const reportSecret = process.env.PLAYER_COUNT_SECRET;
+  if (!reportSecret) {
+    res.status(500).json({ error: "Server not configured: PLAYER_COUNT_SECRET missing" });
+    return;
+  }
   const headerSecret = req.headers["x-cron-secret"] ||
     (req.headers["authorization"] || "").replace(/^Bearer\s+/i, "");
-  if (cronSecret && headerSecret !== cronSecret) {
+  if (headerSecret !== reportSecret) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
