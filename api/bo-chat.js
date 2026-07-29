@@ -18,7 +18,29 @@ If the question is silly, off-topic, or just kid chatter, play along briefly and
 If you genuinely don't know something or it needs a grown-up (personal/medical/safety topics), say so kindly and suggest asking a parent or teacher — never make up facts.
 Never ask for or use personal information beyond the student's first name. End on an encouraging or fun note.`;
 
+// The standalone azkacraft/azkauniverse domains (azkasocial.fun,
+// azkasolar.quest) have their own separate Vercel projects with no
+// api/ folder or ANTHROPIC_API_KEY of their own -- rather than
+// duplicating the key across 3 projects, those games call this same
+// hub endpoint cross-origin, so it needs to allow their origins.
+const ALLOWED_ORIGINS = [
+  "https://playalidrisi.fun",
+  "https://azkasocial.fun",
+  "https://azkasolar.quest",
+  "https://multipleazka.fun"
+];
+
 module.exports = async (req, res) => {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  }
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
+  }
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;

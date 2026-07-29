@@ -8,6 +8,13 @@
 const PROGRESS_KEY = "azkacraft-progress";
 const THEME_KEY = "azkacraft-theme";
 
+// This standalone domain (azkasocial.fun) has no api/ folder or
+// ANTHROPIC_API_KEY of its own -- AI calls go to the hub's endpoint
+// cross-origin instead (hub's api/generate-hint.js and api/bo-chat.js
+// allow this origin via CORS). On the hub itself, API_BASE stays empty
+// so the existing relative /api/... calls keep working unchanged.
+const API_BASE = ["playalidrisi.fun", "localhost"].includes(location.hostname) ? "" : "https://playalidrisi.fun";
+
 const STICKER_EMOJI = {
   "sticker-interview": "🎤",
   "sticker-spelling": "🔤",
@@ -912,7 +919,7 @@ function syncMultiplayerProgress() {
     resultEl.classList.add("hidden");
 
     try {
-      const res = await fetch("/api/generate-hint", {
+      const res = await fetch(API_BASE + "/api/generate-hint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1019,7 +1026,7 @@ const BO_CHAT_PROMPTS = [
     loading.classList.remove("hidden");
     try {
       const player = window.AIGPlayer && AIGPlayer.getPlayer();
-      const res = await fetch("/api/bo-chat", {
+      const res = await fetch(API_BASE + "/api/bo-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -27,6 +27,13 @@
 const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().name) || "Azka";
 const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().id) || "azka";
 
+// This standalone domain (azkasolar.quest) has no api/ folder or
+// ANTHROPIC_API_KEY of its own -- AI calls go to the hub's endpoint
+// cross-origin instead (hub's api/generate-hint.js and api/bo-chat.js
+// allow this origin via CORS). On the hub itself, API_BASE stays empty
+// so the existing relative /api/... calls keep working unchanged.
+const API_BASE = ["playalidrisi.fun", "localhost"].includes(location.hostname) ? "" : "https://playalidrisi.fun";
+
 // Only used as SpeechSynthesis fallback text if a clip fails to load/play.
 // The real audio is generic (no name) in audio/praise/ + audio/encourage/,
 // with the name spoken via a separate clip in audio/names/{id}.mp3.
@@ -629,7 +636,7 @@ function renderQuestPathMap(container) {
         loading.classList.remove("hidden");
         try {
           const player = window.AIGPlayer && AIGPlayer.getPlayer();
-          const res = await fetch("/api/bo-chat", {
+          const res = await fetch(API_BASE + "/api/bo-chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -1825,7 +1832,7 @@ $("btn-mp-again").addEventListener("click", () => {
     resultEl.classList.add("hidden");
 
     try {
-      const res = await fetch("/api/generate-hint", {
+      const res = await fetch(API_BASE + "/api/generate-hint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

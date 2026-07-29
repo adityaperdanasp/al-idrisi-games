@@ -22,7 +22,31 @@ If topicStats shows this student has missed this same topic many times before (w
 If the student sends a follow-up (asking for another example, another way to explain it, or saying they're still confused), respond directly to what they asked — give a genuinely NEW example or a different angle, don't just repeat the same words back.
 Never invent facts beyond what's given. Celebrate effort, not just correctness — a wrong answer is never something to be discouraged about. End on an encouraging note. Use the student's name sparingly (not in every message).`;
 
+// The standalone azkacraft/azkauniverse domains (azkasocial.fun,
+// azkasolar.quest) have their own separate Vercel projects with no
+// api/ folder or ANTHROPIC_API_KEY of their own -- rather than
+// duplicating the key across 3 projects, those games call this same
+// hub endpoint cross-origin, so it needs to allow their origins.
+// (This endpoint was silently 404-ing on those two domains before --
+// discovered as a side effect of wiring up Bo's chat the same way.)
+const ALLOWED_ORIGINS = [
+  "https://playalidrisi.fun",
+  "https://azkasocial.fun",
+  "https://azkasolar.quest",
+  "https://multipleazka.fun"
+];
+
 module.exports = async (req, res) => {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  }
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
+  }
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
