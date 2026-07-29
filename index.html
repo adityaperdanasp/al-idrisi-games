@@ -846,38 +846,11 @@
 </script>
 
 <!-- Push notifications -- ONLY runs inside the native BrainBox Android app
-     (Capacitor), never for regular browser visitors. There's no server
-     wired up to actually send anything yet -- this just registers the
-     device and surfaces its token so it can be pasted into Firebase
-     Console → Cloud Messaging → "Send test message" for manual testing. -->
+     (Capacitor), never for regular browser visitors. Registers the device
+     silently and persists its token for the daily reminder cron to use --
+     the debug overlay that used to surface the raw token for manual
+     Firebase Console testing has been removed now that the feature is done. -->
 <script>
-  // window.prompt()/alert() aren't reliably shown by Capacitor's default
-  // WebView (no onJsPrompt handler wired up), so the push token is shown
-  // in a plain DOM overlay instead -- guaranteed to render since it's just
-  // HTML/CSS, no native JS-dialog support required.
-  function showPushTokenOverlay(tokenValue) {
-    const overlay = document.createElement("div");
-    overlay.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:24px;";
-    overlay.innerHTML = `
-      <div style="background:#fff;border-radius:16px;padding:20px;max-width:360px;width:100%;font-family:sans-serif;">
-        <p style="margin:0 0 10px;font-weight:700;color:#3d2e22;">Push token (for Firebase Console test send)</p>
-        <textarea readonly style="width:100%;height:90px;font-size:12px;padding:8px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box;">${tokenValue}</textarea>
-        <div style="display:flex;gap:8px;margin-top:12px;">
-          <button id="push-token-copy" style="flex:1;padding:10px;border:none;border-radius:8px;background:#2f4c8c;color:#fff;font-weight:700;">Copy</button>
-          <button id="push-token-close" style="flex:1;padding:10px;border:none;border-radius:8px;background:#eee;color:#333;font-weight:700;">Close</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    const textarea = overlay.querySelector("textarea");
-    overlay.querySelector("#push-token-copy").addEventListener("click", () => {
-      textarea.select();
-      (navigator.clipboard ? navigator.clipboard.writeText(tokenValue) : Promise.reject())
-        .catch(() => document.execCommand("copy"));
-    });
-    overlay.querySelector("#push-token-close").addEventListener("click", () => overlay.remove());
-  }
-
   if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
     const { PushNotifications } = window.Capacitor.Plugins;
     if (PushNotifications) {
@@ -886,13 +859,6 @@
       });
       PushNotifications.addListener("registration", token => {
         console.log("BrainBox push token:", token.value);
-        // Only show the copyable overlay once ever (per device) -- it was
-        // popping up on every single app open, which got old fast once
-        // testing was done. Still logs + persists to DB every launch.
-        if (!localStorage.getItem("aig_push_token_shown")) {
-          showPushTokenOverlay(token.value);
-          localStorage.setItem("aig_push_token_shown", "1");
-        }
         // Persist so the daily reminder cron (api/send-push-reminder.js) has
         // something to broadcast to. Keyed by a sanitized token (not
         // playerId) since this fires before Sign Up/Sign In on first
