@@ -95,14 +95,15 @@ Pilihan kendaraan di Drive Mode: **Mobil** (yang sekarang, gak disentuh sama sek
 **Eksplisit disepakati SEBELUM mulai** (masih berlaku buat fase selanjutnya):
 - **TIDAK ada multiplayer real-time** — Firebase RTDB gak didesain buat broadcast posisi 60fps. Kalau nanti mau kebanding antar pemain, pakai pola SAMA kayak Math Race (sinkron skor akhir doang).
 - Drive Mode (mobil) **wajib tetap jalan identik** — udah divalidasi manual di preview branch, full playthrough gak ada regresi.
-- Soal matematika tetap jadi hook utama nantinya (belum dikerjain — masuk Fase 4).
+- Soal matematika tetap jadi hook utama — **udah dikerjain lebih awal dari rencana** (harusnya Fase 4, dipindah maju karena tanpa ini bukan game belajar namanya, cuma arcade shooter).
 
 **Progress fase:**
 1. ✅ **Engine inti** (done) — arena scroll vertikal (`#plane-world`, parallax starfield 2 layer beda speed), joystick (`setupAnalogStick("plane-joystick", ...)`, reuse function yang sama persis kayak Drive Mode), auto-fire tiap `PLANE_FIRE_INTERVAL_MS`, musuh (`👾`) spawn+turun, collision peluru-vs-musuh (skor), collision kapal-vs-musuh. Divalidasi lewat state manipulation langsung (browser-pane gak bisa nge-tick `requestAnimationFrame` beneran di tab background/hidden — itu keterbatasan tooling testing, bukan bug).
 2. ✅ **Bullet hell layer** (done) — musuh punya timer nembak sendiri-sendiri (`enemy.nextFireAt`, staggered `PLANE_ENEMY_FIRE_MIN_MS`–`MAX_MS`) nembak peluru ke bawah (`.plane-enemy-bullet`, warna beda dari peluru pemain biar kebeda), sistem 3 nyawa (`PLANE_MAX_LIVES`, HUD `#plane-lives` pola sama kayak `#drive-lives`), kena hit (peluru musuh ATAU nabrak badan musuh) = `planeTakeHit()` — 1 nyawa ilang + invuln `PLANE_HIT_INVULN_MS` + ship kedip (`.plane-ship.hit`, mirror `.drive-car.bitten`). Nabrak musuh sekarang gak instant-death lagi, musuhnya ikut hancur (kamikaze) sama kayak kena tembak. Nyawa habis → `endPlaneMode(true)` ("Game Over").
-3. ⬜ Juice — ledakan, screen shake, hit-flash yang lebih niat (masih basic banget sekarang, cuma opacity blink)
-4. ⬜ Progression — power-up, wave difficulty, boss, integrasi soal matematika (jawab = bomb/power-up)
-5. ⬜ Polish — tie ke leaderboard/XP yang udah ada
+3. ✅ **Math question hook** (done, dipercepat dari Fase 4) — tiap `PLANE_QUESTION_INTERVAL_MS` (~15 detik) game pause, `showPlaneQuestion()` nampilin soal MC via `#plane-question-overlay` (nested DI DALAM `#screen-plane`, bukan reuse `#drive-question-overlay` punya Drive Mode langsung — kena gotcha overlay-nested-in-inactive-screen kalau dipaksa reuse cross-screen). Soal-nya REUSE generator yang sama persis kayak Drive Mode (`rollDriveQuestion(driveDifficulty)` + `buildQuickMc()`), jadi kualitas/variasi soal konsisten, gak bikin bank soal baru. Jawaban bener = bonus +3 skor + "bomb" (semua musuh & peluru musuh di layar kehapus instan) — itu alasan konkret buat pengen jawab bener, bukan cuma interupsi. Jawaban salah = gak ada penalti, gak ada reward, lanjut aja. Attempt dicatat ke `AIGLeaderboard.recordTopicAttempt("mathville", "plane-mode", isCorrect)` — topic key sendiri, gak kecampur sama stats "drive-mode". **Gotcha teknis**: setelah manggil `showPlaneQuestion()` (yang set `paused=true`), kode di `frame()` HARUS tetep jalan sampe baris `requestAnimationFrame(frame)` di paling bawah — kalau di-`return` lebih awal abis manggil itu, loop-nya berhenti permanen (gak ada lagi yang re-arm rAF walau soal udah dijawab & `paused` balik `false`).
+4. ⬜ Juice — ledakan, screen shake, hit-flash yang lebih niat (masih basic banget sekarang, cuma opacity blink)
+5. ⬜ Progression — power-up, wave difficulty, boss
+6. ⬜ Polish — tie ke leaderboard/XP yang udah ada
 
 Belum di-merge ke `main` — masih di branch `feature/plane-mode`, preview: `https://al-idrisi-games-git-feature-plane-mode-ellilo.vercel.app/mathville/index.html`.
 
