@@ -84,6 +84,26 @@ Mobil dikontrol joystick kiri (analog drag), dikejar 1 dino (2 dino kalau diffic
 
 **Chapter intro demo**: SEMUA 9 chapter sekarang punya contoh soal kecil sebelum practice round mulai (`INTRO_DEMOS` di `mathville/script.js`), bukan cuma Place Value. 2 tipe: `"grid"` (digit/place-label boxes, khusus Place Value) dan `"steps"` (vertical worked-example, opsional `mono:true` buat column arithmetic yang butuh alignment).
 
+**Bug fix (2026-07-30)**: `buildPlaceValueStep()` sempet generate soal ambigu — nanya "which place is the digit 7 in 9,793,708" padahal digit 7-nya muncul 2x di angka itu (kids justifiably confused, salah satu jawaban yang "benar" ditolak). Fix: reject digit yang muncul lebih dari sekali di angka (`numStr.indexOf(digit) !== numStr.lastIndexOf(digit)`), sama kayak reject digit "0" yang udah ada sebelumnya. Udah divalidasi 20k simulasi, max 13x retry sebelum dapet angka valid (gak ada risiko infinite loop).
+
+### PLANNED — Plane mode (shmup) buat Drive Mode, BELUM DIMULAI
+
+User mau nambahin pilihan kendaraan di Drive Mode: **Mobil** (yang sekarang, gak disentuh sama sekali) vs **Pesawat** (shmup/bullet-hell ala Raiden/Strikers 1945/DoDonPachi — vertical scroll, auto-fire, dodge peluru musuh, power-up, boss). Dipilih pas masuk Drive Mode, mirip pola difficulty picker yang udah ada (Easy/Medium/Hard) — jadi ini cabang kode BARU yang jalan paralel, bukan refactor logic mobil yang ada.
+
+**Eksplisit disepakati SEBELUM mulai**:
+- **TIDAK ada multiplayer real-time** — Firebase RTDB gak didesain buat broadcast posisi 60fps, bakal lag. Kalau nanti mau progress/skor kebanding antar pemain, pakai pola yang SAMA kayak Math Race sekarang (sinkron progress/skor akhir doang, bukan posisi live).
+- Drive Mode (mobil) yang ada **wajib tetap jalan identik** setelah fitur ini deploy — pesawat cuma opsi tambahan, bukan pengganti.
+- Soal matematika tetap jadi hook utama: jawab bener = "math missile"/power-up yang bersihin layar, bukan cuma +progress pasif kayak sekarang.
+
+**Rencana fase (belum mulai satu pun)**:
+1. Engine inti — arena scroll vertikal, kontrol joystick (reuse pola Drive Mode), auto-fire, musuh dasar + gerak, collision peluru-musuh, skor
+2. Bullet hell layer — musuh nembak balik, collision peluru-musuh vs pesawat, sistem nyawa/shield
+3. Juice — ledakan, parallax background, screen shake, hit-flash
+4. Progression — power-up, wave difficulty, boss, integrasi soal (jawab = bomb/power-up)
+5. Polish — tie ke leaderboard/XP yang udah ada
+
+Rencana workflow: git branch + Vercel preview deploy dulu (pola yang sama kayak fitur Drive Mode sebelumnya), baru merge ke `main` setelah dikonfirmasi.
+
 ## Android app — 2 versi berbeda, jangan ketuker
 
 1. **TWA lama** (Bubblewrap, `fun.playalidrisi.twa`) — project + keystore di `~/Documents/al-idrisi-games-android-keystore/` (di LUAR repo), password di `PASSWORD_KEEP_SAFE.txt` di folder sama. Status belum jelas masih dipakai apa udah digantiin sepenuhnya sama Capacitor (poin 2) — belum ada keputusan eksplisit soal ini, cek dulu kalau mau utak-atik.
