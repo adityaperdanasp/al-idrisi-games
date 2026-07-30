@@ -1514,6 +1514,30 @@ function spawnPlaneEnemyBullet(enemy) {
   planeState.enemyBullets.push({ id, x: enemy.x, y: enemy.y + 3, el });
 }
 
+// Phase 3 "juice" -- a burst emoji that scales up + fades out at (x, y)
+// (% of plane-world), self-removing once its animation finishes. Called
+// wherever an enemy is destroyed (bullet kill, bomb, kamikaze) or the
+// ship itself crashes.
+function spawnPlaneExplosion(x, y, big) {
+  const el = document.createElement("div");
+  el.className = "plane-explosion" + (big ? " big" : "");
+  el.textContent = "💥";
+  el.style.left = x + "%";
+  el.style.top = y + "%";
+  $("plane-world").appendChild(el);
+  setTimeout(() => el.remove(), 500);
+}
+
+// Restarting a CSS animation needs a reflow in between removing and
+// re-adding the class, otherwise re-triggering it while already mid-shake
+// (e.g. two hits in quick succession) silently does nothing.
+function shakePlaneWorld() {
+  const world = $("plane-world");
+  world.classList.remove("shake");
+  void world.offsetWidth;
+  world.classList.add("shake");
+}
+
 // Shared by both "got hit" paths (enemy bullet, enemy body-slam) -- costs
 // one life, starts a brief invulnerability window, and flashes the ship
 // the same way Drive Mode's .drive-car.bitten does for the car.
@@ -1526,7 +1550,11 @@ function planeTakeHit() {
   const ship = $("plane-ship");
   ship.classList.add("hit");
   setTimeout(() => ship.classList.remove("hit"), PLANE_HIT_INVULN_MS);
-  if (planeState.lives <= 0) endPlaneMode(true);
+  shakePlaneWorld();
+  if (planeState.lives <= 0) {
+    spawnPlaneExplosion(planeState.x, planeState.y, true);
+    endPlaneMode(true);
+  }
 }
 
 function endPlaneMode(crashed) {
@@ -1566,12 +1594,13 @@ function showPlaneQuestion() {
       if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "plane-mode", isCorrect);
       if (isCorrect) {
         // Bomb reward: wipe every enemy and enemy bullet on screen right now.
-        planeState.enemies.forEach(e => e.el.remove());
+        planeState.enemies.forEach(e => { spawnPlaneExplosion(e.x, e.y); e.el.remove(); });
         planeState.enemyBullets.forEach(b => b.el.remove());
         planeState.enemies = [];
         planeState.enemyBullets = [];
         planeState.score += 3;
         updatePlaneScore();
+        shakePlaneWorld();
       }
       setTimeout(() => {
         $("plane-question-overlay").classList.add("hidden");
@@ -1657,6 +1686,7 @@ function startPlaneLoop() {
       for (const enemy of planeState.enemies.slice()) {
         for (const bullet of planeState.bullets.slice()) {
           if (planePxDist(enemy.x, enemy.y, bullet.x, bullet.y) < PLANE_HIT_RADIUS_PX) {
+            spawnPlaneExplosion(enemy.x, enemy.y);
             enemy.el.remove();
             bullet.el.remove();
             planeState.enemies = planeState.enemies.filter(e => e !== enemy);
@@ -1681,6 +1711,7 @@ function startPlaneLoop() {
       // Ship vs enemy body -- kamikaze: enemy is destroyed too, ship takes a hit.
       for (const enemy of planeState.enemies.slice()) {
         if (planePxDist(enemy.x, enemy.y, planeState.x, planeState.y) < PLANE_HIT_RADIUS_PX) {
+          spawnPlaneExplosion(enemy.x, enemy.y);
           enemy.el.remove();
           planeState.enemies = planeState.enemies.filter(e => e !== enemy);
           planeTakeHit();

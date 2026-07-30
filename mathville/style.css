@@ -747,4 +747,27 @@ button { font-family: inherit; }
   0%, 100% { filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); opacity: 1; }
   50% { filter: drop-shadow(0 0 8px var(--bad)) brightness(1.4); opacity: .4; }
 }
+
+/* Phase 3 "juice" -- explosion burst + screen shake. */
+.plane-explosion {
+  position: absolute; width: 34px; height: 34px; margin-left: -17px; margin-top: -17px;
+  font-size: 26px; display: flex; align-items: center; justify-content: center;
+  pointer-events: none; z-index: 6;
+  animation: planeExplode .5s ease-out forwards;
+}
+.plane-explosion.big { width: 54px; height: 54px; margin-left: -27px; margin-top: -27px; font-size: 42px; }
+@keyframes planeExplode {
+  0% { transform: scale(.3); opacity: 1; }
+  60% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+.plane-world.shake { animation: planeShake .3s ease-in-out; }
+@keyframes planeShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-6px, 3px); }
+  40% { transform: translate(5px, -4px); }
+  60% { transform: translate(-4px, -2px); }
+  80% { transform: translate(4px, 3px); }
+}
 .mp-result-row.me { border: 2px solid var(--wood); }
