@@ -29,7 +29,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=26" />
+<link rel="stylesheet" href="style.css?v=27" />
 </head>
 <body>
 
@@ -42,6 +42,26 @@
 </header>
 
 <main id="app">
+
+  <!-- Vehicle picker, shown BEFORE deciding whether to enter Drive Mode
+       (car) or Plane Mode -- lives outside every .screen so it's never
+       hidden by a non-active screen's display:none (see CLAUDE.md gotcha
+       about overlays nested inside .screen sections). -->
+  <div id="drive-vehicle-overlay" class="drive-question-overlay hidden">
+    <div class="drive-question-card drive-difficulty-card">
+      <div class="drive-difficulty-title">Pick a vehicle</div>
+      <button class="drive-difficulty-btn" data-vehicle="car">
+        <span class="drive-difficulty-emoji">🚗</span>
+        <span class="drive-difficulty-name">Mobil</span>
+        <span class="drive-difficulty-desc">Dino chase, town roads</span>
+      </button>
+      <button class="drive-difficulty-btn" data-vehicle="plane">
+        <span class="drive-difficulty-emoji">✈️</span>
+        <span class="drive-difficulty-name">Pesawat</span>
+        <span class="drive-difficulty-desc">Sky mission, dodge & shoot</span>
+      </button>
+    </div>
+  </div>
 
   <!-- ===============================================================
        SCREEN: Landing — pick Solo or Multiplayer
@@ -260,6 +280,53 @@
   </section>
 
   <!-- ===============================================================
+       SCREEN: Plane Mode — PHASE 1 (core engine only): scrolling sky,
+       joystick-controlled ship, auto-fire, basic enemies, score. No
+       math-question hook, power-ups, waves, or boss yet (later phases).
+       Entirely parallel to Drive Mode -- shares nothing with driveState/
+       goToDrive() by design, so Drive Mode (car) can't be affected by
+       anything built here.
+       =============================================================== -->
+  <section id="screen-plane" class="screen">
+    <div class="map-header drive-header">
+      <div>
+        <h2 class="title-lg">Plane Mode</h2>
+        <div class="drive-hud">
+          <span class="drive-hud-pill" id="plane-score">⭐ 0</span>
+        </div>
+      </div>
+    </div>
+    <div id="plane-world" class="plane-world">
+      <div id="plane-sky-far" class="plane-sky-layer plane-sky-far"></div>
+      <div id="plane-sky-near" class="plane-sky-layer plane-sky-near"></div>
+
+      <div id="plane-ship" class="plane-ship">
+        <svg viewBox="0 0 30 34" width="27" height="30">
+          <path d="M15 1 L20 20 L15 17 L10 20 Z" fill="#4A90D9" stroke="#2E6BA3" stroke-width="1.5" stroke-linejoin="round" />
+          <path d="M15 17 L15 33" stroke="#2E6BA3" stroke-width="2" stroke-linecap="round" />
+          <path d="M4 22 L15 17 L15 24 Z" fill="#6EA8E0" stroke="#2E6BA3" stroke-width="1.2" />
+          <path d="M26 22 L15 17 L15 24 Z" fill="#6EA8E0" stroke="#2E6BA3" stroke-width="1.2" />
+          <circle cx="15" cy="12" r="3" fill="#BFE3F0" />
+        </svg>
+      </div>
+
+      <div class="joystick" id="plane-joystick" aria-label="Fly">
+        <div class="joystick-knob" id="plane-joystick-knob"></div>
+      </div>
+    </div>
+
+    <!-- Win/lose overlay -- Phase 1 placeholder, refined once waves/boss exist. -->
+    <div id="plane-end-overlay" class="drive-question-overlay hidden">
+      <div class="drive-question-card drive-end-card">
+        <div class="drive-end-emoji" id="plane-end-emoji">💥</div>
+        <div class="drive-end-title" id="plane-end-title"></div>
+        <div class="drive-end-sub" id="plane-end-sub"></div>
+        <button class="btn btn-primary" id="plane-end-replay">Play Again</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===============================================================
        SCREEN: Chapter Intro
        =============================================================== -->
   <section id="screen-intro" class="screen">
@@ -358,6 +425,6 @@
 <script src="questions.js?v=2"></script>
 <script src="generators.js?v=2"></script>
 <script src="bgm.js"></script>
-<script src="script.js?v=37"></script>
+<script src="script.js?v=38"></script>
 </body>
 </html>

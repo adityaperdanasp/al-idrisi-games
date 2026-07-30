@@ -1360,24 +1360,211 @@ function playDriveDifficultyPicker(onPicked) {
   buttons.forEach(b => b.addEventListener("click", handler));
 }
 
+// Vehicle picker overlay lives OUTSIDE every .screen (direct child of
+// #app), so unlike the difficulty/plane-end overlays it's safe to show
+// before we've even decided which screen to switch to.
+function playVehiclePicker(onPicked) {
+  const overlay = $("drive-vehicle-overlay");
+  overlay.classList.remove("hidden");
+  const buttons = document.querySelectorAll("#drive-vehicle-overlay .drive-difficulty-btn");
+  function handler(e) {
+    const vehicle = e.currentTarget.dataset.vehicle;
+    overlay.classList.add("hidden");
+    buttons.forEach(b => b.removeEventListener("click", handler));
+    onPicked(vehicle);
+  }
+  buttons.forEach(b => b.addEventListener("click", handler));
+}
+
 function launchDriveMode() {
-  // The difficulty picker overlay lives INSIDE #screen-drive's markup, so
-  // it stays invisible (display:none, inherited from its non-active
-  // ancestor) until that section is actually the active screen — without
-  // this, un-hiding the overlay alone does nothing visible at all,
-  // whether launched from the map's drive button or the hub's ?drive=1
-  // deep link. goToDrive() (called after a difficulty is picked) also
-  // sets this same screen active, so this is a harmless no-op there.
-  showScreen("screen-drive");
-  playDriveDifficultyPicker(() => {
-    goToDrive(false);
-    driveState.paused = true;
-    playDriveCountdown(() => { if (driveState) driveState.paused = false; });
+  playVehiclePicker(vehicle => {
+    if (vehicle === "plane") { launchPlaneMode(); return; }
+
+    // The difficulty picker overlay lives INSIDE #screen-drive's markup, so
+    // it stays invisible (display:none, inherited from its non-active
+    // ancestor) until that section is actually the active screen — without
+    // this, un-hiding the overlay alone does nothing visible at all,
+    // whether launched from the map's drive button or the hub's ?drive=1
+    // deep link. goToDrive() (called after a difficulty is picked) also
+    // sets this same screen active, so this is a harmless no-op there.
+    showScreen("screen-drive");
+    playDriveDifficultyPicker(() => {
+      goToDrive(false);
+      driveState.paused = true;
+      playDriveCountdown(() => { if (driveState) driveState.paused = false; });
+    });
   });
 }
 
 $("btn-drive").addEventListener("click", launchDriveMode);
 $("drive-end-replay").addEventListener("click", () => goToDrive(false));
+
+/* =================================================================
+   PLANE MODE — Phase 1 (core engine only)
+   -----------------------------------------------------------------
+   A vertical-scroll shmup, entirely separate from Drive Mode's
+   driveState/goToDrive/startDriveLoop. Nothing here is imported by or
+   imports from the car code, by design -- Drive Mode must keep working
+   identically no matter what changes here.
+
+   Phase 1 scope: joystick-controlled ship, auto-fire, basic enemies
+   that drift down, bullet-vs-enemy collision (score), ship-vs-enemy
+   collision (crash = game over). NOT yet in this phase: enemy bullets,
+   power-ups, waves/difficulty, boss, or the math-question hook -- see
+   CLAUDE.md's "PLANNED — Plane mode" section for the full phase plan.
+   ================================================================= */
+const PLANE_SHIP_SPEED = 1.6;          // % of world width/height per frame at full stick deflection
+const PLANE_BULLET_SPEED = 2.2;        // % of world height per frame
+const PLANE_FIRE_INTERVAL_MS = 280;
+const PLANE_ENEMY_SPAWN_INTERVAL_MS = 900;
+const PLANE_ENEMY_SPEED = 0.35;        // % of world height per frame
+const PLANE_HIT_RADIUS_PX = 22;        // bullet-enemy and ship-enemy collision radius
+
+let planeJoyVec = { x: 0, y: 0 };
+let planeState = null;
+
+function launchPlaneMode() {
+  showScreen("screen-plane");
+  planeState = {
+    x: 50, y: 82,              // ship position, % of plane-world
+    bullets: [],                // { id, x, y, el }
+    enemies: [],                // { id, x, y, el }
+    score: 0,
+    nextEnemyId: 0,
+    nextBulletId: 0,
+    lastFireAt: 0,
+    rafId: null,
+    paused: false,
+    ended: false,
+    worldRect: null
+  };
+  $("plane-world").querySelectorAll(".plane-bullet, .plane-enemy").forEach(el => el.remove());
+  $("plane-ship").style.left = planeState.x + "%";
+  $("plane-ship").style.top = planeState.y + "%";
+  $("plane-end-overlay").classList.add("hidden");
+  updatePlaneScore();
+
+  const rect = $("plane-world").getBoundingClientRect();
+  if (rect.width === 0) {
+    // Same early-paint gotcha as goToDrive() -- retry once real layout exists.
+    requestAnimationFrame(() => launchPlaneMode());
+    return;
+  }
+  planeState.worldRect = rect;
+  startPlaneLoop();
+}
+
+function updatePlaneScore() {
+  $("plane-score").textContent = "⭐ " + planeState.score;
+}
+
+function planePxDist(ax, ay, bx, by) {
+  const rect = planeState.worldRect;
+  const dx = (ax - bx) / 100 * rect.width;
+  const dy = (ay - by) / 100 * rect.height;
+  return Math.hypot(dx, dy);
+}
+
+function spawnPlaneBullet() {
+  const id = "b" + (planeState.nextBulletId++);
+  const el = document.createElement("div");
+  el.className = "plane-bullet";
+  $("plane-world").appendChild(el);
+  planeState.bullets.push({ id, x: planeState.x, y: planeState.y - 4, el });
+}
+
+function spawnPlaneEnemy() {
+  const id = "e" + (planeState.nextEnemyId++);
+  const el = document.createElement("div");
+  el.className = "plane-enemy";
+  el.textContent = "👾";
+  $("plane-world").appendChild(el);
+  planeState.enemies.push({ id, x: rand(8, 92), y: -6, el });
+}
+
+function endPlaneMode(crashed) {
+  planeState.ended = true;
+  planeState.paused = true;
+  if (planeState.rafId) cancelAnimationFrame(planeState.rafId);
+  $("plane-end-emoji").textContent = crashed ? "💥" : "🏁";
+  $("plane-end-title").textContent = crashed ? "You got hit!" : "Nice flying!";
+  $("plane-end-sub").textContent = `Score: ${planeState.score}`;
+  $("plane-end-overlay").classList.remove("hidden");
+}
+
+function startPlaneLoop() {
+  let lastSpawnAt = performance.now();
+
+  function frame(now) {
+    if (!planeState || planeState.ended) return;
+    if (!planeState.paused) {
+      // Ship movement, clamped inside the world (with a small margin).
+      planeState.x = Math.max(6, Math.min(94, planeState.x + planeJoyVec.x * PLANE_SHIP_SPEED));
+      planeState.y = Math.max(8, Math.min(94, planeState.y + planeJoyVec.y * PLANE_SHIP_SPEED));
+      $("plane-ship").style.left = planeState.x + "%";
+      $("plane-ship").style.top = planeState.y + "%";
+
+      // Auto-fire.
+      if (now - planeState.lastFireAt > PLANE_FIRE_INTERVAL_MS) {
+        planeState.lastFireAt = now;
+        spawnPlaneBullet();
+      }
+
+      // Enemy spawn.
+      if (now - lastSpawnAt > PLANE_ENEMY_SPAWN_INTERVAL_MS) {
+        lastSpawnAt = now;
+        spawnPlaneEnemy();
+      }
+
+      // Move bullets up, drop off-screen ones.
+      planeState.bullets = planeState.bullets.filter(b => {
+        b.y -= PLANE_BULLET_SPEED;
+        if (b.y < -5) { b.el.remove(); return false; }
+        b.el.style.left = b.x + "%";
+        b.el.style.top = b.y + "%";
+        return true;
+      });
+
+      // Move enemies down, drop off-screen ones (no penalty yet -- enemy
+      // bullets/lives arrive in Phase 2).
+      planeState.enemies = planeState.enemies.filter(e => {
+        e.y += PLANE_ENEMY_SPEED;
+        if (e.y > 106) { e.el.remove(); return false; }
+        e.el.style.left = e.x + "%";
+        e.el.style.top = e.y + "%";
+        return true;
+      });
+
+      // Bullet-vs-enemy collision.
+      for (const enemy of planeState.enemies.slice()) {
+        for (const bullet of planeState.bullets.slice()) {
+          if (planePxDist(enemy.x, enemy.y, bullet.x, bullet.y) < PLANE_HIT_RADIUS_PX) {
+            enemy.el.remove();
+            bullet.el.remove();
+            planeState.enemies = planeState.enemies.filter(e => e !== enemy);
+            planeState.bullets = planeState.bullets.filter(b => b !== bullet);
+            planeState.score += 1;
+            updatePlaneScore();
+            break;
+          }
+        }
+      }
+
+      // Ship-vs-enemy collision -- instant crash (Phase 1 has no shield/lives yet).
+      for (const enemy of planeState.enemies) {
+        if (planePxDist(enemy.x, enemy.y, planeState.x, planeState.y) < PLANE_HIT_RADIUS_PX) {
+          endPlaneMode(true);
+          return;
+        }
+      }
+    }
+    planeState.rafId = requestAnimationFrame(frame);
+  }
+  planeState.rafId = requestAnimationFrame(frame);
+}
+
+setupAnalogStick("plane-joystick", "plane-joystick-knob", v => { planeJoyVec = v; });
+$("plane-end-replay").addEventListener("click", () => launchPlaneMode());
 
 // Deep link from the hub's landing-page roaming car (?drive=1) — jump
 // straight into Drive Mode instead of the Solo/Multiplayer picker.
