@@ -1427,6 +1427,7 @@ const PLANE_ENEMY_BULLET_SPEED = 1.1;  // % of world height per frame -- slower 
 const PLANE_ENEMY_FIRE_MIN_MS = 1400;
 const PLANE_ENEMY_FIRE_MAX_MS = 2600;
 const PLANE_HIT_INVULN_MS = 1500;      // matches DRIVE_BITE_COOLDOWN_MS's feel
+const PLANE_QUESTION_INTERVAL_MS = 15000; // a math question every ~15s of active flight
 
 let planeJoyVec = { x: 0, y: 0 };
 let planeState = null;
@@ -1445,6 +1446,7 @@ function launchPlaneMode() {
     nextBulletId: 0,
     nextEnemyBulletId: 0,
     lastFireAt: 0,
+    lastQuestionAt: performance.now(),
     rafId: null,
     paused: false,
     ended: false,
@@ -1455,6 +1457,7 @@ function launchPlaneMode() {
   $("plane-ship").style.left = planeState.x + "%";
   $("plane-ship").style.top = planeState.y + "%";
   $("plane-end-overlay").classList.add("hidden");
+  $("plane-question-overlay").classList.add("hidden");
   updatePlaneScore();
   updatePlaneLives();
 
@@ -1536,6 +1539,51 @@ function endPlaneMode(crashed) {
   $("plane-end-overlay").classList.remove("hidden");
 }
 
+// Correct answer clears the screen (all current enemies + enemy bullets)
+// like a bomb, plus a score bonus -- the actual reason to want to get it
+// right, not just a interruption. Reuses Drive Mode's own quick-MC
+// generator (rollDriveQuestion/buildQuickMc) so question quality/variety
+// matches the rest of the app instead of a separate bank.
+function showPlaneQuestion() {
+  planeState.paused = true;
+  const raw = rollDriveQuestion(driveDifficulty);
+  const step = buildQuickMc(raw);
+
+  $("plane-question-prompt").textContent = step.prompt;
+  const grid = $("plane-question-options");
+  grid.innerHTML = "";
+  step.options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "mc-btn";
+    btn.textContent = opt;
+    btn.addEventListener("click", () => {
+      const isCorrect = labelsEqual(opt, step.correctLabel);
+      grid.querySelectorAll(".mc-btn").forEach(b => {
+        b.disabled = true;
+        if (labelsEqual(b.textContent, step.correctLabel)) b.classList.add("correct");
+        else if (b === btn) b.classList.add("wrong");
+      });
+      if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "plane-mode", isCorrect);
+      if (isCorrect) {
+        // Bomb reward: wipe every enemy and enemy bullet on screen right now.
+        planeState.enemies.forEach(e => e.el.remove());
+        planeState.enemyBullets.forEach(b => b.el.remove());
+        planeState.enemies = [];
+        planeState.enemyBullets = [];
+        planeState.score += 3;
+        updatePlaneScore();
+      }
+      setTimeout(() => {
+        $("plane-question-overlay").classList.add("hidden");
+        planeState.lastQuestionAt = performance.now();
+        if (planeState && !planeState.ended) planeState.paused = false;
+      }, 900);
+    });
+    grid.appendChild(btn);
+  });
+  $("plane-question-overlay").classList.remove("hidden");
+}
+
 function startPlaneLoop() {
   let lastSpawnAt = performance.now();
 
@@ -1558,6 +1606,16 @@ function startPlaneLoop() {
       if (now - lastSpawnAt > PLANE_ENEMY_SPAWN_INTERVAL_MS) {
         lastSpawnAt = now;
         spawnPlaneEnemy();
+      }
+
+      // Periodic math question -- the actual reason this is a learning
+      // game and not just a shooter. Pauses the loop; showPlaneQuestion()
+      // itself resets lastQuestionAt and un-pauses once answered. Must
+      // still fall through to the rAF reschedule at the bottom of frame()
+      // -- returning early here would stop the loop for good, since
+      // nothing else re-arms it once paused.
+      if (now - planeState.lastQuestionAt > PLANE_QUESTION_INTERVAL_MS) {
+        showPlaneQuestion();
       }
 
       // Enemies fire back, each on its own staggered timer.

@@ -316,6 +316,17 @@
       </div>
     </div>
 
+    <!-- Periodic math question -- reuses Drive Mode's quick-MC generator
+         (rollDriveQuestion/buildQuickMc), own overlay/ids since this
+         lives inside #screen-plane, not #screen-drive (see CLAUDE.md's
+         overlay-nested-in-inactive-screen gotcha). -->
+    <div id="plane-question-overlay" class="drive-question-overlay hidden">
+      <div class="drive-question-card">
+        <div class="drive-question-prompt" id="plane-question-prompt"></div>
+        <div class="mc-grid" id="plane-question-options"></div>
+      </div>
+    </div>
+
     <!-- Win/lose overlay -- Phase 1 placeholder, refined once waves/boss exist. -->
     <div id="plane-end-overlay" class="drive-question-overlay hidden">
       <div class="drive-question-card drive-end-card">
@@ -426,6 +437,6 @@
 <script src="questions.js?v=2"></script>
 <script src="generators.js?v=2"></script>
 <script src="bgm.js"></script>
-<script src="script.js?v=39"></script>
+<script src="script.js?v=40"></script>
 </body>
 </html>
