@@ -1400,25 +1400,33 @@ $("btn-drive").addEventListener("click", launchDriveMode);
 $("drive-end-replay").addEventListener("click", () => goToDrive(false));
 
 /* =================================================================
-   PLANE MODE — Phase 1 (core engine only)
+   PLANE MODE — Phase 1 (core engine) + Phase 2 (bullet hell layer)
    -----------------------------------------------------------------
    A vertical-scroll shmup, entirely separate from Drive Mode's
    driveState/goToDrive/startDriveLoop. Nothing here is imported by or
    imports from the car code, by design -- Drive Mode must keep working
    identically no matter what changes here.
 
-   Phase 1 scope: joystick-controlled ship, auto-fire, basic enemies
-   that drift down, bullet-vs-enemy collision (score), ship-vs-enemy
-   collision (crash = game over). NOT yet in this phase: enemy bullets,
-   power-ups, waves/difficulty, boss, or the math-question hook -- see
-   CLAUDE.md's "PLANNED — Plane mode" section for the full phase plan.
+   Phase 1: joystick-controlled ship, auto-fire, basic enemies that
+   drift down, bullet-vs-enemy collision (score).
+   Phase 2: enemies fire back (staggered per-enemy timer), a 3-life
+   system (mirrors Drive Mode's DRIVE_MAX_BITES/❤️ pattern) instead of
+   Phase 1's instant-crash-on-touch, brief invulnerability + flash after
+   a hit (mirrors driveState.carImmuneUntil/.bitten).
+   NOT yet in this phase: power-ups, waves/difficulty, boss, or the
+   math-question hook -- see CLAUDE.md's "PLANNED — Plane mode" section.
    ================================================================= */
 const PLANE_SHIP_SPEED = 1.6;          // % of world width/height per frame at full stick deflection
 const PLANE_BULLET_SPEED = 2.2;        // % of world height per frame
 const PLANE_FIRE_INTERVAL_MS = 280;
 const PLANE_ENEMY_SPAWN_INTERVAL_MS = 900;
 const PLANE_ENEMY_SPEED = 0.35;        // % of world height per frame
-const PLANE_HIT_RADIUS_PX = 22;        // bullet-enemy and ship-enemy collision radius
+const PLANE_HIT_RADIUS_PX = 22;        // bullet-enemy, ship-enemy, ship-enemy-bullet collision radius
+const PLANE_MAX_LIVES = 3;
+const PLANE_ENEMY_BULLET_SPEED = 1.1;  // % of world height per frame -- slower than the player's, dodgeable
+const PLANE_ENEMY_FIRE_MIN_MS = 1400;
+const PLANE_ENEMY_FIRE_MAX_MS = 2600;
+const PLANE_HIT_INVULN_MS = 1500;      // matches DRIVE_BITE_COOLDOWN_MS's feel
 
 let planeJoyVec = { x: 0, y: 0 };
 let planeState = null;
@@ -1427,22 +1435,28 @@ function launchPlaneMode() {
   showScreen("screen-plane");
   planeState = {
     x: 50, y: 82,              // ship position, % of plane-world
-    bullets: [],                // { id, x, y, el }
-    enemies: [],                // { id, x, y, el }
+    bullets: [],                // { id, x, y, el } -- player's own shots
+    enemyBullets: [],           // { id, x, y, el } -- shots fired back at the ship
+    enemies: [],                // { id, x, y, el, nextFireAt }
     score: 0,
+    lives: PLANE_MAX_LIVES,
+    invulnUntil: 0,
     nextEnemyId: 0,
     nextBulletId: 0,
+    nextEnemyBulletId: 0,
     lastFireAt: 0,
     rafId: null,
     paused: false,
     ended: false,
     worldRect: null
   };
-  $("plane-world").querySelectorAll(".plane-bullet, .plane-enemy").forEach(el => el.remove());
+  $("plane-world").querySelectorAll(".plane-bullet, .plane-enemy, .plane-enemy-bullet").forEach(el => el.remove());
+  $("plane-ship").classList.remove("hit");
   $("plane-ship").style.left = planeState.x + "%";
   $("plane-ship").style.top = planeState.y + "%";
   $("plane-end-overlay").classList.add("hidden");
   updatePlaneScore();
+  updatePlaneLives();
 
   const rect = $("plane-world").getBoundingClientRect();
   if (rect.width === 0) {
@@ -1456,6 +1470,10 @@ function launchPlaneMode() {
 
 function updatePlaneScore() {
   $("plane-score").textContent = "⭐ " + planeState.score;
+}
+
+function updatePlaneLives() {
+  $("plane-lives").textContent = "❤️".repeat(planeState.lives) + "🖤".repeat(PLANE_MAX_LIVES - planeState.lives);
 }
 
 function planePxDist(ax, ay, bx, by) {
@@ -1479,7 +1497,33 @@ function spawnPlaneEnemy() {
   el.className = "plane-enemy";
   el.textContent = "👾";
   $("plane-world").appendChild(el);
-  planeState.enemies.push({ id, x: rand(8, 92), y: -6, el });
+  planeState.enemies.push({
+    id, x: rand(8, 92), y: -6, el,
+    nextFireAt: performance.now() + rand(PLANE_ENEMY_FIRE_MIN_MS, PLANE_ENEMY_FIRE_MAX_MS)
+  });
+}
+
+function spawnPlaneEnemyBullet(enemy) {
+  const id = "eb" + (planeState.nextEnemyBulletId++);
+  const el = document.createElement("div");
+  el.className = "plane-enemy-bullet";
+  $("plane-world").appendChild(el);
+  planeState.enemyBullets.push({ id, x: enemy.x, y: enemy.y + 3, el });
+}
+
+// Shared by both "got hit" paths (enemy bullet, enemy body-slam) -- costs
+// one life, starts a brief invulnerability window, and flashes the ship
+// the same way Drive Mode's .drive-car.bitten does for the car.
+function planeTakeHit() {
+  const now = performance.now();
+  if (now < planeState.invulnUntil) return;
+  planeState.invulnUntil = now + PLANE_HIT_INVULN_MS;
+  planeState.lives -= 1;
+  updatePlaneLives();
+  const ship = $("plane-ship");
+  ship.classList.add("hit");
+  setTimeout(() => ship.classList.remove("hit"), PLANE_HIT_INVULN_MS);
+  if (planeState.lives <= 0) endPlaneMode(true);
 }
 
 function endPlaneMode(crashed) {
@@ -1487,7 +1531,7 @@ function endPlaneMode(crashed) {
   planeState.paused = true;
   if (planeState.rafId) cancelAnimationFrame(planeState.rafId);
   $("plane-end-emoji").textContent = crashed ? "💥" : "🏁";
-  $("plane-end-title").textContent = crashed ? "You got hit!" : "Nice flying!";
+  $("plane-end-title").textContent = crashed ? "Game Over" : "Nice flying!";
   $("plane-end-sub").textContent = `Score: ${planeState.score}`;
   $("plane-end-overlay").classList.remove("hidden");
 }
@@ -1516,7 +1560,15 @@ function startPlaneLoop() {
         spawnPlaneEnemy();
       }
 
-      // Move bullets up, drop off-screen ones.
+      // Enemies fire back, each on its own staggered timer.
+      for (const enemy of planeState.enemies) {
+        if (now > enemy.nextFireAt) {
+          spawnPlaneEnemyBullet(enemy);
+          enemy.nextFireAt = now + rand(PLANE_ENEMY_FIRE_MIN_MS, PLANE_ENEMY_FIRE_MAX_MS);
+        }
+      }
+
+      // Move player bullets up, drop off-screen ones.
       planeState.bullets = planeState.bullets.filter(b => {
         b.y -= PLANE_BULLET_SPEED;
         if (b.y < -5) { b.el.remove(); return false; }
@@ -1525,8 +1577,16 @@ function startPlaneLoop() {
         return true;
       });
 
-      // Move enemies down, drop off-screen ones (no penalty yet -- enemy
-      // bullets/lives arrive in Phase 2).
+      // Move enemy bullets down, drop off-screen ones.
+      planeState.enemyBullets = planeState.enemyBullets.filter(b => {
+        b.y += PLANE_ENEMY_BULLET_SPEED;
+        if (b.y > 106) { b.el.remove(); return false; }
+        b.el.style.left = b.x + "%";
+        b.el.style.top = b.y + "%";
+        return true;
+      });
+
+      // Move enemies down, drop off-screen ones.
       planeState.enemies = planeState.enemies.filter(e => {
         e.y += PLANE_ENEMY_SPEED;
         if (e.y > 106) { e.el.remove(); return false; }
@@ -1535,7 +1595,7 @@ function startPlaneLoop() {
         return true;
       });
 
-      // Bullet-vs-enemy collision.
+      // Player bullet vs enemy.
       for (const enemy of planeState.enemies.slice()) {
         for (const bullet of planeState.bullets.slice()) {
           if (planePxDist(enemy.x, enemy.y, bullet.x, bullet.y) < PLANE_HIT_RADIUS_PX) {
@@ -1550,11 +1610,23 @@ function startPlaneLoop() {
         }
       }
 
-      // Ship-vs-enemy collision -- instant crash (Phase 1 has no shield/lives yet).
-      for (const enemy of planeState.enemies) {
+      // Enemy bullet vs ship.
+      for (const bullet of planeState.enemyBullets.slice()) {
+        if (planePxDist(bullet.x, bullet.y, planeState.x, planeState.y) < PLANE_HIT_RADIUS_PX) {
+          bullet.el.remove();
+          planeState.enemyBullets = planeState.enemyBullets.filter(b => b !== bullet);
+          planeTakeHit();
+          if (planeState.ended) return;
+        }
+      }
+
+      // Ship vs enemy body -- kamikaze: enemy is destroyed too, ship takes a hit.
+      for (const enemy of planeState.enemies.slice()) {
         if (planePxDist(enemy.x, enemy.y, planeState.x, planeState.y) < PLANE_HIT_RADIUS_PX) {
-          endPlaneMode(true);
-          return;
+          enemy.el.remove();
+          planeState.enemies = planeState.enemies.filter(e => e !== enemy);
+          planeTakeHit();
+          if (planeState.ended) return;
         }
       }
     }

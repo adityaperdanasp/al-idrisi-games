@@ -734,4 +734,17 @@ button { font-family: inherit; }
   filter: drop-shadow(0 3px 4px rgba(0,0,0,.35));
   z-index: 4;
 }
+
+.plane-enemy-bullet {
+  position: absolute; width: 6px; height: 12px; margin-left: -3px; margin-top: -6px;
+  background: linear-gradient(180deg, #ffb3c6, #e4572e);
+  border-radius: 3px; box-shadow: 0 0 6px rgba(228,87,46,.8);
+  z-index: 4;
+}
+
+.plane-ship.hit { animation: planeHit .35s ease-in-out 4; }
+@keyframes planeHit {
+  0%, 100% { filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); opacity: 1; }
+  50% { filter: drop-shadow(0 0 8px var(--bad)) brightness(1.4); opacity: .4; }
+}
 .mp-result-row.me { border: 2px solid var(--wood); }

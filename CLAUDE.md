@@ -86,23 +86,25 @@ Mobil dikontrol joystick kiri (analog drag), dikejar 1 dino (2 dino kalau diffic
 
 **Bug fix (2026-07-30)**: `buildPlaceValueStep()` sempet generate soal ambigu — nanya "which place is the digit 7 in 9,793,708" padahal digit 7-nya muncul 2x di angka itu (kids justifiably confused, salah satu jawaban yang "benar" ditolak). Fix: reject digit yang muncul lebih dari sekali di angka (`numStr.indexOf(digit) !== numStr.lastIndexOf(digit)`), sama kayak reject digit "0" yang udah ada sebelumnya. Udah divalidasi 20k simulasi, max 13x retry sebelum dapet angka valid (gak ada risiko infinite loop).
 
-### PLANNED — Plane mode (shmup) buat Drive Mode, BELUM DIMULAI
+### Plane mode (shmup) buat Drive Mode — IN PROGRESS, branch `feature/plane-mode`
 
-User mau nambahin pilihan kendaraan di Drive Mode: **Mobil** (yang sekarang, gak disentuh sama sekali) vs **Pesawat** (shmup/bullet-hell ala Raiden/Strikers 1945/DoDonPachi — vertical scroll, auto-fire, dodge peluru musuh, power-up, boss). Dipilih pas masuk Drive Mode, mirip pola difficulty picker yang udah ada (Easy/Medium/Hard) — jadi ini cabang kode BARU yang jalan paralel, bukan refactor logic mobil yang ada.
+Pilihan kendaraan di Drive Mode: **Mobil** (yang sekarang, gak disentuh sama sekali) vs **Pesawat** (shmup/bullet-hell ala Raiden/Strikers 1945/DoDonPachi — vertical scroll, auto-fire, dodge peluru musuh, power-up, boss). Dipilih lewat overlay baru `#drive-vehicle-overlay` (di `mathville/index.html`, sengaja ditaro di luar semua `.screen` — langsung child `#app` — biar gak kena bug "overlay nested in inactive screen" yang udah didokumentasikan di atas) sebelum masuk Drive Mode. Pilih Mobil → flow persis sama kayak sebelumnya (difficulty picker → `goToDrive()`). Pilih Pesawat → `launchPlaneMode()`, layar baru `#screen-plane`.
 
-**Eksplisit disepakati SEBELUM mulai**:
-- **TIDAK ada multiplayer real-time** — Firebase RTDB gak didesain buat broadcast posisi 60fps, bakal lag. Kalau nanti mau progress/skor kebanding antar pemain, pakai pola yang SAMA kayak Math Race sekarang (sinkron progress/skor akhir doang, bukan posisi live).
-- Drive Mode (mobil) yang ada **wajib tetap jalan identik** setelah fitur ini deploy — pesawat cuma opsi tambahan, bukan pengganti.
-- Soal matematika tetap jadi hook utama: jawab bener = "math missile"/power-up yang bersihin layar, bukan cuma +progress pasif kayak sekarang.
+**Kode plane mode 100% terpisah dari `driveState`/`goToDrive`/`startDriveLoop`** — gak ada shared state/function sama sekali, jadi Drive Mode gak mungkin ke-affect oleh perubahan di sini. Semua logic ada di satu blok di `mathville/script.js` (cari komentar "PLANE MODE"), constants prefix `PLANE_*`, state global `planeState`.
 
-**Rencana fase (belum mulai satu pun)**:
-1. Engine inti — arena scroll vertikal, kontrol joystick (reuse pola Drive Mode), auto-fire, musuh dasar + gerak, collision peluru-musuh, skor
-2. Bullet hell layer — musuh nembak balik, collision peluru-musuh vs pesawat, sistem nyawa/shield
-3. Juice — ledakan, parallax background, screen shake, hit-flash
-4. Progression — power-up, wave difficulty, boss, integrasi soal (jawab = bomb/power-up)
-5. Polish — tie ke leaderboard/XP yang udah ada
+**Eksplisit disepakati SEBELUM mulai** (masih berlaku buat fase selanjutnya):
+- **TIDAK ada multiplayer real-time** — Firebase RTDB gak didesain buat broadcast posisi 60fps. Kalau nanti mau kebanding antar pemain, pakai pola SAMA kayak Math Race (sinkron skor akhir doang).
+- Drive Mode (mobil) **wajib tetap jalan identik** — udah divalidasi manual di preview branch, full playthrough gak ada regresi.
+- Soal matematika tetap jadi hook utama nantinya (belum dikerjain — masuk Fase 4).
 
-Rencana workflow: git branch + Vercel preview deploy dulu (pola yang sama kayak fitur Drive Mode sebelumnya), baru merge ke `main` setelah dikonfirmasi.
+**Progress fase:**
+1. ✅ **Engine inti** (done) — arena scroll vertikal (`#plane-world`, parallax starfield 2 layer beda speed), joystick (`setupAnalogStick("plane-joystick", ...)`, reuse function yang sama persis kayak Drive Mode), auto-fire tiap `PLANE_FIRE_INTERVAL_MS`, musuh (`👾`) spawn+turun, collision peluru-vs-musuh (skor), collision kapal-vs-musuh. Divalidasi lewat state manipulation langsung (browser-pane gak bisa nge-tick `requestAnimationFrame` beneran di tab background/hidden — itu keterbatasan tooling testing, bukan bug).
+2. ✅ **Bullet hell layer** (done) — musuh punya timer nembak sendiri-sendiri (`enemy.nextFireAt`, staggered `PLANE_ENEMY_FIRE_MIN_MS`–`MAX_MS`) nembak peluru ke bawah (`.plane-enemy-bullet`, warna beda dari peluru pemain biar kebeda), sistem 3 nyawa (`PLANE_MAX_LIVES`, HUD `#plane-lives` pola sama kayak `#drive-lives`), kena hit (peluru musuh ATAU nabrak badan musuh) = `planeTakeHit()` — 1 nyawa ilang + invuln `PLANE_HIT_INVULN_MS` + ship kedip (`.plane-ship.hit`, mirror `.drive-car.bitten`). Nabrak musuh sekarang gak instant-death lagi, musuhnya ikut hancur (kamikaze) sama kayak kena tembak. Nyawa habis → `endPlaneMode(true)` ("Game Over").
+3. ⬜ Juice — ledakan, screen shake, hit-flash yang lebih niat (masih basic banget sekarang, cuma opacity blink)
+4. ⬜ Progression — power-up, wave difficulty, boss, integrasi soal matematika (jawab = bomb/power-up)
+5. ⬜ Polish — tie ke leaderboard/XP yang udah ada
+
+Belum di-merge ke `main` — masih di branch `feature/plane-mode`, preview: `https://al-idrisi-games-git-feature-plane-mode-ellilo.vercel.app/mathville/index.html`.
 
 ## Android app — 2 versi berbeda, jangan ketuker
 
