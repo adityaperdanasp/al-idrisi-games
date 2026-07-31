@@ -392,8 +392,8 @@ button { font-family: inherit; }
 /* Plane Mode's own steering stick only, +20% -- per feedback it felt too
    small/fiddly to control precisely. Drive Mode's joystick (same shared
    .joystick class) is untouched. */
-#plane-joystick { width: 110px; height: 110px; }
-#plane-joystick .joystick-knob { width: 50px; height: 50px; }
+#plane-joystick { width: 121px; height: 121px; }
+#plane-joystick .joystick-knob { width: 55px; height: 55px; }
 
 /* Right-side controls: aim stick (water gun) + nitro button, mirroring
    the steering joystick's bottom-left placement. */

@@ -1430,7 +1430,7 @@ $("drive-end-replay").addEventListener("click", () => goToDrive(false));
    still doesn't award XP on its own win; not retrofitting that here,
    out of scope for the plane-mode work.
    ================================================================= */
-const PLANE_SHIP_SPEED = 1.02;         // % of world width/height per frame at full stick deflection (originally 1.6, -25% then another -15% per feedback -- still felt too sensitive)
+const PLANE_SHIP_SPEED = 0.918;        // % of world width/height per frame at full stick deflection (originally 1.6, then -25%, -15%, -10% across three rounds of feedback -- still felt too sensitive each time)
 const PLANE_BULLET_SPEED = 2.2;        // % of world height per frame
 const PLANE_FIRE_INTERVAL_MS = 280;
 const PLANE_ENEMY_SPAWN_INTERVAL_MS = 900;
@@ -2166,10 +2166,11 @@ function setupAnalogStick(joyId, knobId, setVec, maxRadius = JOY_MAX) {
 }
 setupAnalogStick("joystick", "joystick-knob", v => { driveJoyVec = v; });
 setupAnalogStick("drive-aim-joystick", "drive-aim-knob", v => { driveAimVec = v; });
-// Plane Mode's stick is drawn 20% bigger (see #plane-joystick in style.css)
-// -- its drag radius needs to grow to match, or the knob would hit its
-// visual edge well before reaching "full deflection".
-setupAnalogStick("plane-joystick", "plane-joystick-knob", v => { planeJoyVec = v; }, JOY_MAX * 1.2);
+// Plane Mode's stick is drawn 32% bigger (+20% then another +10%, see
+// #plane-joystick in style.css) -- its drag radius needs to grow to
+// match, or the knob would hit its visual edge well before reaching
+// "full deflection".
+setupAnalogStick("plane-joystick", "plane-joystick-knob", v => { planeJoyVec = v; }, JOY_MAX * 1.32);
 
 // Nitro: hold to boost, release to stop -- fuel drain/regen happens every
 // frame in driveNitroTick() regardless of which of these fired last.
