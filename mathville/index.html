@@ -29,7 +29,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=29" />
+<link rel="stylesheet" href="style.css?v=30" />
 </head>
 <body>
 
@@ -280,9 +280,10 @@
   </section>
 
   <!-- ===============================================================
-       SCREEN: Plane Mode — PHASE 1 (core engine only): scrolling sky,
-       joystick-controlled ship, auto-fire, basic enemies, score. No
-       math-question hook, power-ups, waves, or boss yet (later phases).
+       SCREEN: Plane Mode — vertical shmup: scrolling sky, joystick-
+       controlled ship, auto-fire, enemies with wave difficulty that
+       ramps over time, power-ups (rapid fire / shield), a boss fight
+       once score hits the threshold, and a periodic math-question hook.
        Entirely parallel to Drive Mode -- shares nothing with driveState/
        goToDrive() by design, so Drive Mode (car) can't be affected by
        anything built here.
@@ -294,8 +295,14 @@
         <div class="drive-hud">
           <span class="drive-hud-pill" id="plane-score">⭐ 0</span>
           <span class="drive-hud-pill" id="plane-lives">❤️❤️❤️</span>
+          <span class="drive-hud-pill hidden" id="plane-buff-rapid">⚡</span>
+          <span class="drive-hud-pill hidden" id="plane-buff-shield">🛡️</span>
         </div>
       </div>
+    </div>
+    <!-- Boss health bar -- hidden until score reaches the boss threshold. -->
+    <div id="plane-boss-hp" class="plane-boss-hp hidden">
+      <div class="plane-boss-hp-fill" id="plane-boss-hp-fill"></div>
     </div>
     <div id="plane-world" class="plane-world">
       <div id="plane-sky-far" class="plane-sky-layer plane-sky-far"></div>
@@ -437,6 +444,6 @@
 <script src="questions.js?v=2"></script>
 <script src="generators.js?v=2"></script>
 <script src="bgm.js"></script>
-<script src="script.js?v=41"></script>
+<script src="script.js?v=42"></script>
 </body>
 </html>

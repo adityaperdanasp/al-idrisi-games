@@ -770,4 +770,29 @@ button { font-family: inherit; }
   60% { transform: translate(-4px, -2px); }
   80% { transform: translate(4px, 3px); }
 }
+
+/* Phase 5 -- power-ups + boss. */
+.plane-powerup {
+  position: absolute; width: 26px; height: 26px; margin-left: -13px; margin-top: -13px;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,.7));
+  z-index: 4;
+}
+.plane-boss {
+  position: absolute; width: 56px; height: 56px; margin-left: -28px; margin-top: -28px;
+  display: flex; align-items: center; justify-content: center; font-size: 42px;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,.4));
+  z-index: 4;
+}
+.plane-boss-hp {
+  width: 100%; height: 10px; border-radius: 6px; background: rgba(0,0,0,.25);
+  margin-top: 8px; overflow: hidden;
+}
+.plane-boss-hp-fill {
+  height: 100%; width: 100%; background: linear-gradient(90deg, #ff5d8f, #e4572e);
+  transition: width .2s ease-out;
+}
+
+#plane-end-overlay.lost .drive-end-title { color: var(--bad); }
+
 .mp-result-row.me { border: 2px solid var(--wood); }

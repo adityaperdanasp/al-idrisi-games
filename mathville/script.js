@@ -1413,8 +1413,18 @@ $("drive-end-replay").addEventListener("click", () => goToDrive(false));
    system (mirrors Drive Mode's DRIVE_MAX_BITES/❤️ pattern) instead of
    Phase 1's instant-crash-on-touch, brief invulnerability + flash after
    a hit (mirrors driveState.carImmuneUntil/.bitten).
-   NOT yet in this phase: power-ups, waves/difficulty, boss, or the
-   math-question hook -- see CLAUDE.md's "PLANNED — Plane mode" section.
+   Phase 3: explosions + screen shake ("juice").
+   Phase 4: the math-question hook (moved up from its original slot).
+   Phase 5: power-ups (⚡ rapid fire, 🛡️ shield -- drop from destroyed
+   regular enemies), wave difficulty (spawn rate/enemy speed ramp up
+   over time), and a boss fight once score reaches PLANE_BOSS_SCORE_
+   THRESHOLD (regular spawns stop, one tanky enemy takes over, defeating
+   it wins the round).
+   Phase 6: winning the boss fight awards real XP via saveChapterProgress
+   (same players/{id}/badges/mathville path every chapter uses), plus
+   confetti -- mirrors Drive Mode's win treatment. Drive Mode itself
+   still doesn't award XP on its own win; not retrofitting that here,
+   out of scope for the plane-mode work.
    ================================================================= */
 const PLANE_SHIP_SPEED = 1.6;          // % of world width/height per frame at full stick deflection
 const PLANE_BULLET_SPEED = 2.2;        // % of world height per frame
@@ -1429,6 +1439,36 @@ const PLANE_ENEMY_FIRE_MAX_MS = 2600;
 const PLANE_HIT_INVULN_MS = 1500;      // matches DRIVE_BITE_COOLDOWN_MS's feel
 const PLANE_QUESTION_INTERVAL_MS = 15000; // a math question every ~15s of active flight
 
+// Phase 5 -- wave difficulty ramp. Every PLANE_DIFFICULTY_RAMP_MS of active
+// flight, spawn interval shrinks and enemy speed grows, each capped so it
+// never becomes unfair.
+const PLANE_DIFFICULTY_RAMP_MS = 10000;
+const PLANE_MIN_SPAWN_INTERVAL_MS = 450;
+const PLANE_SPAWN_INTERVAL_STEP_MS = 60;
+const PLANE_MAX_ENEMY_SPEED = 0.55;
+const PLANE_ENEMY_SPEED_STEP = 0.03;
+
+// Phase 5 -- power-ups. Regular (non-boss) kills have a flat chance to drop
+// one; touching it with the ship applies a timed buff.
+const PLANE_POWERUP_DROP_CHANCE = 0.22;
+const PLANE_POWERUP_FALL_SPEED = 0.3;   // % world height per frame, same feel as enemies
+const PLANE_RAPID_FIRE_INTERVAL_MS = 140; // vs PLANE_FIRE_INTERVAL_MS's 280 when not buffed
+const PLANE_RAPID_DURATION_MS = 8000;
+const PLANE_SHIELD_DURATION_MS = 6000;
+
+// Phase 5 -- boss. Regular spawns stop once score reaches this; the boss
+// hovers and drifts side to side rather than descending, and needs several
+// hits before the round is won.
+const PLANE_BOSS_SCORE_THRESHOLD = 15;
+const PLANE_BOSS_MAX_HP = 8;
+const PLANE_BOSS_SPEED = 0.25;          // % world width per frame
+const PLANE_BOSS_FIRE_MIN_MS = 700;
+const PLANE_BOSS_FIRE_MAX_MS = 1300;
+
+// Phase 6 -- XP awarded to the mathville profile (players/{id}/badges/
+// mathville, same path every chapter uses) for defeating the boss.
+const PLANE_WIN_XP = 20;
+
 let planeJoyVec = { x: 0, y: 0 };
 let planeState = null;
 
@@ -1439,25 +1479,35 @@ function launchPlaneMode() {
     bullets: [],                // { id, x, y, el } -- player's own shots
     enemyBullets: [],           // { id, x, y, el } -- shots fired back at the ship
     enemies: [],                // { id, x, y, el, nextFireAt }
+    powerups: [],                // { id, x, y, type, el } -- falling pickups
+    boss: null,                  // { x, y, el, hp, dir, nextFireAt } once spawned
+    bossSpawned: false,
     score: 0,
     lives: PLANE_MAX_LIVES,
     invulnUntil: 0,
+    rapidUntil: 0,
+    shieldUntil: 0,
     nextEnemyId: 0,
     nextBulletId: 0,
     nextEnemyBulletId: 0,
+    nextPowerupId: 0,
     lastFireAt: 0,
     lastQuestionAt: performance.now(),
+    startTime: performance.now(),
     rafId: null,
     paused: false,
     ended: false,
     worldRect: null
   };
-  $("plane-world").querySelectorAll(".plane-bullet, .plane-enemy, .plane-enemy-bullet").forEach(el => el.remove());
+  $("plane-world").querySelectorAll(".plane-bullet, .plane-enemy, .plane-enemy-bullet, .plane-powerup, .plane-boss").forEach(el => el.remove());
   $("plane-ship").classList.remove("hit");
   $("plane-ship").style.left = planeState.x + "%";
   $("plane-ship").style.top = planeState.y + "%";
   $("plane-end-overlay").classList.add("hidden");
   $("plane-question-overlay").classList.add("hidden");
+  $("plane-boss-hp").classList.add("hidden");
+  $("plane-buff-rapid").classList.add("hidden");
+  $("plane-buff-shield").classList.add("hidden");
   updatePlaneScore();
   updatePlaneLives();
 
@@ -1544,6 +1594,14 @@ function shakePlaneWorld() {
 function planeTakeHit() {
   const now = performance.now();
   if (now < planeState.invulnUntil) return;
+  // A shield absorbs the hit entirely -- no life lost, no invuln window
+  // needed since the shield itself is the protection. Still shakes the
+  // world so the hit registers as feedback rather than feeling like nothing
+  // happened.
+  if (now < planeState.shieldUntil) {
+    shakePlaneWorld();
+    return;
+  }
   planeState.invulnUntil = now + PLANE_HIT_INVULN_MS;
   planeState.lives -= 1;
   updatePlaneLives();
@@ -1557,14 +1615,76 @@ function planeTakeHit() {
   }
 }
 
+// Phase 5 -- power-ups. Falls straight down like a regular enemy; touching
+// it with the ship applies the buff and removes the pickup.
+function spawnPlanePowerup(x, y) {
+  const type = Math.random() < 0.5 ? "rapid" : "shield";
+  const id = "p" + (planeState.nextPowerupId++);
+  const el = document.createElement("div");
+  el.className = "plane-powerup";
+  el.textContent = type === "rapid" ? "⚡" : "🛡️";
+  $("plane-world").appendChild(el);
+  planeState.powerups.push({ id, x, y, type, el });
+}
+
+function applyPlanePowerup(type) {
+  const now = performance.now();
+  if (type === "rapid") planeState.rapidUntil = now + PLANE_RAPID_DURATION_MS;
+  else planeState.shieldUntil = now + PLANE_SHIELD_DURATION_MS;
+}
+
+// Toggled every frame from the current buff timestamps -- cheap enough to
+// just recompute rather than tracking a separate "is this pill visible"
+// flag that could drift out of sync.
+function updatePlaneBuffHud() {
+  const now = performance.now();
+  $("plane-buff-rapid").classList.toggle("hidden", now >= planeState.rapidUntil);
+  $("plane-buff-shield").classList.toggle("hidden", now >= planeState.shieldUntil);
+}
+
+// Phase 5 -- boss. Hovers near the top and drifts side to side (bouncing at
+// the edges) instead of descending like regular enemies, and fires more
+// often. Reuses spawnPlaneEnemyBullet since that function only reads
+// .x/.y off whatever "enemy" object it's given.
+function spawnPlaneBoss() {
+  planeState.bossSpawned = true;
+  const el = document.createElement("div");
+  el.className = "plane-boss";
+  el.textContent = "🐉";
+  $("plane-world").appendChild(el);
+  planeState.boss = {
+    x: 50, y: 18, el, hp: PLANE_BOSS_MAX_HP, dir: 1,
+    nextFireAt: performance.now() + rand(PLANE_BOSS_FIRE_MIN_MS, PLANE_BOSS_FIRE_MAX_MS)
+  };
+  updatePlaneBossHp();
+  $("plane-boss-hp").classList.remove("hidden");
+}
+
+function updatePlaneBossHp() {
+  if (!planeState.boss) return;
+  $("plane-boss-hp-fill").style.width = (planeState.boss.hp / PLANE_BOSS_MAX_HP * 100) + "%";
+}
+
+// crashed=true -> ran out of lives. crashed=false -> boss defeated (the
+// only way to "win" a round), which awards real XP the same way every
+// mathville chapter does, plus the same confetti treatment Drive Mode
+// uses on its own win.
 function endPlaneMode(crashed) {
   planeState.ended = true;
   planeState.paused = true;
   if (planeState.rafId) cancelAnimationFrame(planeState.rafId);
-  $("plane-end-emoji").textContent = crashed ? "💥" : "🏁";
-  $("plane-end-title").textContent = crashed ? "Game Over" : "Nice flying!";
+  $("plane-end-emoji").textContent = crashed ? "💥" : "🏆";
+  $("plane-end-title").textContent = crashed ? "Game Over" : "Boss defeated!";
   $("plane-end-sub").textContent = `Score: ${planeState.score}`;
+  $("plane-end-overlay").classList.toggle("lost", crashed);
   $("plane-end-overlay").classList.remove("hidden");
+  if (!crashed) {
+    saveChapterProgress("plane-mode", 3, PLANE_WIN_XP);
+    if (typeof confetti === "function") {
+      confetti({ particleCount: 100, spread: 100, origin: { y: 0.4 } });
+      setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.3 } }), 300);
+    }
+  }
 }
 
 // Correct answer clears the screen (all current enemies + enemy bullets)
@@ -1619,22 +1739,33 @@ function startPlaneLoop() {
   function frame(now) {
     if (!planeState || planeState.ended) return;
     if (!planeState.paused) {
+      // Wave difficulty -- ramps with elapsed flight time, each side capped.
+      const level = Math.floor((now - planeState.startTime) / PLANE_DIFFICULTY_RAMP_MS);
+      const effSpawnInterval = Math.max(PLANE_MIN_SPAWN_INTERVAL_MS, PLANE_ENEMY_SPAWN_INTERVAL_MS - level * PLANE_SPAWN_INTERVAL_STEP_MS);
+      const effEnemySpeed = Math.min(PLANE_MAX_ENEMY_SPEED, PLANE_ENEMY_SPEED + level * PLANE_ENEMY_SPEED_STEP);
+
       // Ship movement, clamped inside the world (with a small margin).
       planeState.x = Math.max(6, Math.min(94, planeState.x + planeJoyVec.x * PLANE_SHIP_SPEED));
       planeState.y = Math.max(8, Math.min(94, planeState.y + planeJoyVec.y * PLANE_SHIP_SPEED));
       $("plane-ship").style.left = planeState.x + "%";
       $("plane-ship").style.top = planeState.y + "%";
 
-      // Auto-fire.
-      if (now - planeState.lastFireAt > PLANE_FIRE_INTERVAL_MS) {
+      // Auto-fire -- rapid-fire power-up halves the interval while active.
+      const fireInterval = now < planeState.rapidUntil ? PLANE_RAPID_FIRE_INTERVAL_MS : PLANE_FIRE_INTERVAL_MS;
+      if (now - planeState.lastFireAt > fireInterval) {
         planeState.lastFireAt = now;
         spawnPlaneBullet();
       }
+      updatePlaneBuffHud();
 
-      // Enemy spawn.
-      if (now - lastSpawnAt > PLANE_ENEMY_SPAWN_INTERVAL_MS) {
+      // Enemy spawn -- stops once the boss threshold is reached, so the
+      // boss fight isn't cluttered with regular waves in the background.
+      if (!planeState.bossSpawned && now - lastSpawnAt > effSpawnInterval) {
         lastSpawnAt = now;
         spawnPlaneEnemy();
+      }
+      if (!planeState.bossSpawned && !planeState.boss && planeState.score >= PLANE_BOSS_SCORE_THRESHOLD) {
+        spawnPlaneBoss();
       }
 
       // Periodic math question -- the actual reason this is a learning
@@ -1652,6 +1783,21 @@ function startPlaneLoop() {
         if (now > enemy.nextFireAt) {
           spawnPlaneEnemyBullet(enemy);
           enemy.nextFireAt = now + rand(PLANE_ENEMY_FIRE_MIN_MS, PLANE_ENEMY_FIRE_MAX_MS);
+        }
+      }
+
+      // Boss: drifts side to side (bouncing at the edges) and fires on its
+      // own, faster timer. Reuses spawnPlaneEnemyBullet -- it only reads
+      // .x/.y off whatever object it's given.
+      if (planeState.boss) {
+        const boss = planeState.boss;
+        boss.x += PLANE_BOSS_SPEED * boss.dir;
+        if (boss.x > 85 || boss.x < 15) boss.dir *= -1;
+        boss.el.style.left = boss.x + "%";
+        boss.el.style.top = boss.y + "%";
+        if (now > boss.nextFireAt) {
+          spawnPlaneEnemyBullet(boss);
+          boss.nextFireAt = now + rand(PLANE_BOSS_FIRE_MIN_MS, PLANE_BOSS_FIRE_MAX_MS);
         }
       }
 
@@ -1675,18 +1821,29 @@ function startPlaneLoop() {
 
       // Move enemies down, drop off-screen ones.
       planeState.enemies = planeState.enemies.filter(e => {
-        e.y += PLANE_ENEMY_SPEED;
+        e.y += effEnemySpeed;
         if (e.y > 106) { e.el.remove(); return false; }
         e.el.style.left = e.x + "%";
         e.el.style.top = e.y + "%";
         return true;
       });
 
-      // Player bullet vs enemy.
+      // Move power-ups down, drop off-screen ones.
+      planeState.powerups = planeState.powerups.filter(p => {
+        p.y += PLANE_POWERUP_FALL_SPEED;
+        if (p.y > 106) { p.el.remove(); return false; }
+        p.el.style.left = p.x + "%";
+        p.el.style.top = p.y + "%";
+        return true;
+      });
+
+      // Player bullet vs enemy -- regular kills have a flat chance to drop
+      // a power-up.
       for (const enemy of planeState.enemies.slice()) {
         for (const bullet of planeState.bullets.slice()) {
           if (planePxDist(enemy.x, enemy.y, bullet.x, bullet.y) < PLANE_HIT_RADIUS_PX) {
             spawnPlaneExplosion(enemy.x, enemy.y);
+            if (Math.random() < PLANE_POWERUP_DROP_CHANCE) spawnPlanePowerup(enemy.x, enemy.y);
             enemy.el.remove();
             bullet.el.remove();
             planeState.enemies = planeState.enemies.filter(e => e !== enemy);
@@ -1695,6 +1852,38 @@ function startPlaneLoop() {
             updatePlaneScore();
             break;
           }
+        }
+      }
+
+      // Player bullet vs boss -- chips its HP down instead of a 1-hit kill;
+      // reaching 0 wins the round.
+      if (planeState.boss) {
+        for (const bullet of planeState.bullets.slice()) {
+          if (planePxDist(planeState.boss.x, planeState.boss.y, bullet.x, bullet.y) < PLANE_HIT_RADIUS_PX * 1.4) {
+            bullet.el.remove();
+            planeState.bullets = planeState.bullets.filter(b => b !== bullet);
+            spawnPlaneExplosion(bullet.x, bullet.y);
+            planeState.boss.hp -= 1;
+            updatePlaneBossHp();
+            if (planeState.boss.hp <= 0) {
+              spawnPlaneExplosion(planeState.boss.x, planeState.boss.y, true);
+              planeState.boss.el.remove();
+              planeState.boss = null;
+              endPlaneMode(false);
+              return;
+            }
+            break;
+          }
+        }
+      }
+
+      // Ship vs power-up -- collect and apply the buff.
+      for (const p of planeState.powerups.slice()) {
+        if (planePxDist(p.x, p.y, planeState.x, planeState.y) < PLANE_HIT_RADIUS_PX) {
+          p.el.remove();
+          planeState.powerups = planeState.powerups.filter(pu => pu !== p);
+          applyPlanePowerup(p.type);
+          updatePlaneBuffHud();
         }
       }
 
@@ -1717,6 +1906,13 @@ function startPlaneLoop() {
           planeTakeHit();
           if (planeState.ended) return;
         }
+      }
+
+      // Ship vs boss body -- just hurts the ship, boss only takes damage
+      // from being shot (contact alone shouldn't end an 8-hit fight early).
+      if (planeState.boss && planePxDist(planeState.boss.x, planeState.boss.y, planeState.x, planeState.y) < PLANE_HIT_RADIUS_PX * 1.4) {
+        planeTakeHit();
+        if (planeState.ended) return;
       }
     }
     planeState.rafId = requestAnimationFrame(frame);
