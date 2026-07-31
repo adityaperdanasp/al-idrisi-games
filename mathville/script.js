@@ -234,6 +234,7 @@ document.querySelectorAll(".back-btn, [data-back]").forEach(btn => {
    TOWN MAP (solo)
    ================================================================= */
 function goToMap() {
+  if (window.AIGBgm && AIGBgm.playDefaultTrack) AIGBgm.playDefaultTrack();
   renderTownMap();
   showScreen("screen-map");
 }
@@ -543,8 +544,8 @@ function goToIntro(chapterId, isMp) {
    chapter (same flow as the tap-map), bumping a cone pops one quick
    question from the same generators the chapters already use.
    ================================================================= */
-const DRIVE_SPEED = 0.3888;   // % of world per animation frame, at full joystick deflection (-20% again)
-const DINO_SPEED = DRIVE_SPEED * 1.1 * 0.8; // 10% faster than the car's top speed, then -20% (scales with DRIVE_SPEED, so this drops 20% too)
+const DRIVE_SPEED = 0.3888 * 1.10;   // % of world per animation frame, at full joystick deflection (+10% per feedback -- car AND dino, since DINO_SPEED below is derived from this)
+const DINO_SPEED = DRIVE_SPEED * 1.1 * 0.8; // 10% faster than the car's top speed, then -20% (scales with DRIVE_SPEED, so the +10% above applies to both)
 const DRIVE_HARD_DINO_SLOW_MULT = 0.95; // Hard-only: -5% more, per feedback after playtesting nitro/water-gun/2-dinos together
 const DRIVE_DINO_AVOID_RANGE_PX = 80; // real pixels — was a raw % distance, which on this
                                        // tall (non-square) field meant the avoid check
@@ -1389,6 +1390,7 @@ function launchDriveMode() {
     // whether launched from the map's drive button or the hub's ?drive=1
     // deep link. goToDrive() (called after a difficulty is picked) also
     // sets this same screen active, so this is a harmless no-op there.
+    if (window.AIGBgm && AIGBgm.playDefaultTrack) AIGBgm.playDefaultTrack();
     showScreen("screen-drive");
     playDriveDifficultyPicker(() => {
       goToDrive(false);
@@ -1428,7 +1430,7 @@ $("drive-end-replay").addEventListener("click", () => goToDrive(false));
    still doesn't award XP on its own win; not retrofitting that here,
    out of scope for the plane-mode work.
    ================================================================= */
-const PLANE_SHIP_SPEED = 1.2;          // % of world width/height per frame at full stick deflection (25% less than the original 1.6 -- per playtesting feedback the ship felt too twitchy)
+const PLANE_SHIP_SPEED = 1.02;         // % of world width/height per frame at full stick deflection (originally 1.6, -25% then another -15% per feedback -- still felt too sensitive)
 const PLANE_BULLET_SPEED = 2.2;        // % of world height per frame
 const PLANE_FIRE_INTERVAL_MS = 280;
 const PLANE_ENEMY_SPAWN_INTERVAL_MS = 900;
@@ -1465,18 +1467,43 @@ const PLANE_RAPID_FIRE_INTERVAL_MS = 140; // vs PLANE_FIRE_INTERVAL_MS's 280 whe
 const PLANE_RAPID_DURATION_MS = 8000;
 const PLANE_SHIELD_DURATION_MS = 6000;
 
+// Variety pass (per feedback: "too static", every enemy the same sprite
+// flying dead straight). Each spawn picks one of these; moveStyle changes
+// how the frame loop updates its x each tick (see the enemy-movement block
+// in startPlaneLoop), and bulletClass gives its shots a distinct look
+// (CSS in style.css). This ALSO fixes a real bug: with every enemy moving
+// straight down and bullets going straight down from wherever the enemy
+// was, a ship that never moved sat in a "dead lane" nothing could ever
+// reach -- sine/drift/zigzag movement plus (see spawnPlaneEnemyBullet)
+// bullets now aimed at the ship's position closes that gap.
+const PLANE_ENEMY_TYPES = [
+  { emoji: "👾", moveStyle: "straight", bulletClass: "" },
+  { emoji: "👽", moveStyle: "sine", bulletClass: "round" },
+  { emoji: "🛸", moveStyle: "drift", bulletClass: "big" },
+  { emoji: "🦇", moveStyle: "zigzag", bulletClass: "diamond" }
+];
+
 // Boss. Regular spawns stop once score reaches the current threshold; the
-// boss hovers and drifts side to side rather than descending, and needs
-// several hits before it's defeated. Defeating it does NOT end the round
-// (see handleBossDefeat) -- the game is endless, built around chasing a
-// high score, with progressively busier waves and another boss further
-// out each time (threshold climbs by PLANE_BOSS_THRESHOLD_STEP per kill).
+// boss hovers rather than descending, and needs several hits before it's
+// defeated. Defeating it does NOT end the round (see handleBossDefeat) --
+// the game is endless, built around chasing a high score, with
+// progressively busier waves and another boss further out each time
+// (threshold climbs by PLANE_BOSS_THRESHOLD_STEP per kill). Cycles through
+// PLANE_BOSS_TYPES (by bossesDefeated index) so it's not the same dragon
+// every time; each type's hpMult/speedMult/fire-rate multipliers give it a
+// distinct feel rather than just a palette swap.
 const PLANE_BOSS_SCORE_THRESHOLD = 15;
 const PLANE_BOSS_THRESHOLD_STEP = 15;
-const PLANE_BOSS_MAX_HP = 8;
+const PLANE_BOSS_MAX_HP = 16;            // 2x the original 8, per feedback
 const PLANE_BOSS_SPEED = 0.25;          // % world width per frame
 const PLANE_BOSS_FIRE_MIN_MS = 700;
 const PLANE_BOSS_FIRE_MAX_MS = 1300;
+const PLANE_BOSS_TYPES = [
+  { emoji: "🐉", hpMult: 1.0, speedMult: 1.0, fireMult: 1.0, moveStyle: "bounce", bulletClass: "boss" },
+  { emoji: "🦂", hpMult: 0.85, speedMult: 1.4, fireMult: 0.7, moveStyle: "bounce", bulletClass: "boss" },
+  { emoji: "👹", hpMult: 1.3, speedMult: 0.6, fireMult: 1.3, moveStyle: "bounce", bulletClass: "boss" },
+  { emoji: "🦑", hpMult: 1.0, speedMult: 1.0, fireMult: 0.9, moveStyle: "figure8", bulletClass: "boss" }
+];
 
 // Question interval also tightens per boss defeat (floor so it never
 // becomes unplayable) -- this is how the round gets "harder" over time
@@ -1494,6 +1521,7 @@ let planeJoyVec = { x: 0, y: 0 };
 let planeState = null;
 
 function launchPlaneMode() {
+  if (window.AIGBgm && AIGBgm.playPlaneTrack) AIGBgm.playPlaneTrack();
   showScreen("screen-plane");
   planeState = {
     x: 50, y: 82,              // ship position, % of plane-world
@@ -1586,22 +1614,34 @@ function spawnPlaneBullet() {
 
 function spawnPlaneEnemy() {
   const id = "e" + (planeState.nextEnemyId++);
+  const type = PLANE_ENEMY_TYPES[rand(0, PLANE_ENEMY_TYPES.length - 1)];
   const el = document.createElement("div");
   el.className = "plane-enemy";
-  el.textContent = "👾";
+  el.textContent = type.emoji;
   $("plane-world").appendChild(el);
   planeState.enemies.push({
-    id, x: rand(8, 92), y: -6, el,
+    id, x: rand(8, 92), y: -6, el, type,
+    phase: Math.random() * Math.PI * 2, // sine movement offset, so they don't all wiggle in lockstep
     nextFireAt: performance.now() + rand(PLANE_ENEMY_FIRE_MIN_MS, PLANE_ENEMY_FIRE_MAX_MS)
   });
 }
 
+// Aimed at the ship's CURRENT position at the moment of firing (not just
+// straight down) -- see the PLANE_ENEMY_TYPES comment above for why. Used
+// for both regular enemies and the boss (whatever object with .x/.y it's
+// given), so boss shots are aimed too.
 function spawnPlaneEnemyBullet(enemy) {
   const id = "eb" + (planeState.nextEnemyBulletId++);
   const el = document.createElement("div");
-  el.className = "plane-enemy-bullet";
+  const bulletClass = enemy.type && enemy.type.bulletClass ? " " + enemy.type.bulletClass : "";
+  el.className = "plane-enemy-bullet" + bulletClass;
   $("plane-world").appendChild(el);
-  planeState.enemyBullets.push({ id, x: enemy.x, y: enemy.y + 3, el });
+  const fromX = enemy.x, fromY = enemy.y + 3;
+  const dx = planeState.x - fromX, dy = planeState.y - fromY;
+  const dist = Math.hypot(dx, dy) || 1;
+  const vx = (dx / dist) * PLANE_ENEMY_BULLET_SPEED;
+  const vy = (dy / dist) * PLANE_ENEMY_BULLET_SPEED;
+  planeState.enemyBullets.push({ id, x: fromX, y: fromY, vx, vy, el });
 }
 
 // Phase 3 "juice" -- a burst emoji that scales up + fades out at (x, y)
@@ -1688,13 +1728,15 @@ function updatePlaneBuffHud() {
 // .x/.y off whatever "enemy" object it's given.
 function spawnPlaneBoss() {
   planeState.bossSpawned = true;
+  const type = PLANE_BOSS_TYPES[planeState.bossesDefeated % PLANE_BOSS_TYPES.length];
   const el = document.createElement("div");
   el.className = "plane-boss";
-  el.textContent = "🐉";
+  el.textContent = type.emoji;
   $("plane-world").appendChild(el);
+  const hp = Math.round(PLANE_BOSS_MAX_HP * type.hpMult);
   planeState.boss = {
-    x: 50, y: 18, el, hp: PLANE_BOSS_MAX_HP, dir: 1,
-    nextFireAt: performance.now() + rand(PLANE_BOSS_FIRE_MIN_MS, PLANE_BOSS_FIRE_MAX_MS)
+    x: 50, y: 18, el, hp, maxHp: hp, dir: 1, type, t: 0,
+    nextFireAt: performance.now() + rand(PLANE_BOSS_FIRE_MIN_MS, PLANE_BOSS_FIRE_MAX_MS) * type.fireMult
   };
   updatePlaneBossHp();
   $("plane-boss-hp").classList.remove("hidden");
@@ -1702,7 +1744,7 @@ function spawnPlaneBoss() {
 
 function updatePlaneBossHp() {
   if (!planeState.boss) return;
-  $("plane-boss-hp-fill").style.width = (planeState.boss.hp / PLANE_BOSS_MAX_HP * 100) + "%";
+  $("plane-boss-hp-fill").style.width = (planeState.boss.hp / planeState.boss.maxHp * 100) + "%";
 }
 
 // The round is endless -- running out of lives is the only way it ends.
@@ -1785,11 +1827,20 @@ async function ensurePlaneQuestionPools() {
       }
     }));
     const langPool = [];
-    (lang.chapters || []).forEach(ch => (ch.questions || []).forEach(q => {
-      if (q.type === "mc") {
-        langPool.push({ prompt: q.prompt, options: q.options, correctLabel: q.answer });
-      }
-    }));
+    (lang.chapters || []).forEach(ch => {
+      // Reading Comprehension chapters mix "passage" questions in with
+      // their "mc" ones, and the mc prompts assume the passage was just
+      // read ("According to the text...", "In the story...") -- there's
+      // no passage shown here, so they're unanswerable. Skip any chapter
+      // that has passage-type questions at all, not just the passages
+      // themselves.
+      if ((ch.questions || []).some(q => q.type === "passage")) return;
+      (ch.questions || []).forEach(q => {
+        if (q.type === "mc") {
+          langPool.push({ prompt: q.prompt, options: q.options, correctLabel: q.answer });
+        }
+      });
+    });
     planeSolarPool = solarPool;
     planeLanguagePool = langPool;
   } catch (e) {
@@ -1911,18 +1962,25 @@ function startPlaneLoop() {
         }
       }
 
-      // Boss: drifts side to side (bouncing at the edges) and fires on its
-      // own, faster timer. Reuses spawnPlaneEnemyBullet -- it only reads
-      // .x/.y off whatever object it's given.
+      // Boss: either bounces side to side or (the 🦑 type) sweeps a
+      // figure-8, and fires on its own, faster timer. Reuses
+      // spawnPlaneEnemyBullet -- it only reads .x/.y off whatever object
+      // it's given.
       if (planeState.boss) {
         const boss = planeState.boss;
-        boss.x += PLANE_BOSS_SPEED * boss.dir;
-        if (boss.x > 85 || boss.x < 15) boss.dir *= -1;
+        boss.t += 1;
+        if (boss.type.moveStyle === "figure8") {
+          boss.x = 50 + Math.sin(boss.t / 40) * 32;
+          boss.y = 18 + Math.sin(boss.t / 20) * 6;
+        } else {
+          boss.x += PLANE_BOSS_SPEED * boss.type.speedMult * boss.dir;
+          if (boss.x > 85 || boss.x < 15) boss.dir *= -1;
+        }
         boss.el.style.left = boss.x + "%";
         boss.el.style.top = boss.y + "%";
         if (now > boss.nextFireAt) {
           spawnPlaneEnemyBullet(boss);
-          boss.nextFireAt = now + rand(PLANE_BOSS_FIRE_MIN_MS, PLANE_BOSS_FIRE_MAX_MS);
+          boss.nextFireAt = now + rand(PLANE_BOSS_FIRE_MIN_MS, PLANE_BOSS_FIRE_MAX_MS) * boss.type.fireMult;
         }
       }
 
@@ -1935,18 +1993,31 @@ function startPlaneLoop() {
         return true;
       });
 
-      // Move enemy bullets down, drop off-screen ones.
+      // Move enemy bullets along their aimed direction, drop off-screen ones
+      // (any edge now, not just the bottom, since they're no longer purely
+      // vertical).
       planeState.enemyBullets = planeState.enemyBullets.filter(b => {
-        b.y += PLANE_ENEMY_BULLET_SPEED;
-        if (b.y > 106) { b.el.remove(); return false; }
+        b.x += b.vx;
+        b.y += b.vy;
+        if (b.y > 106 || b.y < -6 || b.x < -6 || b.x > 106) { b.el.remove(); return false; }
         b.el.style.left = b.x + "%";
         b.el.style.top = b.y + "%";
         return true;
       });
 
-      // Move enemies down, drop off-screen ones.
+      // Move enemies down (their shared descent speed), plus a per-type
+      // horizontal wobble/drift/dart so they don't all fly in a single
+      // dead-straight lane.
       planeState.enemies = planeState.enemies.filter(e => {
         e.y += effEnemySpeed;
+        if (e.type.moveStyle === "sine") {
+          e.x += Math.sin(now / 300 + e.phase) * 0.35;
+        } else if (e.type.moveStyle === "drift") {
+          e.x += Math.sign(planeState.x - e.x) * 0.12;
+        } else if (e.type.moveStyle === "zigzag") {
+          e.x += (Math.random() - 0.5) * 1.4;
+        }
+        e.x = Math.max(4, Math.min(96, e.x));
         if (e.y > 106) { e.el.remove(); return false; }
         e.el.style.left = e.x + "%";
         e.el.style.top = e.y + "%";
@@ -2042,7 +2113,6 @@ function startPlaneLoop() {
   planeState.rafId = requestAnimationFrame(frame);
 }
 
-setupAnalogStick("plane-joystick", "plane-joystick-knob", v => { planeJoyVec = v; });
 $("plane-end-replay").addEventListener("click", () => launchPlaneMode());
 
 // Deep link from the hub's landing-page roaming car (?drive=1) — jump
@@ -2058,7 +2128,7 @@ if (new URLSearchParams(location.search).get("drive") === "1") {
 // Shared by both sticks (left = steer, right = aim the water gun) --
 // `setVec` is however the caller wants to store the resulting vector.
 const JOY_MAX = 28; // matches the smaller 92px joystick track
-function setupAnalogStick(joyId, knobId, setVec) {
+function setupAnalogStick(joyId, knobId, setVec, maxRadius = JOY_MAX) {
   const joy = $(joyId);
   const knob = $(knobId);
   if (!joy || !knob) return;
@@ -2069,11 +2139,11 @@ function setupAnalogStick(joyId, knobId, setVec) {
     const dx = e.clientX - (rect.left + rect.width / 2);
     const dy = e.clientY - (rect.top + rect.height / 2);
     const dist = Math.hypot(dx, dy);
-    const clamped = Math.min(dist, JOY_MAX);
+    const clamped = Math.min(dist, maxRadius);
     const angle = Math.atan2(dy, dx);
     const kx = Math.cos(angle) * clamped, ky = Math.sin(angle) * clamped;
     knob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
-    setVec({ x: kx / JOY_MAX, y: ky / JOY_MAX });
+    setVec({ x: kx / maxRadius, y: ky / maxRadius });
   }
   function release(e) {
     if (activeId === null || e.pointerId !== activeId) return;
@@ -2096,6 +2166,10 @@ function setupAnalogStick(joyId, knobId, setVec) {
 }
 setupAnalogStick("joystick", "joystick-knob", v => { driveJoyVec = v; });
 setupAnalogStick("drive-aim-joystick", "drive-aim-knob", v => { driveAimVec = v; });
+// Plane Mode's stick is drawn 20% bigger (see #plane-joystick in style.css)
+// -- its drag radius needs to grow to match, or the knob would hit its
+// visual edge well before reaching "full deflection".
+setupAnalogStick("plane-joystick", "plane-joystick-knob", v => { planeJoyVec = v; }, JOY_MAX * 1.2);
 
 // Nitro: hold to boost, release to stop -- fuel drain/regen happens every
 // frame in driveNitroTick() regardless of which of these fired last.

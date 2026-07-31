@@ -14,10 +14,12 @@
 (function () {
   const VOLUME = 0.30;
   const FADE_MS = 400;
+  const DEFAULT_SRC = "audio/bgm/bgm.mp3";
 
-  const track = new Audio("audio/bgm/bgm.mp3");
+  const track = new Audio(DEFAULT_SRC);
   track.loop = true;
   track.preload = "auto";
+  track.dataset.src = DEFAULT_SRC;
 
   let ctx = null;
   let gain = null;
@@ -77,8 +79,34 @@
     document.addEventListener(evt, unlockOnce, { passive: true })
   );
 
+  // Switches the single <audio> element's source -- used so Plane Mode can
+  // play a more energetic track (borrowed from Math Race) than the rest of
+  // MathVille, without needing a second AudioContext/GainNode graph (a
+  // MediaElementSourceNode stays valid across .src changes on the same
+  // element). No-ops if already on that track, so calling it from a nav
+  // button that ISN'T actually leaving/entering Plane Mode (e.g. the map
+  // button from a screen that was never playing music) doesn't cause an
+  // audible restart glitch.
+  function switchTrack(src) {
+    if (track.dataset.src === src) return;
+    const wasPlaying = unlocked && !track.paused;
+    fadeOut();
+    setTimeout(() => {
+      track.src = src;
+      track.dataset.src = src;
+      track.load();
+      if (wasPlaying) track.play().then(fadeIn).catch(err => console.warn("[bgm] playback blocked:", err));
+    }, FADE_MS);
+  }
+
   // Exposed so a question round can duck the music if it ever needs to
   // (matches the other games' AIGBgm.stop()/start() convention) — MathVille
   // doesn't call these today since there's no timed pressure to protect.
-  window.AIGBgm = { stop: fadeOut, start: fadeIn };
+  window.AIGBgm = {
+    stop: fadeOut,
+    start: fadeIn,
+    switchTrack,
+    playPlaneTrack: () => switchTrack("audio/bgm/plane-bgm.mp3"),
+    playDefaultTrack: () => switchTrack(DEFAULT_SRC)
+  };
 })();

@@ -389,6 +389,12 @@ button { font-family: inherit; }
   transform: translate(-50%, -50%); pointer-events: none;
 }
 
+/* Plane Mode's own steering stick only, +20% -- per feedback it felt too
+   small/fiddly to control precisely. Drive Mode's joystick (same shared
+   .joystick class) is untouched. */
+#plane-joystick { width: 110px; height: 110px; }
+#plane-joystick .joystick-knob { width: 50px; height: 50px; }
+
 /* Right-side controls: aim stick (water gun) + nitro button, mirroring
    the steering joystick's bottom-left placement. */
 .drive-right-controls {
@@ -740,6 +746,26 @@ button { font-family: inherit; }
   background: linear-gradient(180deg, #ffb3c6, #e4572e);
   border-radius: 3px; box-shadow: 0 0 6px rgba(228,87,46,.8);
   z-index: 4;
+}
+/* Per-enemy-type bullet shapes (see PLANE_ENEMY_TYPES) so shots read as
+   coming from different threats, not just the same pink rectangle every
+   time. */
+.plane-enemy-bullet.round {
+  width: 10px; height: 10px; margin-left: -5px; margin-top: -5px; border-radius: 50%;
+  background: radial-gradient(circle, #d9c1f6, #8a4fd6); box-shadow: 0 0 6px rgba(138,79,214,.8);
+}
+.plane-enemy-bullet.big {
+  width: 11px; height: 18px; margin-left: -5.5px; margin-top: -9px;
+  background: linear-gradient(180deg, #c1e8f6, #2e9ad9); box-shadow: 0 0 7px rgba(46,154,217,.8);
+}
+.plane-enemy-bullet.diamond {
+  width: 10px; height: 10px; margin-left: -5px; margin-top: -5px;
+  background: linear-gradient(180deg, #d9f6c1, #6db32e); box-shadow: 0 0 6px rgba(109,179,46,.8);
+  transform: rotate(45deg); border-radius: 2px;
+}
+.plane-enemy-bullet.boss {
+  width: 13px; height: 20px; margin-left: -6.5px; margin-top: -10px;
+  background: linear-gradient(180deg, #ffe1a8, #ff5d8f); box-shadow: 0 0 9px rgba(255,93,143,.9);
 }
 
 .plane-ship.hit { animation: planeHit .35s ease-in-out 4; }
