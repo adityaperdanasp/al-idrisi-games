@@ -186,7 +186,7 @@ function loadProgress() {
     const raw = localStorage.getItem("mathville.progress");
     if (raw) return JSON.parse(raw);
   } catch (e) { /* corrupt data — fall through to fresh progress */ }
-  return { chapters: {}, xpTotal: 0 };
+  return { chapters: {}, xpTotal: 0, planeHighScore: 0 };
 }
 let PROGRESS = loadProgress();
 
@@ -204,7 +204,9 @@ function saveChapterProgress(chapterId, stars, xp) {
     // Mirrors PROGRESS to players/{id}/badges/mathville — same pattern the
     // other 3 games use — so the teacher/parent dashboard can show chapter
     // completion for MathVille too, not just topicStats/play count.
-    AIGLeaderboard.setProgress("mathville", { chapters: PROGRESS.chapters, xpTotal: PROGRESS.xpTotal });
+    // setProgress does a full overwrite (.set(), not .update()), so every
+    // call site must include planeHighScore too or it gets wiped out.
+    AIGLeaderboard.setProgress("mathville", { chapters: PROGRESS.chapters, xpTotal: PROGRESS.xpTotal, planeHighScore: PROGRESS.planeHighScore });
   }
 }
 
@@ -1426,7 +1428,7 @@ $("drive-end-replay").addEventListener("click", () => goToDrive(false));
    still doesn't award XP on its own win; not retrofitting that here,
    out of scope for the plane-mode work.
    ================================================================= */
-const PLANE_SHIP_SPEED = 1.6;          // % of world width/height per frame at full stick deflection
+const PLANE_SHIP_SPEED = 1.2;          // % of world width/height per frame at full stick deflection (25% less than the original 1.6 -- per playtesting feedback the ship felt too twitchy)
 const PLANE_BULLET_SPEED = 2.2;        // % of world height per frame
 const PLANE_FIRE_INTERVAL_MS = 280;
 const PLANE_ENEMY_SPAWN_INTERVAL_MS = 900;
@@ -1448,6 +1450,13 @@ const PLANE_SPAWN_INTERVAL_STEP_MS = 60;
 const PLANE_MAX_ENEMY_SPEED = 0.55;
 const PLANE_ENEMY_SPEED_STEP = 0.03;
 
+// Enemy density -- a multiplier applied to the spawn interval (higher
+// density = shorter interval = more enemies on screen). Starts 10% above
+// baseline, and compounds another 20% every time a boss is defeated, so
+// each new wave after a boss is noticeably busier than the last.
+const PLANE_ENEMY_DENSITY_START = 1.10;
+const PLANE_ENEMY_DENSITY_BOSS_MULT = 1.20;
+
 // Phase 5 -- power-ups. Regular (non-boss) kills have a flat chance to drop
 // one; touching it with the ship applies a timed buff.
 const PLANE_POWERUP_DROP_CHANCE = 0.22;
@@ -1456,17 +1465,29 @@ const PLANE_RAPID_FIRE_INTERVAL_MS = 140; // vs PLANE_FIRE_INTERVAL_MS's 280 whe
 const PLANE_RAPID_DURATION_MS = 8000;
 const PLANE_SHIELD_DURATION_MS = 6000;
 
-// Phase 5 -- boss. Regular spawns stop once score reaches this; the boss
-// hovers and drifts side to side rather than descending, and needs several
-// hits before the round is won.
+// Boss. Regular spawns stop once score reaches the current threshold; the
+// boss hovers and drifts side to side rather than descending, and needs
+// several hits before it's defeated. Defeating it does NOT end the round
+// (see handleBossDefeat) -- the game is endless, built around chasing a
+// high score, with progressively busier waves and another boss further
+// out each time (threshold climbs by PLANE_BOSS_THRESHOLD_STEP per kill).
 const PLANE_BOSS_SCORE_THRESHOLD = 15;
+const PLANE_BOSS_THRESHOLD_STEP = 15;
 const PLANE_BOSS_MAX_HP = 8;
 const PLANE_BOSS_SPEED = 0.25;          // % world width per frame
 const PLANE_BOSS_FIRE_MIN_MS = 700;
 const PLANE_BOSS_FIRE_MAX_MS = 1300;
 
-// Phase 6 -- XP awarded to the mathville profile (players/{id}/badges/
-// mathville, same path every chapter uses) for defeating the boss.
+// Question interval also tightens per boss defeat (floor so it never
+// becomes unplayable) -- this is how the round gets "harder" over time
+// without ever making the math itself require pencil and paper (see
+// rollPlaneQuestion: the mathville portion is always pulled at "easy",
+// which every generator guarantees is mental-math-only).
+const PLANE_QUESTION_INTERVAL_MIN_MS = 8000;
+const PLANE_QUESTION_INTERVAL_STEP_MS = 1500;
+
+// XP awarded to the mathville profile (players/{id}/badges/mathville,
+// same path every chapter uses) each time a boss is defeated.
 const PLANE_WIN_XP = 20;
 
 let planeJoyVec = { x: 0, y: 0 };
@@ -1482,6 +1503,10 @@ function launchPlaneMode() {
     powerups: [],                // { id, x, y, type, el } -- falling pickups
     boss: null,                  // { x, y, el, hp, dir, nextFireAt } once spawned
     bossSpawned: false,
+    bossesDefeated: 0,
+    enemyDensityMult: PLANE_ENEMY_DENSITY_START,
+    bossScoreThreshold: PLANE_BOSS_SCORE_THRESHOLD,
+    questionIntervalMs: PLANE_QUESTION_INTERVAL_MS,
     score: 0,
     lives: PLANE_MAX_LIVES,
     invulnUntil: 0,
@@ -1503,6 +1528,7 @@ function launchPlaneMode() {
   $("plane-ship").classList.remove("hit");
   $("plane-ship").style.left = planeState.x + "%";
   $("plane-ship").style.top = planeState.y + "%";
+  $("plane-end-overlay").classList.remove("lost");
   $("plane-end-overlay").classList.add("hidden");
   $("plane-question-overlay").classList.add("hidden");
   $("plane-boss-hp").classList.add("hidden");
@@ -1510,6 +1536,8 @@ function launchPlaneMode() {
   $("plane-buff-shield").classList.add("hidden");
   updatePlaneScore();
   updatePlaneLives();
+  updatePlaneBestHud();
+  ensurePlaneQuestionPools();
 
   const rect = $("plane-world").getBoundingClientRect();
   if (rect.width === 0) {
@@ -1521,8 +1549,20 @@ function launchPlaneMode() {
   startPlaneLoop();
 }
 
+// High score persists across sessions via PROGRESS (same localStorage/
+// Firebase blob every mathville chapter uses -- see loadProgress()), so a
+// player can chase their own best across replays, not just within a round.
 function updatePlaneScore() {
   $("plane-score").textContent = "⭐ " + planeState.score;
+  if (planeState.score > (PROGRESS.planeHighScore || 0)) {
+    PROGRESS.planeHighScore = planeState.score;
+    saveProgressToStorage();
+    updatePlaneBestHud();
+  }
+}
+
+function updatePlaneBestHud() {
+  $("plane-best").textContent = "🏅 " + (PROGRESS.planeHighScore || 0);
 }
 
 function updatePlaneLives() {
@@ -1611,7 +1651,7 @@ function planeTakeHit() {
   shakePlaneWorld();
   if (planeState.lives <= 0) {
     spawnPlaneExplosion(planeState.x, planeState.y, true);
-    endPlaneMode(true);
+    endPlaneMode();
   }
 }
 
@@ -1665,25 +1705,54 @@ function updatePlaneBossHp() {
   $("plane-boss-hp-fill").style.width = (planeState.boss.hp / PLANE_BOSS_MAX_HP * 100) + "%";
 }
 
-// crashed=true -> ran out of lives. crashed=false -> boss defeated (the
-// only way to "win" a round), which awards real XP the same way every
-// mathville chapter does, plus the same confetti treatment Drive Mode
-// uses on its own win.
-function endPlaneMode(crashed) {
+// The round is endless -- running out of lives is the only way it ends.
+// Defeating a boss no longer stops the game (see handleBossDefeat); it's
+// a milestone along the way to a higher score, not a finish line.
+function endPlaneMode() {
   planeState.ended = true;
   planeState.paused = true;
   if (planeState.rafId) cancelAnimationFrame(planeState.rafId);
-  $("plane-end-emoji").textContent = crashed ? "💥" : "🏆";
-  $("plane-end-title").textContent = crashed ? "Game Over" : "Boss defeated!";
-  $("plane-end-sub").textContent = `Score: ${planeState.score}`;
-  $("plane-end-overlay").classList.toggle("lost", crashed);
+  $("plane-end-emoji").textContent = "💥";
+  $("plane-end-title").textContent = "Game Over";
+  $("plane-end-sub").textContent = `Score: ${planeState.score} · Best: ${PROGRESS.planeHighScore || 0}`;
+  $("plane-end-overlay").classList.add("lost");
   $("plane-end-overlay").classList.remove("hidden");
-  if (!crashed) {
-    saveChapterProgress("plane-mode", 3, PLANE_WIN_XP);
-    if (typeof confetti === "function") {
-      confetti({ particleCount: 100, spread: 100, origin: { y: 0.4 } });
-      setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.3 } }), 300);
-    }
+}
+
+// Toast used for the "Boss defeated!" milestone -- reuses Drive Mode's
+// .drive-toast positioning/animation but with its own (positive-feeling)
+// color, appended to #plane-world instead of #drive-world.
+function showPlaneToast(msg) {
+  const world = $("plane-world");
+  const toast = document.createElement("div");
+  toast.className = "drive-toast plane-toast-good";
+  toast.textContent = msg;
+  world.appendChild(toast);
+  setTimeout(() => toast.remove(), 1600);
+}
+
+// Boss defeated -- awards XP (same players/{id}/badges/mathville path as
+// every chapter), then ramps difficulty for the NEXT wave: enemy density
+// compounds another 20%, the question interval tightens a bit (floored),
+// and the next boss appears further out. Regular spawning resumes
+// immediately; the game keeps going until the player runs out of lives.
+function handleBossDefeat() {
+  spawnPlaneExplosion(planeState.boss.x, planeState.boss.y, true);
+  planeState.boss.el.remove();
+  planeState.boss = null;
+  planeState.bossSpawned = false;
+  planeState.bossesDefeated += 1;
+  planeState.enemyDensityMult *= PLANE_ENEMY_DENSITY_BOSS_MULT;
+  planeState.bossScoreThreshold += PLANE_BOSS_THRESHOLD_STEP;
+  planeState.questionIntervalMs = Math.max(
+    PLANE_QUESTION_INTERVAL_MIN_MS,
+    PLANE_QUESTION_INTERVAL_MS - planeState.bossesDefeated * PLANE_QUESTION_INTERVAL_STEP_MS
+  );
+  $("plane-boss-hp").classList.add("hidden");
+  saveChapterProgress("plane-mode", 3, PLANE_WIN_XP);
+  showPlaneToast("Boss defeated! Onward 🚀");
+  if (typeof confetti === "function") {
+    confetti({ particleCount: 80, spread: 90, origin: { y: 0.3 } });
   }
 }
 
@@ -1692,10 +1761,66 @@ function endPlaneMode(crashed) {
 // right, not just a interruption. Reuses Drive Mode's own quick-MC
 // generator (rollDriveQuestion/buildQuickMc) so question quality/variety
 // matches the rest of the app instead of a separate bank.
+// Mixed-subject question pools -- fetched once (lazily, fire-and-forget)
+// from the other two games' own question banks, which live at sibling
+// paths under the same hub origin. Only their plain "mc" (multiple-choice)
+// questions are usable here; anything else (fill/match/flashcard/passage/
+// line, or an mc with an image the compact plane overlay has no room for)
+// is skipped. If the fetch hasn't finished (or failed) by the time a
+// question is needed, rollPlaneQuestion() falls back to mathville mental
+// math, so a slow network never blocks the game.
+let planeSolarPool = null;
+let planeLanguagePool = null;
+async function ensurePlaneQuestionPools() {
+  if (planeSolarPool && planeLanguagePool) return;
+  try {
+    const [solar, lang] = await Promise.all([
+      fetch("../azkauniverse/questions.json").then(r => r.json()),
+      fetch("../azkacraft/questions.json").then(r => r.json())
+    ]);
+    const solarPool = [];
+    (solar.levels || []).forEach(lvl => (lvl.questions || []).forEach(q => {
+      if (q.type === "mc" && !q.image) {
+        solarPool.push({ prompt: q.question, options: q.options, correctLabel: q.options[q.answer] });
+      }
+    }));
+    const langPool = [];
+    (lang.chapters || []).forEach(ch => (ch.questions || []).forEach(q => {
+      if (q.type === "mc") {
+        langPool.push({ prompt: q.prompt, options: q.options, correctLabel: q.answer });
+      }
+    }));
+    planeSolarPool = solarPool;
+    planeLanguagePool = langPool;
+  } catch (e) {
+    // Offline or the other game's file changed shape -- fall back to
+    // mathville-only questions rather than breaking the round.
+    planeSolarPool = planeSolarPool || [];
+    planeLanguagePool = planeLanguagePool || [];
+  }
+}
+
+function pickFromPlanePool(pool) {
+  if (!pool || !pool.length) return null;
+  const q = pool[rand(0, pool.length - 1)];
+  return { prompt: q.prompt, options: shuffle([...q.options]), correctLabel: q.correctLabel };
+}
+
+// 50% mathville (always "easy" difficulty -- every generator guarantees
+// that tier is mental-math-only, no pencil-and-paper column arithmetic,
+// since a fast-paced shmup is the wrong place to ask for one) / 25%
+// SolarQuest science trivia / 25% Language & Arts. Falls back to
+// mathville mental math if a pool isn't ready yet.
+function rollPlaneQuestion() {
+  const r = Math.random();
+  if (r < 0.5) return buildQuickMc(rollDriveQuestion("easy"));
+  const pool = r < 0.75 ? planeSolarPool : planeLanguagePool;
+  return pickFromPlanePool(pool) || buildQuickMc(rollDriveQuestion("easy"));
+}
+
 function showPlaneQuestion() {
   planeState.paused = true;
-  const raw = rollDriveQuestion(driveDifficulty);
-  const step = buildQuickMc(raw);
+  const step = rollPlaneQuestion();
 
   $("plane-question-prompt").textContent = step.prompt;
   const grid = $("plane-question-options");
@@ -1741,7 +1866,7 @@ function startPlaneLoop() {
     if (!planeState.paused) {
       // Wave difficulty -- ramps with elapsed flight time, each side capped.
       const level = Math.floor((now - planeState.startTime) / PLANE_DIFFICULTY_RAMP_MS);
-      const effSpawnInterval = Math.max(PLANE_MIN_SPAWN_INTERVAL_MS, PLANE_ENEMY_SPAWN_INTERVAL_MS - level * PLANE_SPAWN_INTERVAL_STEP_MS);
+      const effSpawnInterval = Math.max(PLANE_MIN_SPAWN_INTERVAL_MS, (PLANE_ENEMY_SPAWN_INTERVAL_MS - level * PLANE_SPAWN_INTERVAL_STEP_MS) / planeState.enemyDensityMult);
       const effEnemySpeed = Math.min(PLANE_MAX_ENEMY_SPEED, PLANE_ENEMY_SPEED + level * PLANE_ENEMY_SPEED_STEP);
 
       // Ship movement, clamped inside the world (with a small margin).
@@ -1764,7 +1889,7 @@ function startPlaneLoop() {
         lastSpawnAt = now;
         spawnPlaneEnemy();
       }
-      if (!planeState.bossSpawned && !planeState.boss && planeState.score >= PLANE_BOSS_SCORE_THRESHOLD) {
+      if (!planeState.bossSpawned && !planeState.boss && planeState.score >= planeState.bossScoreThreshold) {
         spawnPlaneBoss();
       }
 
@@ -1774,7 +1899,7 @@ function startPlaneLoop() {
       // still fall through to the rAF reschedule at the bottom of frame()
       // -- returning early here would stop the loop for good, since
       // nothing else re-arms it once paused.
-      if (now - planeState.lastQuestionAt > PLANE_QUESTION_INTERVAL_MS) {
+      if (now - planeState.lastQuestionAt > planeState.questionIntervalMs) {
         showPlaneQuestion();
       }
 
@@ -1856,7 +1981,7 @@ function startPlaneLoop() {
       }
 
       // Player bullet vs boss -- chips its HP down instead of a 1-hit kill;
-      // reaching 0 wins the round.
+      // reaching 0 defeats it (doesn't end the round -- see handleBossDefeat).
       if (planeState.boss) {
         for (const bullet of planeState.bullets.slice()) {
           if (planePxDist(planeState.boss.x, planeState.boss.y, bullet.x, bullet.y) < PLANE_HIT_RADIUS_PX * 1.4) {
@@ -1866,11 +1991,8 @@ function startPlaneLoop() {
             planeState.boss.hp -= 1;
             updatePlaneBossHp();
             if (planeState.boss.hp <= 0) {
-              spawnPlaneExplosion(planeState.boss.x, planeState.boss.y, true);
-              planeState.boss.el.remove();
-              planeState.boss = null;
-              endPlaneMode(false);
-              return;
+              handleBossDefeat();
+              break;
             }
             break;
           }

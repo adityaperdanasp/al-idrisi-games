@@ -795,4 +795,8 @@ button { font-family: inherit; }
 
 #plane-end-overlay.lost .drive-end-title { color: var(--bad); }
 
+/* Positive-feeling variant of .drive-toast, used for the "Boss defeated!"
+   milestone rather than Drive Mode's warning-red default. */
+.plane-toast-good { background: var(--wood); }
+
 .mp-result-row.me { border: 2px solid var(--wood); }
