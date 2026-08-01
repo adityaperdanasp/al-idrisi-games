@@ -29,7 +29,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=33" />
+<link rel="stylesheet" href="style.css?v=34" />
 </head>
 <body>
 
@@ -48,7 +48,7 @@
        hidden by a non-active screen's display:none (see CLAUDE.md gotcha
        about overlays nested inside .screen sections). -->
   <div id="drive-vehicle-overlay" class="drive-question-overlay hidden">
-    <div class="drive-question-card drive-difficulty-card">
+    <div class="drive-question-card drive-difficulty-card" id="vehicle-step-category">
       <div class="drive-difficulty-title">Pick a vehicle</div>
       <button class="drive-difficulty-btn" data-vehicle="car">
         <span class="drive-difficulty-emoji">🚗</span>
@@ -60,6 +60,14 @@
         <span class="drive-difficulty-name">Pesawat</span>
         <span class="drive-difficulty-desc">Sky mission, dodge & shoot</span>
       </button>
+    </div>
+    <!-- Step 2: pick one of 5 skins for the chosen category. Populated by
+         renderVehicleSkinGrid() -- 10 skins total (5 car + 5 plane) is
+         easier to generate from VEHICLE_SKINS than hand-write twice. -->
+    <div class="drive-question-card drive-difficulty-card hidden" id="vehicle-step-skin">
+      <button class="vehicle-skin-back" id="vehicle-skin-back" aria-label="Back">← Back</button>
+      <div class="drive-difficulty-title" id="vehicle-skin-title">Pick a design</div>
+      <div class="vehicle-skin-grid" id="vehicle-skin-grid"></div>
     </div>
   </div>
 
@@ -155,14 +163,16 @@
       <!-- MOCKUP ONLY — Bo riding along in the windshield, tap opens the
            same placeholder chat concept as the hub landing page. -->
       <div id="drive-car" class="drive-car">
-        <svg viewBox="0 0 26 40" width="23" height="36">
-          <rect x="3" y="1" width="20" height="38" rx="8" fill="#E4572E" stroke="#C6431F" stroke-width="1.5" />
-          <rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" />
-          <rect x="0" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" />
-          <rect x="22" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" />
-          <rect x="0" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
-          <rect x="22" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
-        </svg>
+        <div class="drive-car-sprite" id="drive-car-sprite">
+          <svg viewBox="0 0 26 40" width="23" height="36">
+            <rect x="3" y="1" width="20" height="38" rx="8" fill="#E4572E" stroke="#C6431F" stroke-width="1.5" />
+            <rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" />
+            <rect x="0" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" />
+            <rect x="22" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" />
+            <rect x="0" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
+            <rect x="22" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" />
+          </svg>
+        </div>
         <img class="drive-bo-face" src="../icon-192.png" alt="Bo">
         <span class="drive-bo-hint" id="drive-bo-hint">Bo here!</span>
       </div>
@@ -445,6 +455,6 @@
 <script src="questions.js?v=2"></script>
 <script src="generators.js?v=2"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=45"></script>
+<script src="script.js?v=46"></script>
 </body>
 </html>

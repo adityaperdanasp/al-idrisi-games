@@ -1363,20 +1363,108 @@ function playDriveDifficultyPicker(onPicked) {
   buttons.forEach(b => b.addEventListener("click", handler));
 }
 
+// 5 skins each for car and plane -- purely cosmetic (identical speed/
+// collision/controls within a category), just a different silhouette,
+// color scheme, and signature glow color. The glow is applied via the
+// shared .vehicle-glow class + --vehicle-glow CSS custom property, so
+// adding a 6th skin later needs nothing beyond a new entry here.
+const VEHICLE_SKINS = {
+  car: [
+    { id: "blaze", name: "Blaze", glow: "#E4572E", svg: '<svg viewBox="0 0 26 40" width="23" height="36"><rect x="3" y="1" width="20" height="38" rx="8" fill="#E4572E" stroke="#C6431F" stroke-width="1.5" /><rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" /><rect x="0" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" /><rect x="22" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" /><rect x="0" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" /><rect x="22" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" /></svg>' },
+    { id: "comet", name: "Comet", glow: "#4A90D9", svg: '<svg viewBox="0 0 26 40" width="23" height="36"><rect x="3" y="1" width="20" height="38" rx="8" fill="#2E6BA3" stroke="#1E4E7A" stroke-width="1.5" /><rect x="11" y="1" width="4" height="38" fill="#EAF6FF" opacity="0.85" /><rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" /><rect x="0" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="0" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /></svg>' },
+    { id: "turbo", name: "Turbo", glow: "#3FA84A", svg: '<svg viewBox="0 0 26 44" width="23" height="38"><rect x="3" y="5" width="20" height="38" rx="8" fill="#3FA84A" stroke="#2A7A32" stroke-width="1.5" /><rect x="2" y="0" width="22" height="5" rx="2" fill="#2A7A32" /><rect x="6" y="11" width="14" height="10" rx="2.5" fill="#BFE3F0" /><rect x="0" y="13" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="13" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="0" y="27" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="27" width="4" height="8" rx="1.5" fill="#1A1A1A" /></svg>' },
+    { id: "sunburst", name: "Sunburst", glow: "#F7C548", svg: '<svg viewBox="0 0 26 40" width="23" height="36"><rect x="3" y="1" width="20" height="38" rx="8" fill="#F7C548" stroke="#C99A2E" stroke-width="1.5" /><rect x="3" y="17" width="20" height="6" fill="#1A1A1A" /><rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" /><rect x="0" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="0" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /></svg>' },
+    { id: "nova", name: "Nova", glow: "#9B59D0", svg: '<svg viewBox="0 0 26 40" width="23" height="36"><rect x="3" y="1" width="20" height="38" rx="8" fill="#7A4FC7" stroke="#5B3894" stroke-width="1.5" /><rect x="6" y="7" width="14" height="10" rx="2.5" fill="#2A2044" opacity="0.5" /><path d="M14 6 L9 18 L13 18 L10 30 L18 15 L14 15 Z" fill="#F7E14A" /><rect x="0" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="0" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /></svg>' }
+  ],
+  plane: [
+    { id: "falcon", name: "Falcon", glow: "#4A90D9", svg: '<svg viewBox="0 0 30 34" width="27" height="30"><path d="M15 1 L20 20 L15 17 L10 20 Z" fill="#4A90D9" stroke="#2E6BA3" stroke-width="1.5" stroke-linejoin="round" /><path d="M15 17 L15 33" stroke="#2E6BA3" stroke-width="2" stroke-linecap="round" /><path d="M4 22 L15 17 L15 24 Z" fill="#6EA8E0" stroke="#2E6BA3" stroke-width="1.2" /><path d="M26 22 L15 17 L15 24 Z" fill="#6EA8E0" stroke="#2E6BA3" stroke-width="1.2" /><circle cx="15" cy="12" r="3" fill="#BFE3F0" /></svg>' },
+    { id: "inferno", name: "Inferno", glow: "#E4572E", svg: '<svg viewBox="0 0 30 34" width="27" height="30"><path d="M15 1 L19 20 L15 17 L11 20 Z" fill="#E4572E" stroke="#B8391A" stroke-width="1.5" stroke-linejoin="round" /><path d="M15 17 L15 30" stroke="#B8391A" stroke-width="2" stroke-linecap="round" /><path d="M2 26 L15 17 L15 23 Z" fill="#FF9466" stroke="#B8391A" stroke-width="1.2" /><path d="M28 26 L15 17 L15 23 Z" fill="#FF9466" stroke="#B8391A" stroke-width="1.2" /><circle cx="15" cy="12" r="3" fill="#FFE1C1" /><ellipse cx="15" cy="32" rx="2.5" ry="2" fill="#FFD93D" opacity="0.9" /></svg>' },
+    { id: "viper", name: "Viper", glow: "#3FA84A", svg: '<svg viewBox="0 0 30 34" width="27" height="30"><path d="M15 1 L18 22 L15 18 L12 22 Z" fill="#2A2A2A" stroke="#1A1A1A" stroke-width="1.5" stroke-linejoin="round" /><path d="M15 18 L15 32" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round" /><path d="M3 24 L15 18 L15 22 Z" fill="#3FA84A" stroke="#1A1A1A" stroke-width="1.2" /><path d="M27 24 L15 18 L15 22 Z" fill="#3FA84A" stroke="#1A1A1A" stroke-width="1.2" /><circle cx="15" cy="12" r="3" fill="#E4572E" /></svg>' },
+    { id: "solstice", name: "Solstice", glow: "#F7C548", svg: '<svg viewBox="0 0 30 34" width="27" height="30"><path d="M15 1 L21 19 L15 16 L9 19 Z" fill="#F7C548" stroke="#C99A2E" stroke-width="1.5" stroke-linejoin="round" /><path d="M15 16 L15 33" stroke="#C99A2E" stroke-width="2" stroke-linecap="round" /><path d="M2 21 L15 16 L15 25 Z" fill="#FFE08A" stroke="#C99A2E" stroke-width="1.2" /><path d="M28 21 L15 16 L15 25 Z" fill="#FFE08A" stroke="#C99A2E" stroke-width="1.2" /><circle cx="15" cy="11" r="3" fill="#FFF6D9" /></svg>' },
+    { id: "ghost", name: "Ghost", glow: "#9DB3D6", svg: '<svg viewBox="0 0 30 34" width="27" height="30"><path d="M15 0 L18 21 L15 17 L12 21 Z" fill="#E9EEF6" stroke="#9DB3D6" stroke-width="1.5" stroke-linejoin="round" /><path d="M15 17 L15 33" stroke="#9DB3D6" stroke-width="2" stroke-linecap="round" /><path d="M5 23 L15 17 L15 23 Z" fill="#F5F8FC" stroke="#9DB3D6" stroke-width="1.2" /><path d="M25 23 L15 17 L15 23 Z" fill="#F5F8FC" stroke="#9DB3D6" stroke-width="1.2" /><circle cx="15" cy="11" r="3" fill="#C1D4F6" /></svg>' }
+  ]
+};
+
+function getVehicleSkinId(category) {
+  return localStorage.getItem("mathville.vehicleSkin." + category) || VEHICLE_SKINS[category][0].id;
+}
+function setVehicleSkinId(category, id) {
+  localStorage.setItem("mathville.vehicleSkin." + category, id);
+}
+function getVehicleSkin(category) {
+  const id = getVehicleSkinId(category);
+  return VEHICLE_SKINS[category].find(s => s.id === id) || VEHICLE_SKINS[category][0];
+}
+
+// Injects the chosen skin's SVG into the car/plane sprite element and
+// applies its signature glow color via a CSS custom property (read by the
+// shared .vehicle-glow animation). #drive-car-sprite is a dedicated wrapper
+// specifically so this can replace ONLY the vehicle art without touching
+// the Bo-face/hint overlay siblings; #plane-ship has no such siblings so
+// it's swapped directly.
+function applyVehicleSkin(category) {
+  const skin = getVehicleSkin(category);
+  if (category === "car") {
+    const sprite = $("drive-car-sprite");
+    sprite.innerHTML = skin.svg;
+    sprite.style.setProperty("--vehicle-glow", skin.glow);
+    sprite.classList.add("vehicle-glow");
+  } else {
+    const ship = $("plane-ship");
+    ship.innerHTML = skin.svg;
+    ship.style.setProperty("--vehicle-glow", skin.glow);
+    ship.classList.add("vehicle-glow");
+  }
+}
+
+function renderVehicleSkinGrid(category, onPicked) {
+  $("vehicle-skin-title").textContent = category === "car" ? "Pick your car" : "Pick your plane";
+  const grid = $("vehicle-skin-grid");
+  grid.innerHTML = "";
+  const currentId = getVehicleSkinId(category);
+  VEHICLE_SKINS[category].forEach(skin => {
+    const card = document.createElement("button");
+    card.className = "vehicle-skin-card" + (skin.id === currentId ? " active" : "");
+    card.style.setProperty("--vehicle-glow", skin.glow);
+    card.innerHTML = `<span class="vehicle-skin-thumb vehicle-glow">${skin.svg}</span><span class="vehicle-skin-name">${skin.name}</span>`;
+    card.addEventListener("click", () => {
+      setVehicleSkinId(category, skin.id);
+      onPicked();
+    });
+    grid.appendChild(card);
+  });
+}
+
 // Vehicle picker overlay lives OUTSIDE every .screen (direct child of
 // #app), so unlike the difficulty/plane-end overlays it's safe to show
-// before we've even decided which screen to switch to.
+// before we've even decided which screen to switch to. Two steps: first
+// category (car vs plane), then one of its 5 skins.
 function playVehiclePicker(onPicked) {
   const overlay = $("drive-vehicle-overlay");
+  const stepCategory = $("vehicle-step-category");
+  const stepSkin = $("vehicle-step-skin");
   overlay.classList.remove("hidden");
-  const buttons = document.querySelectorAll("#drive-vehicle-overlay .drive-difficulty-btn");
-  function handler(e) {
+  stepCategory.classList.remove("hidden");
+  stepSkin.classList.add("hidden");
+
+  const categoryButtons = document.querySelectorAll("#vehicle-step-category .drive-difficulty-btn");
+  function categoryHandler(e) {
     const vehicle = e.currentTarget.dataset.vehicle;
-    overlay.classList.add("hidden");
-    buttons.forEach(b => b.removeEventListener("click", handler));
-    onPicked(vehicle);
+    stepCategory.classList.add("hidden");
+    stepSkin.classList.remove("hidden");
+    renderVehicleSkinGrid(vehicle, () => {
+      categoryButtons.forEach(b => b.removeEventListener("click", categoryHandler));
+      $("vehicle-skin-back").removeEventListener("click", backHandler);
+      overlay.classList.add("hidden");
+      onPicked(vehicle);
+    });
   }
-  buttons.forEach(b => b.addEventListener("click", handler));
+  function backHandler() {
+    stepSkin.classList.add("hidden");
+    stepCategory.classList.remove("hidden");
+  }
+  categoryButtons.forEach(b => b.addEventListener("click", categoryHandler));
+  $("vehicle-skin-back").addEventListener("click", backHandler);
 }
 
 function launchDriveMode() {
@@ -1391,6 +1479,7 @@ function launchDriveMode() {
     // deep link. goToDrive() (called after a difficulty is picked) also
     // sets this same screen active, so this is a harmless no-op there.
     if (window.AIGBgm && AIGBgm.playDefaultTrack) AIGBgm.playDefaultTrack();
+    applyVehicleSkin("car");
     showScreen("screen-drive");
     playDriveDifficultyPicker(() => {
       goToDrive(false);
@@ -1453,10 +1542,13 @@ const PLANE_MAX_ENEMY_SPEED = 0.55;
 const PLANE_ENEMY_SPEED_STEP = 0.03;
 
 // Enemy density -- a multiplier applied to the spawn interval (higher
-// density = shorter interval = more enemies on screen). Starts 10% above
-// baseline, and compounds another 20% every time a boss is defeated, so
-// each new wave after a boss is noticeably busier than the last.
-const PLANE_ENEMY_DENSITY_START = 1.10;
+// density = shorter interval = more enemies on screen). Originally started
+// 10% above baseline; per feedback the whole thing felt too hard (aimed
+// fire + this many enemies), so it's pulled back 10% (1.10*0.9 = 0.99,
+// i.e. now roughly baseline) before compounding 20% per boss defeat as
+// before -- each new wave after a boss is still noticeably busier than
+// the last, just starting from a fairer point.
+const PLANE_ENEMY_DENSITY_START = 1.10 * 0.9;
 const PLANE_ENEMY_DENSITY_BOSS_MULT = 1.20;
 
 // Phase 5 -- power-ups. Regular (non-boss) kills have a flat chance to drop
@@ -1522,6 +1614,7 @@ let planeState = null;
 
 function launchPlaneMode() {
   if (window.AIGBgm && AIGBgm.playPlaneTrack) AIGBgm.playPlaneTrack();
+  applyVehicleSkin("plane");
   showScreen("screen-plane");
   planeState = {
     x: 50, y: 82,              // ship position, % of plane-world
@@ -1630,7 +1723,13 @@ function spawnPlaneEnemy() {
 // straight down) -- see the PLANE_ENEMY_TYPES comment above for why. Used
 // for both regular enemies and the boss (whatever object with .x/.y it's
 // given), so boss shots are aimed too.
-function spawnPlaneEnemyBullet(enemy) {
+// spreadDeg adds random aim error so it's not a laser-precise homing shot
+// every time (per feedback: regular enemies felt like they never missed
+// once bullets started aiming at the ship at all -- see PLANE_ENEMY_TYPES'
+// comment for why they're aimed in the first place). Regular enemies are
+// worse shots than the boss, which still isn't perfect either.
+function spawnPlaneEnemyBullet(enemy, spreadDeg) {
+  if (spreadDeg === undefined) spreadDeg = 24;
   const id = "eb" + (planeState.nextEnemyBulletId++);
   const el = document.createElement("div");
   const bulletClass = enemy.type && enemy.type.bulletClass ? " " + enemy.type.bulletClass : "";
@@ -1638,9 +1737,9 @@ function spawnPlaneEnemyBullet(enemy) {
   $("plane-world").appendChild(el);
   const fromX = enemy.x, fromY = enemy.y + 3;
   const dx = planeState.x - fromX, dy = planeState.y - fromY;
-  const dist = Math.hypot(dx, dy) || 1;
-  const vx = (dx / dist) * PLANE_ENEMY_BULLET_SPEED;
-  const vy = (dy / dist) * PLANE_ENEMY_BULLET_SPEED;
+  let angle = Math.atan2(dy, dx) + (Math.random() * 2 - 1) * (spreadDeg * Math.PI / 180);
+  const vx = Math.cos(angle) * PLANE_ENEMY_BULLET_SPEED;
+  const vy = Math.sin(angle) * PLANE_ENEMY_BULLET_SPEED;
   planeState.enemyBullets.push({ id, x: fromX, y: fromY, vx, vy, el });
 }
 
@@ -1979,7 +2078,7 @@ function startPlaneLoop() {
         boss.el.style.left = boss.x + "%";
         boss.el.style.top = boss.y + "%";
         if (now > boss.nextFireAt) {
-          spawnPlaneEnemyBullet(boss);
+          spawnPlaneEnemyBullet(boss, 12); // still a boss, so a better shot than regular enemies
           boss.nextFireAt = now + rand(PLANE_BOSS_FIRE_MIN_MS, PLANE_BOSS_FIRE_MAX_MS) * boss.type.fireMult;
         }
       }

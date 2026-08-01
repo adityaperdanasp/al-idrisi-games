@@ -501,6 +501,39 @@ button { font-family: inherit; }
 .drive-end-sub { font-size: 14px; color: var(--ink-soft); margin-bottom: 18px; }
 #drive-end-overlay.lost .drive-end-title { color: var(--bad); }
 
+/* Vehicle skin picker (step 2 of the vehicle overlay) -- 5-card grid per
+   category, each previewing the real sprite with the same glow animation
+   it'll have in-game. */
+.vehicle-skin-back {
+  display: block; border: none; background: none; cursor: pointer;
+  font: 700 13px "Fredoka", sans-serif; color: var(--ink-soft); margin-bottom: 8px; padding: 0;
+}
+.vehicle-skin-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+}
+.vehicle-skin-card {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  border: 2px solid transparent; background: var(--cream); border-radius: 14px;
+  padding: 10px 6px; cursor: pointer; box-shadow: 0 3px 0 rgba(59,42,26,.1);
+  transition: transform .12s ease;
+}
+.vehicle-skin-card:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(59,42,26,.1); }
+.vehicle-skin-card.active { border-color: var(--vehicle-glow, var(--wood)); }
+.vehicle-skin-thumb { display: flex; align-items: center; justify-content: center; height: 40px; }
+.vehicle-skin-thumb svg { width: auto; height: 36px; }
+.vehicle-skin-name { font: 700 11px "Fredoka", sans-serif; color: var(--ink); }
+
+/* Signature glow, shared by both the picker thumbnails and the actual
+   in-game sprite -- --vehicle-glow is set per-skin in JS (applyVehicleSkin/
+   renderVehicleSkinGrid), so this one animation covers every skin. */
+.vehicle-glow svg {
+  animation: vehicleGlowPulse 1.8s ease-in-out infinite;
+}
+@keyframes vehicleGlowPulse {
+  0%, 100% { filter: drop-shadow(0 0 2px var(--vehicle-glow, transparent)); }
+  50% { filter: drop-shadow(0 0 8px var(--vehicle-glow, transparent)); }
+}
+
 /* ---------- Chapter Intro ---------- */
 .intro-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
 .intro-icon {
