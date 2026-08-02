@@ -691,8 +691,15 @@ button { font-family: inherit; }
 .ai-hint-card {
   background: linear-gradient(135deg, #fff 0%, var(--cream) 100%);
   border-radius: 16px; padding: 16px; margin: 12px 0; box-shadow: 0 1px 4px rgba(59,42,26,.08);
+  cursor: pointer;
 }
+.ai-hint-card.chat-open { cursor: default; }
 .ai-hint-badge { font: 700 12px "Fredoka", sans-serif; color: var(--cherry); margin-bottom: 8px; }
+.ai-hint-tap-cue {
+  font: 700 11px "Fredoka", sans-serif; color: var(--wood); opacity: .7;
+  margin-top: 6px;
+}
+.ai-hint-card.chat-open .ai-hint-tap-cue { display: none; }
 .ai-hint-loading { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); }
 .ai-hint-dots { display: inline-flex; gap: 3px; }
 .ai-hint-dots span {

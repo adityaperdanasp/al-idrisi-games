@@ -29,7 +29,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=35" />
+<link rel="stylesheet" href="style.css?v=36" />
 </head>
 <body>
 
@@ -439,13 +439,14 @@
     <div class="reward-stars" id="reward-stars"></div>
     <div class="reward-xp" id="reward-xp"></div>
 
-    <div id="ai-hint-card" class="ai-hint-card hidden">
+    <div id="ai-hint-card" class="ai-hint-card hidden" role="button" tabindex="0">
       <div class="ai-hint-badge">✨ Bo</div>
       <div id="ai-hint-thread" class="ai-hint-thread"></div>
       <div id="ai-hint-loading" class="ai-hint-loading hidden">
         <span class="ai-hint-dots"><span></span><span></span><span></span></span>
         Bo is thinking...
       </div>
+      <div id="ai-hint-tap-cue" class="ai-hint-tap-cue">Tap to chat with Bo →</div>
       <div id="ai-hint-followups" class="ai-hint-followups hidden">
         <button type="button" class="ai-hint-chip" data-ask="Can you give another example?">Another example</button>
         <button type="button" class="ai-hint-chip" data-ask="Can you explain it a different way?">Explain differently</button>
@@ -467,6 +468,6 @@
 <script src="questions.js?v=2"></script>
 <script src="generators.js?v=2"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=49"></script>
+<script src="script.js?v=50"></script>
 </body>
 </html>

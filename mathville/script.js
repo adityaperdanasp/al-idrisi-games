@@ -2910,6 +2910,22 @@ function showWaitingForOthers() {
 let aiHintHistory = [];
 let aiHintMissed = null;
 
+// Rotating congrats openers for a mistake-free round -- mirrors the
+// BO_CHAT_PROMPTS rotation pattern used by Bo's other chat entry points,
+// no AI call needed since there's nothing to explain.
+const BO_CONGRATS_MESSAGES = [
+  "Wow, a perfect round! You crushed every question.",
+  "Amazing work! Not a single mistake in there.",
+  "You nailed it! Want to chat about anything else?",
+  "Three stars, zero misses -- awesome job!",
+  "That was flawless! I'm impressed.",
+  "Perfect score! You really know this stuff."
+];
+
+// Bo is now always shown on the reward screen (explains a miss if there
+// was one, congratulates on a perfect round otherwise), collapsed to a
+// single message until tapped -- setupAiHintCardOpen() below expands it
+// into the full chat (follow-up chips + free text input) on click.
 async function loadAiHint() {
   const card = $("ai-hint-card"), loading = $("ai-hint-loading"), thread = $("ai-hint-thread");
   const followups = $("ai-hint-followups"), form = $("ai-hint-form");
@@ -2918,9 +2934,14 @@ async function loadAiHint() {
   thread.innerHTML = "";
   followups.classList.add("hidden");
   form.classList.add("hidden");
-  if (!aiHintMissed) { card.classList.add("hidden"); return; }
-
   card.classList.remove("hidden");
+  card.classList.remove("chat-open");
+
+  if (!aiHintMissed) {
+    appendAiHintMessage(BO_CONGRATS_MESSAGES[Math.floor(Math.random() * BO_CONGRATS_MESSAGES.length)], "ai");
+    return;
+  }
+
   loading.classList.remove("hidden");
 
   // Best-effort personalization -- if this fails or there's no history
@@ -2942,13 +2963,38 @@ async function loadAiHint() {
     });
     appendAiHintMessage(data.hint, "ai");
     aiHintHistory.push({ role: "assistant", content: data.hint });
-    loading.classList.add("hidden");
-    followups.classList.remove("hidden");
-    form.classList.remove("hidden");
   } catch (e) {
-    card.classList.add("hidden"); // fails silently — never blocks the reward screen
+    // Still never blocks the reward screen -- Bo just gives a generic
+    // friendly line instead of the personalized miss explanation.
+    appendAiHintMessage("Nice try on that one! Tap me if you want to chat about it.", "ai");
+  } finally {
+    loading.classList.add("hidden");
   }
 }
+
+// Wired once (not per showReward() call) so the collapsed-message ->
+// full-chat expansion listener never stacks duplicates across rounds.
+(function setupAiHintCardOpen() {
+  const card = $("ai-hint-card");
+  if (!card) return;
+  function openChat() {
+    if (card.classList.contains("chat-open")) return;
+    card.classList.add("chat-open");
+    // The quick-reply chips ("Another example" etc) only make sense when
+    // Bo was explaining a missed question -- on a perfect round there's
+    // nothing for them to refer to, so just the free-text input shows.
+    if (aiHintMissed) $("ai-hint-followups").classList.remove("hidden");
+    $("ai-hint-form").classList.remove("hidden");
+    setTimeout(() => $("ai-hint-input").focus(), 50);
+  }
+  card.addEventListener("click", openChat);
+  // Only react when the card itself is focused, not a descendant input/
+  // button -- otherwise Space would get eaten while typing in the chat.
+  card.addEventListener("keydown", e => {
+    if (e.target !== card) return;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openChat(); }
+  });
+})();
 
 function appendAiHintMessage(text, from) {
   const thread = $("ai-hint-thread");
