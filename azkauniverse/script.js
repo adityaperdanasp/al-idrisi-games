@@ -1814,32 +1814,61 @@ $("btn-mp-again").addEventListener("click", () => {
 })();
 
 /* =================================================================
-   AI TUTOR — real hint, generated from the last question missed this
-   round (state.lastWrong, set in renderMC/renderFill/renderMatch's wrong
-   branches). No wrong answers this round → card stays hidden. Any API
-   failure also just hides it — never blocks the reward screen.
+   AI TUTOR ("Bo") — always shown on the reward screen: explains the last
+   missed question (state.lastWrong, set in renderMC/renderFill/
+   renderMatch's wrong branches) or congratulates on a mistake-free
+   round. Collapsed to one message until tapped, which reveals follow-up
+   chips + a free-text input for a real back-and-forth (api/generate-
+   hint.js's history/followUp params) -- same interactive pattern as
+   MathVille's reward-screen AI Tutor card. Any API failure just shows a
+   generic friendly line instead of the personalized one -- never blocks
+   the reward screen.
    ================================================================= */
+const BO_HINT_CONGRATS_MESSAGES = [
+  "Wow, a perfect round! You crushed every question.",
+  "Amazing work! Not a single mistake in there.",
+  "You nailed it! Want to chat about anything else?",
+  "Perfect score -- awesome job!",
+  "That was flawless! I'm impressed.",
+  "Perfect score! You really know this stuff."
+];
+let aiHintHistory = [];
+let aiHintMissed = null;
+
 (function () {
   const screenReward = document.getElementById("screen-reward");
   const card = document.getElementById("ai-hint-card");
-  const loadingEl = document.getElementById("ai-hint-loading");
-  const resultEl = document.getElementById("ai-hint-result");
-  if (!screenReward || !card || !loadingEl || !resultEl) return;
+  const loading = document.getElementById("ai-hint-loading");
+  const thread = document.getElementById("ai-hint-thread");
+  const followups = document.getElementById("ai-hint-followups");
+  const form = document.getElementById("ai-hint-form");
+  if (!screenReward || !card || !loading || !thread) return;
 
   let lastRequestedFor = null;
 
   async function loadHint() {
+    const perfect = !!(state.questions && state.correctCount === state.questions.length);
     const missed = state.lastWrong;
-    if (!missed) { card.classList.add("hidden"); return; }
+    if (!missed && !perfect) { card.classList.add("hidden"); return; }
 
-    const requestKey = JSON.stringify(missed);
+    const requestKey = JSON.stringify(missed) + perfect;
     if (requestKey === lastRequestedFor) return;
     lastRequestedFor = requestKey;
 
+    aiHintMissed = missed;
+    aiHintHistory = [];
+    thread.innerHTML = "";
+    followups.classList.add("hidden");
+    form.classList.add("hidden");
     card.classList.remove("hidden");
-    loadingEl.classList.remove("hidden");
-    resultEl.classList.add("hidden");
+    card.classList.remove("chat-open");
 
+    if (!missed) {
+      appendAiHintMessage(BO_HINT_CONGRATS_MESSAGES[Math.floor(Math.random() * BO_HINT_CONGRATS_MESSAGES.length)], "ai");
+      return;
+    }
+
+    loading.classList.remove("hidden");
     try {
       const res = await fetch(API_BASE + "/api/generate-hint", {
         method: "POST",
@@ -1855,19 +1884,124 @@ $("btn-mp-again").addEventListener("click", () => {
       });
       const data = await res.json();
       if (!res.ok || !data.hint) throw new Error(data.error || "no hint");
-
-      resultEl.textContent = data.hint;
-      loadingEl.classList.add("hidden");
-      resultEl.style.animation = "none";
-      resultEl.classList.remove("hidden");
-      void resultEl.offsetWidth;
-      resultEl.style.animation = "";
+      appendAiHintMessage(data.hint, "ai");
+      aiHintHistory.push({ role: "assistant", content: data.hint });
     } catch (e) {
-      card.classList.add("hidden");
+      appendAiHintMessage("Nice try on that one! Tap me if you want to chat about it.", "ai");
+    } finally {
+      loading.classList.add("hidden");
     }
   }
 
   new MutationObserver(() => {
     if (screenReward.classList.contains("active")) loadHint();
   }).observe(screenReward, { attributes: true, attributeFilter: ["class"] });
+})();
+
+function appendAiHintMessage(text, from) {
+  const thread = document.getElementById("ai-hint-thread");
+  const div = document.createElement("div");
+  div.className = "ai-hint-msg ai-hint-msg-" + from;
+  if (from === "ai") {
+    const avatar = document.createElement("img");
+    avatar.className = "ai-hint-avatar";
+    avatar.src = "../icon-192.png";
+    avatar.alt = "Bo";
+    div.appendChild(avatar);
+  }
+  const textEl = document.createElement("span");
+  textEl.className = "ai-hint-msg-text";
+  textEl.textContent = text;
+  div.appendChild(textEl);
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
+}
+
+async function sendAiHintFollowUp(text) {
+  if (!text || !text.trim() || !aiHintMissed) return;
+  const loading = document.getElementById("ai-hint-loading");
+  const followups = document.getElementById("ai-hint-followups");
+  const input = document.getElementById("ai-hint-input");
+  appendAiHintMessage(text, "kid");
+  const historyBeforeThisTurn = aiHintHistory.slice();
+  aiHintHistory.push({ role: "user", content: text });
+  input.value = "";
+  loading.classList.remove("hidden");
+  followups.classList.add("hidden");
+  try {
+    const res = await fetch(API_BASE + "/api/generate-hint", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentName: CHILD_NAME,
+        gameLabel: "SolarQuest",
+        question: aiHintMissed.question,
+        correctAnswer: aiHintMissed.correctAnswer,
+        kidAnswer: aiHintMissed.kidAnswer,
+        topic: aiHintMissed.topic,
+        history: historyBeforeThisTurn,
+        followUp: text
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.hint) throw new Error(data.error || "no hint");
+    appendAiHintMessage(data.hint, "ai");
+    aiHintHistory.push({ role: "assistant", content: data.hint });
+  } catch (e) {
+    appendAiHintMessage("Hmm, I'm having trouble thinking right now. Try again in a bit!", "ai");
+  } finally {
+    loading.classList.add("hidden");
+    followups.classList.remove("hidden");
+  }
+}
+
+// Collapsed message -> full chat expansion, wired once (not per loadHint()
+// call) so the listener never stacks duplicates across rounds.
+(function setupAiHintCardOpen() {
+  const card = document.getElementById("ai-hint-card");
+  if (!card) return;
+  function openChat() {
+    if (card.classList.contains("chat-open")) return;
+    card.classList.add("chat-open");
+    // Quick-reply chips only make sense when Bo was explaining a miss --
+    // on a perfect round there's nothing for them to refer to.
+    if (aiHintMissed) document.getElementById("ai-hint-followups").classList.remove("hidden");
+    document.getElementById("ai-hint-form").classList.remove("hidden");
+    setTimeout(() => document.getElementById("ai-hint-input").focus(), 50);
+  }
+  card.addEventListener("click", openChat);
+  // Only react when the card itself is focused, not a descendant input/
+  // button -- otherwise Space would get eaten while typing in the chat.
+  card.addEventListener("keydown", e => {
+    if (e.target !== card) return;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openChat(); }
+  });
+})();
+
+(function setupAiHintForm() {
+  const form = document.getElementById("ai-hint-form");
+  if (!form) return;
+  const input = document.getElementById("ai-hint-input");
+  document.querySelectorAll("#ai-hint-followups .ai-hint-chip").forEach(chip => {
+    chip.addEventListener("click", e => {
+      e.stopPropagation();
+      sendAiHintFollowUp(chip.dataset.ask);
+    });
+  });
+  // Same real-device gotcha as the ship-bo chat input: don't rely on the
+  // form's submit event alone to catch Enter -- catch keydown directly.
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      form.requestSubmit();
+    }
+  });
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+    input.value = "";
+    sendAiHintFollowUp(message);
+  });
 })();

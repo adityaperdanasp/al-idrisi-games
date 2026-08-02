@@ -278,16 +278,27 @@
     <h2 class="brainrest-title">Brain Rest! 🧠💤</h2>
     <p class="brainrest-sub">Great job finishing the chapter — take a breather!</p>
 
-    <!-- MOCKUP: AI Tutor hint — not wired to a real API yet, just a visual demo -->
-    <div id="ai-hint-card" class="ai-hint-card">
-      <div class="ai-hint-badge">✨ AI Tutor</div>
-      <div id="ai-hint-loading" class="ai-hint-loading">
+    <!-- Bo's AI hint -- explains the last missed question or congratulates
+         on a mistake-free session, collapsed to one message until tapped
+         (reveals follow-up chips + free text), same interactive pattern
+         as MathVille's reward-screen AI Tutor card. -->
+    <div id="ai-hint-card" class="ai-hint-card hidden" role="button" tabindex="0">
+      <div class="ai-hint-badge">✨ Bo</div>
+      <div id="ai-hint-thread" class="ai-hint-thread"></div>
+      <div id="ai-hint-loading" class="ai-hint-loading hidden">
         <span class="ai-hint-dots"><span></span><span></span><span></span></span>
-        Thinking of the best way to explain it...
+        Bo is thinking...
       </div>
-      <p id="ai-hint-result" class="ai-hint-result hidden">
-        "The opposite of 'happy' is 'sad', not 'angry' — remember 😄 vs 😢!"
-      </p>
+      <div id="ai-hint-tap-cue" class="ai-hint-tap-cue">Tap to chat with Bo →</div>
+      <div id="ai-hint-followups" class="ai-hint-followups hidden">
+        <button type="button" class="ai-hint-chip" data-ask="Can you give another example?">Another example</button>
+        <button type="button" class="ai-hint-chip" data-ask="Can you explain it a different way?">Explain differently</button>
+        <button type="button" class="ai-hint-chip" data-ask="I'm still confused.">Still confused</button>
+      </div>
+      <form id="ai-hint-form" class="ai-hint-form hidden">
+        <input id="ai-hint-input" class="ai-hint-input" placeholder="Ask a question..." autocomplete="off" maxlength="200" />
+        <button type="submit" class="ai-hint-send" aria-label="Send">➤</button>
+      </form>
     </div>
 
     <div class="brainrest-timer" id="brainrest-timer">10</div>

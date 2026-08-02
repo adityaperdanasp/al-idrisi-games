@@ -421,6 +421,13 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .sc-hero-icon:active { transform: scale(0.88); }
+/* iOS Safari draws its own gray focus/active halo on a tappable SVG
+   (role=button + tabindex) that -webkit-tap-highlight-color doesn't
+   touch, since that property only suppresses the tap-flash overlay, not
+   the focus ring -- outline:none removes it; :focus-visible keeps a
+   visible ring for keyboard users only. */
+.sc-hero-icon:focus { outline: none; }
+.sc-hero-icon:focus-visible { outline: 2px solid #8c2f6b; outline-offset: 4px; border-radius: 50%; }
 
 .sc-hero-title .w1 { color: #8c2f6b; display: inline-block; transform: rotate(-4deg); }
 .sc-hero-title .w2 { color: #2f4c8c; display: inline-block; transform: rotate(3deg); }
