@@ -2415,6 +2415,14 @@ if (new URLSearchParams(location.search).get("drive") === "1") {
   launchDriveMode();
 }
 
+// Deep link from the hub's Focus Round card (?focus=1) -- open the
+// picker directly. It's a position:fixed overlay outside every .screen
+// (same as the vehicle picker), so it's safe to show regardless of
+// whatever screen is behind it, same as the ?drive=1 case above.
+if (new URLSearchParams(location.search).get("focus") === "1") {
+  $("focus-round-overlay").classList.remove("hidden");
+}
+
 // Analog joystick: drag anywhere inside (pointer capture lets the finger
 // wander outside the circle without losing the drag), knob position is
 // clamped to JOY_MAX px from center and read as a -1..1 vector each frame.
