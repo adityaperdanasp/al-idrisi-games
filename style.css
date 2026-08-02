@@ -680,6 +680,20 @@ body {
   text-align: center;
 }
 
+/* Deliberately quiet -- for parents, not styled to draw a kid's eye the
+   way the game cards / Bo greeting above do. */
+.sc-footer-link {
+  display: block;
+  text-align: center;
+  font-family: "Nunito", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #c2ac91;
+  text-decoration: none;
+  margin: 18px 0 4px;
+}
+.sc-footer-link:active { color: #9c8a76; }
+
 @keyframes sc-greeting-bob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-4px); }

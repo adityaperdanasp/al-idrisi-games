@@ -345,14 +345,15 @@
             <span class="sc-game-sub">A Build-Your-Own Town Quest</span>
           </span>
         </a>
-        <!-- Deep-links into MathVille's own Focus Round picker overlay
-             (?focus=1, mathville/script.js) rather than being a separate
-             game -- no dedicated icon image exists for it yet, so a
-             small inline lavender bullseye badge sits directly in
-             .sc-game-icon instead of the raw 🎯 emoji, matching the
-             card's own accent color like the other 3 cards' PNG icons
-             match theirs. -->
-        <a class="sc-game-card focus" href="mathville/?focus=1">
+        <!-- Own card + own URL, same footing as the 4 real games (see
+             focus-round/index.html -- a thin redirect into MathVille's
+             ?focus=1 deep link, which still owns the actual question
+             engine/rendering). No dedicated icon image exists for it
+             yet, so a small inline lavender bullseye badge sits
+             directly in .sc-game-icon instead of a raw emoji, matching
+             the card's own accent color like the other cards' PNG
+             icons match theirs. -->
+        <a class="sc-game-card focus" href="focus-round/">
           <span class="sc-game-icon">
             <svg viewBox="0 0 36 36" width="36" height="36">
               <circle cx="18" cy="18" r="16" fill="#F3E9FC" stroke="#D9C1F6" stroke-width="2"/>
@@ -379,6 +380,10 @@
           <span id="sc-greeting-text">Keep up the great work!</span>
         </div>
       </div>
+
+      <!-- Deliberately small/unobtrusive -- for parents, not meant to
+           invite kid taps the way the game cards above do. -->
+      <a class="sc-footer-link" href="parents/">For parents →</a>
 
       <!-- Real chat with Bo (api/bo-chat.js) — kids can ask anything. -->
       <div class="sc-bo-chat" id="sc-bo-chat" hidden>

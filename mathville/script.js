@@ -171,7 +171,6 @@ function showScreen(id) {
   const hideNav = id === "screen-landing" || id === "screen-pair";
   $("btn-map").classList.toggle("hidden", hideNav);
   $("btn-drive").classList.toggle("hidden", hideNav);
-  $("btn-focus").classList.toggle("hidden", hideNav);
   // Screens that already have their own Bo (Drive Mode's car, the reward
   // screen's AI Tutor card) or where it'd just be clutter (landing, pair
   // setup, Plane Mode) hide the persistent widget instead.
@@ -2084,15 +2083,18 @@ async function buildFocusRoundSteps(selected) {
   return steps.slice(0, FOCUS_ROUND_SIZE);
 }
 
+// No topbar icon triggers this from inside MathVille itself anymore --
+// Focus Round has its own hub card + URL (focus-round/index.html) that
+// deep-links in via ?focus=1, so window.openFocusRoundPicker() below is
+// the only entry point now.
 (function setupFocusRoundPicker() {
-  const btnFocus = $("btn-focus");
   const overlay = $("focus-round-overlay");
   const list = overlay && overlay.querySelector(".focus-round-list");
   const countEl = overlay && overlay.querySelector(".focus-round-picked-count");
   const pillsEl = overlay && overlay.querySelector(".focus-round-picked-pills");
   const startBtn = overlay && overlay.querySelector(".focus-round-start");
   const cancelBtn = overlay && overlay.querySelector(".focus-round-cancel");
-  if (!btnFocus || !overlay) return;
+  if (!overlay) return;
 
   const pillClassFor = item => item.classList.contains("focus-round-item-math") ? "focus-round-pill-math"
     : item.classList.contains("focus-round-item-lang") ? "focus-round-pill-lang" : "focus-round-pill-sci";
@@ -2147,7 +2149,7 @@ async function buildFocusRoundSteps(selected) {
     } catch (e) { /* offline or no assignment yet -- picker just starts empty */ }
   }
 
-  btnFocus.addEventListener("click", () => { overlay.classList.remove("hidden"); applyAssignedTopics(); });
+  window.openFocusRoundPicker = () => { overlay.classList.remove("hidden"); applyAssignedTopics(); };
   cancelBtn.addEventListener("click", () => overlay.classList.add("hidden"));
   startBtn.addEventListener("click", async () => {
     const checked = Array.from(list.querySelectorAll(".focus-round-item input:checked"));
@@ -2436,15 +2438,12 @@ if (new URLSearchParams(location.search).get("drive") === "1") {
   launchDriveMode();
 }
 
-// Deep link from the hub's Focus Round card (?focus=1) -- open the
-// picker directly. It's a position:fixed overlay outside every .screen
-// (same as the vehicle picker), so it's safe to show regardless of
-// whatever screen is behind it, same as the ?drive=1 case above. Reuses
-// #btn-focus's own click handler (rather than toggling the overlay's
-// class directly) so this also picks up any parent-assigned topics via
-// applyAssignedTopics(), same as a normal tap on the topbar icon would.
+// Deep link from focus-round/index.html's redirect (?focus=1) -- open
+// the picker directly. It's a position:fixed overlay outside every
+// .screen (same as the vehicle picker), so it's safe to show regardless
+// of whatever screen is behind it, same as the ?drive=1 case above.
 if (new URLSearchParams(location.search).get("focus") === "1") {
-  $("btn-focus").click();
+  window.openFocusRoundPicker();
 }
 
 // Analog joystick: drag anywhere inside (pointer capture lets the finger

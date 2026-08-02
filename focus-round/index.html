@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>BrainBox — Focus Round</title>
+<!-- Focus Round has its own hub card + URL (not nested under MathVille's
+     own icon/nav) so it reads as its own thing, same footing as the
+     other 4 games -- but its actual question engine (rendering, the 9
+     math chapter generators, reward/XP/AI-hint) is still MathVille's,
+     since that's real shared infrastructure, not duplicated code. This
+     page is a thin redirect into MathVille's own ?focus=1 deep link
+     (same trick the roaming car on the landing page uses to jump
+     straight into Math Race) rather than a full standalone rebuild of
+     that engine, which would mean maintaining two copies of the same
+     question-rendering code. location.replace (not .href) so the back
+     button skips over this page entirely. -->
+<script>location.replace("../mathville/index.html?focus=1");</script>
+</head>
+<body>
+  <p>Loading Focus Round… if nothing happens, <a href="../mathville/index.html?focus=1">tap here</a>.</p>
+</body>
+</html>
