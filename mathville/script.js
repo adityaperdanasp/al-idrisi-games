@@ -1575,6 +1575,16 @@ const PLANE_ENEMY_TYPES = [
   { emoji: "🦇", moveStyle: "zigzag", bulletClass: "diamond" }
 ];
 
+// Enemies otherwise only ever descend, so both their movement AND their
+// fire (despite spawnPlaneEnemyBullet's aim already being omnidirectional)
+// only ever threatened the ship from above -- per feedback, once an enemy
+// has flown a good distance past the ship it never had a chance to double
+// back and attack from behind. PLANE_ENEMY_REVERSE_MARGIN is how far past
+// the ship's y (in % of world height) before a "should I turn around?"
+// roll happens (once per enemy); PLANE_ENEMY_REVERSE_CHANCE is the odds.
+const PLANE_ENEMY_REVERSE_MARGIN = 15;
+const PLANE_ENEMY_REVERSE_CHANCE = 0.4;
+
 // Boss. Regular spawns stop once score reaches the current threshold; the
 // boss hovers rather than descending, and needs several hits before it's
 // defeated. Defeating it does NOT end the round (see handleBossDefeat) --
@@ -1715,6 +1725,7 @@ function spawnPlaneEnemy() {
   planeState.enemies.push({
     id, x: rand(8, 92), y: -6, el, type,
     phase: Math.random() * Math.PI * 2, // sine movement offset, so they don't all wiggle in lockstep
+    reversed: false, reverseRolled: false, // see PLANE_ENEMY_REVERSE_CHANCE
     nextFireAt: performance.now() + rand(PLANE_ENEMY_FIRE_MIN_MS, PLANE_ENEMY_FIRE_MAX_MS)
   });
 }
@@ -2104,11 +2115,18 @@ function startPlaneLoop() {
         return true;
       });
 
-      // Move enemies down (their shared descent speed), plus a per-type
+      // Move enemies down (their shared descent speed) or, once one has
+      // flown well past the ship, sometimes back UP instead (a genuine
+      // attack from behind, not just a formality -- see
+      // PLANE_ENEMY_REVERSE_CHANCE's comment) -- plus a per-type
       // horizontal wobble/drift/dart so they don't all fly in a single
       // dead-straight lane.
       planeState.enemies = planeState.enemies.filter(e => {
-        e.y += effEnemySpeed;
+        if (!e.reverseRolled && e.y > planeState.y + PLANE_ENEMY_REVERSE_MARGIN) {
+          e.reverseRolled = true;
+          if (Math.random() < PLANE_ENEMY_REVERSE_CHANCE) e.reversed = true;
+        }
+        e.y += effEnemySpeed * (e.reversed ? -1 : 1);
         if (e.type.moveStyle === "sine") {
           e.x += Math.sin(now / 300 + e.phase) * 0.35;
         } else if (e.type.moveStyle === "drift") {
@@ -2117,7 +2135,7 @@ function startPlaneLoop() {
           e.x += (Math.random() - 0.5) * 1.4;
         }
         e.x = Math.max(4, Math.min(96, e.x));
-        if (e.y > 106) { e.el.remove(); return false; }
+        if (e.y > 106 || e.y < -8) { e.el.remove(); return false; }
         e.el.style.left = e.x + "%";
         e.el.style.top = e.y + "%";
         return true;
