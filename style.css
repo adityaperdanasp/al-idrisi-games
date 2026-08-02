@@ -731,7 +731,6 @@ body {
 .sc-game-card.town .sc-game-sub { color: #a97a4f; }
 .sc-game-card.focus .sc-game-title { color: #6b3f9b; }
 .sc-game-card.focus .sc-game-sub { color: #8f6db8; }
-.sc-game-card.focus .sc-game-icon { font-size: 28px; }
 
 /* ---------- "Who's actually playing?" step (student vs their parent) ---------- */
 .sc-whois-overlay {

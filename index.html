@@ -347,10 +347,22 @@
         </a>
         <!-- Deep-links into MathVille's own Focus Round picker overlay
              (?focus=1, mathville/script.js) rather than being a separate
-             game -- no dedicated icon image exists for it yet, so 🎯
-             sits directly in .sc-game-icon like an emoji favicon. -->
+             game -- no dedicated icon image exists for it yet, so a
+             small inline lavender bullseye badge sits directly in
+             .sc-game-icon instead of the raw 🎯 emoji, matching the
+             card's own accent color like the other 3 cards' PNG icons
+             match theirs. -->
         <a class="sc-game-card focus" href="mathville/?focus=1">
-          <span class="sc-game-icon">🎯</span>
+          <span class="sc-game-icon">
+            <svg viewBox="0 0 36 36" width="36" height="36">
+              <circle cx="18" cy="18" r="16" fill="#F3E9FC" stroke="#D9C1F6" stroke-width="2"/>
+              <circle cx="18" cy="18" r="11" fill="#E4D0F7" stroke="#C7A6EC" stroke-width="1.5"/>
+              <circle cx="18" cy="18" r="6" fill="#B98EE8" stroke="#9B6FD1" stroke-width="1.5"/>
+              <circle cx="18" cy="18" r="2.2" fill="#6B3F9B"/>
+              <path d="M28 6 L20.5 15.5" stroke="#6B3F9B" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M28 6 L23 6.5 L27.5 10.5 Z" fill="#6B3F9B"/>
+            </svg>
+          </span>
           <span class="sc-game-txt">
             <span class="sc-game-title">Focus Round</span>
             <span class="sc-game-sub">Mix topics, 20 quick questions</span>

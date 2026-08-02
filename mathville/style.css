@@ -518,20 +518,35 @@ button { font-family: inherit; }
   40% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
-/* MOCKUP ONLY -- Focus Round topic picker (cross-subject: mathville +
-   azkacraft + azkauniverse, mirrors brain-box's "Box" builder) */
+/* Focus Round topic picker (cross-subject: mathville + azkacraft +
+   azkauniverse, mirrors brain-box's "Box" builder). Deliberately does
+   NOT use mathville's wood/cream Baloo2+Fredoka theme -- this feature
+   reaches outside MathVille into the other 2 games, so it's styled
+   after the HUB's own landing-page look (Baloo 2 + Nunito, soft
+   pastel-card palette) instead, leaning into the lavender accent its
+   own hub card uses. Nunito is loaded in index.html's font link
+   specifically for this. */
 .focus-round-full .focus-round-card { max-width: 420px; }
-.focus-round-card { text-align: center; max-height: 88vh; display: flex; flex-direction: column; }
-.focus-round-subtitle { font-size: 13px; color: var(--ink-soft); margin: -8px 0 14px; text-align: left; }
+.focus-round-card {
+  text-align: center; max-height: 88vh; display: flex; flex-direction: column;
+  background: linear-gradient(165deg, #ffffff 0%, #faf6ff 100%);
+}
+.focus-round-card .drive-difficulty-title {
+  font: 800 20px "Baloo 2", sans-serif; color: #6b3f9b;
+}
+.focus-round-subtitle {
+  font: 600 13px "Nunito", sans-serif; color: #8c7aa8; margin: -8px 0 14px; text-align: left;
+}
 
 .focus-round-picked {
-  border: 2px dashed var(--taupe); border-radius: 14px; padding: 10px 12px; margin-bottom: 14px; text-align: left;
+  border: 2px dashed #d9c4f2; background: #faf5ff; border-radius: 14px;
+  padding: 10px 12px; margin-bottom: 14px; text-align: left;
 }
-.focus-round-picked-count { font: 800 12px "Fredoka", sans-serif; color: var(--ink-soft); margin-bottom: 8px; }
+.focus-round-picked-count { font: 800 12px "Nunito", sans-serif; color: #8c7aa8; margin-bottom: 8px; }
 .focus-round-picked-pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .focus-round-pill {
   display: inline-flex; align-items: center; gap: 5px;
-  font: 700 11px "Fredoka", sans-serif; padding: 5px 6px 5px 10px; border-radius: 999px; white-space: nowrap;
+  font: 700 11px "Nunito", sans-serif; padding: 5px 6px 5px 10px; border-radius: 999px; white-space: nowrap;
 }
 .focus-round-pill-x {
   border: none; background: rgba(0,0,0,.1); color: inherit; width: 15px; height: 15px;
@@ -550,8 +565,8 @@ button { font-family: inherit; }
 }
 .focus-round-group-label {
   grid-column: 1 / -1;
-  font: 800 11px "Fredoka", sans-serif; letter-spacing: .04em; text-transform: uppercase;
-  color: var(--ink-soft); text-align: left; margin: 10px 0 0;
+  font: 800 11px "Nunito", sans-serif; letter-spacing: .04em; text-transform: uppercase;
+  color: #8c7aa8; text-align: left; margin: 10px 0 0;
 }
 .focus-round-group-label:first-child { margin-top: 0; }
 .focus-round-item {
@@ -562,16 +577,32 @@ button { font-family: inherit; }
 .focus-round-item-math { background: rgba(74,144,217,.14); }
 .focus-round-item-lang { background: rgba(194,62,130,.12); }
 .focus-round-item-sci { background: rgba(63,168,74,.14); }
-.focus-round-item:has(input:checked) { box-shadow: inset 0 0 0 2px var(--wood); }
+.focus-round-item:has(input:checked) { box-shadow: inset 0 0 0 2px #9b6fd1; }
 .focus-round-item input { display: none; }
 .focus-round-emoji {
   font-size: 15px; width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
   background: #fff; display: flex; align-items: center; justify-content: center;
   box-shadow: 0 1px 3px rgba(59,42,26,.12);
 }
-.focus-round-name { font: 700 12.5px "Fredoka", sans-serif; color: var(--ink); line-height: 1.2; }
-.focus-round-start { width: 100%; margin-bottom: 8px; margin-top: 14px; }
-.focus-round-cancel { width: 100%; }
+.focus-round-name { font: 700 12.5px "Nunito", sans-serif; color: #3d2e22; line-height: 1.2; }
+
+/* Dedicated (smaller) CTA buttons instead of mathville's chunky global
+   .btn -- those are sized for a full-screen "Continue"/"Check" action,
+   way oversized next to this popup's compact 2-column topic grid.
+   Press-shadow style matches the hub's own .sc-auth-submit button. */
+.focus-round-start {
+  width: 100%; margin-top: 14px; margin-bottom: 8px; border: none; cursor: pointer;
+  font: 800 14px "Baloo 2", sans-serif; color: #4a2d70; background: #d9c4f2;
+  padding: 12px 0; border-radius: 16px; box-shadow: 0 4px 0 rgba(0,0,0,.08);
+  transition: transform .15s ease;
+}
+.focus-round-start:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.08); }
+.focus-round-start:disabled { background: #ece4f7; color: #b3a3c9; box-shadow: none; cursor: default; }
+.focus-round-cancel {
+  width: 100%; border: 2px solid #e4d4f7; background: #fff; cursor: pointer;
+  font: 700 13px "Nunito", sans-serif; color: #8c7aa8; padding: 10px 0; border-radius: 14px;
+}
+.focus-round-cancel:active { background: #faf5ff; }
 
 .drive-difficulty-card { text-align: center; }
 .drive-difficulty-title { font: 800 20px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 16px; }
