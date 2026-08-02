@@ -29,7 +29,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=37" />
+<link rel="stylesheet" href="style.css?v=42" />
 </head>
 <body>
 
@@ -37,6 +37,8 @@
   <button id="btn-home" class="icon-btn" aria-label="Home" title="Home">🏠</button>
   <div id="btn-map" class="icon-btn hidden" aria-label="Map" title="Map">🗺️</div>
   <div id="btn-drive" class="icon-btn hidden" aria-label="Drive Mode" title="Drive Mode">🚗</div>
+  <!-- MOCKUP ONLY -- Focus Round entry point, concept not wired yet. -->
+  <div id="btn-focus" class="icon-btn hidden" aria-label="Focus Round" title="Focus Round">🎯</div>
   <div class="topbar-spacer"></div>
   <div id="xp-badge" class="xp-badge"><span>✨</span><span id="xp-total">0</span> XP</div>
 </header>
@@ -70,6 +72,191 @@
       <div class="vehicle-skin-grid" id="vehicle-skin-grid"></div>
     </div>
   </div>
+
+  <!-- MOCKUP ONLY -- "Focus Round" topic picker, concept not wired yet
+       (see chat discussion). Same reason as the vehicle picker for living
+       outside every .screen. Pick up to 8 topics ACROSS mathville +
+       azkacraft + azkauniverse (matches brain-box's "Box" picker), get
+       one 20-question round mixing questions from just those topics. -->
+  <div id="focus-round-overlay" class="drive-question-overlay focus-round-full hidden">
+    <div class="drive-question-card focus-round-card">
+      <div class="drive-difficulty-title">Focus Round</div>
+      <p class="focus-round-subtitle">Pick topics to practice — mix freely across subjects, up to 8. A 20-question round is built from these.</p>
+
+      <div class="focus-round-picked">
+        <div class="focus-round-picked-count">3 / 8 topics picked</div>
+        <div class="focus-round-picked-pills">
+          <span class="focus-round-pill focus-round-pill-math">🏛️ Place Value</span>
+          <span class="focus-round-pill focus-round-pill-lang">✂️ Prefixes and Suffixes</span>
+          <span class="focus-round-pill focus-round-pill-sci">⭐ Life Cycle of a Star</span>
+        </div>
+      </div>
+
+      <div class="focus-round-list">
+        <div class="focus-round-group-label focus-round-group-math">Math</div>
+        <label class="focus-round-item focus-round-item-math">
+          <input type="checkbox" checked>
+          <span class="focus-round-emoji">🏛️</span>
+          <span class="focus-round-name">Place Value</span>
+        </label>
+        <label class="focus-round-item focus-round-item-math">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🥐</span>
+          <span class="focus-round-name">Addition &amp; Subtraction</span>
+        </label>
+        <label class="focus-round-item focus-round-item-math">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🌳</span>
+          <span class="focus-round-name">Prime Number</span>
+        </label>
+        <label class="focus-round-item focus-round-item-math">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🌉</span>
+          <span class="focus-round-name">GCF &amp; LCM</span>
+        </label>
+        <label class="focus-round-item focus-round-item-math">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🎡</span>
+          <span class="focus-round-name">Multiplication</span>
+        </label>
+        <label class="focus-round-item focus-round-item-math">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🚰</span>
+          <span class="focus-round-name">Division</span>
+        </label>
+        <label class="focus-round-item focus-round-item-math">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🚦</span>
+          <span class="focus-round-name">Mixed Operation</span>
+        </label>
+        <label class="focus-round-item focus-round-item-math">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🏪</span>
+          <span class="focus-round-name">Measurement</span>
+        </label>
+        <label class="focus-round-item focus-round-item-math">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🕰️</span>
+          <span class="focus-round-name">Rounding</span>
+        </label>
+
+        <div class="focus-round-group-label focus-round-group-lang">Language</div>
+        <label class="focus-round-item focus-round-item-lang">
+          <input type="checkbox">
+          <span class="focus-round-emoji">✍️</span>
+          <span class="focus-round-name">Correct the Spelling Mistake</span>
+        </label>
+        <label class="focus-round-item focus-round-item-lang">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🔀</span>
+          <span class="focus-round-name">Antonyms Are Opposites</span>
+        </label>
+        <label class="focus-round-item focus-round-item-lang">
+          <input type="checkbox" checked>
+          <span class="focus-round-emoji">✂️</span>
+          <span class="focus-round-name">Prefixes and Suffixes</span>
+        </label>
+        <label class="focus-round-item focus-round-item-lang">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🔤</span>
+          <span class="focus-round-name">Contractions</span>
+        </label>
+        <label class="focus-round-item focus-round-item-lang">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🔠</span>
+          <span class="focus-round-name">Capitalization and Punctuation</span>
+        </label>
+        <label class="focus-round-item focus-round-item-lang">
+          <input type="checkbox">
+          <span class="focus-round-emoji">📖</span>
+          <span class="focus-round-name">Reading Comprehension</span>
+        </label>
+        <label class="focus-round-item focus-round-item-lang">
+          <input type="checkbox">
+          <span class="focus-round-emoji">✏️</span>
+          <span class="focus-round-name">Creative Writing</span>
+        </label>
+
+        <div class="focus-round-group-label focus-round-group-sci">Science</div>
+        <label class="focus-round-item focus-round-item-sci">
+          <input type="checkbox" checked>
+          <span class="focus-round-emoji">⭐</span>
+          <span class="focus-round-name">Life Cycle of a Star</span>
+        </label>
+        <label class="focus-round-item focus-round-item-sci">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🔬</span>
+          <span class="focus-round-name">Basic Structure of an Atom</span>
+        </label>
+        <label class="focus-round-item focus-round-item-sci">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🌍</span>
+          <span class="focus-round-name">Earth Rotation</span>
+        </label>
+        <label class="focus-round-item focus-round-item-sci">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🗺️</span>
+          <span class="focus-round-name">Globes and Maps</span>
+        </label>
+        <label class="focus-round-item focus-round-item-sci">
+          <input type="checkbox">
+          <span class="focus-round-emoji">🕐</span>
+          <span class="focus-round-name">Time System</span>
+        </label>
+      </div>
+      <button class="btn btn-primary focus-round-start">Start Focus Round · 20 questions</button>
+      <button class="btn-back pill-btn focus-round-cancel">Cancel</button>
+    </div>
+  </div>
+  <!-- MOCKUP-ONLY interactivity demo: pinned summary updates live + caps
+       at 8 + scrolls back to top on pick, so the feel can be judged before
+       any of this is wired into real app state. Delete this block (and
+       the mockup markup above) once the real feature gets built. -->
+  <script>
+  (function mockFocusRoundDemo() {
+    const card = document.querySelector("#focus-round-overlay .focus-round-card");
+    const list = document.querySelector("#focus-round-overlay .focus-round-list");
+    const countEl = document.querySelector("#focus-round-overlay .focus-round-picked-count");
+    const pillsEl = document.querySelector("#focus-round-overlay .focus-round-picked-pills");
+    if (!card) return;
+    const pillClassFor = item => item.classList.contains("focus-round-item-math") ? "focus-round-pill-math"
+      : item.classList.contains("focus-round-item-lang") ? "focus-round-pill-lang" : "focus-round-pill-sci";
+
+    // Picking a topic MOVES it out of the grid into the pinned box (not
+    // just highlights it in place) -- clicking the pill's "x" moves it
+    // back into the grid.
+    function render() {
+      const items = Array.from(list.querySelectorAll(".focus-round-item"));
+      const checked = items.filter(item => item.querySelector("input").checked);
+      items.forEach(item => item.classList.toggle("focus-round-item-hidden", item.querySelector("input").checked));
+      countEl.textContent = `${checked.length} / 8 topics picked`;
+      pillsEl.innerHTML = checked.map(item => {
+        const emoji = item.querySelector(".focus-round-emoji").textContent;
+        const name = item.querySelector(".focus-round-name").textContent;
+        return `<span class="focus-round-pill ${pillClassFor(item)}">${emoji} ${name}<button type="button" class="focus-round-pill-x" data-name="${name}">✕</button></span>`;
+      }).join("");
+    }
+    list.addEventListener("change", e => {
+      const checkedCount = list.querySelectorAll(".focus-round-item input:checked").length;
+      if (checkedCount > 8) { e.target.checked = false; return; }
+      render();
+      list.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    pillsEl.addEventListener("click", e => {
+      const btn = e.target.closest(".focus-round-pill-x");
+      if (!btn) return;
+      const name = btn.dataset.name;
+      const item = Array.from(list.querySelectorAll(".focus-round-item"))
+        .find(it => it.querySelector(".focus-round-name").textContent === name);
+      if (item) { item.querySelector("input").checked = false; render(); }
+    });
+    render();
+    // Open ?mockup=focus directly to see this overlay without console commands.
+    if (new URLSearchParams(location.search).get("mockup") === "focus") {
+      document.getElementById("focus-round-overlay").classList.remove("hidden");
+    }
+  })();
+  </script>
 
   <!-- Real chat with Bo (api/bo-chat.js) -- shared by the Drive Mode car
        and the persistent #game-bo widget on #screen-question, so it lives

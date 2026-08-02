@@ -505,6 +505,61 @@ button { font-family: inherit; }
   40% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
+/* MOCKUP ONLY -- Focus Round topic picker (cross-subject: mathville +
+   azkacraft + azkauniverse, mirrors brain-box's "Box" builder) */
+.focus-round-full .focus-round-card { max-width: 420px; }
+.focus-round-card { text-align: center; max-height: 88vh; display: flex; flex-direction: column; }
+.focus-round-subtitle { font-size: 13px; color: var(--ink-soft); margin: -8px 0 14px; text-align: left; }
+
+.focus-round-picked {
+  border: 2px dashed var(--taupe); border-radius: 14px; padding: 10px 12px; margin-bottom: 14px; text-align: left;
+}
+.focus-round-picked-count { font: 800 12px "Fredoka", sans-serif; color: var(--ink-soft); margin-bottom: 8px; }
+.focus-round-picked-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.focus-round-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font: 700 11px "Fredoka", sans-serif; padding: 5px 6px 5px 10px; border-radius: 999px; white-space: nowrap;
+}
+.focus-round-pill-x {
+  border: none; background: rgba(0,0,0,.1); color: inherit; width: 15px; height: 15px;
+  border-radius: 50%; font-size: 9px; line-height: 1; cursor: pointer; padding: 0;
+}
+.focus-round-item.focus-round-item-hidden { display: none; }
+.focus-round-pill-math { background: rgba(74,144,217,.16); color: #2E6BA3; }
+.focus-round-pill-lang { background: rgba(194,62,130,.14); color: #C23E82; }
+.focus-round-pill-sci { background: rgba(63,168,74,.16); color: #2A7A32; }
+
+/* 2-per-row grid, same density as the brain-box reference -- group
+   labels span both columns via grid-column: 1 / -1. */
+.focus-round-list {
+  overflow-y: auto; margin-bottom: 14px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px 8px;
+}
+.focus-round-group-label {
+  grid-column: 1 / -1;
+  font: 800 11px "Fredoka", sans-serif; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-soft); text-align: left; margin: 10px 0 0;
+}
+.focus-round-group-label:first-child { margin-top: 0; }
+.focus-round-item {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  border-radius: 12px; padding: 9px 10px; cursor: pointer; text-align: left;
+  box-shadow: inset 0 0 0 2px transparent;
+}
+.focus-round-item-math { background: rgba(74,144,217,.14); }
+.focus-round-item-lang { background: rgba(194,62,130,.12); }
+.focus-round-item-sci { background: rgba(63,168,74,.14); }
+.focus-round-item:has(input:checked) { box-shadow: inset 0 0 0 2px var(--wood); }
+.focus-round-item input { display: none; }
+.focus-round-emoji {
+  font-size: 15px; width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 3px rgba(59,42,26,.12);
+}
+.focus-round-name { font: 700 12.5px "Fredoka", sans-serif; color: var(--ink); line-height: 1.2; }
+.focus-round-start { width: 100%; margin-bottom: 8px; margin-top: 14px; }
+.focus-round-cancel { width: 100%; }
+
 .drive-difficulty-card { text-align: center; }
 .drive-difficulty-title { font: 800 20px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 16px; }
 .drive-difficulty-btn {
