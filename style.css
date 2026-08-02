@@ -417,7 +417,10 @@ body {
   flex-shrink: 0;
   transform-origin: 50% 90%;
   animation: sc-badge-wiggle 1.8s ease-in-out infinite;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
+.sc-hero-icon:active { transform: scale(0.88); }
 
 .sc-hero-title .w1 { color: #8c2f6b; display: inline-block; transform: rotate(-4deg); }
 .sc-hero-title .w2 { color: #2f4c8c; display: inline-block; transform: rotate(3deg); }

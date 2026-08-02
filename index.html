@@ -242,7 +242,7 @@
         <span class="sc-dot" style="bottom:-12px;right:34px;width:16px;height:16px;background:#F6C1C1;"></span>
         <span class="sc-dot" style="bottom:-8px;left:40px;width:12px;height:12px;background:#C1D4F6;"></span>
         <div class="sc-hero-title">
-          <svg class="sc-hero-icon" viewBox="55 65 405 395" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <svg class="sc-hero-icon" id="sc-hero-icon" viewBox="55 65 405 395" xmlns="http://www.w3.org/2000/svg" role="button" tabindex="0" aria-label="Chat with Bo">
             <defs>
               <radialGradient id="hero-brainGrad" cx="38%" cy="24%" r="80%">
                 <stop offset="0%" stop-color="#FFC4D2"/>
@@ -699,6 +699,19 @@
     inputId: "sc-bo-chat-input",
     avatarSrc: "icon-192.png"
   });
+
+  // The big Bo in the "Brain Box" hero title opens the exact same chat --
+  // setupBoChat() only wires one trigger element, so rather than duplicate
+  // all of its logic (and a second #sc-bo-chat panel/thread), just forward
+  // a click here onto the already-wired #sc-greeting trigger below.
+  const heroIcon = document.getElementById("sc-hero-icon");
+  if (heroIcon) {
+    const openChat = () => document.getElementById("sc-greeting").click();
+    heroIcon.addEventListener("click", openChat);
+    heroIcon.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openChat(); }
+    });
+  }
 
   function showSelect() {
     document.getElementById("sc-screen-landing").classList.remove("active");
