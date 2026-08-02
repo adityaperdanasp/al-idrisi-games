@@ -2126,7 +2126,28 @@ async function buildFocusRoundSteps(selected) {
     if (item) { item.querySelector("input").checked = false; render(); }
   });
 
-  btnFocus.addEventListener("click", () => overlay.classList.remove("hidden"));
+  // Pre-check whatever a parent assigned from /parents (players/{id}/
+  // assignedTopics) the first time the picker opens each page load --
+  // only if nothing's checked yet, so re-opening after manually picking
+  // something doesn't stomp on that choice.
+  let assignedApplied = false;
+  async function applyAssignedTopics() {
+    if (assignedApplied) return;
+    assignedApplied = true;
+    try {
+      const snap = await aigDb.ref(`players/${CHILD_ID}/assignedTopics`).get();
+      const assigned = snap.exists() ? snap.val() : [];
+      if (!assigned.length) return;
+      const alreadyChecked = list.querySelectorAll(".focus-round-item input:checked").length;
+      if (alreadyChecked > 0) return;
+      list.querySelectorAll(".focus-round-item").forEach(item => {
+        if (assigned.includes(item.dataset.topic)) item.querySelector("input").checked = true;
+      });
+      render();
+    } catch (e) { /* offline or no assignment yet -- picker just starts empty */ }
+  }
+
+  btnFocus.addEventListener("click", () => { overlay.classList.remove("hidden"); applyAssignedTopics(); });
   cancelBtn.addEventListener("click", () => overlay.classList.add("hidden"));
   startBtn.addEventListener("click", async () => {
     const checked = Array.from(list.querySelectorAll(".focus-round-item input:checked"));
@@ -2418,9 +2439,12 @@ if (new URLSearchParams(location.search).get("drive") === "1") {
 // Deep link from the hub's Focus Round card (?focus=1) -- open the
 // picker directly. It's a position:fixed overlay outside every .screen
 // (same as the vehicle picker), so it's safe to show regardless of
-// whatever screen is behind it, same as the ?drive=1 case above.
+// whatever screen is behind it, same as the ?drive=1 case above. Reuses
+// #btn-focus's own click handler (rather than toggling the overlay's
+// class directly) so this also picks up any parent-assigned topics via
+// applyAssignedTopics(), same as a normal tap on the topbar icon would.
 if (new URLSearchParams(location.search).get("focus") === "1") {
-  $("focus-round-overlay").classList.remove("hidden");
+  $("btn-focus").click();
 }
 
 // Analog joystick: drag anywhere inside (pointer capture lets the finger

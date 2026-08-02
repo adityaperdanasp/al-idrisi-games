@@ -1,0 +1,112 @@
+/* Parent Portal -- mockup styling on top of ../style.css (hub look).
+   Leans lavender like the Focus Round card/overlay, since this is
+   another "reaches across every game" feature, not any one game's own
+   territory. */
+
+.parents-page { font-family: "Nunito", sans-serif; }
+.parents-card { padding: 26px 22px 36px; overflow-y: auto; }
+
+.p-screen { display: none; }
+.p-screen.active { display: block; }
+
+/* ---- Sign in ---- */
+.p-signin-header { text-align: center; margin-bottom: 22px; }
+.p-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 800 0.85rem "Baloo 2", sans-serif; color: #6b3f9b;
+  background: #f3e9fc; padding: 6px 16px; border-radius: 100px; margin-bottom: 14px;
+}
+.p-title { font: 800 1.5rem/1.3 "Baloo 2", sans-serif; color: #3d2e22; margin: 0 0 8px; }
+.p-subtitle { font-size: 0.88rem; color: #9c8a76; margin: 0; }
+.p-signin-submit { background: #d9c4f2 !important; color: #4a2d70 !important; }
+.p-signin-note { text-align: center; font-size: 0.78rem; color: #b3a3c9; margin-top: 14px; }
+
+/* ---- Portal header ---- */
+.p-portal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+.p-avatar {
+  width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #d9c4f2; color: #4a2d70; font: 800 1.3rem "Baloo 2", sans-serif;
+}
+.p-portal-name { font: 800 1.3rem "Baloo 2", sans-serif; color: #3d2e22; }
+.p-portal-sub { font-size: 0.8rem; color: #9c8a76; }
+
+/* ---- Section shell ---- */
+.p-section {
+  background: linear-gradient(165deg, #ffffff 0%, #faf6ff 100%);
+  border-radius: 18px; padding: 16px; margin-bottom: 16px;
+}
+.p-section-title { font: 800 1rem "Baloo 2", sans-serif; color: #6b3f9b; margin-bottom: 4px; }
+.p-section-desc { font-size: 0.8rem; color: #8c7aa8; margin: 0 0 14px; }
+
+/* ---- Assign: picked box + topic grid (same recipe as MathVille's
+   Focus Round overlay) ---- */
+.p-picked {
+  border: 2px dashed #d9c4f2; background: #faf5ff; border-radius: 14px;
+  padding: 10px 12px; margin-bottom: 14px;
+}
+.p-picked-count { font: 800 0.75rem "Nunito", sans-serif; color: #8c7aa8; margin-bottom: 8px; }
+.p-picked-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.p-pill { font: 700 0.68rem "Nunito", sans-serif; padding: 5px 10px; border-radius: 999px; white-space: nowrap; }
+.p-pill-math { background: rgba(74,144,217,.16); color: #2E6BA3; }
+.p-pill-lang { background: rgba(194,62,130,.14); color: #C23E82; }
+.p-pill-sci { background: rgba(63,168,74,.16); color: #2A7A32; }
+
+.p-topic-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.p-group-label {
+  grid-column: 1 / -1; font: 800 0.68rem "Nunito", sans-serif; letter-spacing: .04em;
+  text-transform: uppercase; color: #8c7aa8; margin: 8px 0 0;
+}
+.p-group-label:first-child { margin-top: 0; }
+.p-topic-item {
+  display: flex; align-items: center; gap: 8px; border-radius: 12px; padding: 9px 10px;
+  cursor: pointer; box-shadow: inset 0 0 0 2px transparent;
+}
+.p-topic-item-math { background: rgba(74,144,217,.14); }
+.p-topic-item-lang { background: rgba(194,62,130,.12); }
+.p-topic-item-sci { background: rgba(63,168,74,.14); }
+.p-topic-item-picked { box-shadow: inset 0 0 0 2px #9b6fd1; }
+.p-topic-item input { display: none; }
+.p-topic-emoji {
+  font-size: 15px; width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 3px rgba(59,42,26,.12);
+}
+.p-topic-name { font: 700 0.78rem "Nunito", sans-serif; color: #3d2e22; line-height: 1.2; }
+
+.p-save-btn {
+  width: 100%; border: none; cursor: pointer; font: 800 0.88rem "Baloo 2", sans-serif;
+  color: #4a2d70; background: #d9c4f2; padding: 12px 0; border-radius: 16px;
+  box-shadow: 0 4px 0 rgba(0,0,0,.08);
+}
+.p-save-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.08); }
+
+/* ---- Weak-topic cards ---- */
+.p-weak-card { margin-bottom: 12px; }
+.p-weak-card:last-child { margin-bottom: 0; }
+.p-weak-topic { font: 700 0.85rem "Nunito", sans-serif; color: #3d2e22; margin-bottom: 6px; }
+.p-weak-game {
+  font: 700 0.62rem "Nunito", sans-serif; color: #b3862a; background: #fdf0d8;
+  padding: 2px 8px; border-radius: 100px; margin-left: 6px;
+}
+.p-weak-bar-track { height: 8px; background: #f1e6d3; border-radius: 100px; overflow: hidden; margin-bottom: 4px; }
+.p-weak-bar-fill { height: 100%; background: #e2685f; border-radius: 100px; }
+.p-weak-pct { font-size: 0.72rem; color: #9c8a76; }
+.p-weak-tries { color: #c2ac91; }
+
+/* ---- Per-game XP rows ---- */
+.p-xp-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.p-xp-row:last-child { margin-bottom: 0; }
+.p-xp-icon {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.p-xp-track-wrap { flex: 1; }
+.p-xp-label { font: 700 0.78rem "Nunito", sans-serif; color: #3d2e22; margin-bottom: 4px; }
+.p-xp-track { height: 8px; background: #f1e6d3; border-radius: 100px; overflow: hidden; }
+.p-xp-fill { height: 100%; border-radius: 100px; }
+
+.p-signout-btn {
+  width: 100%; border: 2px solid #e4d4f7; background: #fff; cursor: pointer;
+  font: 700 0.8rem "Nunito", sans-serif; color: #8c7aa8; padding: 10px 0; border-radius: 14px;
+}

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>BrainBox — Parent Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<!-- Reuses the hub's own look (not any single game's theme) since this
+     page sits alongside the hub, not inside a game -- same reasoning as
+     MathVille's Focus Round overlay. -->
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+</head>
+<body>
+
+<main class="hub sc-page parents-page">
+  <div class="sc-card parents-card">
+
+    <!-- ============================================================
+         SCREEN 1: Sign in as your child
+         ============================================================ -->
+    <section id="screen-signin" class="p-screen active">
+      <div class="p-signin-header">
+        <div class="p-badge">👪 Parent Portal</div>
+        <h1 class="p-title">See their progress.<br>Set what to practice.</h1>
+        <p class="p-subtitle">Sign in with your child's own name and PIN — the same one they use to play.</p>
+      </div>
+
+      <label class="sc-auth-field">
+        <span class="sc-auth-field-label">Child's name</span>
+        <input type="text" class="sc-auth-input" id="p-name" placeholder="e.g. Azka" autocomplete="off" />
+        <span class="sc-auth-error" id="p-error"></span>
+      </label>
+      <label class="sc-auth-field">
+        <span class="sc-auth-field-label">Their 4-digit PIN</span>
+        <input type="password" inputmode="numeric" maxlength="4" class="sc-auth-input sc-auth-pin" id="p-pin" placeholder="••••" autocomplete="off" />
+      </label>
+      <button class="sc-auth-submit p-signin-submit" id="p-signin-btn">View Progress →</button>
+      <p class="p-signin-note">Don't have their PIN? Ask them, or check with their teacher.</p>
+    </section>
+
+    <!-- ============================================================
+         SCREEN 2: Parent Portal (report + assign)
+         ============================================================ -->
+    <section id="screen-portal" class="p-screen">
+      <div class="p-portal-header">
+        <span class="p-avatar" id="p-avatar"></span>
+        <div>
+          <div class="p-portal-name" id="p-portal-name"></div>
+          <div class="p-portal-sub" id="p-portal-sub">Loading…</div>
+        </div>
+      </div>
+
+      <!-- ---- Assign section ---- -->
+      <div class="p-section">
+        <div class="p-section-title">🎯 This Week's Focus</div>
+        <p class="p-section-desc">Pick up to 8 topics — mix freely across subjects. Your child will see these highlighted next time they open Focus Round in MathVille.</p>
+
+        <div class="p-picked">
+          <div class="p-picked-count" id="p-picked-count">0 / 8 topics picked</div>
+          <div class="p-picked-pills" id="p-picked-pills"></div>
+        </div>
+
+        <div class="p-topic-list" id="p-topic-list">
+          <div class="p-group-label p-group-math">Math</div>
+          <label class="p-topic-item p-topic-item-math" data-topic="math:place-value"><input type="checkbox"><span class="p-topic-emoji">🏛️</span><span class="p-topic-name">Place Value</span></label>
+          <label class="p-topic-item p-topic-item-math" data-topic="math:addition-subtraction"><input type="checkbox"><span class="p-topic-emoji">🥐</span><span class="p-topic-name">Addition &amp; Subtraction</span></label>
+          <label class="p-topic-item p-topic-item-math" data-topic="math:prime-numbers"><input type="checkbox"><span class="p-topic-emoji">🌳</span><span class="p-topic-name">Prime Number</span></label>
+          <label class="p-topic-item p-topic-item-math" data-topic="math:gcf-lcm"><input type="checkbox"><span class="p-topic-emoji">🌉</span><span class="p-topic-name">GCF &amp; LCM</span></label>
+          <label class="p-topic-item p-topic-item-math" data-topic="math:multiplication"><input type="checkbox"><span class="p-topic-emoji">🎡</span><span class="p-topic-name">Multiplication</span></label>
+          <label class="p-topic-item p-topic-item-math" data-topic="math:division"><input type="checkbox"><span class="p-topic-emoji">🚰</span><span class="p-topic-name">Division</span></label>
+          <label class="p-topic-item p-topic-item-math" data-topic="math:mixed-operation"><input type="checkbox"><span class="p-topic-emoji">🚦</span><span class="p-topic-name">Mixed Operation</span></label>
+          <label class="p-topic-item p-topic-item-math" data-topic="math:measurement"><input type="checkbox"><span class="p-topic-emoji">🏪</span><span class="p-topic-name">Measurement</span></label>
+          <label class="p-topic-item p-topic-item-math" data-topic="math:rounding"><input type="checkbox"><span class="p-topic-emoji">🕰️</span><span class="p-topic-name">Rounding</span></label>
+
+          <div class="p-group-label p-group-lang">Language</div>
+          <label class="p-topic-item p-topic-item-lang" data-topic="lang:1"><input type="checkbox"><span class="p-topic-emoji">✍️</span><span class="p-topic-name">Correct the Spelling Mistake</span></label>
+          <label class="p-topic-item p-topic-item-lang" data-topic="lang:2"><input type="checkbox"><span class="p-topic-emoji">🔀</span><span class="p-topic-name">Antonyms Are Opposites</span></label>
+          <label class="p-topic-item p-topic-item-lang" data-topic="lang:3"><input type="checkbox"><span class="p-topic-emoji">✂️</span><span class="p-topic-name">Prefixes and Suffixes</span></label>
+          <label class="p-topic-item p-topic-item-lang" data-topic="lang:4"><input type="checkbox"><span class="p-topic-emoji">🔤</span><span class="p-topic-name">Contractions</span></label>
+          <label class="p-topic-item p-topic-item-lang" data-topic="lang:5"><input type="checkbox"><span class="p-topic-emoji">🔠</span><span class="p-topic-name">Capitalization and Punctuation</span></label>
+
+          <div class="p-group-label p-group-sci">Science</div>
+          <label class="p-topic-item p-topic-item-sci" data-topic="sci:star-lifecycle"><input type="checkbox"><span class="p-topic-emoji">⭐</span><span class="p-topic-name">Life Cycle of a Star</span></label>
+          <label class="p-topic-item p-topic-item-sci" data-topic="sci:atom-structure"><input type="checkbox"><span class="p-topic-emoji">🔬</span><span class="p-topic-name">Basic Structure of an Atom</span></label>
+          <label class="p-topic-item p-topic-item-sci" data-topic="sci:earth-rotation"><input type="checkbox"><span class="p-topic-emoji">🌍</span><span class="p-topic-name">Earth Rotation</span></label>
+          <label class="p-topic-item p-topic-item-sci" data-topic="sci:globes-maps"><input type="checkbox"><span class="p-topic-emoji">🗺️</span><span class="p-topic-name">Globes and Maps</span></label>
+          <label class="p-topic-item p-topic-item-sci" data-topic="sci:time-system"><input type="checkbox"><span class="p-topic-emoji">🕐</span><span class="p-topic-name">Time System</span></label>
+        </div>
+
+        <button class="p-save-btn" id="p-save-btn">Save Focus Topics</button>
+        <p class="p-save-note" id="p-save-note"></p>
+      </div>
+
+      <!-- ---- Report: needs practice ---- -->
+      <div class="p-section">
+        <div class="p-section-title">⚠️ Needs Practice</div>
+        <p class="p-section-desc">Topics where accuracy is still below 70% (at least 3 tries).</p>
+        <div id="p-weak-list">
+          <p class="p-empty-note">Loading…</p>
+        </div>
+      </div>
+
+      <!-- ---- Report: XP per game ---- -->
+      <div class="p-section">
+        <div class="p-section-title">✨ Progress by Game</div>
+        <div id="p-xp-list">
+          <p class="p-empty-note">Loading…</p>
+        </div>
+      </div>
+
+      <button class="p-signout-btn" id="p-signout-btn">Sign out</button>
+    </section>
+
+  </div>
+</main>
+
+<script src="../firebase.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
