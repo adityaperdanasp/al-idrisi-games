@@ -202,16 +202,29 @@ button { font-family: inherit; }
 
 .map-traveler {
   position: absolute; width: 40px; height: 40px; margin-left: -20px;
-  display: flex; align-items: center; justify-content: center; font-size: 30px;
+  display: flex; align-items: center; justify-content: center;
   filter: drop-shadow(0 3px 4px rgba(59,42,26,.35)); z-index: 2; pointer-events: none;
   animation: mvIdleBob 1.6s ease-in-out infinite;
 }
-.map-traveler.facing-left { transform: scaleX(-1); }
+.map-traveler-truck { font-size: 30px; display: block; }
+.map-traveler.facing-left .map-traveler-truck { transform: scaleX(-1); }
 .map-traveler.walking { animation: mvWalkBounce .3s ease-in-out infinite; }
 @keyframes mvIdleBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-.map-traveler.walking.facing-left { animation: mvWalkBounceFlip .3s ease-in-out infinite; }
 @keyframes mvWalkBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-@keyframes mvWalkBounceFlip { 0%, 100% { transform: scaleX(-1) translateY(0); } 50% { transform: scaleX(-1) translateY(-4px); } }
+/* Bo riding along with the traveler, same pattern as .drive-bo-face --
+   .map-traveler above is pointer-events:none so it never blocks taps on
+   chapter icons, so the face opts back in on its own. */
+.map-traveler-bo-face {
+  position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+  width: 15px; height: 15px; border-radius: 50%; pointer-events: auto; cursor: pointer;
+  animation: sc-badge-wiggle 1.8s ease-in-out infinite;
+}
+.map-traveler-bo-hint {
+  position: absolute; left: 50%; bottom: 100%; margin-bottom: 2px;
+  font: 800 8px "Baloo 2", sans-serif; color: #fff; white-space: nowrap;
+  background: #FF8A3D; padding: 1px 5px; border-radius: 7px 7px 7px 2px;
+  pointer-events: none; animation: driveBoHintPop 3.2s ease-out infinite;
+}
 
 /* ---------- Drive Mode ---------- */
 .drive-hud { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }

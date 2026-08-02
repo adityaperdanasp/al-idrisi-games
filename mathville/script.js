@@ -345,7 +345,23 @@ function mvPlaceTraveler(chapters, defaultIdx) {
     traveler = document.createElement("div");
     traveler.id = "map-traveler";
     traveler.className = "map-traveler";
-    traveler.innerHTML = "🚚";
+    // Truck emoji in its own span (not directly on .map-traveler) so the
+    // facing-left flip only mirrors the truck, not the Bo face riding
+    // along with it. .map-traveler itself stays pointer-events:none (it
+    // must not block taps on nearby chapter icons) -- only the Bo face
+    // opts back into pointer-events so it's still tappable.
+    traveler.innerHTML = `
+      <span class="map-traveler-truck">🚚</span>
+      <span class="map-traveler-bo-hint" id="map-traveler-bo-hint">Bo here!</span>
+      <img class="map-traveler-bo-face" id="map-traveler-bo-face" src="../icon-192.png" alt="Bo">
+    `;
+    const boFace = traveler.querySelector("#map-traveler-bo-face");
+    boFace.addEventListener("click", e => {
+      e.stopPropagation();
+      const hint = traveler.querySelector("#map-traveler-bo-hint");
+      if (hint) hint.style.display = "none";
+      if (window.openBoChat) window.openBoChat();
+    });
   }
   const meta = CHAPTER_META[chapters[mvTravelerIdx].id];
   traveler.style.left = meta.mapX + "px";
