@@ -40,7 +40,13 @@ const CHAPTER_META = {
   "division": { location: "Water Tower", icon: "🚰", mapX: 340, mapY: 920 },
   "mixed-operation": { location: "Crossroads Plaza", icon: "🚦", mapX: 80, mapY: 1090 },
   "measurement": { location: "General Store", icon: "🏪", mapX: 340, mapY: 1260 },
-  "rounding": { location: "Clock Tower", icon: "🕰️", mapX: 80, mapY: 1430 }
+  "rounding": { location: "Clock Tower", icon: "🕰️", mapX: 80, mapY: 1430 },
+  // Synthetic chapterId (never in MATHVILLE_BANK.chapters, same pattern as
+  // Plane Mode's "plane-mode") so showReward()'s CHAPTER_META lookup and
+  // saveChapterProgress() work unmodified for a Focus Round. Town-map
+  // rendering only ever iterates the real chapters array, never this
+  // object's own keys, so this extra entry is inert there.
+  "focus-round": { location: "Focus Round", icon: "🎯" }
 };
 const MAP_HEIGHT = 1520;
 
@@ -165,6 +171,7 @@ function showScreen(id) {
   const hideNav = id === "screen-landing" || id === "screen-pair";
   $("btn-map").classList.toggle("hidden", hideNav);
   $("btn-drive").classList.toggle("hidden", hideNav);
+  $("btn-focus").classList.toggle("hidden", hideNav);
   // Screens that already have their own Bo (Drive Mode's car, the reward
   // screen's AI Tutor card) or where it'd just be clutter (landing, pair
   // setup, Plane Mode) hide the persistent widget instead.
@@ -1984,6 +1991,153 @@ function rollPlaneQuestion() {
   const pool = r < 0.75 ? planeSolarPool : planeLanguagePool;
   return pickFromPlanePool(pool) || buildQuickMc(rollDriveQuestion("easy"));
 }
+
+/* =================================================================
+   FOCUS ROUND -- pick up to 8 topics across mathville + azkacraft +
+   azkauniverse (mirrors brain-box's "Box" picker), play one 20-question
+   round mixing just those topics. Reuses the existing #screen-question
+   rendering (renderStep/goToNextStep/finishRound/showReward) unchanged --
+   a Focus Round is just state.steps built from multiple sources instead
+   of buildRound(one chapterId), same trick as Plane Mode's synthetic
+   "plane-mode" chapterId for progress/XP.
+   ================================================================= */
+const FOCUS_ROUND_SIZE = 20;
+// Reading Comprehension (6) and Creative Writing (7) both ask "According
+// to the text/passage..." -- unanswerable without the passage, which this
+// picker has no room to show. (Plane Mode's cross-game pool has the same
+// gap for Creative Writing -- it only filters chapters with a literal
+// type:"passage" question, which Creative Writing's mc questions aren't,
+// so that one still leaks through there. Not fixed here since it's a
+// separate, already-shipped code path.)
+const FOCUS_LANG_EXCLUDED_CHAPTER_IDS = [6, 7];
+
+let focusLangPool = null;  // { [chapterId]: [{uiType,prompt,options,correctLabel}] }
+let focusSciPool = null;   // { [levelId]: [...] }
+async function ensureFocusPools() {
+  if (focusLangPool && focusSciPool) return;
+  try {
+    const [lang, sci] = await Promise.all([
+      fetch("../azkacraft/questions.json").then(r => r.json()),
+      fetch("../azkauniverse/questions.json").then(r => r.json())
+    ]);
+    focusLangPool = {};
+    (lang.chapters || []).forEach(ch => {
+      if (FOCUS_LANG_EXCLUDED_CHAPTER_IDS.includes(ch.id)) return;
+      focusLangPool[ch.id] = (ch.questions || [])
+        .filter(q => q.type === "mc")
+        .map(q => ({ uiType: "mc", prompt: q.prompt, options: [...q.options], correctLabel: q.answer }));
+    });
+    focusSciPool = {};
+    (sci.levels || []).forEach(lvl => {
+      focusSciPool[lvl.id] = (lvl.questions || [])
+        .filter(q => q.type === "mc" && !q.image)
+        .map(q => ({ uiType: "mc", prompt: q.question, options: [...q.options], correctLabel: q.options[q.answer] }));
+    });
+  } catch (e) {
+    // Offline or the other games' file shape changed -- whatever topics
+    // did resolve still work; unresolved ones just contribute nothing.
+    focusLangPool = focusLangPool || {};
+    focusSciPool = focusSciPool || {};
+  }
+}
+
+// `selected` is [{source: "math"|"lang"|"sci", id}]. Math topics reuse
+// buildRound(chapterId) (called twice per chapter for more variety --
+// most generators return a fresh random question each call) so every
+// uiType mathville itself supports, including "match", can show up in a
+// Focus Round exactly like it would in that chapter's normal round.
+async function buildFocusRoundSteps(selected) {
+  await ensureFocusPools();
+  let pool = [];
+  selected.forEach(t => {
+    if (t.source === "math") {
+      pool.push(...buildRound(t.id));
+      pool.push(...buildRound(t.id));
+    } else if (t.source === "lang") {
+      pool.push(...(focusLangPool[t.id] || []));
+    } else if (t.source === "sci") {
+      pool.push(...(focusSciPool[t.id] || []));
+    }
+  });
+  if (!pool.length) return [];
+  // Cycle through reshuffled copies of the pool rather than sampling with
+  // replacement in one pass -- keeps repeats spread out instead of the
+  // same question showing twice in a row when the picked topics are thin.
+  const steps = [];
+  while (steps.length < FOCUS_ROUND_SIZE) steps.push(...shuffle(pool.slice()));
+  return steps.slice(0, FOCUS_ROUND_SIZE);
+}
+
+(function setupFocusRoundPicker() {
+  const btnFocus = $("btn-focus");
+  const overlay = $("focus-round-overlay");
+  const list = overlay && overlay.querySelector(".focus-round-list");
+  const countEl = overlay && overlay.querySelector(".focus-round-picked-count");
+  const pillsEl = overlay && overlay.querySelector(".focus-round-picked-pills");
+  const startBtn = overlay && overlay.querySelector(".focus-round-start");
+  const cancelBtn = overlay && overlay.querySelector(".focus-round-cancel");
+  if (!btnFocus || !overlay) return;
+
+  const pillClassFor = item => item.classList.contains("focus-round-item-math") ? "focus-round-pill-math"
+    : item.classList.contains("focus-round-item-lang") ? "focus-round-pill-lang" : "focus-round-pill-sci";
+
+  // Picking a topic MOVES it out of the grid into the pinned box (not
+  // just highlights it in place) -- clicking a pill's "x" moves it back.
+  function render() {
+    const items = Array.from(list.querySelectorAll(".focus-round-item"));
+    const checked = items.filter(item => item.querySelector("input").checked);
+    items.forEach(item => item.classList.toggle("focus-round-item-hidden", item.querySelector("input").checked));
+    countEl.textContent = `${checked.length} / 8 topics picked`;
+    pillsEl.innerHTML = checked.map(item => {
+      const emoji = item.querySelector(".focus-round-emoji").textContent;
+      const name = item.querySelector(".focus-round-name").textContent;
+      return `<span class="focus-round-pill ${pillClassFor(item)}">${emoji} ${name}<button type="button" class="focus-round-pill-x" data-name="${name}">✕</button></span>`;
+    }).join("");
+    startBtn.disabled = checked.length === 0;
+    startBtn.textContent = checked.length === 0 ? "Pick at least 1 topic" : "Start Focus Round · 20 questions";
+  }
+  list.addEventListener("change", e => {
+    const checkedCount = list.querySelectorAll(".focus-round-item input:checked").length;
+    if (checkedCount > 8) { e.target.checked = false; return; }
+    render();
+    list.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  pillsEl.addEventListener("click", e => {
+    const btn = e.target.closest(".focus-round-pill-x");
+    if (!btn) return;
+    const item = Array.from(list.querySelectorAll(".focus-round-item"))
+      .find(it => it.querySelector(".focus-round-name").textContent === btn.dataset.name);
+    if (item) { item.querySelector("input").checked = false; render(); }
+  });
+
+  btnFocus.addEventListener("click", () => overlay.classList.remove("hidden"));
+  cancelBtn.addEventListener("click", () => overlay.classList.add("hidden"));
+  startBtn.addEventListener("click", async () => {
+    const checked = Array.from(list.querySelectorAll(".focus-round-item input:checked"));
+    if (!checked.length) return;
+    const selected = checked.map(inp => {
+      const [source, id] = inp.closest(".focus-round-item").dataset.topic.split(":");
+      return { source, id: source === "lang" ? Number(id) : id };
+    });
+    const originalLabel = startBtn.textContent;
+    startBtn.disabled = true;
+    startBtn.textContent = "Building your round…";
+    const steps = await buildFocusRoundSteps(selected);
+    startBtn.disabled = false;
+    startBtn.textContent = originalLabel;
+    if (!steps.length) return; // offline + nothing cached yet -- stay on the picker rather than entering an empty round
+    overlay.classList.add("hidden");
+    state.mode = "solo";
+    state.chapterId = "focus-round";
+    state.stepIndex = 0;
+    state.mistakes = 0;
+    state.lastWrong = null;
+    state.steps = steps;
+    renderStep();
+  });
+
+  render();
+})();
 
 function showPlaneQuestion() {
   planeState.paused = true;
