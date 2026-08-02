@@ -51,6 +51,7 @@ Skema Firebase RTDB (project hub):
 leaderboard/{gameId}/{playerId}/{name, timesPlayed, lastPlayed}
 players/{playerId}/badges/{gameId}/{...progress spesifik tiap game}
 players/{playerId}/topicStats/{gameId}/{topicKey}/{correct, wrong, lastWrongAt, streak}
+players/{playerId}/assignedTopics/[...]  // array "math:place-value"/"lang:3"/"sci:star-lifecycle", ditulis Parent Portal (/parents), dibaca MathVille's Focus Round picker
 players/{childId}/parentSessions/{YYYY-MM-DD}/{parentName, lastGamePlayed, at}
 insights/{studentId}/{draft, status: pending|approved, approvedAt, sentAt, sentTo}
 mathvilleGames/{code}/{...multiplayer round state}
@@ -67,9 +68,56 @@ Dashboard (`dashboard/dashboard.js`, `dashboard/index.html`): nambahin game baru
 - Optional `topicStats` di request body (dari `AIGLeaderboard.getTopicStats`) — kalau anak sering salah di topik itu, hint-nya lebih sabar/pake sudut pandang lebih sederhana.
 - Optional `history` (array `{role, content}`) + `followUp` (pesan baru dari anak) — buat lanjutin percakapan multi-turn, bukan cuma 1 hint terus abis.
 
-**Baru di-pilot di MathVille aja** (`mathville/index.html` + `script.js`, fungsi `loadAiHint`/`sendAiHintFollowUp`/`appendAiHintMessage`) — kartu AI Tutor sekarang mini chat thread: 3 tombol quick-reply ("Another example"/"Explain differently"/"Still confused") + kolom teks bebas. 3 game lain (multipleazka/azkacraft/azkauniverse) MASIH pakai UI single-shot lama (fetch tanpa history/followUp) — belum di-upgrade, tiap game punya copy kode hint sendiri-sendiri (bukan shared component), jadi upgrade ke game lain = kerjaan terpisah per game.
+**Awalnya di-pilot di MathVille doang, sekarang udah di-rollout juga ke azkacraft & azkauniverse** (masing-masing punya copy kode sendiri-sendiri, bukan shared component — lihat bagian "Bo (maskot AI)" di bawah buat status lengkap per game) — kartu AI Tutor jadi mini chat thread: 3 tombol quick-reply ("Another example"/"Explain differently"/"Still confused") + kolom teks bebas, plus SEKARANG selalu muncul (congrats kalau perfect, bukan cuma pas ada yang salah). **multipleazka (Math Race) masih satu-satunya yang belum di-upgrade** (masih single-shot, fetch tanpa history/followUp).
 
 ⚠️ **Gotcha kolom teks bebas + Enter key**: jangan cuma andalin `<form>`'s `submit` event + `preventDefault()` buat nyekat Enter — di device asli, implicit "Enter submits form" browser kadang nyampe ke default GET-to-self action LEBIH DULU sebelum listener submit sempet preventDefault, bikin reload halaman penuh (yang keliatan kayak "balik ke halaman lain" kalau ada logic auto-redirect pas fresh load). Fix-nya: tangkep `keydown` (`e.key === "Enter"`) LANGSUNG di elemen input-nya, `preventDefault()` + `stopPropagation()` di situ, jangan nunggu event `submit`.
+
+### Bo (maskot AI) — status rollout per game
+
+Ada 2 hal terpisah yang sama-sama dibrandingin "Bo", jangan ketuker:
+
+1. **Widget chat bebas** (floating avatar + bubble "Bo here!", tap kapan aja buat ngobrol apa aja, backend `api/bo-chat.js`):
+   - azkacraft — udah paling lama ada (`.game-bo`/`#game-bo-chat`, persistent di layar soal).
+   - azkauniverse — udah ada (`#game-bo` di `#screen-play`, share panel `#ship-bo-chat` yang juga dipake ship-marker di quest map).
+   - mathville — udah ada di BANYAK tempat: `#game-bo` global (toggle visibility per screen di `showScreen()`, disembunyiin di screen yang udah punya Bo sendiri: drive/plane/reward/landing/pair), mobil Drive Mode (`.drive-bo-face`), traveler truck di Town Map (`.map-traveler-bo-face`) — semua share 1 panel `#drive-bo-chat` (sengaja ditaro TOP-LEVEL di luar semua `.screen`, bukan di dalem `#screen-drive` kayak awalnya — kena gotcha overlay-in-inactive-screen).
+   - hub (`index.html`) — udah ada 2 entry point ke chat yang SAMA: `#sc-greeting` (avatar kecil "Tap Bo!") dan `#sc-hero-icon` (Bo gede di judul "Brain Box", di-`role=button`-in, forward click ke `#sc-greeting`).
+   - **multipleazka (Math Race) — BELUM ADA SAMA SEKALI.** Gap paling gede yang masih outstanding.
+2. **AI Tutor hint** (kartu personalized pas jawaban salah, badge sekarang semua "✨ Bo" bukan "✨ AI Tutor" lagi):
+   - mathville — versi INTERAKTIF (chip quick-reply + kolom teks bebas + history multi-turn), DAN sekarang **selalu muncul** (bukan cuma pas ada yang salah) — kalau round-nya perfect, munculin pesan congrats random dari `BO_CONGRATS_MESSAGES` alih-alih hint. Collapsed jadi 1 pesan dulu (`.chat-open` toggle + `#ai-hint-tap-cue`), tap buat expand ke full chat.
+   - azkacraft & azkauniverse — UDAH di-upgrade ke pola interaktif yang sama (chip + follow-up + congrats-on-perfect), reuse fungsi (`appendAiHintMessage`/`sendAiHintFollowUp`/`setupAiHintCardOpen`) yang di-porting manual ke tiap game punya `script.js` sendiri (bukan shared module, jaga-jaga field name beda-beda kayak biasa).
+   - multipleazka — MASIH versi lama single-shot (fetch sekali, 1 hint, abis). Belum di-upgrade.
+
+⚠️ **Safari focus-ring bug**: SVG/div yang di-`role=button tabindex=0` (misal `#sc-hero-icon`) bisa nunjukin halo abu-abu jelek pas di-tap di iOS Safari — `-webkit-tap-highlight-color: transparent` doang GAK NGARUH ke ini (itu cuma nyekat overlay tap-flash, bukan focus ring bawaan WebKit). Fix: `outline: none` di `:focus`, `:focus-visible` buat tetep kasih ring ke keyboard user.
+
+### Focus Round — mixed-topic practice, "sendiri" secara URL tapi numpang engine MathVille
+
+Fitur baru: anak (atau orang tua lewat Parent Portal) pilih sampe 8 topik LINTAS 3 game (mathville/azkacraft/azkauniverse), dapet 1 round 20 soal campur. Punya card sendiri di hub landing page (pastel lavender, sejajar 4 game lain — BUKAN nempel di icon/topbar MathVille lagi, itu udah dicabut).
+
+**Arsitektur**: `focus-round/index.html` cuma halaman **redirect tipis** (`location.replace` ke `mathville/index.html?focus=1`) — SENGAJA gak fork/duplicate seluruh engine render-soal (4 tipe UI: typein/mc/tap/match, reward, AI hint, dst) ke folder baru, karena itu berarti maintain 2 salinan kode yang sama (kelas bug yang sama kayak "azkacraft/azkauniverse field name beda" yang udah nyakitin sebelumnya). Semua logic beneran (`buildFocusRoundSteps`, `ensureFocusPools`, picker UI) tetep hidup di `mathville/script.js`/`mathville/index.html`, di-expose lewat `window.openFocusRoundPicker()` yang dipanggil deep-link `?focus=1`.
+
+**Sumber soal**:
+- Topik math (9 chapter) — reuse `buildRound(chapterId)` mathville APA ADANYA (dipanggil 2x per chapter buat variasi), termasuk soal tipe "match" bisa nongol di Focus Round persis kayak di chapter aslinya.
+- Topik language (5 dari 7 chapter azkacraft) — fetch `azkacraft/questions.json`, cuma ambil `type:"mc"`. **Reading Comprehension (id 6) dan Creative Writing (id 7) SENGAJA gak dimasukin ke picker** — soal mc mereka semua ngerujuk ke sebuah "passage"/cerita ("According to the text...") yang gak ditampilin di sini, jadi gak bisa dijawab berdiri sendiri.
+- Topik science (5 level azkauniverse) — fetch `azkauniverse/questions.json`, `type:"mc"` yang gak ada `image`.
+- ⚠️ Plane Mode's cross-game pool (`ensurePlaneQuestionPools()`) punya bug serupa yang BELUM difix: dia coba skip Reading Comprehension (cek `type==="passage"`) tapi Creative Writing kelolos karena soal mc-nya gak literally bertipe "passage" — masih ngeluarin soal gak-bisa-dijawab-standalone di Plane Mode. Di luar scope kerjaan Focus Round ini.
+
+`players/{id}/assignedTopics` (array of `"math:place-value"`/`"lang:3"`/`"sci:star-lifecycle"`) — ditulis Parent Portal, dibaca sekali sama picker pas pertama kali dibuka tiap page load (`applyAssignedTopics()`), pre-check topik yang di-assign KALAU belom ada yang di-checklist manual (gak nimpa pilihan anak).
+
+### Parent Portal (`/parents`)
+
+Halaman baru di root hub, `parents/index.html` + `script.js` + `style.css` sendiri — numpang Firebase project & schema yang sama (gak ada schema baru selain `assignedTopics`), tapi styling-nya ngikutin hub (Baloo2+Nunito, lavender), BUKAN tema game manapun.
+
+**Auth**: sign in pake nama+PIN ANAK (cek ke `testerAccounts/{nameKey}`, sama persis kayak Sign In hub) — **BUKAN** PIN dashboard guru (`AIG_DASHBOARD_PIN`, 1 PIN buat liat SEMUA murid). Salah pilih ini = privacy bug (orang tua bisa liat data anak orang lain).
+
+**Isinya 2 bagian**:
+1. Assign — picker Focus Round yang sama persis (20 topik, max 8), simpen ke `players/{childId}/assignedTopics`.
+2. Report — "Needs Practice" (topik akurasi <70% dari ≥3 percobaan, PERSIS sama rumus & `prettifyTopic()` kayak `dashboard/dashboard.js`, di-duplicate manual karena gak ada shared module) + XP per game.
+
+**Entry point**: link kecil "For parents →" di paling bawah landing page hub (`.sc-footer-link`), sengaja dibikin gak menonjol biar anak gak notice/ke-klik gak sengaja — bukan ditaro di tempat yang keliatan kayak game card.
+
+Beda sama pipeline "guru generate insight draft → approve → kirim email" yang UDAH ADA duluan di dashboard guru (`generateDraft`/tab approvals) — Parent Portal ini channel BARU yang live/self-serve, bukan gantiin. Guru tetep pegang kendali narasi lewat jalur email kalau mau.
+
+⚠️ **Bug yang ketauan & udah difix pas ngembangin ini**: `submitAnswer()` di mathville manggil Firebase (`recordTopicAttempt`) secara SYNC tanpa try/catch — kalau itu throw (misal koneksi jelek di device asli), seluruh round macet permanen di soal itu (setTimeout buat lanjut gak pernah kejadwal), tanpa error yang keliatan ke user. Root cause dari laporan "abis soal terakhir diem aja" yang sempet gak ketemu lewat testing biasa. Udah dibungkus try/catch di `submitAnswer()` DAN handler match-type (GCF & LCM).
 
 ## MathVille Drive Mode (free-roam alternatif tap-map)
 
@@ -150,10 +198,13 @@ Kalau lanjut ke poin 4: perlu cek/update kode yang hardcode `"playalidrisi.fun"`
 1. MathVille: 2-device multiplayer sudah divalidasi via 2 tab browser independen — real-device test (2 HP fisik) masih belum, tapi risiko sync-logic udah rendah.
 2. Vehicle icons — closed, gak ada perubahan kode diperlukan (lihat histori commit kalau butuh detail).
 3. AI Tutor cost monitoring — closed via Anthropic Console spend limit, bukan kode.
-4. **AI Tutor interaktif+personalized** baru di MathVille — replikasi ke multipleazka/azkacraft/azkauniverse kalau hasil pilot-nya bagus (masing-masing punya copy kode sendiri, bukan shared).
+4. ~~AI Tutor interaktif+personalized baru di MathVille~~ — **udah di-rollout juga ke azkacraft & azkauniverse** (lihat bagian "Bo (maskot AI)" di atas). Tinggal **multipleazka (Math Race)** yang masih belum sama sekali — butuh dibikinin widget Bo dari nol dulu (game lain udah punya), baru upgrade hint-nya.
 5. **Domain migration** `brainbox.lol` — nunggu user beli `AIBrainbox.fun` dan pindahin project brain-box dulu.
 6. **TWA lama vs Capacitor baru** — belum ada keputusan eksplisit apa TWA lama (`fun.playalidrisi.twa`) masih dipertahankan atau digantiin total sama Capacitor app yang baru.
 7. Vercel Deployment Protection buat project ini masih DIMATIIN (preview URL publik) — nyalain lagi kalau udah gak butuh testing preview-branch buat sementara waktu.
+8. **Plane Mode cross-game soal pool** (`mathville/script.js`, `ensurePlaneQuestionPools()`) masih ngeluarin soal dari azkacraft's "Creative Writing" chapter yang gak bisa dijawab standalone (butuh passage yang gak ditampilin) — exclusion filter-nya cuma cek `type==="passage"` literal, Creative Writing lolos karena soalnya bertipe "mc" biasa. Udah difix di Focus Round (exclude by chapter id 6 & 7 eksplisit), belum di-port balik ke Plane Mode.
+9. **Real-device QA** — full QA session udah dilakuin (browser automation, semua pass), tapi beberapa hal cuma bisa divalidasi bener di device fisik: gray focus-ring fix di `#sc-hero-icon` (iOS Safari khususnya), keyboard numerik PIN di Parent Portal, feel touch/scroll picker Focus Round.
+10. **Parent Portal** (`/parents`) belum ada rate-limiting/lockout buat percobaan PIN salah berulang — 4 digit PIN + nama anak cukup buat dapet akses; worth diomongin risiko-nya ke guru kalau kelas makin gede.
 
 ## Gaya kerja user (penting)
 - Adit komunikasi campur Indonesia-Inggris.
