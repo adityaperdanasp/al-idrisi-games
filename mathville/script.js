@@ -2056,6 +2056,33 @@ async function ensureFocusPools() {
   }
 }
 
+// azkacraft's topicStats are keyed by a broad subject label (see its
+// questions.json's per-chapter "topic" field), not by chapter id --
+// chapters 3/4/5 (Prefixes & Suffixes / Contractions / Capitalization)
+// all share "Grammar". So weighting for language topics is coarser than
+// math/science (which key 1:1 by chapter id / level id) -- an accurate
+// reflection of what data actually exists, not a bug.
+const FOCUS_LANG_TOPIC_LABELS = { 1: "Spelling", 2: "Vocabulary", 3: "Grammar", 4: "Grammar", 5: "Grammar" };
+
+// Mastery-based weighting, same spirit as Math Race's weightedRand()
+// (weight = 1 + wrong*k, backing off once mastered) but at topic
+// granularity since that's what topicStats tracks outside Math Race's
+// own per-value stats. A topic with no attempts yet gets a neutral
+// weight (2) rather than being over- or under-represented purely
+// because it's new.
+function focusTopicWeight(t, topicStats) {
+  let stats;
+  if (t.source === "math") stats = topicStats.mathville && topicStats.mathville[t.id];
+  else if (t.source === "lang") stats = topicStats["language-arts"] && topicStats["language-arts"][FOCUS_LANG_TOPIC_LABELS[t.id]];
+  else stats = topicStats.solarquest && topicStats.solarquest[t.id];
+  const correct = (stats && stats.correct) || 0;
+  const wrong = (stats && stats.wrong) || 0;
+  const total = correct + wrong;
+  if (total === 0) return 2;
+  const accuracy = correct / total;
+  return Math.max(1, 1 + (1 - accuracy) * 3); // 100% accuracy -> floor of 1, 0% -> 4
+}
+
 // `selected` is [{source: "math"|"lang"|"sci", id}]. Math topics reuse
 // buildRound(chapterId) (called twice per chapter for more variety --
 // most generators return a fresh random question each call) so every
@@ -2063,24 +2090,50 @@ async function ensureFocusPools() {
 // Focus Round exactly like it would in that chapter's normal round.
 async function buildFocusRoundSteps(selected) {
   await ensureFocusPools();
-  let pool = [];
+
+  let topicStats = {};
+  try {
+    const snap = await aigDb.ref(`players/${CHILD_ID}/topicStats`).get();
+    topicStats = snap.exists() ? snap.val() : {};
+  } catch (e) { /* offline -- every topic just falls back to neutral weight below */ }
+
+  const pools = {};
   selected.forEach(t => {
-    if (t.source === "math") {
-      pool.push(...buildRound(t.id));
-      pool.push(...buildRound(t.id));
-    } else if (t.source === "lang") {
-      pool.push(...(focusLangPool[t.id] || []));
-    } else if (t.source === "sci") {
-      pool.push(...(focusSciPool[t.id] || []));
-    }
+    const key = `${t.source}:${t.id}`;
+    let items;
+    if (t.source === "math") items = [...buildRound(t.id), ...buildRound(t.id)];
+    else if (t.source === "lang") items = [...(focusLangPool[t.id] || [])];
+    else items = [...(focusSciPool[t.id] || [])];
+    if (items.length) pools[key] = shuffle(items);
   });
-  if (!pool.length) return [];
-  // Cycle through reshuffled copies of the pool rather than sampling with
-  // replacement in one pass -- keeps repeats spread out instead of the
-  // same question showing twice in a row when the picked topics are thin.
+  const weighted = selected
+    .map(t => ({ key: `${t.source}:${t.id}`, weight: focusTopicWeight(t, topicStats) }))
+    .filter(t => pools[t.key]); // drop topics that resolved zero questions (e.g. offline) rather than let them stall the draw below
+  if (!weighted.length) return [];
+
+  const totalWeight = weighted.reduce((sum, t) => sum + t.weight, 0);
+  function pickTopicKey() {
+    let r = Math.random() * totalWeight;
+    for (const t of weighted) {
+      r -= t.weight;
+      if (r <= 0) return t.key;
+    }
+    return weighted[weighted.length - 1].key;
+  }
+
+  // Cursor per topic cycles through that topic's own shuffled pool
+  // (wrapping around) rather than resampling randomly each time, so a
+  // thin pool repeats evenly instead of clustering the same question.
+  const cursors = {};
   const steps = [];
-  while (steps.length < FOCUS_ROUND_SIZE) steps.push(...shuffle(pool.slice()));
-  return steps.slice(0, FOCUS_ROUND_SIZE);
+  for (let i = 0; i < FOCUS_ROUND_SIZE; i++) {
+    const key = pickTopicKey();
+    const pool = pools[key];
+    const idx = (cursors[key] || 0) % pool.length;
+    cursors[key] = idx + 1;
+    steps.push(pool[idx]);
+  }
+  return steps;
 }
 
 // No topbar icon triggers this from inside MathVille itself anymore --
