@@ -2401,14 +2401,19 @@ const BO_CHAT_PROMPTS = [
     }
   }
 
-  car.addEventListener("click", () => {
+  // Shared opener -- also used by the persistent #game-bo widget on the
+  // question screen (setupGameBoChat below), so both entry points open
+  // the exact same panel/thread instead of maintaining two copies.
+  window.openBoChat = () => {
     chat.hidden = false;
     if (hint) hint.style.display = "none";
     thread.innerHTML = "";
     history = [];
     appendMsg("Bo here! " + BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)], "bo");
     setTimeout(() => input.focus(), 50);
-  });
+  };
+
+  car.addEventListener("click", () => window.openBoChat());
   if (closeBtn) closeBtn.addEventListener("click", e => { e.stopPropagation(); chat.hidden = true; });
   form.addEventListener("submit", e => {
     e.preventDefault();
@@ -2426,6 +2431,16 @@ const BO_CHAT_PROMPTS = [
       form.requestSubmit();
     }
   });
+})();
+
+// Persistent Bo widget on the question screen (#screen-question) -- unlike
+// the Drive Mode car, this screen otherwise has no Bo at all, unlike
+// azkacraft where Bo is visible on every question screen. Opens the same
+// shared #drive-bo-chat panel via window.openBoChat() (set up above).
+(function setupGameBoChat() {
+  const bo = $("game-bo");
+  if (!bo || !window.openBoChat) return;
+  bo.addEventListener("click", () => window.openBoChat());
 })();
 
 /* =================================================================

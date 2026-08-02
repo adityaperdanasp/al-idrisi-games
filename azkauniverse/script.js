@@ -595,109 +595,18 @@ function renderQuestPathMap(container) {
     </div>
   `);
 
-  // Real chat with Bo (api/bo-chat.js) — tap the ship to open. #ship-bo-wrap
-  // is recreated fresh every renderQuestPathMap() call (container.innerHTML
-  // reset above), so its click listener is safe to re-attach each time.
-  // The chat panel itself (close/form/input) is static page markup though,
-  // so those get a dataset.wired guard to avoid stacking duplicate listeners.
+  // Tap the ship to open the shared Bo chat panel (wired once, globally,
+  // by setupBoChat() below). #ship-bo-wrap is recreated fresh every
+  // renderQuestPathMap() call (container.innerHTML reset above), so this
+  // listener is safe to re-attach each time.
   const shipBoWrap = document.getElementById("ship-bo-wrap");
-  const shipBoChat = document.getElementById("ship-bo-chat");
-  if (shipBoWrap && shipBoChat) {
-    const thread = document.getElementById("ship-bo-chat-thread");
-    const loading = document.getElementById("ship-bo-chat-loading");
-    const form = document.getElementById("ship-bo-chat-form");
-    const input = document.getElementById("ship-bo-chat-input");
-
-    if (form && !form.dataset.wired) {
-      form.dataset.wired = "1";
-      let history = [];
-
-      function appendMsg(text, from) {
-        const div = document.createElement("div");
-        div.className = "sc-bo-msg sc-bo-msg-" + from;
-        if (from === "bo") {
-          const avatar = document.createElement("img");
-          avatar.className = "sc-bo-msg-avatar";
-          avatar.src = "../icon-192.png";
-          avatar.alt = "Bo";
-          div.appendChild(avatar);
-        }
-        const textEl = document.createElement("span");
-        textEl.className = "sc-bo-msg-text";
-        textEl.textContent = text;
-        div.appendChild(textEl);
-        thread.appendChild(div);
-        thread.scrollTop = thread.scrollHeight;
-      }
-
-      async function sendMessage(message) {
-        appendMsg(message, "kid");
-        history.push({ role: "user", content: message });
-        loading.classList.remove("hidden");
-        try {
-          const player = window.AIGPlayer && AIGPlayer.getPlayer();
-          const res = await fetch(API_BASE + "/api/bo-chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              studentName: player ? player.name : undefined,
-              message,
-              history: history.slice(0, -1)
-            })
-          });
-          const data = await res.json();
-          if (res.ok && data.reply) {
-            appendMsg(data.reply, "bo");
-            history.push({ role: "assistant", content: data.reply });
-          } else {
-            appendMsg("Hmm, my brain hiccuped! Try asking again?", "bo");
-          }
-        } catch (e) {
-          appendMsg("Oops, I couldn't hear that. Try again?", "bo");
-        } finally {
-          loading.classList.add("hidden");
-        }
-      }
-
-      shipBoChat._openBoChat = () => {
-        thread.innerHTML = "";
-        history = [];
-        appendMsg("Bo here! " + BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)], "bo");
-        setTimeout(() => input.focus(), 50);
-      };
-
-      form.addEventListener("submit", e => {
-        e.preventDefault();
-        const message = input.value.trim();
-        if (!message) return;
-        input.value = "";
-        sendMessage(message);
-      });
-      // Same real-device gotcha as the AI Tutor input: don't rely on the
-      // form's submit event alone to catch Enter -- catch keydown directly.
-      input.addEventListener("keydown", e => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          e.stopPropagation();
-          form.requestSubmit();
-        }
-      });
-    }
-
+  if (shipBoWrap && window.openBoChat) {
     shipBoWrap.addEventListener("click", (e) => {
       e.stopPropagation();
-      shipBoChat.hidden = false;
-      document.getElementById("ship-bo-hint").style.display = "none";
-      if (shipBoChat._openBoChat) shipBoChat._openBoChat();
+      const hint = document.getElementById("ship-bo-hint");
+      if (hint) hint.style.display = "none";
+      window.openBoChat();
     });
-    const closeBtn = document.getElementById("ship-bo-chat-close");
-    if (closeBtn && !closeBtn.dataset.wired) {
-      closeBtn.dataset.wired = "1";
-      closeBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        shipBoChat.hidden = true;
-      });
-    }
   }
 
   levels.forEach((level, i) => {
@@ -1788,6 +1697,106 @@ $("btn-mp-again").addEventListener("click", () => {
 /* =================================================================
    INIT
    ================================================================= */
+// Real chat with Bo (api/bo-chat.js), shared by the persistent #game-bo
+// widget on the play screen and the ship marker on the quest map -- both
+// just call window.openBoChat(). Wired once here (not per-render) so the
+// panel's form/close/enter-key listeners never stack duplicates.
+(function setupBoChat() {
+  const bo = document.getElementById("game-bo");
+  const boHint = document.getElementById("game-bo-hint");
+  const chat = document.getElementById("ship-bo-chat");
+  const closeBtn = document.getElementById("ship-bo-chat-close");
+  const thread = document.getElementById("ship-bo-chat-thread");
+  const loading = document.getElementById("ship-bo-chat-loading");
+  const form = document.getElementById("ship-bo-chat-form");
+  const input = document.getElementById("ship-bo-chat-input");
+  if (!chat || !form) return;
+
+  let history = [];
+
+  function appendMsg(text, from) {
+    const div = document.createElement("div");
+    div.className = "sc-bo-msg sc-bo-msg-" + from;
+    if (from === "bo") {
+      const avatar = document.createElement("img");
+      avatar.className = "sc-bo-msg-avatar";
+      avatar.src = "../icon-192.png";
+      avatar.alt = "Bo";
+      div.appendChild(avatar);
+    }
+    const textEl = document.createElement("span");
+    textEl.className = "sc-bo-msg-text";
+    textEl.textContent = text;
+    div.appendChild(textEl);
+    thread.appendChild(div);
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  async function sendMessage(message) {
+    appendMsg(message, "kid");
+    history.push({ role: "user", content: message });
+    loading.classList.remove("hidden");
+    try {
+      const player = window.AIGPlayer && AIGPlayer.getPlayer();
+      const res = await fetch(API_BASE + "/api/bo-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: player ? player.name : undefined,
+          message,
+          history: history.slice(0, -1)
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.reply) {
+        appendMsg(data.reply, "bo");
+        history.push({ role: "assistant", content: data.reply });
+      } else {
+        appendMsg("Hmm, my brain hiccuped! Try asking again?", "bo");
+      }
+    } catch (e) {
+      appendMsg("Oops, I couldn't hear that. Try again?", "bo");
+    } finally {
+      loading.classList.add("hidden");
+    }
+  }
+
+  window.openBoChat = () => {
+    chat.hidden = false;
+    if (boHint) boHint.style.display = "none";
+    thread.innerHTML = "";
+    history = [];
+    appendMsg("Bo here! " + BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)], "bo");
+    setTimeout(() => input.focus(), 50);
+  };
+
+  if (bo) {
+    bo.addEventListener("click", () => window.openBoChat());
+  }
+  if (closeBtn) {
+    closeBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      chat.hidden = true;
+    });
+  }
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+    input.value = "";
+    sendMessage(message);
+  });
+  // Same real-device gotcha as the AI Tutor input: don't rely on the
+  // form's submit event alone to catch Enter -- catch keydown directly.
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      form.requestSubmit();
+    }
+  });
+})();
+
 (function init() {
   applyTheme(loadTheme());
   refreshXpBadge();

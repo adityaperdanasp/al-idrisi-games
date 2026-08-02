@@ -29,7 +29,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=34" />
+<link rel="stylesheet" href="style.css?v=35" />
 </head>
 <body>
 
@@ -69,6 +69,27 @@
       <div class="drive-difficulty-title" id="vehicle-skin-title">Pick a design</div>
       <div class="vehicle-skin-grid" id="vehicle-skin-grid"></div>
     </div>
+  </div>
+
+  <!-- Real chat with Bo (api/bo-chat.js) -- shared by the Drive Mode car
+       and the persistent #game-bo widget on #screen-question, so it lives
+       outside every .screen too (see gotcha note above); it used to be
+       nested inside #screen-drive, which silently broke #game-bo's click
+       on any other screen since a non-active ancestor .screen stays
+       display:none even after this panel's own [hidden] is removed. -->
+  <div class="sc-bo-chat" id="drive-bo-chat" hidden>
+    <div class="sc-bo-chat-header">
+      <img src="../icon-192.png" alt="Bo" class="sc-bo-chat-avatar">
+      <button class="sc-bo-chat-close" id="drive-bo-chat-close">✕</button>
+    </div>
+    <div class="sc-bo-chat-thread" id="drive-bo-chat-thread"></div>
+    <div class="sc-bo-chat-loading hidden" id="drive-bo-chat-loading">
+      <span></span><span></span><span></span>
+    </div>
+    <form class="sc-bo-chat-form" id="drive-bo-chat-form">
+      <input class="sc-bo-chat-input" id="drive-bo-chat-input" placeholder="Ask Bo anything..." autocomplete="off" maxlength="200">
+      <button class="sc-bo-chat-send" type="submit" aria-label="Send">➤</button>
+    </form>
   </div>
 
   <!-- ===============================================================
@@ -207,22 +228,6 @@
           <div class="joystick-knob drive-aim-knob" id="drive-aim-knob"></div>
         </div>
       </div>
-    </div>
-
-    <!-- Real chat with Bo (api/bo-chat.js) -->
-    <div class="sc-bo-chat" id="drive-bo-chat" hidden>
-      <div class="sc-bo-chat-header">
-        <img src="../icon-192.png" alt="Bo" class="sc-bo-chat-avatar">
-        <button class="sc-bo-chat-close" id="drive-bo-chat-close">✕</button>
-      </div>
-      <div class="sc-bo-chat-thread" id="drive-bo-chat-thread"></div>
-      <div class="sc-bo-chat-loading hidden" id="drive-bo-chat-loading">
-        <span></span><span></span><span></span>
-      </div>
-      <form class="sc-bo-chat-form" id="drive-bo-chat-form">
-        <input class="sc-bo-chat-input" id="drive-bo-chat-input" placeholder="Ask Bo anything..." autocomplete="off" maxlength="200">
-        <button class="sc-bo-chat-send" type="submit" aria-label="Send">➤</button>
-      </form>
     </div>
 
     <!-- Difficulty picker, shown before every fresh Drive Mode entry
@@ -417,6 +422,13 @@
         <div id="match-col-right" class="match-col match-col-right"></div>
       </div>
     </div>
+
+    <!-- Persistent Bo, same pattern as azkacraft's #game-bo -- tap opens
+         the shared #drive-bo-chat panel. -->
+    <div class="game-bo" id="game-bo" role="button" tabindex="0">
+      <span class="game-bo-hint" id="game-bo-hint">Bo here!</span>
+      <img class="game-bo-face" src="../icon-192.png" alt="Bo">
+    </div>
   </section>
 
   <!-- ===============================================================
@@ -455,6 +467,6 @@
 <script src="questions.js?v=2"></script>
 <script src="generators.js?v=2"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=48"></script>
+<script src="script.js?v=49"></script>
 </body>
 </html>
