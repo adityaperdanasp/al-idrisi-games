@@ -165,6 +165,12 @@ function showScreen(id) {
   const hideNav = id === "screen-landing" || id === "screen-pair";
   $("btn-map").classList.toggle("hidden", hideNav);
   $("btn-drive").classList.toggle("hidden", hideNav);
+  // Screens that already have their own Bo (Drive Mode's car, the reward
+  // screen's AI Tutor card) or where it'd just be clutter (landing, pair
+  // setup, Plane Mode) hide the persistent widget instead.
+  const hideGameBo = ["screen-landing", "screen-pair", "screen-drive", "screen-plane", "screen-reward"].includes(id);
+  const gameBo = $("game-bo");
+  if (gameBo) gameBo.classList.toggle("hidden", hideGameBo);
   // The map's width can only be measured once the screen is actually
   // visible (display:none reports clientWidth 0) — re-fit right after
   // it becomes active, regardless of which code path got us here.
@@ -2637,8 +2643,18 @@ function goToNextStep() {
 
 // Shared "record + advance" used by typein/mc/tap. `answerForHint` is the
 // display-friendly correct answer shown by the AI Tutor if this was a miss.
+// The leaderboard call is wrapped in try/catch on purpose -- it hits
+// Firebase synchronously (aigDb.ref(...).transaction(...)), and on a flaky
+// real-device connection that call (or Firebase init itself) can throw
+// before the SDK's own async error handling kicks in. Without the guard,
+// that throw would abort this whole function and the setTimeout below
+// would never get scheduled -- the round silently freezes on the current
+// question forever, with no error visible to the player. Advancing to the
+// next question must never depend on analytics succeeding.
 function submitAnswer(isCorrect, prompt, answerForHint) {
-  if (window.AIGLeaderboard && state.chapterId) AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, isCorrect);
+  try {
+    if (window.AIGLeaderboard && state.chapterId) AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, isCorrect);
+  } catch (e) { /* never let analytics block the round */ }
   if (!isCorrect) {
     state.mistakes++;
     state.lastWrong = { prompt, answer: answerForHint };
@@ -2659,7 +2675,12 @@ function renderTypeinStep(step) {
 
   const pad = $("typein-keypad");
   pad.innerHTML = "";
-  const keys = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "space", "0", "back"];
+  // "," and "×" so multi-number answers (e.g. "list all the factors of
+  // 30") and multiplication facts aren't stuck typing everything as one
+  // run of digits separated only by a space -- kids reach for a comma or
+  // times sign there naturally. Grading (extractNumbers) already ignores
+  // whatever separator is used, so this is purely a legibility fix.
+  const keys = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "space", "0", "back", ",", "×"];
   keys.forEach(k => {
     const btn = document.createElement("button");
     if (k === "back") { btn.className = "key back"; btn.textContent = "⌫"; }
@@ -2827,7 +2848,10 @@ function renderMatchStep(step) {
             leftWrap.querySelector(`.match-dot[data-idx="${from}"]`).classList.add("connected");
             rightWrap.querySelector(`.match-dot[data-slot="${closestSlot}"]`).classList.add("connected");
             redraw();
-            if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, true);
+            // Same guard as submitAnswer() -- a synchronous Firebase throw
+            // here must never stop connections.length from being checked
+            // below, or the round freezes on the last match forever.
+            try { if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, true); } catch (e) {}
             if (connections.length === pairs.length) {
               state.mistakes += matchMistakes;
               setTimeout(goToNextStep, 500);
@@ -2835,7 +2859,7 @@ function renderMatchStep(step) {
           } else {
             matchMistakes++;
             state.lastWrong = { prompt: `Match: ${pairs[from].left}`, answer: pairs[from].right };
-            if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, false);
+            try { if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, false); } catch (e) {}
             const rd = rightWrap.querySelector(`.match-dot[data-slot="${closestSlot}"]`);
             rd.classList.add("wrong-flash");
             setTimeout(() => rd.classList.remove("wrong-flash"), 500);
