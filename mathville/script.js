@@ -2026,7 +2026,63 @@ const FOCUS_ROUND_SIZE = 20;
 // separate, already-shipped code path.)
 const FOCUS_LANG_EXCLUDED_CHAPTER_IDS = [6, 7];
 
-let focusLangPool = null;  // { [chapterId]: [{uiType,prompt,options,correctLabel}] }
+// Converts one azkacraft/azkauniverse question into mathville's generic
+// step shape ({uiType, prompt, ...}), or returns null to skip it
+// (flashcard has no question/answer to test with; anything with an
+// unrecognized type is skipped rather than guessed at). "mc" was the
+// only type Focus Round used to draw from -- match(/"line", which is
+// azkauniverse's own name for the same drag-pairing UI) is also safe to
+// reuse as-is since mathville's renderStep() already knows how to
+// render "match" generically, regardless of which game the data came
+// from. "fill" is NOT mapped to mathville's "typein" uiType, on
+// purpose -- that screen's keypad is numeric-only (digits, comma,
+// times, space), built for math answers, with no letter keys at all.
+// A text answer like "often" or "main sequence" would be untypeable.
+// Fill questions come back tagged _fill instead and get converted to
+// multiple-choice afterward, once all of a chapter/level's fill answers
+// are known (see focusConvertFillToMc below) so real wrong-answer
+// options can be drawn from sibling questions.
+function focusNormalizeQuestion(q, source) {
+  if (q.type === "mc") {
+    if (source === "sci" && q.image) return null; // no room to show the diagram here
+    return source === "sci"
+      ? { uiType: "mc", prompt: q.question, options: [...q.options], correctLabel: q.options[q.answer] }
+      : { uiType: "mc", prompt: q.prompt, options: [...q.options], correctLabel: q.answer };
+  }
+  if (q.type === "fill") {
+    const prompt = source === "sci" ? q.question : q.prompt;
+    const answer = String(q.answer).trim();
+    if (!prompt || !answer) return null;
+    return { _fill: true, prompt, answer };
+  }
+  if (q.type === "match" || q.type === "line") {
+    // azkacraft's pairs are already {left,right}; azkauniverse's "match"/
+    // "line" types use {term,match} instead -- same shape, different keys.
+    const pairs = (q.pairs || []).map(p => "left" in p ? p : { left: p.term, right: p.match });
+    if (pairs.length < 2) return null;
+    return { uiType: "match", pairs };
+  }
+  return null; // flashcard, passage, etc -- not a testable question
+}
+
+// Turns every {_fill, prompt, answer} item in `items` into a real mc
+// step, drawing wrong-answer options from OTHER fill answers in the
+// same list (same chapter/level, so distractors are at least
+// topically related instead of random). Needs at least 3 siblings to
+// build a 4-option question -- fill items in a list too short for that
+// are dropped rather than shipped with too few/no wrong options.
+function focusConvertFillToMc(items) {
+  const fillAnswers = items.filter(it => it._fill).map(it => it.answer);
+  return items.map(it => {
+    if (!it._fill) return it;
+    const distractorPool = [...new Set(fillAnswers.filter(a => a !== it.answer))];
+    if (distractorPool.length < 3) return null;
+    const options = shuffle([it.answer, ...shuffle(distractorPool).slice(0, 3)]);
+    return { uiType: "mc", prompt: it.prompt, options, correctLabel: it.answer };
+  }).filter(Boolean);
+}
+
+let focusLangPool = null;  // { [chapterId]: [{uiType,...}] }
 let focusSciPool = null;   // { [levelId]: [...] }
 async function ensureFocusPools() {
   if (focusLangPool && focusSciPool) return;
@@ -2038,15 +2094,13 @@ async function ensureFocusPools() {
     focusLangPool = {};
     (lang.chapters || []).forEach(ch => {
       if (FOCUS_LANG_EXCLUDED_CHAPTER_IDS.includes(ch.id)) return;
-      focusLangPool[ch.id] = (ch.questions || [])
-        .filter(q => q.type === "mc")
-        .map(q => ({ uiType: "mc", prompt: q.prompt, options: [...q.options], correctLabel: q.answer }));
+      const items = (ch.questions || []).map(q => focusNormalizeQuestion(q, "lang")).filter(Boolean);
+      focusLangPool[ch.id] = focusConvertFillToMc(items);
     });
     focusSciPool = {};
     (sci.levels || []).forEach(lvl => {
-      focusSciPool[lvl.id] = (lvl.questions || [])
-        .filter(q => q.type === "mc" && !q.image)
-        .map(q => ({ uiType: "mc", prompt: q.question, options: [...q.options], correctLabel: q.options[q.answer] }));
+      const items = (lvl.questions || []).map(q => focusNormalizeQuestion(q, "sci")).filter(Boolean);
+      focusSciPool[lvl.id] = focusConvertFillToMc(items);
     });
   } catch (e) {
     // Offline or the other games' file shape changed -- whatever topics
