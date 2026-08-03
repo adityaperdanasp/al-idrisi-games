@@ -69,6 +69,12 @@ const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlay
 const TOPIC_STATS_ID = (window.AIGPlayer && AIGPlayer.getPlayer()
   && (AIGPlayer.getPlayer().childId || AIGPlayer.getPlayer().id)) || CHILD_ID;
 
+// /api/* only exists on the hub project (playalidrisi.fun) -- the standalone
+// domain (multipleazka.fun) needs to call across origin to reach it (same
+// pattern as azkacraft/azkauniverse; api/*.js already allow this origin
+// via CORS). On the hub itself, API_BASE stays empty.
+const API_BASE = ["playalidrisi.fun", "localhost"].includes(location.hostname) ? "" : "https://playalidrisi.fun";
+
 // Fetched once on load; null until it resolves, in which case question
 // picking just falls back to plain uniform random (see weightedRand()).
 let myTopicStats = null;
@@ -1941,34 +1947,63 @@ themeToggle.addEventListener("click", () => {
 });
 
 /* =================================================================
-   AI TUTOR — real hint, generated from the last question the player
-   actually missed this race (state.lastWrong, set in handleAnswer()).
-   No wrong answers this race → card just stays hidden. If the API call
-   fails for any reason, same thing — it never blocks the results screen.
+   AI TUTOR ("Bo") — real hint, generated from the last question the
+   player actually missed this race (state.lastWrong, set in
+   handleAnswer()), or a congrats message on a mistake-free race
+   (state.raceWrongTotal === 0). Collapsed to one message until tapped,
+   which reveals follow-up chips + a free-text input for a real
+   back-and-forth (api/generate-hint.js's history/followUp params) --
+   same interactive pattern as MathVille/azkacraft/azkauniverse. Any API
+   failure just shows a generic friendly line instead — never blocks
+   the results screen.
    ================================================================= */
+const BO_HINT_CONGRATS_MESSAGES = [
+  `Wow, a perfect race! You crushed every question, ${CHILD_NAME}.`,
+  "Amazing work! Not a single mistake in there.",
+  "You nailed it! Want to chat about anything else?",
+  "Perfect race -- awesome job!",
+  "That was flawless! I'm impressed.",
+  `Perfect race! You really know your math, ${CHILD_NAME}.`
+];
+let aiHintHistory = [];
+let aiHintMissed = null;
+
 (function () {
   const screenOver = document.getElementById("screen-over");
   const card = document.getElementById("ai-hint-card");
-  const loadingEl = document.getElementById("ai-hint-loading");
-  const resultEl = document.getElementById("ai-hint-result");
-  if (!screenOver || !card || !loadingEl || !resultEl) return;
+  const loading = document.getElementById("ai-hint-loading");
+  const thread = document.getElementById("ai-hint-thread");
+  const followups = document.getElementById("ai-hint-followups");
+  const form = document.getElementById("ai-hint-form");
+  if (!screenOver || !card || !loading || !thread) return;
 
   let lastRequestedFor = null; // dedupe re-fires (e.g. the observer firing on unrelated class changes)
 
   async function loadHint() {
+    const perfect = state.raceWrongTotal === 0;
     const missed = state.lastWrong;
-    if (!missed) { card.classList.add("hidden"); return; }
+    if (!missed && !perfect) { card.classList.add("hidden"); return; }
 
-    const requestKey = JSON.stringify(missed);
+    const requestKey = JSON.stringify(missed) + perfect;
     if (requestKey === lastRequestedFor) return;
     lastRequestedFor = requestKey;
 
+    aiHintMissed = missed;
+    aiHintHistory = [];
+    thread.innerHTML = "";
+    followups.classList.add("hidden");
+    form.classList.add("hidden");
     card.classList.remove("hidden");
-    loadingEl.classList.remove("hidden");
-    resultEl.classList.add("hidden");
+    card.classList.remove("chat-open");
 
+    if (!missed) {
+      appendAiHintMessage(BO_HINT_CONGRATS_MESSAGES[Math.floor(Math.random() * BO_HINT_CONGRATS_MESSAGES.length)], "ai");
+      return;
+    }
+
+    loading.classList.remove("hidden");
     try {
-      const res = await fetch("/api/generate-hint", {
+      const res = await fetch(API_BASE + "/api/generate-hint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1982,19 +2017,227 @@ themeToggle.addEventListener("click", () => {
       });
       const data = await res.json();
       if (!res.ok || !data.hint) throw new Error(data.error || "no hint");
-
-      resultEl.textContent = data.hint;
-      loadingEl.classList.add("hidden");
-      resultEl.style.animation = "none";
-      resultEl.classList.remove("hidden");
-      void resultEl.offsetWidth;
-      resultEl.style.animation = "";
+      appendAiHintMessage(data.hint, "ai");
+      aiHintHistory.push({ role: "assistant", content: data.hint });
     } catch (e) {
-      card.classList.add("hidden"); // fails silently — never blocks the results screen
+      appendAiHintMessage("Nice try on that one! Tap me if you want to chat about it.", "ai");
+    } finally {
+      loading.classList.add("hidden");
     }
   }
 
   new MutationObserver(() => {
     if (screenOver.classList.contains("active")) loadHint();
   }).observe(screenOver, { attributes: true, attributeFilter: ["class"] });
+})();
+
+function appendAiHintMessage(text, from) {
+  const thread = document.getElementById("ai-hint-thread");
+  const div = document.createElement("div");
+  div.className = "ai-hint-msg ai-hint-msg-" + from;
+  if (from === "ai") {
+    const avatar = document.createElement("img");
+    avatar.className = "ai-hint-avatar";
+    avatar.src = "../icon-192.png";
+    avatar.alt = "Bo";
+    div.appendChild(avatar);
+  }
+  const textEl = document.createElement("span");
+  textEl.className = "ai-hint-msg-text";
+  textEl.textContent = text;
+  div.appendChild(textEl);
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
+}
+
+async function sendAiHintFollowUp(text) {
+  if (!text || !text.trim() || !aiHintMissed) return;
+  const loading = document.getElementById("ai-hint-loading");
+  const followups = document.getElementById("ai-hint-followups");
+  const input = document.getElementById("ai-hint-input");
+  appendAiHintMessage(text, "kid");
+  const historyBeforeThisTurn = aiHintHistory.slice();
+  aiHintHistory.push({ role: "user", content: text });
+  input.value = "";
+  loading.classList.remove("hidden");
+  followups.classList.add("hidden");
+  try {
+    const res = await fetch(API_BASE + "/api/generate-hint", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentName: CHILD_NAME,
+        gameLabel: "Math Race",
+        question: aiHintMissed.question,
+        correctAnswer: aiHintMissed.correctAnswer,
+        kidAnswer: aiHintMissed.kidAnswer,
+        topic: aiHintMissed.topic,
+        history: historyBeforeThisTurn,
+        followUp: text
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.hint) throw new Error(data.error || "no hint");
+    appendAiHintMessage(data.hint, "ai");
+    aiHintHistory.push({ role: "assistant", content: data.hint });
+  } catch (e) {
+    appendAiHintMessage("Hmm, I'm having trouble thinking right now. Try again in a bit!", "ai");
+  } finally {
+    loading.classList.add("hidden");
+    followups.classList.remove("hidden");
+  }
+}
+
+// Collapsed message -> full chat expansion, wired once (not per loadHint()
+// call) so the listener never stacks duplicates across sessions.
+(function setupAiHintCardOpen() {
+  const card = document.getElementById("ai-hint-card");
+  if (!card) return;
+  function openChat() {
+    if (card.classList.contains("chat-open")) return;
+    card.classList.add("chat-open");
+    // Quick-reply chips only make sense when Bo was explaining a miss --
+    // on a perfect race there's nothing for them to refer to.
+    if (aiHintMissed) document.getElementById("ai-hint-followups").classList.remove("hidden");
+    document.getElementById("ai-hint-form").classList.remove("hidden");
+    setTimeout(() => document.getElementById("ai-hint-input").focus(), 50);
+  }
+  card.addEventListener("click", openChat);
+  // Only react when the card itself is focused, not a descendant input/
+  // button -- otherwise Space would get eaten while typing in the chat.
+  card.addEventListener("keydown", e => {
+    if (e.target !== card) return;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openChat(); }
+  });
+})();
+
+(function setupAiHintForm() {
+  const form = document.getElementById("ai-hint-form");
+  if (!form) return;
+  const input = document.getElementById("ai-hint-input");
+  document.querySelectorAll("#ai-hint-followups .ai-hint-chip").forEach(chip => {
+    chip.addEventListener("click", e => {
+      e.stopPropagation();
+      sendAiHintFollowUp(chip.dataset.ask);
+    });
+  });
+  // Same real-device gotcha as the game-bo chat input: don't rely on the
+  // form's submit event alone to catch Enter -- catch keydown directly.
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      form.requestSubmit();
+    }
+  });
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+    input.value = "";
+    sendAiHintFollowUp(message);
+  });
+})();
+
+/* =================================================================
+   Simple Bo chat widget on the gameplay screen (api/bo-chat.js) --
+   same pattern as azkacraft/azkauniverse/mathville/hub. Tap Bo to open
+   a fresh chat thread with one of Bo's rotating prompts as the opener.
+   ================================================================= */
+const BO_CHAT_PROMPTS = [
+  "What's on your mind?", "What confuses you?", "Got a tricky question?",
+  "Need a hint?", "What's puzzling you?", "Stuck on something?",
+  "Ask me anything!", "What do you have in mind?", "Need a helping hand?",
+  "What's tricky right now?", "Wanna talk it through?", "What's bugging you?",
+  "Something not clicking?", "What can I explain?", "Need a nudge?",
+  "Tell me what's up!", "What's got you stuck?", "Need backup?",
+  "What should we figure out?", "Ready to solve something?", "Need a brain boost?",
+  "Whatcha thinking?", "Need a clue?", "What's the challenge?",
+  "What's on your quest?", "Ready for a question?", "Need some help?",
+  "Let's untangle it!", "Curious about something?", "Wanna crack this together?"
+];
+(function setupGameBoChat() {
+  const bo = document.getElementById("game-bo");
+  const chat = document.getElementById("game-bo-chat");
+  const closeBtn = document.getElementById("game-bo-chat-close");
+  const thread = document.getElementById("game-bo-chat-thread");
+  const loading = document.getElementById("game-bo-chat-loading");
+  const form = document.getElementById("game-bo-chat-form");
+  const input = document.getElementById("game-bo-chat-input");
+  if (!bo || !chat) return;
+
+  let history = [];
+
+  function appendMsg(text, from) {
+    const div = document.createElement("div");
+    div.className = "sc-bo-msg sc-bo-msg-" + from;
+    if (from === "bo") {
+      const avatar = document.createElement("img");
+      avatar.className = "sc-bo-msg-avatar";
+      avatar.src = "../icon-192.png";
+      avatar.alt = "Bo";
+      div.appendChild(avatar);
+    }
+    const textEl = document.createElement("span");
+    textEl.className = "sc-bo-msg-text";
+    textEl.textContent = text;
+    div.appendChild(textEl);
+    thread.appendChild(div);
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  async function sendMessage(message) {
+    appendMsg(message, "kid");
+    history.push({ role: "user", content: message });
+    loading.classList.remove("hidden");
+    try {
+      const res = await fetch(API_BASE + "/api/bo-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: CHILD_NAME,
+          message,
+          history: history.slice(0, -1)
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.reply) {
+        appendMsg(data.reply, "bo");
+        history.push({ role: "assistant", content: data.reply });
+      } else {
+        appendMsg("Hmm, my brain hiccuped! Try asking again?", "bo");
+      }
+    } catch (e) {
+      appendMsg("Oops, I couldn't hear that. Try again?", "bo");
+    } finally {
+      loading.classList.add("hidden");
+    }
+  }
+
+  const hint = document.getElementById("game-bo-hint");
+  bo.addEventListener("click", () => {
+    chat.hidden = false;
+    if (hint) hint.style.display = "none";
+    thread.innerHTML = "";
+    history = [];
+    appendMsg("Bo here! " + BO_CHAT_PROMPTS[Math.floor(Math.random() * BO_CHAT_PROMPTS.length)], "bo");
+    setTimeout(() => input.focus(), 50);
+  });
+  if (closeBtn) closeBtn.addEventListener("click", e => { e.stopPropagation(); chat.hidden = true; });
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+    input.value = "";
+    sendMessage(message);
+  });
+  // Same real-device gotcha as the AI Tutor input: don't rely on the
+  // form's submit event alone to catch Enter -- catch keydown directly.
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      form.requestSubmit();
+    }
+  });
 })();

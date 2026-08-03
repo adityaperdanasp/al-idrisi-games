@@ -850,7 +850,7 @@ h1, h2 { margin: 0 0 8px; }
 }
 .sb-empty { text-align: center; color: var(--muted); font-size: .85rem; padding: 6px 0; }
 
-/* --- MOCKUP: AI Tutor hint card --- */
+/* --- Bo's AI hint card (interactive: chips + free-text follow-up) --- */
 .ai-hint-card {
   background: linear-gradient(135deg, #f3ecff, #eef5ff);
   border: 1px solid #e2d6fb;
@@ -858,7 +858,9 @@ h1, h2 { margin: 0 0 8px; }
   padding: 14px 16px;
   margin: 14px 0 18px;
   text-align: left;
+  cursor: pointer;
 }
+.ai-hint-card.chat-open { cursor: default; }
 .ai-hint-badge {
   display: inline-flex;
   align-items: center;
@@ -873,6 +875,10 @@ h1, h2 { margin: 0 0 8px; }
   padding: 4px 10px;
   margin-bottom: 8px;
 }
+.ai-hint-tap-cue {
+  font-size: .7rem; font-weight: 700; color: #7a4fd1; opacity: .75; margin-top: 6px;
+}
+.ai-hint-card.chat-open .ai-hint-tap-cue { display: none; }
 .ai-hint-loading {
   display: flex;
   align-items: center;
@@ -893,19 +899,135 @@ h1, h2 { margin: 0 0 8px; }
   0%, 80%, 100% { transform: translateY(0); opacity: .5; }
   40% { transform: translateY(-4px); opacity: 1; }
 }
-.ai-hint-result {
-  font-size: .92rem;
-  color: var(--text);
-  line-height: 1.45;
-  margin: 0;
-  opacity: 0;
-  animation: aiHintFadeIn .4s ease forwards;
-}
 @keyframes aiHintFadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.ai-hint-result.hidden { display: none; }
+
+.ai-hint-thread { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; }
+.ai-hint-msg {
+  font-size: .87rem; line-height: 1.45; margin: 0; padding: 8px 12px; border-radius: 12px;
+  animation: aiHintFadeIn .3s ease; max-width: 88%;
+}
+.ai-hint-msg-ai {
+  color: var(--text); background: rgba(255,255,255,.65);
+  border-bottom-left-radius: 4px; align-self: flex-start;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.ai-hint-avatar {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  background: #fff; object-fit: contain; margin-top: 1px;
+}
+.ai-hint-msg-text { flex: 1; }
+.ai-hint-msg-kid {
+  color: #fff; background: var(--brand); font-weight: 600;
+  border-bottom-right-radius: 4px; align-self: flex-end;
+}
+
+.ai-hint-followups { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.ai-hint-chip {
+  border: 2px solid var(--brand-light); background: #fff; color: var(--brand-dark);
+  font: 700 .7rem inherit; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+}
+.ai-hint-chip:active { background: var(--brand-light); }
+
+.ai-hint-form { display: flex; gap: 8px; margin-top: 10px; }
+.ai-hint-input {
+  flex: 1; padding: 10px 12px; border: 2px solid var(--brand-light); border-radius: 14px;
+  font: 600 .8rem inherit; color: var(--text); background: #fff;
+}
+.ai-hint-input:focus { outline: none; border-color: var(--brand); }
+.ai-hint-send {
+  width: 38px; height: 38px; border: none; border-radius: 50%; background: var(--brand);
+  color: #fff; font-size: 15px; cursor: pointer; flex: none;
+}
+.ai-hint-send:active { background: var(--brand-dark); }
+
+/* Simple Bo on the gameplay screen, tap opens a real chat (api/bo-chat.js). */
+.game-bo {
+  position: fixed;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  right: 14px;
+  z-index: 50;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+}
+.game-bo-face {
+  width: 100%; height: 100%; border-radius: 50%; display: block;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,.18);
+  animation: gameBoWiggle 1.8s ease-in-out infinite;
+}
+.game-bo-hint {
+  position: absolute; left: 50%; bottom: 100%; margin-bottom: 2px;
+  font: 800 9px inherit; color: #fff; white-space: nowrap;
+  background: var(--brand); padding: 1px 6px; border-radius: 8px 8px 8px 2px;
+  pointer-events: none; animation: gameBoHintPop 3.2s ease-out infinite;
+}
+@keyframes gameBoHintPop {
+  0% { opacity: 0; transform: translate(-50%, 10%) scale(.5); }
+  10% { opacity: 1; transform: translate(-50%, -15%) scale(1.1); }
+  15% { transform: translate(-50%, -10%) scale(1); }
+  35% { opacity: 1; }
+  45%, 100% { opacity: 0; transform: translate(-50%, -25%) scale(1); }
+}
+@keyframes gameBoWiggle {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
+
+.sc-bo-chat {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+  width: min(92%, 320px);
+  background: #fff; border-radius: 18px; box-shadow: 0 10px 28px rgba(0,0,0,.22);
+  z-index: 200; overflow: hidden;
+  animation: scBoChatPopIn .22s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes scBoChatPopIn {
+  0% { opacity: 0; transform: translateX(-50%) scale(.9) translateY(10px); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+}
+.sc-bo-chat-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--brand-light); }
+.sc-bo-chat-close {
+  margin-left: auto; width: 20px; height: 20px;
+  border-radius: 50%; border: none; background: rgba(0,0,0,.08);
+  font-size: 11px; line-height: 1; cursor: pointer; color: var(--brand-dark);
+  display: flex; align-items: center; justify-content: center;
+}
+.sc-bo-chat-avatar {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(0,0,0,.15);
+  animation: gameBoWiggle 1.8s ease-in-out infinite;
+}
+.sc-bo-chat-thread { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; max-height: 180px; overflow-y: auto; }
+.sc-bo-msg {
+  display: flex; align-items: flex-start; gap: 6px; max-width: 88%;
+  font: 600 12.5px inherit; line-height: 1.3;
+  animation: scBoMsgIn .2s ease;
+}
+@keyframes scBoMsgIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.sc-bo-msg-bo { align-self: flex-start; color: var(--text); }
+.sc-bo-msg-avatar { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; margin-top: 1px; }
+.sc-bo-msg-bo .sc-bo-msg-text { background: var(--brand-light); border-radius: 10px; padding: 6px 9px; }
+.sc-bo-msg-kid { align-self: flex-end; color: #fff; }
+.sc-bo-msg-kid .sc-bo-msg-text { background: var(--brand); border-radius: 10px; padding: 6px 9px; }
+.sc-bo-chat-loading { display: flex; gap: 3px; padding: 0 12px 8px; }
+.sc-bo-chat-loading.hidden { display: none; }
+.sc-bo-chat-loading span { width: 5px; height: 5px; border-radius: 50%; background: var(--brand-light); animation: scBoDotBounce 1.2s ease-in-out infinite; }
+.sc-bo-chat-loading span:nth-child(2) { animation-delay: .15s; }
+.sc-bo-chat-loading span:nth-child(3) { animation-delay: .3s; }
+@keyframes scBoDotBounce { 0%, 80%, 100% { transform: translateY(0); opacity: .5; } 40% { transform: translateY(-4px); opacity: 1; } }
+.sc-bo-chat-form { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid rgba(0,0,0,.06); }
+.sc-bo-chat-input {
+  flex: 1; border: 1.5px solid var(--brand-light); border-radius: 999px; padding: 7px 12px;
+  font: 600 12.5px inherit; color: var(--text); outline: none; min-width: 0;
+}
+.sc-bo-chat-input:focus { border-color: var(--brand); }
+.sc-bo-chat-send {
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; border: none;
+  background: var(--brand); color: #fff; font-size: 14px; cursor: pointer;
+}
 
 /* Feedback popup */
 .feedback-popup {
