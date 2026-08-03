@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=45" />
+<link rel="stylesheet" href="style.css?v=46" />
 </head>
 <body>
 
@@ -496,6 +496,19 @@
       </div>
     </div>
 
+    <!-- Respawn gauntlet -- shown when lives hit 0 but a respawn is still
+         available (see startPlaneRespawnChallenge). Answer 3 questions
+         correctly (wrong ones just roll another, no penalty) to come back
+         with full lives. -->
+    <div id="plane-respawn-overlay" class="drive-question-overlay hidden">
+      <div class="drive-question-card">
+        <div class="plane-respawn-title">💔 Jawab 3 soal dengan benar untuk hidup lagi!</div>
+        <div class="plane-respawn-progress" id="plane-respawn-progress">0 / 3 benar</div>
+        <div class="drive-question-prompt" id="plane-respawn-prompt"></div>
+        <div class="mc-grid" id="plane-respawn-options"></div>
+      </div>
+    </div>
+
     <!-- Win/lose overlay -- Phase 1 placeholder, refined once waves/boss exist. -->
     <div id="plane-end-overlay" class="drive-question-overlay hidden">
       <div class="drive-question-card drive-end-card">
@@ -607,6 +620,6 @@
 <script src="questions.js?v=2"></script>
 <script src="generators.js?v=2"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=60"></script>
+<script src="script.js?v=61"></script>
 </body>
 </html>

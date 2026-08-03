@@ -1565,6 +1565,16 @@ const PLANE_QUESTION_INTERVAL_MS = 10000; // a math question every ~10s of activ
 // mattering against regular waves.
 const PLANE_BOSS_QUESTION_DAMAGE = 3;
 
+// Running out of lives used to end the round outright. Per feedback, kids
+// wanted a longer run: up to PLANE_MAX_RESPAWNS times per session, dying
+// instead opens a respawn gauntlet (see startPlaneRespawnChallenge) --
+// answer PLANE_RESPAWN_CORRECT_NEEDED questions correctly (wrong answers
+// don't count against the total, they just mean one more question, per
+// explicit request) to come back with full lives. Only once every respawn
+// is used does running out of lives become a real Game Over.
+const PLANE_MAX_RESPAWNS = 3;
+const PLANE_RESPAWN_CORRECT_NEEDED = 3;
+
 // Phase 5 -- wave difficulty ramp. Every PLANE_DIFFICULTY_RAMP_MS of active
 // flight, spawn interval shrinks and enemy speed grows, each capped so it
 // never becomes unfair.
@@ -1578,10 +1588,11 @@ const PLANE_ENEMY_SPEED_STEP = 0.03;
 // density = shorter interval = more enemies on screen). Originally started
 // 10% above baseline; per feedback the whole thing felt too hard (aimed
 // fire + this many enemies), so it's pulled back 10% (1.10*0.9 = 0.99,
-// i.e. now roughly baseline) before compounding 20% per boss defeat as
-// before -- each new wave after a boss is still noticeably busier than
-// the last, just starting from a fairer point.
-const PLANE_ENEMY_DENSITY_START = 1.10 * 0.9;
+// i.e. now roughly baseline), then another 5% per later feedback (*0.95)
+// before compounding 20% per boss defeat as before -- each new wave after
+// a boss is still noticeably busier than the last, just starting from a
+// fairer point.
+const PLANE_ENEMY_DENSITY_START = 1.10 * 0.9 * 0.95;
 const PLANE_ENEMY_DENSITY_BOSS_MULT = 1.20;
 
 // Phase 5 -- power-ups. Regular (non-boss) kills have a flat chance to drop
@@ -1680,6 +1691,8 @@ function launchPlaneMode() {
     questionIntervalMs: PLANE_QUESTION_INTERVAL_MS,
     score: 0,
     lives: PLANE_MAX_LIVES,
+    respawnsUsed: 0,
+    respawnCorrectCount: 0,
     invulnUntil: 0,
     rapidUntil: 0,
     shieldUntil: 0,
@@ -1705,6 +1718,7 @@ function launchPlaneMode() {
   $("plane-end-overlay").classList.remove("lost");
   $("plane-end-overlay").classList.add("hidden");
   $("plane-question-overlay").classList.add("hidden");
+  $("plane-respawn-overlay").classList.add("hidden");
   $("plane-boss-hp").classList.add("hidden");
   $("plane-buff-rapid").classList.add("hidden");
   $("plane-buff-shield").classList.add("hidden");
@@ -1767,16 +1781,18 @@ function spawnPlaneBulletAt(x, y, angleDeg = 0) {
   planeState.bullets.push({ id, x, y, vx, vy, el });
 }
 
-// The ship's own fire -- spread power-up swaps 1 straight shot for 2
-// angled ones (still counts as one "shot" for PLANE_FIRE_INTERVAL_MS/
-// PLANE_RAPID_FIRE_INTERVAL_MS timing purposes, just more pellets per shot).
+// The ship's own fire -- spread power-up ADDS 2 angled shots alongside the
+// normal straight one (3 total), rather than replacing it. Per feedback,
+// 2 angled-only shots with nothing going straight up made it hard to aim
+// at enemies directly ahead. Still counts as one "shot" for
+// PLANE_FIRE_INTERVAL_MS/PLANE_RAPID_FIRE_INTERVAL_MS timing purposes,
+// just more pellets per shot.
 function spawnPlaneBullet() {
   const now = performance.now();
+  spawnPlaneBulletAt(planeState.x, planeState.y - 4, 0);
   if (now < planeState.spreadUntil) {
     spawnPlaneBulletAt(planeState.x, planeState.y - 4, -PLANE_SPREAD_ANGLE_DEG);
     spawnPlaneBulletAt(planeState.x, planeState.y - 4, PLANE_SPREAD_ANGLE_DEG);
-  } else {
-    spawnPlaneBulletAt(planeState.x, planeState.y - 4, 0);
   }
 }
 
@@ -1866,8 +1882,75 @@ function planeTakeHit() {
   shakePlaneWorld();
   if (planeState.lives <= 0) {
     spawnPlaneExplosion(planeState.x, planeState.y, true);
-    endPlaneMode();
+    if (planeState.respawnsUsed < PLANE_MAX_RESPAWNS) {
+      startPlaneRespawnChallenge();
+    } else {
+      endPlaneMode();
+    }
   }
+}
+
+// Lives hit 0 but a respawn is still available -- pause the round and open
+// a gauntlet: keep asking questions (reusing rollPlaneQuestion(), same bank
+// as the normal in-flight question) until PLANE_RESPAWN_CORRECT_NEEDED are
+// answered correctly. A wrong answer doesn't cost anything but progress --
+// it just rolls the next question rather than ending the attempt.
+function startPlaneRespawnChallenge() {
+  planeState.paused = true;
+  planeState.respawnCorrectCount = 0;
+  updatePlaneRespawnProgress();
+  $("plane-respawn-overlay").classList.remove("hidden");
+  rollPlaneRespawnQuestion();
+}
+
+function updatePlaneRespawnProgress() {
+  $("plane-respawn-progress").textContent = `${planeState.respawnCorrectCount} / ${PLANE_RESPAWN_CORRECT_NEEDED} benar`;
+}
+
+function rollPlaneRespawnQuestion() {
+  const step = rollPlaneQuestion();
+  $("plane-respawn-prompt").textContent = step.prompt;
+  const grid = $("plane-respawn-options");
+  grid.innerHTML = "";
+  step.options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "mc-btn";
+    btn.textContent = opt;
+    btn.addEventListener("click", () => {
+      const isCorrect = labelsEqual(opt, step.correctLabel);
+      grid.querySelectorAll(".mc-btn").forEach(b => {
+        b.disabled = true;
+        if (labelsEqual(b.textContent, step.correctLabel)) b.classList.add("correct");
+        else if (b === btn) b.classList.add("wrong");
+      });
+      if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "plane-mode", isCorrect);
+      if (isCorrect) {
+        planeState.respawnCorrectCount += 1;
+        updatePlaneRespawnProgress();
+      }
+      setTimeout(() => {
+        if (planeState.respawnCorrectCount >= PLANE_RESPAWN_CORRECT_NEEDED) {
+          finishPlaneRespawn();
+        } else {
+          rollPlaneRespawnQuestion();
+        }
+      }, 900);
+    });
+    grid.appendChild(btn);
+  });
+}
+
+// 3 correct answers reached -- come back with full lives, one respawn
+// spent, brief invulnerability so the ship isn't hit the instant it
+// reappears, then resume the round right where it left off.
+function finishPlaneRespawn() {
+  planeState.respawnsUsed += 1;
+  planeState.lives = PLANE_MAX_LIVES;
+  updatePlaneLives();
+  planeState.invulnUntil = performance.now() + PLANE_HIT_INVULN_MS;
+  $("plane-respawn-overlay").classList.add("hidden");
+  planeState.lastQuestionAt = performance.now();
+  if (planeState && !planeState.ended) planeState.paused = false;
 }
 
 // Phase 5 -- power-ups. Falls straight down like a regular enemy; touching
