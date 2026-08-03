@@ -1547,18 +1547,23 @@ $("drive-end-replay").addEventListener("click", () => goToDrive(false));
    still doesn't award XP on its own win; not retrofitting that here,
    out of scope for the plane-mode work.
    ================================================================= */
-const PLANE_SHIP_SPEED = 0.918;        // % of world width/height per frame at full stick deflection (originally 1.6, then -25%, -15%, -10% across three rounds of feedback -- still felt too sensitive each time)
+const PLANE_SHIP_SPEED = 0.918 * 0.8;  // % of world width/height per frame at full stick deflection (originally 1.6, then -25%, -15%, -10%, then another -20% -- per repeated feedback that it still felt too sensitive each round)
 const PLANE_BULLET_SPEED = 2.2;        // % of world height per frame
 const PLANE_FIRE_INTERVAL_MS = 280;
 const PLANE_ENEMY_SPAWN_INTERVAL_MS = 900;
 const PLANE_ENEMY_SPEED = 0.35;        // % of world height per frame
 const PLANE_HIT_RADIUS_PX = 22;        // bullet-enemy, ship-enemy, ship-enemy-bullet collision radius
 const PLANE_MAX_LIVES = 3;
-const PLANE_ENEMY_BULLET_SPEED = 1.1;  // % of world height per frame -- slower than the player's, dodgeable
+const PLANE_ENEMY_BULLET_SPEED = 1.1 * 0.8; // % of world height per frame -- slower than the player's, dodgeable; -20% per feedback (also slows boss bullets, which reuse this same constant via spawnPlaneEnemyBullet)
 const PLANE_ENEMY_FIRE_MIN_MS = 1400;
 const PLANE_ENEMY_FIRE_MAX_MS = 2600;
 const PLANE_HIT_INVULN_MS = 1500;      // matches DRIVE_BITE_COOLDOWN_MS's feel
-const PLANE_QUESTION_INTERVAL_MS = 15000; // a math question every ~15s of active flight
+const PLANE_QUESTION_INTERVAL_MS = 10000; // a math question every ~10s of active flight (was 15s, per feedback)
+// Answering correctly used to only bomb regular enemies -- if a boss is
+// up when the question fires, the correct answer now also chips its HP,
+// so questions stay useful/exciting during a boss fight instead of only
+// mattering against regular waves.
+const PLANE_BOSS_QUESTION_DAMAGE = 3;
 
 // Phase 5 -- wave difficulty ramp. Every PLANE_DIFFICULTY_RAMP_MS of active
 // flight, spawn interval shrinks and enemy speed grows, each capped so it
@@ -1580,12 +1585,19 @@ const PLANE_ENEMY_DENSITY_START = 1.10 * 0.9;
 const PLANE_ENEMY_DENSITY_BOSS_MULT = 1.20;
 
 // Phase 5 -- power-ups. Regular (non-boss) kills have a flat chance to drop
-// one; touching it with the ship applies a timed buff.
+// one; touching it with the ship applies a timed buff (heal is instant
+// instead). PLANE_POWERUP_TYPES is what spawnPlanePowerup() actually rolls
+// from -- started as a coin flip between just rapid/shield, now 5-way.
 const PLANE_POWERUP_DROP_CHANCE = 0.22;
 const PLANE_POWERUP_FALL_SPEED = 0.3;   // % world height per frame, same feel as enemies
 const PLANE_RAPID_FIRE_INTERVAL_MS = 140; // vs PLANE_FIRE_INTERVAL_MS's 280 when not buffed
 const PLANE_RAPID_DURATION_MS = 8000;
 const PLANE_SHIELD_DURATION_MS = 6000;
+const PLANE_WINGMEN_DURATION_MS = 10000; // 2 small escort ships that auto-fire alongside the player
+const PLANE_SPREAD_DURATION_MS = 10000;  // ship fires 2 angled shots instead of 1 straight one
+const PLANE_SPREAD_ANGLE_DEG = 18;       // how far each spread shot leans from straight up
+const PLANE_POWERUP_TYPES = ["rapid", "shield", "heal", "wingmen", "spread"];
+const PLANE_POWERUP_EMOJI = { rapid: "⚡", shield: "🛡️", heal: "❤️", wingmen: "👯", spread: "🔱" };
 
 // Variety pass (per feedback: "too static", every enemy the same sprite
 // flying dead straight). Each spawn picks one of these; moveStyle changes
@@ -1671,6 +1683,9 @@ function launchPlaneMode() {
     invulnUntil: 0,
     rapidUntil: 0,
     shieldUntil: 0,
+    wingmenUntil: 0,
+    spreadUntil: 0,
+    wingmen: [],                  // { el, offsetX, lastFireAt } -- see ensurePlaneWingmen
     nextEnemyId: 0,
     nextBulletId: 0,
     nextEnemyBulletId: 0,
@@ -1683,7 +1698,7 @@ function launchPlaneMode() {
     ended: false,
     worldRect: null
   };
-  $("plane-world").querySelectorAll(".plane-bullet, .plane-enemy, .plane-enemy-bullet, .plane-powerup, .plane-boss").forEach(el => el.remove());
+  $("plane-world").querySelectorAll(".plane-bullet, .plane-enemy, .plane-enemy-bullet, .plane-powerup, .plane-boss, .plane-wingman").forEach(el => el.remove());
   $("plane-ship").classList.remove("hit");
   $("plane-ship").style.left = planeState.x + "%";
   $("plane-ship").style.top = planeState.y + "%";
@@ -1693,6 +1708,8 @@ function launchPlaneMode() {
   $("plane-boss-hp").classList.add("hidden");
   $("plane-buff-rapid").classList.add("hidden");
   $("plane-buff-shield").classList.add("hidden");
+  $("plane-buff-wingmen").classList.add("hidden");
+  $("plane-buff-spread").classList.add("hidden");
   updatePlaneScore();
   updatePlaneLives();
   updatePlaneBestHud();
@@ -1735,12 +1752,32 @@ function planePxDist(ax, ay, bx, by) {
   return Math.hypot(dx, dy);
 }
 
-function spawnPlaneBullet() {
+// angleDeg is measured from straight up (0 = up, positive = leaning
+// right) so the spread power-up can fire two shots at +/-
+// PLANE_SPREAD_ANGLE_DEG instead of one straight one; every other
+// caller (ship's normal fire, wingmen) just uses the 0 default.
+function spawnPlaneBulletAt(x, y, angleDeg = 0) {
   const id = "b" + (planeState.nextBulletId++);
   const el = document.createElement("div");
   el.className = "plane-bullet";
   $("plane-world").appendChild(el);
-  planeState.bullets.push({ id, x: planeState.x, y: planeState.y - 4, el });
+  const rad = (angleDeg * Math.PI) / 180;
+  const vx = Math.sin(rad) * PLANE_BULLET_SPEED;
+  const vy = -Math.cos(rad) * PLANE_BULLET_SPEED;
+  planeState.bullets.push({ id, x, y, vx, vy, el });
+}
+
+// The ship's own fire -- spread power-up swaps 1 straight shot for 2
+// angled ones (still counts as one "shot" for PLANE_FIRE_INTERVAL_MS/
+// PLANE_RAPID_FIRE_INTERVAL_MS timing purposes, just more pellets per shot).
+function spawnPlaneBullet() {
+  const now = performance.now();
+  if (now < planeState.spreadUntil) {
+    spawnPlaneBulletAt(planeState.x, planeState.y - 4, -PLANE_SPREAD_ANGLE_DEG);
+    spawnPlaneBulletAt(planeState.x, planeState.y - 4, PLANE_SPREAD_ANGLE_DEG);
+  } else {
+    spawnPlaneBulletAt(planeState.x, planeState.y - 4, 0);
+  }
 }
 
 function spawnPlaneEnemy() {
@@ -1836,19 +1873,51 @@ function planeTakeHit() {
 // Phase 5 -- power-ups. Falls straight down like a regular enemy; touching
 // it with the ship applies the buff and removes the pickup.
 function spawnPlanePowerup(x, y) {
-  const type = Math.random() < 0.5 ? "rapid" : "shield";
+  const type = PLANE_POWERUP_TYPES[rand(0, PLANE_POWERUP_TYPES.length - 1)];
   const id = "p" + (planeState.nextPowerupId++);
   const el = document.createElement("div");
   el.className = "plane-powerup";
-  el.textContent = type === "rapid" ? "⚡" : "🛡️";
+  el.textContent = PLANE_POWERUP_EMOJI[type];
   $("plane-world").appendChild(el);
   planeState.powerups.push({ id, x, y, type, el });
 }
 
 function applyPlanePowerup(type) {
   const now = performance.now();
-  if (type === "rapid") planeState.rapidUntil = now + PLANE_RAPID_DURATION_MS;
-  else planeState.shieldUntil = now + PLANE_SHIELD_DURATION_MS;
+  if (type === "rapid") {
+    planeState.rapidUntil = now + PLANE_RAPID_DURATION_MS;
+  } else if (type === "shield") {
+    planeState.shieldUntil = now + PLANE_SHIELD_DURATION_MS;
+  } else if (type === "heal") {
+    planeState.lives = Math.min(PLANE_MAX_LIVES, planeState.lives + 1);
+    updatePlaneLives();
+  } else if (type === "wingmen") {
+    planeState.wingmenUntil = now + PLANE_WINGMEN_DURATION_MS;
+    ensurePlaneWingmen();
+  } else if (type === "spread") {
+    planeState.spreadUntil = now + PLANE_SPREAD_DURATION_MS;
+  }
+}
+
+// Two small escort ships that mirror the player's own fire rate while
+// active, offset to either side. Created once when the buff starts
+// (ensurePlaneWingmen) and removed once it expires (removePlaneWingmen) --
+// picking up a second "wingmen" pickup while already active just extends
+// wingmenUntil without spawning duplicates, since ensurePlaneWingmen no-ops
+// if planeState.wingmen already has entries.
+function ensurePlaneWingmen() {
+  if (planeState.wingmen.length) return;
+  [-11, 11].forEach(offsetX => {
+    const el = document.createElement("div");
+    el.className = "plane-wingman";
+    el.textContent = "🛩️";
+    $("plane-world").appendChild(el);
+    planeState.wingmen.push({ el, offsetX, lastFireAt: performance.now() });
+  });
+}
+function removePlaneWingmen() {
+  planeState.wingmen.forEach(w => w.el.remove());
+  planeState.wingmen = [];
 }
 
 // Toggled every frame from the current buff timestamps -- cheap enough to
@@ -1858,6 +1927,8 @@ function updatePlaneBuffHud() {
   const now = performance.now();
   $("plane-buff-rapid").classList.toggle("hidden", now >= planeState.rapidUntil);
   $("plane-buff-shield").classList.toggle("hidden", now >= planeState.shieldUntil);
+  $("plane-buff-wingmen").classList.toggle("hidden", now >= planeState.wingmenUntil);
+  $("plane-buff-spread").classList.toggle("hidden", now >= planeState.spreadUntil);
 }
 
 // Phase 5 -- boss. Hovers near the top and drifts side to side (bouncing at
@@ -2313,6 +2384,16 @@ function showPlaneQuestion() {
         planeState.score += 3;
         updatePlaneScore();
         shakePlaneWorld();
+        // Regular enemies get wiped outright above -- the boss isn't in
+        // that array, so without this a correct answer during a boss
+        // fight would do nothing to it at all. Chips its HP instead of a
+        // full wipe (it's meant to survive several hits).
+        if (planeState.boss) {
+          spawnPlaneExplosion(planeState.boss.x, planeState.boss.y);
+          planeState.boss.hp -= PLANE_BOSS_QUESTION_DAMAGE;
+          updatePlaneBossHp();
+          if (planeState.boss.hp <= 0) handleBossDefeat();
+        }
       }
       setTimeout(() => {
         $("plane-question-overlay").classList.add("hidden");
@@ -2349,6 +2430,24 @@ function startPlaneLoop() {
         spawnPlaneBullet();
       }
       updatePlaneBuffHud();
+
+      // Wingmen power-up -- 2 escort ships that track the main ship's
+      // position (offset left/right) and fire on the same base interval
+      // as the player (not affected by rapid-fire, to keep this simple).
+      if (now < planeState.wingmenUntil) {
+        planeState.wingmen.forEach(w => {
+          const wx = Math.max(4, Math.min(96, planeState.x + w.offsetX));
+          const wy = planeState.y + 6;
+          w.el.style.left = wx + "%";
+          w.el.style.top = wy + "%";
+          if (now - w.lastFireAt > PLANE_FIRE_INTERVAL_MS) {
+            w.lastFireAt = now;
+            spawnPlaneBulletAt(wx, wy - 4, 0);
+          }
+        });
+      } else if (planeState.wingmen.length) {
+        removePlaneWingmen();
+      }
 
       // Enemy spawn -- stops once the boss threshold is reached, so the
       // boss fight isn't cluttered with regular waves in the background.
@@ -2400,10 +2499,13 @@ function startPlaneLoop() {
         }
       }
 
-      // Move player bullets up, drop off-screen ones.
+      // Move player bullets along their own vx/vy (straight up by default,
+      // angled for spread-shot pellets -- see spawnPlaneBulletAt), drop
+      // off-screen ones on any edge now that they aren't all purely vertical.
       planeState.bullets = planeState.bullets.filter(b => {
-        b.y -= PLANE_BULLET_SPEED;
-        if (b.y < -5) { b.el.remove(); return false; }
+        b.x += b.vx;
+        b.y += b.vy;
+        if (b.y < -5 || b.x < -6 || b.x > 106) { b.el.remove(); return false; }
         b.el.style.left = b.x + "%";
         b.el.style.top = b.y + "%";
         return true;

@@ -932,6 +932,15 @@ button { font-family: inherit; }
 }
 
 .plane-ship.hit { animation: planeHit .35s ease-in-out 4; }
+
+/* Wingmen power-up escorts -- smaller than the main ship, no hit/collision
+   styling of their own since they're purely offensive (can't be shot). */
+.plane-wingman {
+  position: absolute; width: 20px; height: 20px; margin-left: -10px; margin-top: -10px;
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.3));
+  z-index: 5; opacity: .92;
+}
 @keyframes planeHit {
   0%, 100% { filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); opacity: 1; }
   50% { filter: drop-shadow(0 0 8px var(--bad)) brightness(1.4); opacity: .4; }
