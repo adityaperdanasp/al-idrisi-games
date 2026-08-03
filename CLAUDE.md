@@ -163,14 +163,19 @@ Semua fase (1-6) kelar dan **udah di-merge ke `main` + deploy production** (`fea
 
 Preview: `https://al-idrisi-games-git-feature-plane-mode-v2-ellilo.vercel.app/mathville/index.html`. Nunggu Adit coba dulu sebelum merge.
 
-## Android app — 2 versi berbeda, jangan ketuker
+## Android app — Capacitor dipertahankan, TWA lama DEPRECATED (keputusan 2026-08-03)
 
-1. **TWA lama** (Bubblewrap, `fun.playalidrisi.twa`) — project + keystore di `~/Documents/al-idrisi-games-android-keystore/` (di LUAR repo), password di `PASSWORD_KEEP_SAFE.txt` di folder sama. Status belum jelas masih dipakai apa udah digantiin sepenuhnya sama Capacitor (poin 2) — belum ada keputusan eksplisit soal ini, cek dulu kalau mau utak-atik.
-2. **Capacitor baru** (`~/Documents/al-idrisi-games-android-capacitor/`, TERPISAH dari repo hub) — package `com.brainbox.app`, appName "BrainBox". **Bukan TWA** — `capacitor.config.json` di-set `server.url: "https://playalidrisi.fun"`, jadi WebView-nya selalu nunjukin live site, BUKAN bundle lokal. Artinya semua update konten/gameplay otomatis kepake tiap app dibuka, **gak perlu rebuild APK sama sekali** kecuali ubah hal native (icon, nama, permission, push notif setup, min SDK).
+**TWA lama** (Bubblewrap, `fun.playalidrisi.twa`) — project + keystore masih ada di `~/Documents/al-idrisi-games-android-keystore/` (di LUAR repo, gak dihapus, tapi udah gak dipakai/di-maintain lagi). Keputusan eksplisit: **Capacitor yang dipertahankan**, TWA dianggap deprecated.
+
+⚠️ **Bug yang ketemu & udah difix pas keputusan ini dibuat**: halaman download publik `playalidrisi.fun/android/` (`android/index.html`, serve `android/brainbox.apk`) ternyata masih nyajiin APK **TWA lama** (1.3MB) ke siapapun yang klik link download — bukan Capacitor yang seharusnya jadi app resmi. Sudah diganti (`android/brainbox.apk` sekarang APK Capacitor asli, 8.2MB, copy dari `~/Documents/al-idrisi-games-android-capacitor/dist/brainbox-capacitor-debug.apk`) + teks ukuran file di halaman-nya diupdate. **Kalau Capacitor di-rebuild lagi ke depan (native-level change), inget buat copy ulang APK barunya ke `android/brainbox.apk` di repo ini** — dua file itu gak sinkron otomatis.
+
+`.well-known/assetlinks.json` (Digital Asset Links buat verifikasi TWA, isinya nunjuk ke package `fun.playalidrisi.twa`) dibiarin ada dulu (gak dihapus) karena masih ada kemungkinan tester punya TWA lama ke-install — tapi ini gak relevan lagi buat Capacitor (Capacitor bukan TWA, gak butuh asset-links verification), aman dihapus kapan aja kalau mau beres-beres lebih lanjut.
+
+**Capacitor** (`~/Documents/al-idrisi-games-android-capacitor/`, TERPISAH dari repo hub) — package `com.brainbox.app`, appName "BrainBox". **Bukan TWA** — `capacitor.config.json` di-set `server.url: "https://playalidrisi.fun"`, jadi WebView-nya selalu nunjukin live site, BUKAN bundle lokal. Artinya semua update konten/gameplay otomatis kepake tiap app dibuka, **gak perlu rebuild APK sama sekali** kecuali ubah hal native (icon, nama, permission, push notif setup, min SDK).
    - Build butuh **JDK 21** (bukan JDK17 yang dipake TWA/bubblewrap) — Capacitor 8.x gak jalan di JDK17. Install terpisah (`brew install openjdk@21`), gak ganggu setup JDK17 yang lama.
    - Icon native (launcher + adaptive icon foreground) di-generate dari `~/Documents/brain-box/icon-candidates/icon-v3-512.png` pake Pillow (crop ke ~68% safe-zone buat foreground layer, background adaptive icon `#F6E3B4`).
    - Debug-signed aja (bukan release keystore) — cukup buat sideload manual (`adb install -r`) ke device tester, gak perlu Play Store/signing beneran karena distribusinya cuma buat kelas, bukan publik luas. Kalau native-level berubah (bukan cuma konten), APK baru harus di-rebuild & di-reinstall manual (uninstall dulu kalau signature/keystore beda).
-   - APK terakhir ada di `~/Documents/al-idrisi-games-android-capacitor/dist/brainbox-capacitor-debug.apk`.
+   - APK terakhir ada di `~/Documents/al-idrisi-games-android-capacitor/dist/brainbox-capacitor-debug.apk` (sama isinya kayak `android/brainbox.apk` di repo ini, per fix di atas).
 
 ### Offline mode (service worker, `sw.js`)
 
@@ -200,7 +205,7 @@ Kalau lanjut ke poin 4: perlu cek/update kode yang hardcode `"playalidrisi.fun"`
 3. AI Tutor cost monitoring — closed via Anthropic Console spend limit, bukan kode.
 4. ~~AI Tutor interaktif+personalized baru di MathVille~~ — **udah di-rollout ke SEMUA 4 game** (azkacraft, azkauniverse, dan sekarang **multipleazka/Math Race**, 2026-08-03 — widget Bo dari nol + hint upgrade ke interaktif, lihat bagian "Bo (maskot AI)" di atas). Gap ini closed.
 5. **Domain migration** `brainbox.lol` — nunggu user beli `AIBrainbox.fun` dan pindahin project brain-box dulu.
-6. **TWA lama vs Capacitor baru** — belum ada keputusan eksplisit apa TWA lama (`fun.playalidrisi.twa`) masih dipertahankan atau digantiin total sama Capacitor app yang baru.
+6. ~~TWA lama vs Capacitor baru~~ — **udah diputusin (2026-08-03): Capacitor yang dipertahankan**, TWA deprecated. Lihat bagian "Android app" di atas buat detail + bug download-page yang ketemu & difix bareng keputusan ini.
 7. Vercel Deployment Protection buat project ini masih DIMATIIN (preview URL publik) — nyalain lagi kalau udah gak butuh testing preview-branch buat sementara waktu.
 8. **Real-device QA** — full QA session udah dilakuin (browser automation, semua pass), tapi beberapa hal cuma bisa divalidasi bener di device fisik: gray focus-ring fix di `#sc-hero-icon` (iOS Safari khususnya), keyboard numerik PIN di Parent Portal, feel touch/scroll picker Focus Round.
 9. **Parent Portal** (`/parents`) belum ada rate-limiting/lockout buat percobaan PIN salah berulang — 4 digit PIN + nama anak cukup buat dapet akses; worth diomongin risiko-nya ke guru kalau kelas makin gede.
