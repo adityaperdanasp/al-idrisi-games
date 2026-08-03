@@ -7,20 +7,20 @@ Hub berisi 4 game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green
 - **azkacraft** — Language & Arts (storybook-style lessons + voice cheering)
 - **azkauniverse** — SolarQuest (AI Science Adventure)
 - **mathville** — Grade 4 math (9 curriculum chapters, town-map + alternate Drive Mode free-roam driving game)
-- **dinorace** — snapshot dari project terpisah (`~/Documents/dinorace`, domain `dinorace.lol`); **bukan sinkron otomatis**, kalau game asli diedit harus di-copy ulang manual
+- **dinorace** — 2-Player Dino Racing. **Full-merge diputuskan 2026-08-03**: dulu snapshot manual dari project terpisah (`~/Documents/dinorace`, domain `dinorace.lol`, Firebase project sendiri `dinorace-d9b8c`), sekarang Firebase-nya udah disatuin ke project hub (`al-idrisi-games`) — lihat detail lengkap di bagian "DinoRace merge" di bawah. GitHub repo asli (`~/Documents/dinorace`) & Vercel project `dinorace.lol` MASIH ada & masih di-maintain manual (dual-deploy, lihat bawah), cuma Firebase-nya doang yang udah jadi satu.
 
 ## Deploy
 
 Tiap game = Vercel project sendiri, plus hub-nya sendiri juga Vercel project.
 - Hub: `playalidrisi.fun/` — path `/{game}/` di domain ini adalah file yang sama dari repo hub (bukan proxy)
-- Legacy standalone domains (harus identik kontennya): `multipleazka.fun`, `azkasocial.fun` (alias `azkacraft`), `azkasolar.quest` (alias `azkauniverse`)
-- `mathville` & `dinorace`: **cuma ada di hub**, gak punya standalone domain
+- Legacy standalone domains (harus identik kontennya): `multipleazka.fun`, `azkasocial.fun` (alias `azkacraft`), `azkasolar.quest` (alias `azkauniverse`), `dinorace.lol`
+- `mathville`: **cuma ada di hub**, gak punya standalone domain
 
-**Dua target deploy buat mathrace/azkacraft/azkauniverse** tiap kali edit:
+**Dua target deploy buat mathrace/azkacraft/azkauniverse/dinorace** tiap kali edit:
 1. `git push origin main` → update `playalidrisi.fun/{game}/` (hub auto-deploy)
-2. `cd {game} && vercel --prod --yes` → update domain standalone-nya
+2. `cd {game} && vercel --prod --yes` → update domain standalone-nya (buat dinorace: `cd ~/Documents/dinorace && vercel --prod --yes`, project/repo terpisah dari hub, BUKAN folder `dinorace/` di dalam repo ini)
 
-`mathville/` dan `dinorace/` cukup push #1 aja (gak ada standalone target).
+`mathville/` cukup push #1 aja (gak ada standalone target).
 
 Verifikasi cepat: `diff <(curl -s https://playalidrisi.fun/{game}/somefile.js) <(curl -s https://{standalone-domain}/somefile.js)`.
 
@@ -39,7 +39,14 @@ Verifikasi cepat: `diff <(curl -s https://playalidrisi.fun/{game}/somefile.js) <
   - Avatar color: dulu index-based dari posisi di roster (bug: id baru yang gak ada di roster jadi `-1`/invisible), sekarang **hash function** dari nama — jadi otomatis kerja buat nama baru apapun tanpa perlu didaftarin dulu.
 - **`player.js`** — localStorage key `aig_player`, `{id, name, role}`. `AIGPlayer.deriveParentPlayer(child)` masih ada buat identitas "orang tua" turunan, TAPI belum jelas apa masih ada jalur UI buat munculin opsi ini di flow Sign Up/Sign In yang baru (dulu dari tap kartu murid di picker lama) — cek lagi kalau mau andalin fitur parent-identity, kemungkinan perlu di-wire ulang.
 - **`players.js`** (`window.AIG_PLAYERS`) — roster statis LAMA, sekarang **gak lagi drive tampilan picker hub** (`renderPicker()` jadi no-op karena elemen DOM target-nya udah gak ada — ada komentar "MOCKUP NOTE" di kode persis soal ini). Masih ke-load & kepake di tempat lain yang belum diaudit ulang (kemungkinan: dashboard guru buat daftar murid, `parentEmail`). Anggap ini transisi belum tuntas — kalau nemu bug aneh soal murid/guru yang "gak muncul", cek dulu apa itu masih gantungan ke roster statis yang gak sinkron sama akun `testerAccounts` yang baru.
-- **`firebase.js`** — Firebase project `al-idrisi-games` (hub), dipakai bareng oleh mathrace/azkacraft/azkauniverse/mathville buat multiplayer + progress. `dinorace` pakai Firebase project sendiri (`dinorace-d9b8c`).
+- **`firebase.js`** — Firebase project `al-idrisi-games` (hub), dipakai bareng oleh mathrace/azkacraft/azkauniverse/mathville buat multiplayer + progress. `dinorace` **sekarang juga pakai project ini** (per merge 2026-08-03, lihat bagian "DinoRace merge" di bawah) — bukan lewat `firebase.js` (dinorace punya inline `firebaseConfig` sendiri di `index.html`-nya, config value-nya di-copy manual dari `firebase.js`, bukan reference ke file itu), tapi projectId/databaseURL-nya sama.
+
+### DinoRace merge (2026-08-03)
+
+DinoRace awalnya 3 sistem yang bener-bener terpisah dari hub: GitHub repo sendiri (`adityaperdanasp/dinorace`), Firebase project sendiri (`dinorace-d9b8c`), Vercel project sendiri (domain `dinorace.lol`). Keputusan eksplisit: **disatuin**, tapi bertahap —
+- **Firebase**: udah disatuin. `dinorace/index.html` (di KEDUA tempat — repo asli `~/Documents/dinorace` DAN folder `dinorace/` di repo ini) sekarang connect ke Firebase project `al-idrisi-games`, path RTDB tetep `dinorace_games/{code}` (nama gak diubah, cuma pindah "rumah"). ⚠️ **Path ini WAJIB ditambahin eksplisit ke RTDB security rules hub** (Firebase Console > Realtime Database > Rules, `"dinorace_games": { ".read": true, ".write": true }`) — belum dikerjain per sesi ini (butuh akses Firebase Console yang gak ada saat itu), jadi create/join multiplayer dinorace **kemungkinan masih gagal** sampai ini ditambahin manual.
+- **GitHub & Vercel**: SENGAJA belum digabung — masih 2 repo/2 Vercel project terpisah (`al-idrisi-games` dan `dinorace`), disinkron manual pola dual-deploy yang sama kayak azkacraft/azkauniverse (edit di `~/Documents/dinorace`, verifikasi, push ke repo asli + `vercel --prod` buat `dinorace.lol`, BARU copy file yang sama ke `al-idrisi-games/dinorace/` + tambahin balik `.hub-back-btn` yang emang beda sengaja antara 2 versi ini, commit+push ke repo hub). Kalau ke depannya mau full-merge GitHub juga (repo `dinorace` lama diarsipin, `al-idrisi-games/dinorace/` jadi satu-satunya source of truth), itu keputusan terpisah yang belum diambil.
+- Fitur yang ditambahin bareng merge ini: translasi penuh ke Bahasa Inggris (dulu Indonesia), soal matematika ringan tiap 10 detik (`QUESTION_INTERVAL_MS`, generator lokal, gak fetch dari game lain — DinoRace beda origin dari hub jadi cross-origin fetch ke `azkacraft/questions.json` dkk berisiko kena CORS), immune 2 detik (`QUESTION_IMMUNE_MS`) abis jawab soal (numpang field `invincibleUntil` yang emang udah ada buat hit-invuln pasca nabrak, bukan mekanisme baru).
 - **`leaderboard.js`** — semua fungsi guard `player.role === "parent"` terpusat. Juga expose `AIGLeaderboard.getTopicStats(gameId, topicKey)` (baca `{correct, wrong, streak}`) — dipakai AI Tutor buat personalisasi hint (lihat bawah).
 - **MathVille multiplayer** (keputusan eksplisit): numpang Firebase project hub di path baru `mathvilleGames/{code}`, BUKAN project Firebase terpisah kayak game lain.
 - **MathVille progress**: `saveChapterProgress()` di `mathville/script.js` wajib panggil `AIGLeaderboard.setProgress("mathville", {chapters, xpTotal})` — kalau cuma localStorage, dashboard gak bakal lihat progressnya.
@@ -209,6 +216,7 @@ Kalau lanjut ke poin 4: perlu cek/update kode yang hardcode `"playalidrisi.fun"`
 7. Vercel Deployment Protection buat project ini masih DIMATIIN (preview URL publik) — nyalain lagi kalau udah gak butuh testing preview-branch buat sementara waktu.
 8. **Real-device QA** — full QA session udah dilakuin (browser automation, semua pass), tapi beberapa hal cuma bisa divalidasi bener di device fisik: gray focus-ring fix di `#sc-hero-icon` (iOS Safari khususnya), keyboard numerik PIN di Parent Portal, feel touch/scroll picker Focus Round.
 9. **Parent Portal** (`/parents`) belum ada rate-limiting/lockout buat percobaan PIN salah berulang — 4 digit PIN + nama anak cukup buat dapet akses; worth diomongin risiko-nya ke guru kalau kelas makin gede.
+10. **DinoRace RTDB rules** — path `dinorace_games` (Firebase project hub) BELUM ditambahin ke security rules eksplisit (butuh akses Firebase Console). Sampai ini dikerjain, create/join multiplayer DinoRace kemungkinan gagal total walau kode udah bener. Lihat bagian "DinoRace merge" di atas.
 
 ## Gaya kerja user (penting)
 - Adit komunikasi campur Indonesia-Inggris.
