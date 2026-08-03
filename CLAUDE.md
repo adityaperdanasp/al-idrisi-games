@@ -99,7 +99,7 @@ Fitur baru: anak (atau orang tua lewat Parent Portal) pilih sampe 8 topik LINTAS
 - Topik math (9 chapter) — reuse `buildRound(chapterId)` mathville APA ADANYA (dipanggil 2x per chapter buat variasi), termasuk soal tipe "match" bisa nongol di Focus Round persis kayak di chapter aslinya.
 - Topik language (5 dari 7 chapter azkacraft) — fetch `azkacraft/questions.json`, cuma ambil `type:"mc"`. **Reading Comprehension (id 6) dan Creative Writing (id 7) SENGAJA gak dimasukin ke picker** — soal mc mereka semua ngerujuk ke sebuah "passage"/cerita ("According to the text...") yang gak ditampilin di sini, jadi gak bisa dijawab berdiri sendiri.
 - Topik science (5 level azkauniverse) — fetch `azkauniverse/questions.json`, `type:"mc"` yang gak ada `image`.
-- ⚠️ Plane Mode's cross-game pool (`ensurePlaneQuestionPools()`) punya bug serupa yang BELUM difix: dia coba skip Reading Comprehension (cek `type==="passage"`) tapi Creative Writing kelolos karena soal mc-nya gak literally bertipe "passage" — masih ngeluarin soal gak-bisa-dijawab-standalone di Plane Mode. Di luar scope kerjaan Focus Round ini.
+- Plane Mode's cross-game pool (`ensurePlaneQuestionPools()`) punya exclusion yang sama persis (chapter id 6 & 7 by id, bukan cek `type==="passage"` literal) — dulu sempet kelolos Creative Writing, udah di-port fix-nya dari Focus Round (2026-08-03).
 
 `players/{id}/assignedTopics` (array of `"math:place-value"`/`"lang:3"`/`"sci:star-lifecycle"`) — ditulis Parent Portal, dibaca sekali sama picker pas pertama kali dibuka tiap page load (`applyAssignedTopics()`), pre-check topik yang di-assign KALAU belom ada yang di-checklist manual (gak nimpa pilihan anak).
 
@@ -198,13 +198,12 @@ Kalau lanjut ke poin 4: perlu cek/update kode yang hardcode `"playalidrisi.fun"`
 1. MathVille: 2-device multiplayer sudah divalidasi via 2 tab browser independen — real-device test (2 HP fisik) masih belum, tapi risiko sync-logic udah rendah.
 2. Vehicle icons — closed, gak ada perubahan kode diperlukan (lihat histori commit kalau butuh detail).
 3. AI Tutor cost monitoring — closed via Anthropic Console spend limit, bukan kode.
-4. ~~AI Tutor interaktif+personalized baru di MathVille~~ — **udah di-rollout juga ke azkacraft & azkauniverse** (lihat bagian "Bo (maskot AI)" di atas). Tinggal **multipleazka (Math Race)** yang masih belum sama sekali — butuh dibikinin widget Bo dari nol dulu (game lain udah punya), baru upgrade hint-nya.
+4. ~~AI Tutor interaktif+personalized baru di MathVille~~ — **udah di-rollout ke SEMUA 4 game** (azkacraft, azkauniverse, dan sekarang **multipleazka/Math Race**, 2026-08-03 — widget Bo dari nol + hint upgrade ke interaktif, lihat bagian "Bo (maskot AI)" di atas). Gap ini closed.
 5. **Domain migration** `brainbox.lol` — nunggu user beli `AIBrainbox.fun` dan pindahin project brain-box dulu.
 6. **TWA lama vs Capacitor baru** — belum ada keputusan eksplisit apa TWA lama (`fun.playalidrisi.twa`) masih dipertahankan atau digantiin total sama Capacitor app yang baru.
 7. Vercel Deployment Protection buat project ini masih DIMATIIN (preview URL publik) — nyalain lagi kalau udah gak butuh testing preview-branch buat sementara waktu.
-8. **Plane Mode cross-game soal pool** (`mathville/script.js`, `ensurePlaneQuestionPools()`) masih ngeluarin soal dari azkacraft's "Creative Writing" chapter yang gak bisa dijawab standalone (butuh passage yang gak ditampilin) — exclusion filter-nya cuma cek `type==="passage"` literal, Creative Writing lolos karena soalnya bertipe "mc" biasa. Udah difix di Focus Round (exclude by chapter id 6 & 7 eksplisit), belum di-port balik ke Plane Mode.
-9. **Real-device QA** — full QA session udah dilakuin (browser automation, semua pass), tapi beberapa hal cuma bisa divalidasi bener di device fisik: gray focus-ring fix di `#sc-hero-icon` (iOS Safari khususnya), keyboard numerik PIN di Parent Portal, feel touch/scroll picker Focus Round.
-10. **Parent Portal** (`/parents`) belum ada rate-limiting/lockout buat percobaan PIN salah berulang — 4 digit PIN + nama anak cukup buat dapet akses; worth diomongin risiko-nya ke guru kalau kelas makin gede.
+8. **Real-device QA** — full QA session udah dilakuin (browser automation, semua pass), tapi beberapa hal cuma bisa divalidasi bener di device fisik: gray focus-ring fix di `#sc-hero-icon` (iOS Safari khususnya), keyboard numerik PIN di Parent Portal, feel touch/scroll picker Focus Round.
+9. **Parent Portal** (`/parents`) belum ada rate-limiting/lockout buat percobaan PIN salah berulang — 4 digit PIN + nama anak cukup buat dapet akses; worth diomongin risiko-nya ke guru kalau kelas makin gede.
 
 ## Gaya kerja user (penting)
 - Adit komunikasi campur Indonesia-Inggris.

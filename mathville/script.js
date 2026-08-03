@@ -2037,13 +2037,14 @@ async function ensurePlaneQuestionPools() {
     }));
     const langPool = [];
     (lang.chapters || []).forEach(ch => {
-      // Reading Comprehension chapters mix "passage" questions in with
-      // their "mc" ones, and the mc prompts assume the passage was just
-      // read ("According to the text...", "In the story...") -- there's
-      // no passage shown here, so they're unanswerable. Skip any chapter
-      // that has passage-type questions at all, not just the passages
-      // themselves.
-      if ((ch.questions || []).some(q => q.type === "passage")) return;
+      // Reading Comprehension (6) mixes "passage" questions in with its
+      // "mc" ones, and Creative Writing (7)'s mc prompts equally assume a
+      // passage was just read ("According to the text...") even though
+      // none of its questions are literally type "passage" -- so a check
+      // for that type alone lets Creative Writing leak through. Exclude
+      // both chapters by id explicitly instead, same fix already applied
+      // to Focus Round's picker (see FOCUS_LANG_EXCLUDED_CHAPTER_IDS).
+      if (ch.id === 6 || ch.id === 7) return;
       (ch.questions || []).forEach(q => {
         if (q.type === "mc") {
           langPool.push({ prompt: q.prompt, options: q.options, correctLabel: q.answer });
@@ -2090,11 +2091,8 @@ function rollPlaneQuestion() {
 const FOCUS_ROUND_SIZE = 20;
 // Reading Comprehension (6) and Creative Writing (7) both ask "According
 // to the text/passage..." -- unanswerable without the passage, which this
-// picker has no room to show. (Plane Mode's cross-game pool has the same
-// gap for Creative Writing -- it only filters chapters with a literal
-// type:"passage" question, which Creative Writing's mc questions aren't,
-// so that one still leaks through there. Not fixed here since it's a
-// separate, already-shipped code path.)
+// picker has no room to show. Plane Mode's cross-game pool excludes the
+// same two chapter ids for the same reason (see ensurePlaneQuestionPools).
 const FOCUS_LANG_EXCLUDED_CHAPTER_IDS = [6, 7];
 
 // Converts one azkacraft/azkauniverse question into mathville's generic
