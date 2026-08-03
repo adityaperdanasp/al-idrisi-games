@@ -385,6 +385,41 @@
            invite kid taps the way the game cards above do. -->
       <a class="sc-footer-link" href="parents/">For parents →</a>
 
+      <!-- MOCKUP ONLY -- parent message popup, concept not wired yet.
+           Auto-shows (not tap-to-open like Bo) once per unread message
+           from /parents, sat on top of the landing screen right after
+           sign-in. -->
+      <div class="sc-parent-msg-overlay hidden" id="sc-parent-msg-overlay">
+        <div class="sc-parent-msg-card">
+          <span class="sc-parent-msg-emoji" style="top:-14px;left:22px;font-size:16px;">⭐</span>
+          <span class="sc-parent-msg-emoji" style="top:-10px;right:26px;font-size:14px;">✨</span>
+          <div class="sc-parent-msg-icon">💌</div>
+          <div class="sc-parent-msg-label">A message for you!</div>
+          <div class="sc-parent-msg-from">From your family</div>
+          <div class="sc-parent-msg-text" id="sc-parent-msg-text">We're so proud of how hard you've been practicing this week — keep it up, superstar! 🌟</div>
+          <button class="sc-parent-msg-close" id="sc-parent-msg-close">Thanks! 💛</button>
+        </div>
+      </div>
+      <script>
+        // MOCKUP-ONLY demo wiring -- open ?mockup=parentmsg to see this
+        // without console commands. Delete alongside the mockup markup
+        // above once the real feature (reading from Firebase) is built.
+        document.getElementById("sc-parent-msg-close").addEventListener("click", () => {
+          document.getElementById("sc-parent-msg-overlay").classList.add("hidden");
+        });
+        if (new URLSearchParams(location.search).get("mockup") === "parentmsg") {
+          // The popup lives inside #sc-screen-landing, which stays
+          // display:none until it's the .active screen (same overlay-
+          // nested-in-inactive-screen gotcha documented for MathVille) --
+          // #sc-screen-select is the real default, so force landing
+          // active first for this standalone demo link to actually show
+          // anything.
+          document.querySelectorAll(".sc-screen").forEach(s => s.classList.remove("active"));
+          document.getElementById("sc-screen-landing").classList.add("active");
+          document.getElementById("sc-parent-msg-overlay").classList.remove("hidden");
+        }
+      </script>
+
       <!-- Real chat with Bo (api/bo-chat.js) — kids can ask anything. -->
       <div class="sc-bo-chat" id="sc-bo-chat" hidden>
         <div class="sc-bo-chat-header">

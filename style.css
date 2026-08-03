@@ -694,6 +694,50 @@ body {
 }
 .sc-footer-link:active { color: #9c8a76; }
 
+/* MOCKUP ONLY -- parent message popup (see chat discussion). Warm
+   pink/peach tone (matches the hero's Bo palette) rather than the
+   lavender used by Focus Round/Parent Portal -- this is a message FROM
+   a parent, not a cross-game utility feature, so it reads as personal/
+   warm instead of "part of the app chrome". */
+.sc-parent-msg-overlay {
+  position: fixed; inset: 0; background: rgba(59,42,26,.5); z-index: 300;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.sc-parent-msg-overlay.hidden { display: none; }
+.sc-parent-msg-card {
+  position: relative; width: 100%; max-width: 340px;
+  background: linear-gradient(165deg, #fff 0%, #fff0f0 100%);
+  border-radius: 24px; padding: 28px 24px 24px; text-align: center;
+  box-shadow: 0 16px 40px rgba(0,0,0,.22);
+  animation: sc-parent-msg-pop .3s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes sc-parent-msg-pop {
+  0% { opacity: 0; transform: scale(.85) translateY(12px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.sc-parent-msg-emoji { position: absolute; }
+.sc-parent-msg-icon { font-size: 40px; animation: sc-badge-wiggle 1.8s ease-in-out infinite; }
+.sc-parent-msg-label {
+  font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem;
+  color: #c23e82; margin-top: 6px;
+}
+.sc-parent-msg-from {
+  font-family: "Nunito", sans-serif; font-weight: 700; font-size: .78rem;
+  color: #c2ac91; margin-top: 2px; margin-bottom: 14px;
+}
+.sc-parent-msg-text {
+  font-family: "Nunito", sans-serif; font-weight: 600; font-size: 1rem; line-height: 1.5;
+  color: #3d2e22; background: #fff; border-radius: 16px; padding: 14px 16px;
+  margin-bottom: 18px;
+}
+.sc-parent-msg-close {
+  width: 100%; border: none; cursor: pointer;
+  font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem;
+  color: #3d2e22; background: #f6e3b4; padding: 13px 0; border-radius: 16px;
+  box-shadow: 0 4px 0 rgba(0,0,0,.08);
+}
+.sc-parent-msg-close:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.08); }
+
 @keyframes sc-greeting-bob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-4px); }
