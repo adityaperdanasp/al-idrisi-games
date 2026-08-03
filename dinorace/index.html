@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
@@ -109,6 +109,23 @@
     line-height:1;
   }
   .theme-toggle:active{ transform: translateY(-50%) scale(0.9); }
+  .brand h1{
+    font-size: 26px;
+    margin:0;
+    letter-spacing: -0.5px;
+  }
+  .brand .dot{
+    color: var(--brand);
+  }
+  .screen{
+    display:none;
+    flex-direction:column;
+    gap:16px;
+    flex:1;
+    position:relative;
+  }
+  .screen.active{ display:flex; }
+
   .hub-back-btn{
     position:absolute;
     left:0;
@@ -126,21 +143,6 @@
     line-height:1;
   }
   .hub-back-btn:active{ transform: translateY(-50%) scale(0.9); }
-  .brand h1{
-    font-size: 26px;
-    margin:0;
-    letter-spacing: -0.5px;
-  }
-  .brand .dot{
-    color: var(--brand);
-  }
-  .screen{
-    display:none;
-    flex-direction:column;
-    gap:16px;
-    flex:1;
-  }
-  .screen.active{ display:flex; }
 
   /* ---------- Home ---------- */
   .card{
@@ -171,6 +173,30 @@
   .btn:disabled{ opacity:0.5; cursor:not-allowed; }
   .btn-wa{ background:#25D366; color:#fff; box-shadow: 0 6px 18px rgba(37,211,102,0.35); margin-bottom:4px; }
   .btn-wa:hover{ filter:brightness(1.08); }
+  .hidden{ display:none !important; }
+
+  /* ---------- Quick math question overlay ---------- */
+  .question-overlay{
+    position:absolute; inset:0; z-index:40;
+    display:flex; align-items:center; justify-content:center;
+    background: rgba(20,16,30,0.5);
+  }
+  .question-card{
+    background: var(--panel); border-radius:20px; padding:22px 20px;
+    max-width:320px; width:88%; box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+    text-align:center;
+  }
+  .question-prompt{ font-size:22px; font-weight:800; color:var(--text); margin-bottom:16px; }
+  .question-options{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .q-btn{
+    appearance:none; border:2px solid var(--border); background:var(--panel2);
+    color:var(--text); border-radius:12px; padding:12px 8px; font-size:17px;
+    font-weight:700; cursor:pointer;
+  }
+  .q-btn:active{ transform: scale(0.96); }
+  .q-btn:disabled{ cursor:not-allowed; }
+  .q-btn.correct{ background:#22a06b; border-color:#22a06b; color:#fff; }
+  .q-btn.wrong{ background:var(--danger-bg); border-color:var(--danger-border); color:var(--danger); }
   .player-count-picker{
     display:flex;
     gap:8px;
@@ -565,40 +591,40 @@
 
 <div class="app">
   <div class="brand">
-    <button class="hub-back-btn" id="hubBackBtn" title="Kembali ke BrainBox" aria-label="Kembali ke BrainBox">🏠</button>
+    <button class="hub-back-btn" id="hubBackBtn" title="Back to BrainBox" aria-label="Back to BrainBox">🏠</button>
     <h1>🦕 DinoRace<span class="dot">.</span></h1>
-    <button class="theme-toggle" id="themeToggle" title="Ganti tema" aria-label="Ganti tema">🎨</button>
+    <button class="theme-toggle" id="themeToggle" title="Change theme" aria-label="Change theme">🎨</button>
   </div>
 
   <!-- HOME SCREEN -->
   <div class="screen active" id="homeScreen">
     <div class="card">
-      <h2>🏃 Main Sendiri</h2>
-      <p class="sub">Latihan solo, ga perlu nunggu siapa-siapa. Langsung gas!</p>
-      <button class="btn btn-primary" id="soloGameBtn">Main Sekarang</button>
+      <h2>🏃 Solo Play</h2>
+      <p class="sub">Solo practice — no need to wait for anyone. Let's go!</p>
+      <button class="btn btn-primary" id="soloGameBtn">Play Now</button>
     </div>
 
     <div class="card">
-      <h2>Buat Game Baru</h2>
-      <p class="sub">Kamu jadi Player 1 🦕. Kami buatkan kode 6-karakter, share ke teman buat gabung.</p>
+      <h2>Create New Game</h2>
+      <p class="sub">You'll be Player 1 🦕. We'll generate a 6-character code — share it with a friend to join.</p>
       <div class="player-count-picker" id="playerCountPicker">
-        <button class="pc-choice selected" data-count="2">👥 2 Pemain</button>
-        <button class="pc-choice" data-count="3">👥👤 3 Pemain</button>
+        <button class="pc-choice selected" data-count="2">👥 2 Players</button>
+        <button class="pc-choice" data-count="3">👥👤 3 Players</button>
       </div>
-      <button class="btn btn-secondary" id="createGameBtn">Buat Game</button>
+      <button class="btn btn-secondary" id="createGameBtn">Create Game</button>
     </div>
 
     <div class="card">
-      <h2>Gabung Game</h2>
-      <p class="sub">Punya kode dari teman? Masukkan di sini buat gabung.</p>
+      <h2>Join Game</h2>
+      <p class="sub">Got a code from a friend? Enter it here to join.</p>
       <input type="text" class="code-input" id="joinCodeInput" maxlength="6" placeholder="ABC123" autocomplete="off" autocapitalize="characters">
-      <button class="btn btn-secondary" id="joinGameBtn">Gabung</button>
+      <button class="btn btn-secondary" id="joinGameBtn">Join</button>
       <div class="status-msg" id="joinStatusMsg"></div>
     </div>
 
     <div class="leaderboard">
       <div>
-        <div class="lbl">Best Distance Kamu</div>
+        <div class="lbl">Your Best Distance</div>
         <div class="val" id="bestScoreVal">0 m</div>
       </div>
       <div style="font-size:28px;">🏆</div>
@@ -608,29 +634,29 @@
   <!-- WAITING SCREEN (host/joiner nunggu slot lain terisi) -->
   <div class="screen" id="waitScreen">
     <div class="card">
-      <h2>Kode Pairing</h2>
-      <p class="sub">Kirim kode ini ke teman supaya bisa gabung ke race.</p>
+      <h2>Pairing Code</h2>
+      <p class="sub">Send this code to a friend so they can join the race.</p>
       <div class="code-display">
         <div class="code" id="pairCodeVal">------</div>
         <button class="copy-btn" id="copyCodeBtn">Copy</button>
       </div>
       <div class="qr-wrap">
         <div id="qrBox"></div>
-        <div class="qr-label">📷 Scan buat langsung gabung</div>
+        <div class="qr-label">📷 Scan to join instantly</div>
       </div>
-      <button class="btn btn-wa" id="waShareBtn">📲 Share ke WhatsApp</button>
-      <div class="waiting-row"><div class="spinner"></div> <span id="waitingText">Menunggu pemain lain gabung...</span></div>
+      <button class="btn btn-wa" id="waShareBtn">📲 Share via WhatsApp</button>
+      <div class="waiting-row"><div class="spinner"></div> <span id="waitingText">Waiting for other players to join...</span></div>
     </div>
-    <button class="btn btn-secondary" id="cancelWaitBtn">Batal</button>
+    <button class="btn btn-secondary" id="cancelWaitBtn">Cancel</button>
   </div>
 
   <!-- PILIH DINO SCREEN -->
   <div class="screen" id="selectScreen">
     <div class="card" style="text-align:center;">
-      <h2>Pilih Dino Kamu 🦖</h2>
-      <p class="sub">Tap dino favoritmu! Mulai otomatis dalam <b id="selectTimer">10</b> detik.</p>
+      <h2>Choose Your Dino 🦖</h2>
+      <p class="sub">Tap your favorite dino! Starts automatically in <b id="selectTimer">10</b> seconds.</p>
       <div class="dino-picker" id="dinoPicker"></div>
-      <div class="pick-info">Kamu: <span id="myPickEmoji">🦕</span></div>
+      <div class="pick-info">You: <span id="myPickEmoji">🦕</span></div>
       <div class="pick-info" id="oppPicksRow"></div>
     </div>
   </div>
@@ -638,14 +664,14 @@
   <!-- COUNTDOWN OVERLAY SCREEN -->
   <div class="screen" id="countdownScreen">
     <div class="card" style="text-align:center; padding: 60px 20px;">
-      <div style="font-size:14px; color:var(--muted); margin-bottom:8px;">Balapan dimulai dalam</div>
+      <div style="font-size:14px; color:var(--muted); margin-bottom:8px;">Race starts in</div>
       <div id="countdownNum" style="font-size:72px; font-weight:900; color:var(--brand);">3</div>
     </div>
   </div>
 
   <!-- GAME SCREEN -->
   <div class="screen" id="gameScreen">
-    <div class="spectate-banner" id="spectateBanner" style="display:none;">💀 Kamu game over — lawan masih lari! Nunggu dia selesai...</div>
+    <div class="spectate-banner" id="spectateBanner" style="display:none;">💀 You're out — your opponent is still racing! Waiting for them to finish...</div>
     <div class="hud">
       <div class="hud-box" id="hudP1">
         <div class="name"><span id="hudP1Emoji">🦕</span> <span id="hudP1Name">Player 1</span></div>
@@ -685,6 +711,16 @@
       <div class="ctrl-btn ctrl-jump" id="btnJump">▲ JUMP</div>
       <div class="ctrl-btn" id="btnRight">▶</div>
     </div>
+
+    <!-- Quick math question -- every QUESTION_INTERVAL_MS, freezes this
+         player only (see askQuestion()). Answering grants a short immunity
+         window by reusing the same invincibleUntil the hit-invuln uses. -->
+    <div class="question-overlay hidden" id="questionOverlay">
+      <div class="question-card">
+        <div class="question-prompt" id="questionPrompt"></div>
+        <div class="question-options" id="questionOptions"></div>
+      </div>
+    </div>
   </div>
 
   <!-- GAME OVER SCREEN -->
@@ -692,7 +728,7 @@
     <div class="card go-card">
       <div class="trophy" id="overTrophy">🏁</div>
       <h2 id="overTitle">Game Over!</h2>
-      <p class="sub" id="overSubtitle">Hasil balapan</p>
+      <p class="sub" id="overSubtitle">Race Results</p>
       <div class="go-results">
         <div class="go-result" id="resultP1">
           <div class="who"><span id="resultP1Emoji">🦕</span> <span id="resultP1Name">Player 1</span></div>
@@ -710,8 +746,8 @@
       <div class="best-line" id="bestLine"></div>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" id="homeBtn">Menu Utama</button>
-      <button class="btn btn-primary" id="playAgainBtn">Main Lagi</button>
+      <button class="btn btn-secondary" id="homeBtn">Main Menu</button>
+      <button class="btn btn-primary" id="playAgainBtn">Play Again</button>
     </div>
   </div>
 
@@ -730,19 +766,24 @@
   "use strict";
 
   // ============================================================
-  // ISI DENGAN CONFIG DARI FIREBASE CONSOLE KAMU
-  // Project Settings > General > Your apps > SDK setup and configuration
-  // PENTING: Realtime Database harus di-enable (bukan Firestore),
-  // dan databaseURL wajib diisi (Build > Realtime Database).
+  // DinoRace now shares al-idrisi-games' Firebase project (the "hub")
+  // instead of its own standalone one -- part of fully absorbing DinoRace
+  // into the hub (2026-08-03). Multiplayer pairing lives at its own path
+  // (GAMES_ROOT below), same isolation-by-path pattern MathVille uses
+  // (mathvilleGames/{code}) rather than a shared schema with other games.
+  // IMPORTANT: this path must be added explicitly to the hub's RTDB
+  // security rules (Firebase Console > Realtime Database > Rules) --
+  // there is no wildcard fallback, unlisted paths default-deny:
+  //   "dinorace_games": { ".read": true, ".write": true }
   // ============================================================
   const firebaseConfig = {
-    apiKey: "AIzaSyDoeqepGbq4oaPQ2HcyJQvjAbs8prKx6no",
-    authDomain: "dinorace-d9b8c.firebaseapp.com",
-    databaseURL: "https://dinorace-d9b8c-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "dinorace-d9b8c",
-    storageBucket: "dinorace-d9b8c.firebasestorage.app",
-    messagingSenderId: "856706109617",
-    appId: "1:856706109617:web:700e9f868444471ecbd290"
+    apiKey: "AIzaSyDEcYrtGNgjtXGE0vDk-Lc9zMCtct1-5g4",
+    authDomain: "al-idrisi-games.firebaseapp.com",
+    databaseURL: "https://al-idrisi-games-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "al-idrisi-games",
+    storageBucket: "al-idrisi-games.firebasestorage.app",
+    messagingSenderId: "542717578257",
+    appId: "1:542717578257:web:6d2f1c3c5339467dceb5b0"
   };
 
   let db = null;
@@ -784,6 +825,8 @@
   const SELECT_SECONDS = 10;           // waktu pilih dino
   const DINO_OPTIONS = ["🦕", "🦖", "🐉", "🐊", "🦎"]; // 5 karakter dino
   const SCHEDULE_DURATION_MS = 20 * 60 * 1000; // precompute obstacle timeline up to 20 min of play
+  const QUESTION_INTERVAL_MS = 10000;   // a quick math question every 10s of active play
+  const QUESTION_IMMUNE_MS = 2000;      // immune to obstacles for 2s after answering (either answer)
 
   // Deterministic PRNG so both players compute the identical obstacle
   // timeline locally from a shared seed, instead of relying on one
@@ -857,6 +900,8 @@
   let remoteStates = {}; // role -> state (untuk otherRoles saja)
   let lastDistWriteAt = 0;
   let finished = false;
+  let nextQuestionAt = 0;   // performance.now() timestamp for the next quick-math question
+  let questioning = false;  // true while the question overlay is up -- freezes input + collision
 
   // ---------------- DOM ----------------
   const screens = {
@@ -912,11 +957,6 @@
   }
   refreshBestScoreUI();
 
-  // ---------------- back to hub ----------------
-  document.getElementById("hubBackBtn").addEventListener("click", ()=>{
-    window.location.href = "../";
-  });
-
   // ---------------- theme (colorful default / light) ----------------
   const THEME_KEY = "dinorace_theme";
   function applyTheme(theme){
@@ -932,7 +972,12 @@
     const next = loadTheme() === "colorful" ? "light" : "colorful";
     localStorage.setItem(THEME_KEY, next);
     applyTheme(next);
-    toast(next === "light" ? "Mode Pastel ☀️" : "Mode Colorful 🎨");
+    toast(next === "light" ? "Pastel mode ☀️" : "Colorful mode 🎨");
+  });
+
+  // ---------------- back to hub ----------------
+  document.getElementById("hubBackBtn").addEventListener("click", ()=>{
+    window.location.href = "../";
   });
 
   // Auto-join dari QR / link (?join=CODE) — scan langsung masuk game
@@ -964,13 +1009,13 @@
   });
   document.getElementById("copyCodeBtn").addEventListener("click", ()=>{
     if(gameCode){
-      navigator.clipboard?.writeText(gameCode).then(()=> toast("Kode disalin!")).catch(()=>{});
+      navigator.clipboard?.writeText(gameCode).then(()=> toast("Code copied!")).catch(()=>{});
     }
   });
   document.getElementById("waShareBtn").addEventListener("click", ()=>{
     if(!gameCode) return;
     const joinUrl = joinUrlFor(gameCode);
-    const msg = `Main DinoRace yuk! 🦕🏁\nTap link ini buat langsung gabung:\n${joinUrl}\n\n(atau masukin kode ${gameCode} manual di "Gabung Game")`;
+    const msg = `Let's play DinoRace! 🦕🏁\nTap this link to join instantly:\n${joinUrl}\n\n(or enter code ${gameCode} manually in "Join Game")`;
     const waUrl = "https://wa.me/?text=" + encodeURIComponent(msg);
     // window.open(..., "_blank") sering diblokir Safari iOS / mode standalone (PWA di-add ke Home Screen)
     // tanpa error apa pun — navigasi tab yang sama lebih reliable lintas platform buat deep link wa.me
@@ -1012,14 +1057,14 @@
     }
     if(gameRef && role){
       btn.disabled = true;
-      btn.textContent = "⏳ Mulai ronde baru...";
+      btn.textContent = "⏳ Starting new round...";
       gameRef.child("rematch/" + role).set(true).catch(()=>{
         btn.disabled = false;
-        btn.textContent = "Main Lagi";
-        toast("Gagal minta rematch, coba lagi.");
+        btn.textContent = "Play Again";
+        toast("Couldn't request a rematch, try again.");
       });
     } else {
-      toast("Lawan sudah keluar. Bikin game baru ya.");
+      toast("Opponent has left. Please create a new game.");
       cleanupGame(true);
       showScreen("home");
       refreshBestScoreUI();
@@ -1072,7 +1117,7 @@
       showWaitingRoom();
     } catch(err){
       console.error(err);
-      toast("Gagal membuat game. Cek koneksi/konfigurasi Firebase.");
+      toast("Couldn't create game. Check your connection/Firebase config.");
     } finally {
       btn.disabled = false;
     }
@@ -1105,8 +1150,8 @@
       const waitingTextEl = document.getElementById("waitingText");
       if(waitingTextEl){
         waitingTextEl.textContent = need > 0
-          ? `Menunggu ${need} pemain lagi... (${connectedCount}/${total})`
-          : "Semua pemain sudah gabung!";
+          ? `Waiting for ${need} more player(s)... (${connectedCount}/${total})`
+          : "All players have joined!";
       }
     });
     unsubscribers.push(()=> gameRef.off("value", handler));
@@ -1119,7 +1164,7 @@
     const statusMsg = document.getElementById("joinStatusMsg");
     statusMsg.textContent = "";
     if(code.length !== 6){
-      statusMsg.textContent = "Kode harus 6 karakter.";
+      statusMsg.textContent = "Code must be 6 characters.";
       return;
     }
     const btn = document.getElementById("joinGameBtn");
@@ -1128,12 +1173,12 @@
       const ref = db.ref(`${GAMES_ROOT}/${code}`);
       const snap = await ref.get();
       if(!snap.exists()){
-        statusMsg.textContent = "Kode tidak ditemukan.";
+        statusMsg.textContent = "Code not found.";
         return;
       }
       const data = snap.val();
       if(data.status && data.status !== "waiting"){
-        statusMsg.textContent = "Game ini sudah dimulai atau selesai.";
+        statusMsg.textContent = "This game has already started or ended.";
         return;
       }
       const totalPlayers = data.playerCount || 2;
@@ -1143,7 +1188,7 @@
         if(!data[r] || !data[r].connected){ openRole = r; break; }
       }
       if(!openRole){
-        statusMsg.textContent = "Game sudah penuh.";
+        statusMsg.textContent = "Game is full.";
         return;
       }
 
@@ -1182,7 +1227,7 @@
       }
     } catch(err){
       console.error(err);
-      statusMsg.textContent = "Gagal gabung. Coba lagi.";
+      statusMsg.textContent = "Couldn't join. Try again.";
     } finally {
       btn.disabled = false;
     }
@@ -1284,7 +1329,7 @@
     countingDown = true;
     const btn = document.getElementById("playAgainBtn");
     btn.disabled = false;
-    btn.textContent = "Main Lagi";
+    btn.textContent = "Play Again";
     showScreen("countdown");
     let n = COUNTDOWN_SECONDS;
     const numEl = document.getElementById("countdownNum");
@@ -1331,6 +1376,9 @@
   const timerLabelEl = document.getElementById("timerLabel");
   const spectateBannerEl = document.getElementById("spectateBanner");
   const trackWrapEl = document.getElementById("trackWrap");
+  const questionOverlayEl = document.getElementById("questionOverlay");
+  const questionPromptEl = document.getElementById("questionPrompt");
+  const questionOptionsEl = document.getElementById("questionOptions");
 
   // lane width in px, cached for converting fixed-px obstacle hitboxes to the
   // engine's percent-based position system; refreshed on resize/orientation change
@@ -1361,8 +1409,8 @@
     entities = {};
     roles.forEach(r=>{
       const m = ROLE_META[r];
-      const label = isSolo ? "KAMU" : "PLAYER " + r.slice(-1);
-      const nameLabel = isSolo ? "Kamu" : DEFAULT_NAME[r];
+      const label = isSolo ? "YOU" : "PLAYER " + r.slice(-1);
+      const nameLabel = isSolo ? "You" : DEFAULT_NAME[r];
       m.laneEl.querySelector(".lane-tag").textContent = label;
 
       const tag = document.createElement("div");
@@ -1441,6 +1489,8 @@
     bindControls();
 
     startTime = performance.now();
+    nextQuestionAt = startTime + QUESTION_INTERVAL_MS;
+    questioning = false;
     raf = requestAnimationFrame(loop);
   }
 
@@ -1486,7 +1536,7 @@
       const anyOppWants = otherRoles.some(r=> v[r]);
       const iWant = !!v[role];
       if(finished && anyOppWants && !iWant){
-        toast("Lawan mulai ronde baru! 🏁");
+        toast("Your opponent started a new round! 🏁");
       }
       if(role === "player1" && roles.some(r=> v[r])){
         const update = {
@@ -1551,15 +1601,15 @@
   }
 
   function moveLeft(){
-    if(!running || myState.dead) return;
+    if(!running || myState.dead || questioning) return;
     myState.leftPct = Math.max(DINO_MIN_LEFT, myState.leftPct - MOVE_STEP);
   }
   function moveRight(){
-    if(!running || myState.dead) return;
+    if(!running || myState.dead || questioning) return;
     myState.leftPct = Math.min(DINO_MAX_LEFT, myState.leftPct + MOVE_STEP);
   }
   function doJump(){
-    if(!running || myState.dead || myState.jumping) return;
+    if(!running || myState.dead || myState.jumping || questioning) return;
     myState.jumping = true;
     myState.jumpStart = performance.now();
     myState.jumpStartLeft = myState.leftPct;
@@ -1673,6 +1723,12 @@
       checkCollision(elapsed);
     }
 
+    // quick math question every QUESTION_INTERVAL_MS of active play -- local
+    // to this player only, not synced to opponents (see askQuestion()).
+    if(!myState.dead && !questioning && now >= nextQuestionAt){
+      askQuestion();
+    }
+
     // difficulty label + timer
     updateHud(elapsed);
 
@@ -1735,6 +1791,7 @@
   }
 
   function checkCollision(elapsedMs){
+    if(questioning) return; // frozen for the question overlay -- can't be hit while answering
     if(performance.now() < myState.invincibleUntil) return; // masih kebal setelah nabrak
     const speedFrac = currentSpeedPctPerMs(elapsedMs) * 100;
     const jumpY = jumpOffsetPure(myState, performance.now());
@@ -1770,15 +1827,82 @@
     }
   }
 
+  // ---------------- quick math question (every QUESTION_INTERVAL_MS) ----------------
+  // Local-only mini quiz layered on top of the race -- doesn't touch Firebase
+  // or the shared obstacle schedule at all, so it can't desync multiplayer.
+  // Answering (right OR wrong) grants QUESTION_IMMUNE_MS of immunity by
+  // reusing the same invincibleUntil field the existing hit-invuln uses,
+  // so the blink feedback and checkCollision skip both come for free.
+  function generateMathQuestion(){
+    const ops = ["+", "-", "x"];
+    const op = ops[Math.floor(Math.random() * ops.length)];
+    let a, b, answer, prompt;
+    if(op === "+"){
+      a = 1 + Math.floor(Math.random() * 20);
+      b = 1 + Math.floor(Math.random() * 20);
+      answer = a + b;
+      prompt = `${a} + ${b} = ?`;
+    } else if(op === "-"){
+      a = 5 + Math.floor(Math.random() * 20);
+      b = 1 + Math.floor(Math.random() * a);
+      answer = a - b;
+      prompt = `${a} - ${b} = ?`;
+    } else {
+      a = 1 + Math.floor(Math.random() * 10);
+      b = 1 + Math.floor(Math.random() * 10);
+      answer = a * b;
+      prompt = `${a} x ${b} = ?`;
+    }
+    const options = new Set([answer]);
+    while(options.size < 4){
+      const delta = Math.floor(Math.random() * 11) - 5; // -5..5
+      const wrong = answer + (delta === 0 ? 6 : delta);
+      if(wrong >= 0) options.add(wrong);
+    }
+    const opts = [...options];
+    for(let i = opts.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [opts[i], opts[j]] = [opts[j], opts[i]];
+    }
+    return { prompt, answer, options: opts };
+  }
+
+  function askQuestion(){
+    questioning = true;
+    const q = generateMathQuestion();
+    questionPromptEl.textContent = q.prompt;
+    questionOptionsEl.innerHTML = "";
+    q.options.forEach(opt=>{
+      const btn = document.createElement("button");
+      btn.className = "q-btn";
+      btn.textContent = opt;
+      btn.addEventListener("click", ()=>{
+        questionOptionsEl.querySelectorAll(".q-btn").forEach(b=>{
+          b.disabled = true;
+          if(Number(b.textContent) === q.answer) b.classList.add("correct");
+          else if(b === btn) b.classList.add("wrong");
+        });
+        setTimeout(()=>{
+          questionOverlayEl.classList.add("hidden");
+          questioning = false;
+          myState.invincibleUntil = performance.now() + QUESTION_IMMUNE_MS;
+          nextQuestionAt = performance.now() + QUESTION_INTERVAL_MS;
+        }, 700);
+      });
+      questionOptionsEl.appendChild(btn);
+    });
+    questionOverlayEl.classList.remove("hidden");
+  }
+
   function killMe(){
     if(myState.dead) return;
     myState.dead = true;
     writeMyState(true);
     if(isSolo){
-      toast("Kamu game over!");
+      toast("You're out!");
     } else {
       const allOppDead = otherRoles.every(r=> remoteStates[r].dead);
-      toast(allOppDead ? "Kamu game over!" : "Kamu game over! Nunggu lawan selesai...");
+      toast(allOppDead ? "You're out!" : "You're out! Waiting for opponent to finish...");
     }
   }
 
@@ -1849,12 +1973,12 @@
     const isNewBest = setBestScoreIfHigher(myDist);
 
     if(isSolo){
-      overTitle.textContent = "Selesai! 🏁";
-      overSub.textContent = "Jarak akhir kamu:";
+      overTitle.textContent = "Finished! 🏁";
+      overSub.textContent = "Your final distance:";
       trophy.textContent = isNewBest ? "🏆" : "🏁";
       bestLine.textContent = isNewBest
-        ? `🎉 Rekor pribadi baru: ${Math.round(myDist)} m!`
-        : `Best distance kamu: ${getBestScore()} m`;
+        ? `🎉 New personal best: ${Math.round(myDist)} m!`
+        : `Your best distance: ${getBestScore()} m`;
       showScreen("over");
       return;
     }
@@ -1866,14 +1990,14 @@
     const iWon = !isTie && winners[0] === role;
 
     if(isTie){
-      overTitle.textContent = "Seri!";
-      overSub.textContent = "Jarak kalian sama persis.";
+      overTitle.textContent = "Tie!";
+      overSub.textContent = "You're exactly tied.";
       trophy.textContent = "🤝";
     } else {
       const winnerRole = winners[0];
       const winnerName = `${DEFAULT_NAME[winnerRole]} ${dinos[winnerRole]}`;
-      overTitle.textContent = iWon ? "Kamu Menang! 🎉" : `${winnerName} Menang!`;
-      overSub.textContent = iWon ? "Jarak terjauh, kamu juara balapan ini." : "Coba lagi buat balas dendam!";
+      overTitle.textContent = iWon ? "You Win! 🎉" : `${winnerName} Wins!`;
+      overSub.textContent = iWon ? "Longest distance — you're the champion of this race!" : "Try again for a rematch!";
       trophy.textContent = iWon ? "🏆" : "🏁";
       const wEl = ROLE_META[winnerRole].resultEl;
       wEl.classList.add("winner");
@@ -1884,8 +2008,8 @@
     }
 
     bestLine.textContent = isNewBest
-      ? `🎉 Rekor pribadi baru: ${Math.round(myDist)} m!`
-      : `Best distance kamu: ${getBestScore()} m`;
+      ? `🎉 New personal best: ${Math.round(myDist)} m!`
+      : `Your best distance: ${getBestScore()} m`;
 
     showScreen("over");
   }
