@@ -55,6 +55,22 @@
         </div>
       </div>
 
+      <!-- ---- Send a message: one-way (parent -> child), single active
+           message rather than a thread -- signing in here just proves
+           you know the child's own PIN (same one they use to play), not
+           a separate parent account, so a true 2-way chat would really
+           just be a shared family board rather than a private channel.
+           Popup shows on the child's hub landing screen next sign-in
+           (index.html, #sc-parent-msg-overlay). ---- -->
+      <div class="p-section">
+        <div class="p-section-title">💌 Send a Message</div>
+        <p class="p-section-desc">A quick note of encouragement — pops up on their screen next time they open the app.</p>
+        <textarea class="p-msg-input" id="p-msg-input" maxlength="200" rows="3" placeholder="e.g. We're so proud of how hard you've been practicing!"></textarea>
+        <button class="p-save-btn" id="p-msg-send-btn">Send Message</button>
+        <p class="p-save-note" id="p-msg-note"></p>
+        <p class="p-msg-last" id="p-msg-last"></p>
+      </div>
+
       <!-- ---- Assign section ---- -->
       <div class="p-section">
         <div class="p-section-title">🎯 This Week's Focus</div>

@@ -139,6 +139,13 @@
     const badges = player.badges || {};
     const topicStats = player.topicStats || {};
     const assignedTopics = player.assignedTopics || [];
+    const parentMessage = player.parentMessage || null;
+
+    // ---- Last sent message preview ----
+    const lastMsgEl = document.getElementById("p-msg-last");
+    lastMsgEl.textContent = parentMessage
+      ? `Last sent ${new Date(parentMessage.sentAt).toLocaleDateString()}${parentMessage.read ? " · seen" : " · not seen yet"}: "${parentMessage.text}"`
+      : "";
 
     // ---- Header ----
     const totalXp = GAMES.reduce((sum, g) => sum + xpFor(g.id, badges[g.id]), 0);
@@ -234,6 +241,35 @@
     } finally {
       btn.disabled = false;
       btn.textContent = "Save Focus Topics";
+    }
+  });
+
+  document.getElementById("p-msg-send-btn").addEventListener("click", async () => {
+    const input = document.getElementById("p-msg-input");
+    const text = input.value.trim();
+    const note = document.getElementById("p-msg-note");
+    if (!text) { note.textContent = "Write something first!"; note.classList.add("visible"); return; }
+    const btn = document.getElementById("p-msg-send-btn");
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+    try {
+      // Overwrites any previous message on purpose -- single active
+      // message, not a thread (see the section's own comment in
+      // index.html for why this stays one-way/one-message).
+      await aigDb.ref(`players/${childId}/parentMessage`).set({
+        text, sentAt: Date.now(), read: false
+      });
+      note.textContent = "Sent! They'll see it next time they open the app. ✓";
+      note.classList.add("visible");
+      input.value = "";
+      document.getElementById("p-msg-last").textContent = `Last sent ${new Date().toLocaleDateString()} · not seen yet: "${text}"`;
+      setTimeout(() => note.classList.remove("visible"), 3000);
+    } catch (e) {
+      note.textContent = "Couldn't send — try again.";
+      note.classList.add("visible");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Send Message";
     }
   });
 

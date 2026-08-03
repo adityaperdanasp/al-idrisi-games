@@ -385,10 +385,9 @@
            invite kid taps the way the game cards above do. -->
       <a class="sc-footer-link" href="parents/">For parents →</a>
 
-      <!-- MOCKUP ONLY -- parent message popup, concept not wired yet.
-           Auto-shows (not tap-to-open like Bo) once per unread message
-           from /parents, sat on top of the landing screen right after
-           sign-in. -->
+      <!-- One-way message from /parents (players/{id}/parentMessage).
+           Auto-shows (not tap-to-open like Bo) once per unread message,
+           wired in showLanding()/checkParentMessage() below. -->
       <div class="sc-parent-msg-overlay hidden" id="sc-parent-msg-overlay">
         <div class="sc-parent-msg-card">
           <span class="sc-parent-msg-emoji" style="top:-14px;left:22px;font-size:16px;">⭐</span>
@@ -396,29 +395,10 @@
           <div class="sc-parent-msg-icon">💌</div>
           <div class="sc-parent-msg-label">A message for you!</div>
           <div class="sc-parent-msg-from">From your family</div>
-          <div class="sc-parent-msg-text" id="sc-parent-msg-text">We're so proud of how hard you've been practicing this week — keep it up, superstar! 🌟</div>
+          <div class="sc-parent-msg-text" id="sc-parent-msg-text"></div>
           <button class="sc-parent-msg-close" id="sc-parent-msg-close">Thanks! 💛</button>
         </div>
       </div>
-      <script>
-        // MOCKUP-ONLY demo wiring -- open ?mockup=parentmsg to see this
-        // without console commands. Delete alongside the mockup markup
-        // above once the real feature (reading from Firebase) is built.
-        document.getElementById("sc-parent-msg-close").addEventListener("click", () => {
-          document.getElementById("sc-parent-msg-overlay").classList.add("hidden");
-        });
-        if (new URLSearchParams(location.search).get("mockup") === "parentmsg") {
-          // The popup lives inside #sc-screen-landing, which stays
-          // display:none until it's the .active screen (same overlay-
-          // nested-in-inactive-screen gotcha documented for MathVille) --
-          // #sc-screen-select is the real default, so force landing
-          // active first for this standalone demo link to actually show
-          // anything.
-          document.querySelectorAll(".sc-screen").forEach(s => s.classList.remove("active"));
-          document.getElementById("sc-screen-landing").classList.add("active");
-          document.getElementById("sc-parent-msg-overlay").classList.remove("hidden");
-        }
-      </script>
 
       <!-- Real chat with Bo (api/bo-chat.js) — kids can ask anything. -->
       <div class="sc-bo-chat" id="sc-bo-chat" hidden>
@@ -595,6 +575,27 @@
     if (localStorage.getItem("aig_bo_chat_hint_seen")) {
       document.getElementById("sc-greeting-hint").style.display = "none";
     }
+
+    checkParentMessage(current.id);
+  }
+
+  // One-way (parent -> child) message set from /parents
+  // (players/{id}/parentMessage: {text, sentAt, read}) -- shows once per
+  // unread message, marks it read on close so it doesn't reappear next
+  // sign-in. Fire-and-forget: a failed read/write here should never
+  // block the landing screen itself from showing.
+  async function checkParentMessage(childId) {
+    try {
+      const snap = await aigDb.ref(`players/${childId}/parentMessage`).get();
+      const msg = snap.exists() ? snap.val() : null;
+      if (!msg || msg.read) return;
+      document.getElementById("sc-parent-msg-text").textContent = msg.text;
+      document.getElementById("sc-parent-msg-overlay").classList.remove("hidden");
+      document.getElementById("sc-parent-msg-close").onclick = () => {
+        document.getElementById("sc-parent-msg-overlay").classList.add("hidden");
+        aigDb.ref(`players/${childId}/parentMessage/read`).set(true).catch(() => {});
+      };
+    } catch (e) { /* offline or no message yet -- landing screen already shown regardless */ }
   }
 
   // MOCKUP ONLY — placeholder open/close, not wired to AI yet. The

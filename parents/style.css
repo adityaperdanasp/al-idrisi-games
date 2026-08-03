@@ -43,6 +43,15 @@
 .p-section-title { font: 800 1rem "Baloo 2", sans-serif; color: #6b3f9b; margin-bottom: 4px; }
 .p-section-desc { font-size: 0.8rem; color: #8c7aa8; margin: 0 0 14px; }
 
+/* ---- Send a message ---- */
+.p-msg-input {
+  width: 100%; border: 2px solid #e4d4f7; border-radius: 14px; padding: 10px 12px;
+  font: 600 0.85rem "Nunito", sans-serif; color: #3d2e22; resize: vertical;
+  margin-bottom: 10px; box-sizing: border-box;
+}
+.p-msg-input:focus { outline: none; border-color: #9b6fd1; }
+.p-msg-last { font-size: 0.72rem; color: #b3a3c9; margin: 8px 0 0; }
+
 /* ---- Assign: picked box + topic grid (same recipe as MathVille's
    Focus Round overlay) ---- */
 .p-picked {
