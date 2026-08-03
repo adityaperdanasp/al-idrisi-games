@@ -197,6 +197,31 @@
   .q-btn:disabled{ cursor:not-allowed; }
   .q-btn.correct{ background:#22a06b; border-color:#22a06b; color:#fff; }
   .q-btn.wrong{ background:var(--danger-bg); border-color:var(--danger-border); color:var(--danger); }
+  .revive-title{ font-size:17px; font-weight:800; color:var(--text); margin-bottom:4px; }
+  .revive-progress{ font-size:13px; font-weight:700; color:var(--brand-dark); margin-bottom:14px; }
+
+  /* ---------- Scene progression: day (default) -> space -> desert ---------- */
+  .track-wrap.scene-space .lane{
+    background: linear-gradient(180deg, #0d1b3d 0%, #1c2f5e 100%) !important;
+  }
+  .track-wrap.scene-space .lane .ground-line{
+    background: repeating-linear-gradient(90deg, #3a2f55 0 20px, transparent 20px 36px);
+  }
+  .track-wrap.scene-desert .lane{
+    background: linear-gradient(180deg, #f6d692 0%, #e0a94f 100%) !important;
+  }
+  .track-wrap.scene-desert .lane .ground-line{
+    background: repeating-linear-gradient(90deg, #9c6b2e 0 20px, transparent 20px 36px);
+  }
+  .meteor{
+    position:absolute; top:-30px; font-size:22px; z-index:6;
+    animation: meteorFall linear forwards;
+    pointer-events:none;
+  }
+  @keyframes meteorFall{
+    from{ transform: translate(0,0) rotate(0deg); opacity:1; }
+    to{ transform: translate(-120px, 340px) rotate(-35deg); opacity:0; }
+  }
   .player-count-picker{
     display:flex;
     gap:8px;
@@ -721,6 +746,19 @@
         <div class="question-options" id="questionOptions"></div>
       </div>
     </div>
+
+    <!-- One-time revive gauntlet -- shown when lives hit 0 for the first
+         time this race (see startReviveChallenge()). Answer 3 questions
+         correctly (wrong ones just roll another) to come back with full
+         lives; only offered once per race. -->
+    <div class="question-overlay hidden" id="reviveOverlay">
+      <div class="question-card">
+        <div class="revive-title">💔 Answer 3 correctly to revive!</div>
+        <div class="revive-progress" id="reviveProgress">0 / 3 correct</div>
+        <div class="question-prompt" id="revivePrompt"></div>
+        <div class="question-options" id="reviveOptions"></div>
+      </div>
+    </div>
   </div>
 
   <!-- GAME OVER SCREEN -->
@@ -820,13 +858,16 @@
   const COUNTDOWN_SECONDS = 3;
   const BEST_SCORE_KEY = "dinorace_best_score";
   const STALE_MS_KICK = 15000; // remove obstacle after leaving screen
-  const LIVES_MAX = 5;                 // nyawa per dino
+  const LIVES_MAX = 3;                 // nyawa per dino
   const INVINCIBLE_MS = 1200;          // kebal + kedip sesaat setelah nabrak
   const SELECT_SECONDS = 10;           // waktu pilih dino
   const DINO_OPTIONS = ["🦕", "🦖", "🐉", "🐊", "🦎"]; // 5 karakter dino
   const SCHEDULE_DURATION_MS = 20 * 60 * 1000; // precompute obstacle timeline up to 20 min of play
   const QUESTION_INTERVAL_MS = 10000;   // a quick math question every 10s of active play
   const QUESTION_IMMUNE_MS = 2000;      // immune to obstacles for 2s after answering (either answer)
+  const REVIVE_CORRECT_NEEDED = 3;      // correct answers needed for the one-time revive
+  const SPACE_SCENE_DISTANCE = 500;     // meters -- scene switches to space
+  const DESERT_SCENE_DISTANCE = 1000;   // meters -- scene switches to desert + meteor shower fires once
 
   // Deterministic PRNG so both players compute the identical obstacle
   // timeline locally from a shared seed, instead of relying on one
@@ -902,6 +943,8 @@
   let finished = false;
   let nextQuestionAt = 0;   // performance.now() timestamp for the next quick-math question
   let questioning = false;  // true while the question overlay is up -- freezes input + collision
+  let currentScene = "day"; // "day" | "space" | "desert" -- see updateScene()
+  let meteorShowerShown = false; // fires once, right when DESERT_SCENE_DISTANCE is crossed
 
   // ---------------- DOM ----------------
   const screens = {
@@ -1379,6 +1422,10 @@
   const questionOverlayEl = document.getElementById("questionOverlay");
   const questionPromptEl = document.getElementById("questionPrompt");
   const questionOptionsEl = document.getElementById("questionOptions");
+  const reviveOverlayEl = document.getElementById("reviveOverlay");
+  const reviveProgressEl = document.getElementById("reviveProgress");
+  const revivePromptEl = document.getElementById("revivePrompt");
+  const reviveOptionsEl = document.getElementById("reviveOptions");
 
   // lane width in px, cached for converting fixed-px obstacle hitboxes to the
   // engine's percent-based position system; refreshed on resize/orientation change
@@ -1491,6 +1538,11 @@
     startTime = performance.now();
     nextQuestionAt = startTime + QUESTION_INTERVAL_MS;
     questioning = false;
+    respawnUsed = false;
+    reviveOverlayEl.classList.add("hidden");
+    currentScene = "day";
+    meteorShowerShown = false;
+    trackWrapEl.classList.remove("scene-space", "scene-desert");
     raf = requestAnimationFrame(loop);
   }
 
@@ -1712,6 +1764,12 @@
       ROLE_META[role].distEl.textContent = Math.round(myState.distance);
     }
 
+    // scene changes with elapsed race distance -- driven by elapsed time
+    // (shared clock, same for every player) rather than gated on
+    // !myState.dead, so the world keeps advancing visually even while
+    // spectating after an early death.
+    updateScene(elapsed / 100); // elapsed(ms)/100 == the same "meters" formula as distance above
+
     // throttled write ke Firebase (~10/s) — solo skip total, ga ada Firebase
     if(!isSolo && now - lastDistWriteAt > 90){
       lastDistWriteAt = now;
@@ -1821,10 +1879,73 @@
     myState.lives = Math.max(0, myState.lives - 1);
     myState.invincibleUntil = performance.now() + INVINCIBLE_MS; // kebal + kedip
     if(myState.lives <= 0){
-      killMe();
+      if(!respawnUsed){
+        startReviveChallenge();
+      } else {
+        killMe();
+      }
     } else {
       writeMyState(true); // sync sisa nyawa ke lawan
     }
+  }
+
+  // ---------------- revive (1x per race, needs 3 correct answers) ----------------
+  // Lives hitting 0 no longer ends the race immediately the FIRST time --
+  // one revive is offered: answer REVIVE_CORRECT_NEEDED questions correctly
+  // (wrong answers cost nothing but progress, same as the regular question)
+  // to come back with full lives. Uses its own overlay (#reviveOverlay) so
+  // it reads as a distinct "one last chance" moment, not just another
+  // regular question. `questioning` is reused to freeze input/collision
+  // the same way the regular question does.
+  let respawnUsed = false;
+  let reviveCorrectCount = 0;
+
+  function startReviveChallenge(){
+    questioning = true;
+    reviveCorrectCount = 0;
+    reviveProgressEl.textContent = `${reviveCorrectCount} / ${REVIVE_CORRECT_NEEDED} correct`;
+    reviveOverlayEl.classList.remove("hidden");
+    rollReviveQuestion();
+  }
+
+  function rollReviveQuestion(){
+    const q = generateMathQuestion();
+    revivePromptEl.textContent = q.prompt;
+    reviveOptionsEl.innerHTML = "";
+    q.options.forEach(opt=>{
+      const btn = document.createElement("button");
+      btn.className = "q-btn";
+      btn.textContent = opt;
+      btn.addEventListener("click", ()=>{
+        reviveOptionsEl.querySelectorAll(".q-btn").forEach(b=>{
+          b.disabled = true;
+          if(Number(b.textContent) === q.answer) b.classList.add("correct");
+          else if(b === btn) b.classList.add("wrong");
+        });
+        if(Number(btn.textContent) === q.answer){
+          reviveCorrectCount++;
+          reviveProgressEl.textContent = `${reviveCorrectCount} / ${REVIVE_CORRECT_NEEDED} correct`;
+        }
+        setTimeout(()=>{
+          if(reviveCorrectCount >= REVIVE_CORRECT_NEEDED){
+            finishRevive();
+          } else {
+            rollReviveQuestion();
+          }
+        }, 700);
+      });
+      reviveOptionsEl.appendChild(btn);
+    });
+  }
+
+  function finishRevive(){
+    respawnUsed = true;
+    myState.lives = LIVES_MAX;
+    myState.invincibleUntil = performance.now() + QUESTION_IMMUNE_MS;
+    reviveOverlayEl.classList.add("hidden");
+    questioning = false;
+    nextQuestionAt = performance.now() + QUESTION_INTERVAL_MS;
+    writeMyState(true);
   }
 
   // ---------------- quick math question (every QUESTION_INTERVAL_MS) ----------------
@@ -1833,25 +1954,32 @@
   // Answering (right OR wrong) grants QUESTION_IMMUNE_MS of immunity by
   // reusing the same invincibleUntil field the existing hit-invuln uses,
   // so the blink feedback and checkCollision skip both come for free.
+  // Per feedback: no more trivial single-digit addition -- every op now
+  // uses 2-digit-ish ranges, plus division added for variety.
   function generateMathQuestion(){
-    const ops = ["+", "-", "x"];
+    const ops = ["+", "-", "x", "÷"];
     const op = ops[Math.floor(Math.random() * ops.length)];
     let a, b, answer, prompt;
     if(op === "+"){
-      a = 1 + Math.floor(Math.random() * 20);
-      b = 1 + Math.floor(Math.random() * 20);
+      a = 12 + Math.floor(Math.random() * 38); // 12..49
+      b = 12 + Math.floor(Math.random() * 38); // 12..49
       answer = a + b;
       prompt = `${a} + ${b} = ?`;
     } else if(op === "-"){
-      a = 5 + Math.floor(Math.random() * 20);
-      b = 1 + Math.floor(Math.random() * a);
+      a = 30 + Math.floor(Math.random() * 50); // 30..79
+      b = 12 + Math.floor(Math.random() * (a - 11)); // stays 2-digit-ish, never trivial
       answer = a - b;
       prompt = `${a} - ${b} = ?`;
-    } else {
-      a = 1 + Math.floor(Math.random() * 10);
-      b = 1 + Math.floor(Math.random() * 10);
+    } else if(op === "x"){
+      a = 3 + Math.floor(Math.random() * 10); // 3..12
+      b = 3 + Math.floor(Math.random() * 10); // 3..12
       answer = a * b;
       prompt = `${a} x ${b} = ?`;
+    } else {
+      b = 2 + Math.floor(Math.random() * 9);  // divisor 2..10
+      answer = 2 + Math.floor(Math.random() * 10); // quotient 2..11
+      a = b * answer; // always divides exactly
+      prompt = `${a} ÷ ${b} = ?`;
     }
     const options = new Set([answer]);
     while(options.size < 4){
@@ -1925,6 +2053,45 @@
     if(rampT > 0.66) label = "HARD";
     else if(rampT > 0.3) label = "MEDIUM";
     diffLabelEl.textContent = label;
+  }
+
+  // ---------------- scene progression (day -> space -> desert) ----------------
+  // Purely cosmetic -- swaps the lane background gradient via a class on
+  // #trackWrap, doesn't touch obstacles/collision/schedule at all. Distance
+  // is a shared clock (elapsed-time based, identical for every player), so
+  // every player sees the scene change at the same moment.
+  function updateScene(distanceM){
+    const target = distanceM >= DESERT_SCENE_DISTANCE ? "desert"
+      : distanceM >= SPACE_SCENE_DISTANCE ? "space"
+      : "day";
+    if(target !== currentScene){
+      currentScene = target;
+      trackWrapEl.classList.toggle("scene-space", target === "space");
+      trackWrapEl.classList.toggle("scene-desert", target === "desert");
+    }
+    if(distanceM >= DESERT_SCENE_DISTANCE && !meteorShowerShown){
+      meteorShowerShown = true;
+      triggerMeteorShower();
+    }
+  }
+
+  // One-time dramatic moment right as the desert scene kicks in -- a
+  // handful of meteors streak across #trackWrap, purely visual (no
+  // collision effect), plus a toast so it reads as an event, not a glitch.
+  function triggerMeteorShower(){
+    toast("☄️ Meteor shower!");
+    const count = 7;
+    for(let i = 0; i < count; i++){
+      setTimeout(()=>{
+        const m = document.createElement("div");
+        m.className = "meteor";
+        m.textContent = "☄️";
+        m.style.left = Math.floor(Math.random() * 90) + "%";
+        m.style.animationDuration = (0.7 + Math.random() * 0.5) + "s";
+        trackWrapEl.appendChild(m);
+        setTimeout(()=> m.remove(), 1400);
+      }, i * 130);
+    }
   }
 
   function finalizeIfAllDone(fromRemote){
