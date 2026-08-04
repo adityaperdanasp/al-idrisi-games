@@ -304,6 +304,42 @@ h1, h2, h3, h4 { margin: 0 0 6px; font-family: var(--font-display); font-weight:
   margin-top: 4px;
 }
 
+/* ---------- Siapa Aktif (per-day active list) ---------- */
+#active-day-card { margin-bottom: var(--space-4); }
+.db-date-picker {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-family: var(--font-sans);
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+  background: var(--surface-card-tint);
+}
+.db-active-day-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.db-active-day-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-card-tint);
+  border-radius: var(--radius-pill);
+  padding: 6px 12px 6px 6px;
+  font-size: var(--text-body-sm);
+}
+.db-active-day-chip .db-active-avatar {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: var(--weight-bold);
+  background: var(--action-primary); color: #fff;
+  flex-shrink: 0;
+}
+.db-active-day-chip .db-active-name { font-weight: var(--weight-semibold); color: var(--text-primary); }
+.db-active-day-chip .db-active-games { color: var(--text-secondary); font-size: var(--text-caption); }
+.db-active-day-empty { color: var(--text-secondary); font-size: var(--text-body-sm); padding: 6px 0; }
+
 /* ---------- Comparison + favorites row ---------- */
 .db-row-2 {
   display: grid;

@@ -167,10 +167,68 @@
       renderHeatmap(lastRows);
       renderRoster(lastRows);
       renderApprovals();
+      renderActiveDay(activeDayPicker.value);
     });
   }
 
   document.getElementById("db-refresh").addEventListener("click", loadAndRender);
+
+  // ---- Siapa Aktif (per-day active list) ----
+  // Reads players/{id}/sessionsByDay/{date} directly from cache.players --
+  // deliberately NOT filtered to the static AIG_PLAYERS roster like the
+  // rest of the dashboard, since that roster is stale post Sign-Up/Sign-In
+  // switch (see CLAUDE.md's roster.js gotcha) and would silently hide any
+  // student who only exists via testerAccounts sign-up. Iterates every id
+  // actually present under /players instead, so no one who really played
+  // that day gets missed.
+  const activeDayPicker = document.getElementById("active-day-picker");
+  const activeDayListEl = document.getElementById("active-day-list");
+
+  function yesterdayLocalISO() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10); // fine to be off by a few hours around midnight -- picker is adjustable
+  }
+  activeDayPicker.value = yesterdayLocalISO();
+  activeDayPicker.addEventListener("change", () => renderActiveDay(activeDayPicker.value));
+
+  // Static roster gives a friendly display name where available; ids that
+  // only exist via Sign Up (not in the old roster) fall back to whatever
+  // name was last written to their leaderboard entry, then finally the raw
+  // id itself if neither source has one.
+  function resolveDisplayName(playerId) {
+    const rosterHit = (window.AIG_PLAYERS || []).find(p => p.id === playerId);
+    if (rosterHit) return rosterHit.name;
+    for (const g of GAMES) {
+      const lb = cache.leaderboard[g.id] && cache.leaderboard[g.id][playerId];
+      if (lb && lb.name) return lb.name;
+    }
+    return playerId;
+  }
+
+  function renderActiveDay(dateStr) {
+    const entries = [];
+    Object.keys(cache.players || {}).forEach(playerId => {
+      const day = cache.players[playerId].sessionsByDay && cache.players[playerId].sessionsByDay[dateStr];
+      if (!day) return;
+      const gameLabels = Object.keys(day)
+        .map(gid => (GAMES.find(g => g.id === gid) || { label: gid }).label);
+      entries.push({ playerId, name: resolveDisplayName(playerId), games: gameLabels });
+    });
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+
+    if (!entries.length) {
+      activeDayListEl.innerHTML = `<p class="db-active-day-empty">Belum ada yang main di tanggal ini.</p>`;
+      return;
+    }
+    activeDayListEl.innerHTML = entries.map(e => `
+      <div class="db-active-day-chip">
+        <span class="db-active-avatar">${escapeHtml(initialsOf(e.name))}</span>
+        <span class="db-active-name">${escapeHtml(e.name)}</span>
+        <span class="db-active-games">${escapeHtml(e.games.join(", "))}</span>
+      </div>
+    `).join("");
+  }
 
   function xpTotalFor(s) {
     const la = (s["language-arts"].badges && s["language-arts"].badges.xpTotal) || 0;
