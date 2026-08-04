@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=46" />
+<link rel="stylesheet" href="style.css?v=47" />
 </head>
 <body>
 
@@ -40,6 +40,12 @@
   <button id="btn-home" class="icon-btn" aria-label="Home" title="Home">🏠</button>
   <div id="btn-map" class="icon-btn hidden" aria-label="Map" title="Map">🗺️</div>
   <div id="btn-drive" class="icon-btn hidden" aria-label="Drive Mode" title="Drive Mode">🚗</div>
+  <!-- MOCKUP ONLY — temporary buttons for reviewing Glass Bridge / Red
+       Light Green Light, always visible regardless of screen for now.
+       Remove (or move behind the map, like btn-drive) once these are
+       past mockup stage. -->
+  <div id="btn-glass" class="icon-btn" aria-label="Glass Bridge" title="Glass Bridge (mockup)">🧊</div>
+  <div id="btn-rlgl" class="icon-btn" aria-label="Red Light Green Light" title="Red Light Green Light (mockup)">🚦</div>
   <div class="topbar-spacer"></div>
   <div id="xp-badge" class="xp-badge"><span>✨</span><span id="xp-total">0</span> XP</div>
 </header>
@@ -615,11 +621,80 @@
     <button class="btn btn-primary btn-cta" id="btn-reward-continue">Continue</button>
   </section>
 
+  <!-- ===============================================================
+       MOCKUP — Glass Bridge (Squid Game-inspired, but math-driven, not
+       luck-driven: each step's 2 panels ARE the MC answer options, not
+       a blind 50/50 guess). Reuses rollDriveQuestion/buildQuickMc for
+       questions and the same "answer N to survive" shape as Plane
+       Mode's respawn gauntlet. Entirely separate screen/state from
+       Drive Mode and Plane Mode -- no shared code, by design.
+       =============================================================== -->
+  <section id="screen-glass" class="screen">
+    <div class="map-header drive-header">
+      <div>
+        <h2 class="title-lg">Glass Bridge</h2>
+        <div class="drive-hud">
+          <span class="drive-hud-pill" id="glass-step">Step 0/8</span>
+          <span class="drive-hud-pill" id="glass-lives">❤️❤️❤️</span>
+        </div>
+      </div>
+    </div>
+    <div id="glass-world" class="glass-world">
+      <div class="glass-track" id="glass-track"></div>
+      <div class="glass-prompt" id="glass-prompt"></div>
+      <div class="glass-panels">
+        <button class="glass-panel" id="glass-panel-a"></button>
+        <button class="glass-panel" id="glass-panel-b"></button>
+      </div>
+    </div>
+    <div id="glass-end-overlay" class="drive-question-overlay hidden">
+      <div class="drive-question-card drive-end-card">
+        <div class="drive-end-emoji" id="glass-end-emoji">🏆</div>
+        <div class="drive-end-title" id="glass-end-title"></div>
+        <div class="drive-end-sub" id="glass-end-sub"></div>
+        <button class="btn btn-primary" id="glass-end-replay">Play Again</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===============================================================
+       MOCKUP — Red Light, Green Light. Real-time reflex mini-game,
+       reuses the requestAnimationFrame-loop pattern from Drive Mode/
+       Plane Mode, but with a single hold-to-move button instead of a
+       joystick (movement is 1D here, not free 2D flight/driving).
+       =============================================================== -->
+  <section id="screen-redlight" class="screen">
+    <div class="map-header drive-header">
+      <div>
+        <h2 class="title-lg">Red Light, Green Light</h2>
+        <div class="drive-hud">
+          <span class="drive-hud-pill" id="rlgl-lives">❤️❤️❤️</span>
+        </div>
+      </div>
+    </div>
+    <div id="rlgl-world" class="rlgl-world">
+      <div class="rlgl-light" id="rlgl-light">🔴</div>
+      <div class="rlgl-track">
+        <div class="rlgl-finish">🏁</div>
+        <div class="rlgl-runner" id="rlgl-runner">🏃</div>
+      </div>
+      <button class="rlgl-move-btn" id="rlgl-move-btn">HOLD TO MOVE</button>
+    </div>
+    <div id="rlgl-end-overlay" class="drive-question-overlay hidden">
+      <div class="drive-question-card drive-end-card">
+        <div class="drive-end-emoji" id="rlgl-end-emoji">🏆</div>
+        <div class="drive-end-title" id="rlgl-end-title"></div>
+        <div class="drive-end-sub" id="rlgl-end-sub"></div>
+        <button class="btn btn-primary" id="rlgl-end-replay">Play Again</button>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <script src="questions.js?v=2"></script>
 <script src="generators.js?v=2"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=61"></script>
+<script src="script.js?v=62"></script>
 </body>
 </html>

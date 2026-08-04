@@ -3878,3 +3878,194 @@ if (pendingJoinCode) {
   $("join-code-input").value = pendingJoinCode;
   showScreen("screen-pair");
 }
+
+/* =================================================================
+   MOCKUP — GLASS BRIDGE
+   -----------------------------------------------------------------
+   Squid Game-inspired, but math-driven instead of luck-driven: each
+   step's 2 glass panels ARE the two MC answer options (correct +
+   1 wrong), not a blind 50/50 guess. Reuses Drive Mode's own quick-MC
+   generator (rollDriveQuestion/buildQuickMc). Entirely separate
+   screen/state -- no shared code with Drive Mode or Plane Mode.
+   ================================================================= */
+const GLASS_TOTAL_STEPS = 8;
+const GLASS_MAX_LIVES = 3;
+let glassState = null;
+
+function launchGlassBridge() {
+  showScreen("screen-glass");
+  glassState = { step: 0, lives: GLASS_MAX_LIVES, ended: false };
+  $("glass-end-overlay").classList.add("hidden");
+  updateGlassHud();
+  renderGlassTrack();
+  renderGlassStep();
+}
+
+function updateGlassHud() {
+  $("glass-step").textContent = `Step ${glassState.step}/${GLASS_TOTAL_STEPS}`;
+  $("glass-lives").textContent = "❤️".repeat(glassState.lives) + "🖤".repeat(GLASS_MAX_LIVES - glassState.lives);
+}
+
+function renderGlassTrack() {
+  const track = $("glass-track");
+  track.innerHTML = "";
+  for (let i = 0; i < GLASS_TOTAL_STEPS; i++) {
+    const dot = document.createElement("div");
+    dot.className = "glass-track-dot";
+    track.appendChild(dot);
+  }
+}
+
+function renderGlassStep() {
+  [...$("glass-track").children].forEach((dot, i) => {
+    dot.classList.toggle("done", i < glassState.step);
+    dot.classList.toggle("current", i === glassState.step);
+  });
+
+  const raw = rollDriveQuestion(driveDifficulty);
+  const step = buildQuickMc(raw);
+  $("glass-prompt").textContent = step.prompt;
+
+  // Only 2 panels: the correct answer + one random wrong one, shuffled
+  // so "correct" isn't always the same side.
+  const wrongOptions = step.options.filter(o => !labelsEqual(o, step.correctLabel));
+  const pair = shuffle([step.correctLabel, wrongOptions[rand(0, wrongOptions.length - 1)]]);
+
+  const panelIds = ["glass-panel-a", "glass-panel-b"];
+  panelIds.forEach((id, i) => {
+    const btn = $(id);
+    btn.textContent = pair[i];
+    btn.disabled = false;
+    btn.className = "glass-panel";
+    btn.onclick = () => handleGlassPanel(labelsEqual(pair[i], step.correctLabel), id);
+  });
+}
+
+function handleGlassPanel(isCorrect, clickedId) {
+  if (glassState.ended) return;
+  $("glass-panel-a").disabled = true;
+  $("glass-panel-b").disabled = true;
+  if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "glass-bridge", isCorrect);
+
+  if (isCorrect) {
+    $(clickedId).classList.add("safe");
+    glassState.step += 1;
+    updateGlassHud();
+    setTimeout(() => {
+      if (glassState.step >= GLASS_TOTAL_STEPS) endGlassBridge(true);
+      else renderGlassStep();
+    }, 700);
+  } else {
+    $(clickedId).classList.add("broken");
+    glassState.lives -= 1;
+    updateGlassHud();
+    setTimeout(() => {
+      if (glassState.lives <= 0) endGlassBridge(false);
+      else renderGlassStep(); // same step, fresh question
+    }, 700);
+  }
+}
+
+function endGlassBridge(won) {
+  glassState.ended = true;
+  $("glass-end-emoji").textContent = won ? "🏆" : "💦";
+  $("glass-end-title").textContent = won ? "You crossed the bridge!" : "You fell!";
+  $("glass-end-sub").textContent = `Made it to step ${glassState.step}/${GLASS_TOTAL_STEPS}`;
+  $("glass-end-overlay").classList.remove("hidden");
+}
+
+$("btn-glass").addEventListener("click", launchGlassBridge);
+$("glass-end-replay").addEventListener("click", () => launchGlassBridge());
+
+/* =================================================================
+   MOCKUP — RED LIGHT, GREEN LIGHT
+   -----------------------------------------------------------------
+   Real-time reflex mini-game. Reuses the requestAnimationFrame-loop
+   shape from Drive Mode/Plane Mode, but movement is 1D (a hold button,
+   not a 2D joystick). Entirely separate state -- no shared code.
+   ================================================================= */
+const RLGL_MOVE_SPEED = 1.1;        // % of track per frame while moving on green
+const RLGL_GREEN_MIN_MS = 1400;
+const RLGL_GREEN_MAX_MS = 3000;
+const RLGL_RED_MIN_MS = 1200;
+const RLGL_RED_MAX_MS = 2400;
+const RLGL_MAX_LIVES = 3;
+let rlglState = null;
+
+function launchRedLight() {
+  showScreen("screen-redlight");
+  rlglState = {
+    progress: 0, lives: RLGL_MAX_LIVES, moving: false,
+    light: "red", lightChangeAt: performance.now() + rand(RLGL_RED_MIN_MS, RLGL_RED_MAX_MS),
+    ended: false, rafId: null
+  };
+  $("rlgl-end-overlay").classList.add("hidden");
+  $("rlgl-light").textContent = "🔴";
+  $("rlgl-runner").style.left = "0%";
+  updateRlglLives();
+  startRlglLoop();
+}
+
+function updateRlglLives() {
+  $("rlgl-lives").textContent = "❤️".repeat(rlglState.lives) + "🖤".repeat(RLGL_MAX_LIVES - rlglState.lives);
+}
+
+function rlglCaught() {
+  rlglState.lives -= 1;
+  updateRlglLives();
+  rlglState.progress = 0;
+  $("rlgl-runner").style.left = "0%";
+  $("rlgl-runner").classList.add("caught");
+  setTimeout(() => $("rlgl-runner").classList.remove("caught"), 400);
+  if (rlglState.lives <= 0) endRedLight(false);
+}
+
+function endRedLight(won) {
+  rlglState.ended = true;
+  if (rlglState.rafId) cancelAnimationFrame(rlglState.rafId);
+  $("rlgl-end-emoji").textContent = won ? "🏆" : "🛑";
+  $("rlgl-end-title").textContent = won ? "You made it!" : "Caught moving!";
+  $("rlgl-end-sub").textContent = won ? "Nice reflexes!" : "Watch the light next time.";
+  $("rlgl-end-overlay").classList.remove("hidden");
+}
+
+function startRlglLoop() {
+  function frame(now) {
+    if (!rlglState || rlglState.ended) return;
+
+    if (now > rlglState.lightChangeAt) {
+      if (rlglState.light === "red") {
+        rlglState.light = "green";
+        rlglState.lightChangeAt = now + rand(RLGL_GREEN_MIN_MS, RLGL_GREEN_MAX_MS);
+        $("rlgl-light").textContent = "🟢";
+      } else {
+        rlglState.light = "red";
+        rlglState.lightChangeAt = now + rand(RLGL_RED_MIN_MS, RLGL_RED_MAX_MS);
+        $("rlgl-light").textContent = "🔴";
+      }
+    }
+
+    if (rlglState.moving) {
+      if (rlglState.light === "red") {
+        rlglCaught();
+      } else {
+        rlglState.progress = Math.min(100, rlglState.progress + RLGL_MOVE_SPEED);
+        $("rlgl-runner").style.left = rlglState.progress + "%";
+        if (rlglState.progress >= 100) { endRedLight(true); return; }
+      }
+    }
+    rlglState.rafId = requestAnimationFrame(frame);
+  }
+  rlglState.rafId = requestAnimationFrame(frame);
+}
+
+(function setupRlglMoveButton() {
+  const btn = $("rlgl-move-btn");
+  btn.addEventListener("pointerdown", e => { e.preventDefault(); if (rlglState) rlglState.moving = true; });
+  btn.addEventListener("pointerup", () => { if (rlglState) rlglState.moving = false; });
+  btn.addEventListener("pointercancel", () => { if (rlglState) rlglState.moving = false; });
+  btn.addEventListener("pointerleave", () => { if (rlglState) rlglState.moving = false; });
+})();
+
+$("btn-rlgl").addEventListener("click", launchRedLight);
+$("rlgl-end-replay").addEventListener("click", () => launchRedLight());
