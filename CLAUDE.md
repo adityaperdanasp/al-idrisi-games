@@ -145,7 +145,7 @@ Mobil dikontrol joystick kiri (analog drag), dikejar 1 dino (2 dino kalau diffic
 
 **Bug fix (2026-07-30)**: `buildPlaceValueStep()` sempet generate soal ambigu — nanya "which place is the digit 7 in 9,793,708" padahal digit 7-nya muncul 2x di angka itu (kids justifiably confused, salah satu jawaban yang "benar" ditolak). Fix: reject digit yang muncul lebih dari sekali di angka (`numStr.indexOf(digit) !== numStr.lastIndexOf(digit)`), sama kayak reject digit "0" yang udah ada sebelumnya. Udah divalidasi 20k simulasi, max 13x retry sebelum dapet angka valid (gak ada risiko infinite loop).
 
-### Plane mode (shmup) buat Drive Mode — Fase 1-6 udah di `main`, tweak round (v2) di branch `feature/plane-mode-v2`
+### Plane mode (shmup) buat Drive Mode — Fase 1-6 + v2 + v3 + vehicle picker redesign, SEMUA udah di `main` & production
 
 Pilihan kendaraan di Drive Mode: **Mobil** (yang sekarang, gak disentuh sama sekali) vs **Pesawat** (shmup/bullet-hell ala Raiden/Strikers 1945/DoDonPachi — vertical scroll, auto-fire, dodge peluru musuh, power-up, boss). Dipilih lewat overlay baru `#drive-vehicle-overlay` (di `mathville/index.html`, sengaja ditaro di luar semua `.screen` — langsung child `#app` — biar gak kena bug "overlay nested in inactive screen" yang udah didokumentasikan di atas) sebelum masuk Drive Mode. Pilih Mobil → flow persis sama kayak sebelumnya (difficulty picker → `goToDrive()`). Pilih Pesawat → `launchPlaneMode()`, layar baru `#screen-plane`.
 
@@ -166,13 +166,26 @@ Pilihan kendaraan di Drive Mode: **Mobil** (yang sekarang, gak disentuh sama sek
 
 Semua fase (1-6) kelar dan **udah di-merge ke `main` + deploy production** (`feature/plane-mode` → `main`, `vercel --prod`).
 
-**Round tweak berikutnya (v2), per feedback abis dicoba** — di branch `feature/plane-mode-v2`, BELUM di-merge:
+**Round tweak v2, per feedback abis dicoba** — **udah di-merge ke `main`** (branch `feature/plane-mode-v2` sekarang cuma sejarah, aman dihapus):
 - Ship kurang responsif 25% (`PLANE_SHIP_SPEED` 1.6→1.2) — kerasa kegesitan/twitchy sebelumnya.
-- **Game sekarang endless** — ngalahin boss GAK LAGI ngakhirin round (sebelumnya itu satu-satunya cara "menang"). `handleBossDefeat()` (baru) kasih XP+toast+confetti, terus rame in-in-in makin susah: enemy density `×1.20` compounding tiap boss kalah (mulai dari `1.10` di awal — permintaan "perbanyak 10% di awal, 20% tiap boss kalah"), threshold boss berikutnya `+15` makin jauh, interval soal makin rapat (turun tapi di-floor `PLANE_QUESTION_INTERVAL_MIN_MS=8000`). Satu-satunya cara round berakhir sekarang cuma nyawa habis — `endPlaneMode()` disederhanain (parameter `crashed` dihapus, dulu-dulunya cuma dipanggil `true` doang lewat jalur nyata, jalur `false`/"win" itu dead code).
-- **Soal sekarang campuran 3 game** — 50% mathville (SELALU di-roll level "easy" spesifik, karena tiap generator di `generators.js` jamin tier itu mental-math-only, gak ada angka segede yang butuh kertas kayak "medium"/"hard"), 25% SolarQuest (`azkauniverse/questions.json`, cuma type `"mc"` yang gak ada `image`), 25% Language & Arts (`azkacraft/questions.json`, cuma type `"mc"`). Kedua pool di-fetch sekali secara lazy (`ensurePlaneQuestionPools()`, fire-and-forget dipanggil pas `launchPlaneMode()`) — kalau fetch belum kelar atau gagal, fallback ke soal mathville biasa, gak pernah nge-block game. **Awas kalau format questions.json azkauniverse/azkacraft berubah lagi** — field name-nya BEDA tiap game (azkauniverse: `question`+`answer` sebagai INDEX ke `options`; azkacraft: `prompt`+`answer` sebagai TEKS jawaban langsung; mathville: `prompt`+`correctLabel`) — `ensurePlaneQuestionPools()` yang nge-mapping ke bentuk seragam `{prompt, options, correctLabel}`.
-- **High score persisten** — `PROGRESS.planeHighScore` (di localStorage/Firebase blob yang sama kayak semua chapter, `players/{id}/badges/mathville`), update live di HUD (`#plane-best`) begitu skor sesi ini lewatin best sebelumnya, juga tampil di layar Game Over.
+- **Game jadi endless** — ngalahin boss GAK LAGI ngakhirin round (sebelumnya itu satu-satunya cara "menang"). `handleBossDefeat()` kasih XP+toast+confetti, terus makin susah: enemy density `×1.20` compounding tiap boss kalah (mulai dari `1.10` di awal), threshold boss berikutnya `+15` makin jauh, interval soal makin rapat (di-floor `PLANE_QUESTION_INTERVAL_MIN_MS=8000`). Satu-satunya cara round berakhir sekarang cuma nyawa habis.
+- **Soal campuran 3 game** — 50% mathville (level "easy", mental-math-only), 25% SolarQuest, 25% Language & Arts, di-fetch lazy (`ensurePlaneQuestionPools()`), fallback ke mathville kalau fetch gagal/belum kelar. **Awas**: field name beda tiap game (azkauniverse: `question`+`answer`-sebagai-index; azkacraft: `prompt`+`answer`-teks-langsung; mathville: `prompt`+`correctLabel`) — `ensurePlaneQuestionPools()` yang nyeragamin ke `{prompt, options, correctLabel}`.
+- **High score persisten** — `PROGRESS.planeHighScore`, HUD `#plane-best`, tampil juga di Game Over.
 
-Preview: `https://al-idrisi-games-git-feature-plane-mode-v2-ellilo.vercel.app/mathville/index.html`. Nunggu Adit coba dulu sebelum merge.
+**Round tweak v3, per feedback lagi** — **udah di-merge ke `main`** (branch `feature/plane-mode-v3` sekarang cuma sejarah, aman dihapus):
+- Ship makin dikurangin sensitivitasnya (1.2→1.02→0.918 total, plus joystick pesawat diperbesar 110px→121px, drag radius ikut nyesuain) — beberapa putaran feedback "masih kegesitan".
+- **Bug beneran ketemu & difix**: musuh gerak di lajur vertikal tetap dan peluru mereka SELALU lurus ke bawah dari posisi musuh — kalau kapal diem di satu titik yang "gak sejalur", dia gak pernah kena tembak sama sekali. Sekarang peluru musuh di-aim ke posisi kapal pas ditembakkan (boss juga, reuse `spawnPlaneEnemyBullet` yang sama).
+- **Variasi boss** (4 tipe: 🐉🦂👹🦑, cycling per `bossesDefeated`, masing-masing HP/speed/fire-rate beda, 🦑 gerak figure-8) dan **variasi musuh biasa** (4 tipe: 👾👽🛸🦇, pola gerak beda tiap tipe: lurus/sinus/ngedeketin-kapal/zigzag).
+- Plane Mode sekarang pake BGM Math Race (lebih energik) via `bgm.js`'s `switchTrack()` baru, balik ke BGM MathVille pas keluar ke map/Drive Mode.
+- Chapter "Reading Comprehension" (Language & Arts) di-skip dari question pool Plane Mode — soal jenis "passage" butuh teks bacaan yang gak pernah ditampilin, jadi gak kejawab.
+- Drive Mode (mobil): speed +10% (`DRIVE_SPEED`, ikut nambah `DINO_SPEED` juga karena derived dari situ) — **satu-satunya perubahan v3 yang nyentuh Drive Mode**.
+
+**Vehicle picker redesign + difficulty easing** — **udah di-merge ke `main`** (branch `feature/vehicle-select` sekarang cuma sejarah, aman dihapus):
+- Picker sekarang 2 langkah: pilih kategori (Mobil/Pesawat, gak berubah) → grid 3 kolom, 5 desain per kategori (mobil: Blaze/Comet/Turbo/Sunburst/Nova; pesawat: Falcon/Inferno/Viper/Solstice/Ghost), masing-masing SVG beda siluet + warna glow signature sendiri (`.vehicle-glow`). Cosmetic doang — logic gameplay identik lintas skin. Pilihan persisten di localStorage, ke-highlight lagi kalau buka picker lagi.
+- `#drive-car` sekarang punya wrapper `#drive-car-sprite` biar ganti skin gak ikut nge-replace Bo-face/hint yang nempel di situ.
+- Difficulty di-ease dari v3 (yang katanya kegantengan/susah): peluru musuh biasa sekarang punya ±24° random miss (bukan laser-akurat kayak v3), boss tetep akurat (±12°). Enemy density starting multiplier balik turun 10% (dari "+10% di atas baseline" jadi kira-kira baseline lagi).
+
+Semua branch di atas (`feature/plane-mode`, `-v2`, `-v3`, `feature/vehicle-select`) statusnya **udah ke-merge penuh ke `main`** — kalau mau beres-beres, aman dihapus kapan aja (gak akan ilang riwayatnya, udah nempel di `main`).
 
 ## Android app — Capacitor dipertahankan, TWA lama DEPRECATED (keputusan 2026-08-03)
 
