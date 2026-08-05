@@ -187,11 +187,11 @@ Semua fase (1-6) kelar dan **udah di-merge ke `main` + deploy production** (`fea
 
 Semua branch di atas (`feature/plane-mode`, `-v2`, `-v3`, `feature/vehicle-select`) statusnya **udah ke-merge penuh ke `main`** — kalau mau beres-beres, aman dihapus kapan aja (gak akan ilang riwayatnya, udah nempel di `main`).
 
-## Language & Arts — Glass Bridge Challenge (mockup, belum di-merge ke `main`)
+## Language & Arts — Glass Bridge Challenge (LIVE di production)
 
 Ide awalnya dari brainstorm "game apa dari Squid Game yang bisa diadaptasi" — Glass Bridge jadi mini-game math-driven (bukan luck-driven kayak aslinya). **Sempet dibangun di MathVille dulu, tapi dipindah ke Language & Arts (azkacraft) per keputusan eksplisit** ("jangan taro di mathville, taro di language and arts") setelah user gak puas ("ga seru") sama 2 iterasi awal — versi final (top-down vertical walk) baru dibangun setelah dipindah, jadi MathVille gak pernah punya versi ini sama sekali.
 
-Status saat ini: **branch `feature/squid-game-mockups`, sudah di-push (commit `cc24745`), TAPI belum di-merge ke `main`** — masih pure mockup, belum ada konfirmasi final dari user buat production. Preview: `https://al-idrisi-games-git-feature-squid-game-mockups-ellilo.vercel.app/azkacraft/`.
+Status: **udah di-merge `feature/squid-game-mockups` → `main` dan di-deploy production** (hub `playalidrisi.fun` + standalone `azkasocial.fun`, dual-deploy per konvensi biasa) — diverifikasi langsung via curl ke dua-duanya, sama-sama nunjukin "Glass Bridge Challenge". Branch `feature/squid-game-mockups` sekarang cuma sejarah, aman dihapus kapan aja.
 
 **Konsep**: top-down vertical walk (bukan 2-panel pilihan statis kayak iterasi awal) — anak tahan tombol `#glass-move-btn` buat "jalan" naik kolom 10 kaca (`requestAnimationFrame` loop, sama pola "hold to move" kayak reflex mini-game). Nyampe tiap kaca, gerakan pause otomatis, muncul soal MC 2 pilihan (`#glass-question-overlay`). Salah = kaca retak (visual makin merah tiap kali) + soal baru di-reroll di kaca YANG SAMA, sampe `GLASS_MAX_ATTEMPTS` (3) percobaan. Percobaan ke-3 masih salah = kaca pecah beneran, karakter jatuh (animasi fade+rotate), HP getar (`navigator.vibrate`), overlay "You Fell!". Nyampe kaca ke-10 = menang ("You crossed the bridge!").
 
@@ -200,8 +200,6 @@ Status saat ini: **branch `feature/squid-game-mockups`, sudah di-push (commit `c
 **Sumber soal**: `ensureGlassQuestionPool()` narik HANYA dari question bank azkacraft sendiri (`QUESTION_BANK.chapters`), bukan dicampur sama math/science kayak Plane Mode's cross-game pool — ini keputusan eksplisit user ("pertanyaan hanya dari language and arts ya"). Digabung dari SEMUA chapter yang punya tipe `"mc"` (chapter 1-5: Spelling/Antonyms/Prefixes-Suffixes/Contractions/Capitalization, total 26 soal) — **chapter 6 (Reading Comprehension) & 7 (Creative Writing) sengaja di-skip**, soal mc mereka semua ngerujuk ke "passage"/cerita yang gak ditampilin di sini jadi gak bisa dijawab berdiri sendiri (exclusion rule yang sama persis kayak Focus Round & Plane Mode's cross-game pool).
 
 **Kode 100% terpisah** — gak ada shared state/function sama sekali sama `session`/`showScreen`-nya chapter biasa, semua logic ada di 1 blok di akhir `azkacraft/script.js` (cari komentar "MOCKUP — GLASS BRIDGE"), constants prefix `GLASS_*`, state global `glassState`. `recordTopicAttempt("language-arts", "glass-bridge", isCorrect)` — topic key sendiri, gak numpang stats chapter manapun.
-
-⚠️ Kalau nanti mau merge ke `main`: mathville-nya juga perlu di-deploy ulang (revert Glass Bridge yang sempet ada di sana udah include di commit yang sama), dan azkacraft perlu dual-deploy (`git push` buat hub + `vercel --prod` dari folder `azkacraft/` buat `azkasocial.fun`) biar standalone domain-nya sinkron — belum dijalanin karena masih tahap mockup.
 
 ## Android app — Capacitor dipertahankan, TWA lama DEPRECATED (keputusan 2026-08-03)
 
