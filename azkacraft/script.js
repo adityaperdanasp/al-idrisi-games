@@ -1334,7 +1334,7 @@ function launchGlassBridge() {
   glassState = { stepIndex: 0, attempt: 1, progress: 0, moving: false, paused: false, ended: false, rafId: null };
   document.getElementById("glass-end-overlay").classList.add("hidden");
   document.getElementById("glass-question-overlay").classList.add("hidden");
-  document.getElementById("glass-player").classList.remove("falling");
+  document.getElementById("glass-player").classList.remove("falling", "walking");
   document.getElementById("glass-player").style.bottom = "0%";
   updateGlassHud();
   renderGlassPath();
@@ -1367,6 +1367,7 @@ function startGlassLoop() {
       if (glassState.progress >= nextBoundary - 0.01) {
         glassState.paused = true;
         glassState.moving = false;
+        document.getElementById("glass-player").classList.remove("walking");
         showGlassQuestion();
       }
     }
@@ -1453,8 +1454,16 @@ function endGlassBridge(won) {
 
 (function setupGlassMoveButton() {
   const btn = document.getElementById("glass-move-btn");
-  const start = e => { e.preventDefault(); if (glassState && !glassState.paused) glassState.moving = true; };
-  const stop = () => { if (glassState) glassState.moving = false; };
+  const start = e => {
+    e.preventDefault();
+    if (!glassState || glassState.paused) return;
+    glassState.moving = true;
+    document.getElementById("glass-player").classList.add("walking");
+  };
+  const stop = () => {
+    if (glassState) glassState.moving = false;
+    document.getElementById("glass-player").classList.remove("walking");
+  };
   btn.addEventListener("pointerdown", start);
   btn.addEventListener("pointerup", stop);
   btn.addEventListener("pointercancel", stop);

@@ -1060,10 +1060,19 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
 
 .glass-player {
   position: absolute; left: 50%; bottom: 0%; transform: translate(-50%, 40%);
-  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 30px; display: flex; align-items: center; justify-content: center;
   z-index: 2; transition: bottom .05s linear;
 }
 .glass-player svg { display: block; }
+.glass-player-leg, .glass-player-arm { transform-box: fill-box; transform-origin: top center; }
+.glass-player.walking .glass-player-leg-l { animation: glassPlayerLimbSwing .3s ease-in-out infinite; }
+.glass-player.walking .glass-player-leg-r { animation: glassPlayerLimbSwing .3s ease-in-out infinite reverse; }
+.glass-player.walking .glass-player-arm-l { animation: glassPlayerLimbSwing .3s ease-in-out infinite reverse; }
+.glass-player.walking .glass-player-arm-r { animation: glassPlayerLimbSwing .3s ease-in-out infinite; }
+@keyframes glassPlayerLimbSwing {
+  0%, 100% { transform: rotate(-16deg); }
+  50% { transform: rotate(16deg); }
+}
 .glass-player.falling { animation: glassPlayerFall .5s ease forwards; }
 @keyframes glassPlayerFall { to { transform: translate(-50%, 40%) translateY(70px) rotate(20deg); opacity: 0; } }
 
