@@ -28,13 +28,14 @@ Hub berisi game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green M
 | Town Map | default masuk MathVille | 9 chapter kurikulum, tap kota buat practice round |
 | Drive Mode | 🚗 icon topbar / deep-link `?drive=1` | Free-roam mobil, kejar-kejaran sama dino, nabrak city = masuk chapter |
 | Plane Mode | pilih "Pesawat" di vehicle picker Drive Mode | Shmup/bullet-hell ala Raiden, soal MC jadi hook utama (bomb reward) |
-| Red Light Green Light | 🚦 icon topbar (masih berlabel "mockup") | Reflex mini-game, hold-to-move, lampu merah/hijau |
 
-**Game terpisah, TIDAK ada card di landing page hub:**
+~~Red Light Green Light~~ — **DIHAPUS TOTAL** (2026-08-05), per keputusan eksplisit user ("cabut aja delete game ga jelas"). Beda sama Glass Bridge yang dipindah ke Language & Arts, RLGL gak dipindah kemana-mana, langsung dicabut abis: topbar icon, `#screen-redlight`, semua `rlglState`/JS, semua `.rlgl-*` CSS — diverifikasi zero leftover reference via grep.
+
+**Game terpisah, TIDAK ada card di landing page hub (SENGAJA, easter egg):**
 
 | Nama | Folder | Catatan |
 |---|---|---|
-| DinoRace | `dinorace` | 2-player racing murni (soal matematika udah dicabut 2026-08-05, lihat bagian di bawah) — cuma bisa diakses via `dinorace.lol` atau URL langsung `playalidrisi.fun/dinorace/`, gak ke-link dari landing page manapun |
+| DinoRace | `dinorace` | 2-player racing murni (soal matematika udah dicabut 2026-08-05, lihat bagian di bawah) — cuma bisa diakses via `dinorace.lol` atau URL langsung `playalidrisi.fun/dinorace/`. **Ini sengaja, bukan gap** — user eksplisit konfirmasi "dinorace emang cuma easteregg game aja", jadi JANGAN tambahin card/link ke landing page hub kecuali diminta ulang. |
 
 **Bo Bridge — dekorasi ambient DAN entry point ke game (jangan ketuker dua fungsi ini):**
 
@@ -291,7 +292,7 @@ Kalau lanjut ke poin 4: perlu cek/update kode yang hardcode `"playalidrisi.fun"`
 6. ~~TWA lama vs Capacitor baru~~ — **udah diputusin (2026-08-03): Capacitor yang dipertahankan**, TWA deprecated. Lihat bagian "Android app" di atas buat detail + bug download-page yang ketemu & difix bareng keputusan ini.
 7. Vercel Deployment Protection buat project ini masih DIMATIIN (preview URL publik) — nyalain lagi kalau udah gak butuh testing preview-branch buat sementara waktu.
 8. **Real-device QA** — full QA session udah dilakuin (browser automation, semua pass), tapi beberapa hal cuma bisa divalidasi bener di device fisik: gray focus-ring fix di `#sc-hero-icon` (iOS Safari khususnya), keyboard numerik PIN di Parent Portal, feel touch/scroll picker Focus Round.
-9. **Parent Portal** (`/parents`) belum ada rate-limiting/lockout buat percobaan PIN salah berulang — 4 digit PIN + nama anak cukup buat dapet akses; worth diomongin risiko-nya ke guru kalau kelas makin gede.
+9. **Parent Portal** (`/parents`) belum ada rate-limiting/lockout buat percobaan PIN salah berulang — 4 digit PIN + nama anak cukup buat dapet akses. Udah pernah ditawarin ke user (2026-08-05), **eksplisit dijawab "diemin aja"** — bukan lupa, JANGAN diusulin ulang kecuali user yang nanya duluan.
 
 ## Gaya kerja user (penting)
 - Adit komunikasi campur Indonesia-Inggris.
