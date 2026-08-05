@@ -296,29 +296,7 @@ function renderBookshelf() {
     shelf.appendChild(node);
   });
 
-  // MOCKUP: Glass Bridge Challenge -- not a real curriculum chapter (no
-  // entry in QUESTION_BANK.chapters, no stars/lock progression), so it's
-  // appended manually after the chapter loop instead of living in that
-  // data-driven list. Ported from MathVille per explicit request; this
-  // trail node replaced the old landing-page mode-card as the sole entry
-  // point once the mockup found a home here.
-  const glassNode = document.createElement("div");
-  glassNode.className = "timeline-node";
-  glassNode.style.justifyContent = QUESTION_BANK.chapters.length % 2 === 0 ? "flex-start" : "flex-end";
-  glassNode.innerHTML = `
-    <div class="timeline-deco" style="${QUESTION_BANK.chapters.length % 2 === 0 ? "right" : "left"}:2px;transform:translateY(-50%) rotate(-8deg)">🧊</div>
-    <button class="timeline-card" style="border-color:#3FA0C7">
-      <div class="timeline-icon" style="background:#6EC6E8;box-shadow:0 3px 0 #3FA0C7">🧊</div>
-      <div class="timeline-text">
-        <div class="timeline-title">Glass Bridge Challenge</div>
-        <div class="timeline-meta">
-          <span class="timeline-subject" style="color:#3FA0C7;background:#3FA0C722">Mini-Game</span>
-        </div>
-      </div>
-    </button>
-  `;
-  glassNode.querySelector(".timeline-card").addEventListener("click", launchGlassBridge);
-  shelf.appendChild(glassNode);
+  startBoBridgeAnim();
 
   renderMultiplayerChapterOptions();
   updateHomeStats();
@@ -1234,174 +1212,77 @@ const BO_CHAT_PROMPTS = [
 })();
 
 /* =================================================================
-   MOCKUP — GLASS BRIDGE (top-down vertical walk)
+   Bo Bridge — ambient decoration on the Storybook Trail (#screen-map)
    -----------------------------------------------------------------
-   Ported from MathVille's Glass Bridge mockup, moved here per
-   explicit request instead of living in MathVille. Squid Game-
-   inspired but question-driven: player holds #glass-move-btn to
-   walk up a vertical column of 10 tiles (requestAnimationFrame loop,
-   same "hold to move" shape as a reflex mini-game). Reaching a tile
-   boundary pauses movement and pops a 2-option MC question pulled
-   from THIS game's own question bank (chapters 1-5 only -- 6/7 are
-   "Reading Comprehension"/"Creative Writing", whose MC questions all
-   reference a passage that isn't shown here, so they're excluded,
-   same rule already used by MathVille's Focus Round/Plane Mode
-   cross-game question pools). Wrong answer cracks the tile and
-   re-rolls a fresh question on the SAME tile -- 3 tries total before
-   it shatters, the player sprite falls, and the phone vibrates.
-   Entirely separate screen/state -- no shared code with the rest of
-   the game.
+   Pure eye-candy, NOT a game: Bo walks across a row of glass tiles,
+   entering from one edge of the screen and exiting the other, looping
+   forever. Tiles fade in just ahead of Bo and fade out just behind him
+   (a moving "reveal window" tied to his walk progress), so the bridge
+   feels like it's materializing under his feet and dissolving after.
+   No clicking, no questions, no win/lose -- this replaced an earlier,
+   fully-interactive "Glass Bridge Challenge" mini-game per explicit
+   request ("jangan jadi card... ditaro di dalam page... sebagai
+   animasi"). Same rAF-driven-position idea as the hub landing page's
+   roaming car+dino decoration, just linear (no chase AI) and simpler.
    ================================================================= */
-const GLASS_TOTAL_STEPS = 10;
-const GLASS_MAX_ATTEMPTS = 3;
-const GLASS_MOVE_SPEED = 1.3; // % of track per frame while held
-let glassState = null;
-let glassQuestionPool = null;
+const BO_BRIDGE_TILES = 9;
+const BO_BRIDGE_DURATION_MS = 8000; // one full left-to-right crossing
+const BO_BRIDGE_REVEAL_WINDOW = 0.16; // fraction of the crossing a tile stays "shown" around Bo
+let boBridgeRafId = null;
+let boBridgeStartAt = null;
+let boBridgeTilesBuilt = false;
 
-function ensureGlassQuestionPool() {
-  if (glassQuestionPool || !QUESTION_BANK) return;
-  glassQuestionPool = [];
-  QUESTION_BANK.chapters.forEach(ch => {
-    if (ch.id === 6 || ch.id === 7) return; // passage-based, can't stand alone
-    ch.questions.forEach(q => {
-      if (q.type === "mc" && Array.isArray(q.options) && q.options.length >= 2) {
-        glassQuestionPool.push({ prompt: q.prompt, options: q.options, answer: q.answer });
-      }
-    });
-  });
-}
-
-function launchGlassBridge() {
-  ensureGlassQuestionPool();
-  showScreen("screen-glass");
-  glassState = { stepIndex: 0, attempt: 1, progress: 0, moving: false, paused: false, ended: false, rafId: null };
-  document.getElementById("glass-end-overlay").classList.add("hidden");
-  document.getElementById("glass-question-overlay").classList.add("hidden");
-  document.getElementById("glass-player").classList.remove("falling");
-  document.getElementById("glass-player").style.bottom = "0%";
-  updateGlassHud();
-  renderGlassPath();
-  startGlassLoop();
-}
-
-function updateGlassHud() {
-  document.getElementById("glass-step").textContent = `Step ${glassState.stepIndex}/${GLASS_TOTAL_STEPS}`;
-  document.getElementById("glass-attempts").textContent = `Try ${glassState.attempt}/${GLASS_MAX_ATTEMPTS}`;
-}
-
-function renderGlassPath() {
-  const path = document.getElementById("glass-path");
-  path.innerHTML = "";
-  for (let i = 0; i < GLASS_TOTAL_STEPS; i++) {
+function ensureBoBridgeTiles() {
+  if (boBridgeTilesBuilt) return;
+  const wrap = document.getElementById("bo-bridge-tiles");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  for (let i = 0; i < BO_BRIDGE_TILES; i++) {
     const tile = document.createElement("div");
-    tile.className = "glass-tile";
-    tile.id = `glass-tile-${i}`;
-    path.appendChild(tile);
+    tile.className = "bo-bridge-tile";
+    wrap.appendChild(tile);
   }
+  boBridgeTilesBuilt = true;
 }
 
-function startGlassLoop() {
-  function frame() {
-    if (!glassState || glassState.ended) return;
-    if (glassState.moving && !glassState.paused) {
-      const nextBoundary = (glassState.stepIndex + 1) * (100 / GLASS_TOTAL_STEPS);
-      glassState.progress = Math.min(nextBoundary, glassState.progress + GLASS_MOVE_SPEED);
-      document.getElementById("glass-player").style.bottom = glassState.progress + "%";
-      if (glassState.progress >= nextBoundary - 0.01) {
-        glassState.paused = true;
-        glassState.moving = false;
-        showGlassQuestion();
-      }
+function startBoBridgeAnim() {
+  ensureBoBridgeTiles();
+  const banner = document.getElementById("bo-bridge-banner");
+  const walker = document.getElementById("bo-bridge-walker");
+  if (!banner || !walker) return;
+  if (boBridgeRafId) return; // already running, don't stack loops
+
+  const tiles = [...document.getElementById("bo-bridge-tiles").children];
+
+  function frame(now) {
+    // Stop cleanly once the trail screen isn't visible anymore (no point
+    // animating an off-screen element, and this lets a later re-entry
+    // restart the loop instead of finding one already "running").
+    if (!document.getElementById("screen-map").classList.contains("active")) {
+      boBridgeRafId = null;
+      boBridgeStartAt = null;
+      return;
     }
-    glassState.rafId = requestAnimationFrame(frame);
+
+    if (boBridgeStartAt === null) boBridgeStartAt = now;
+    const progress = ((now - boBridgeStartAt) % BO_BRIDGE_DURATION_MS) / BO_BRIDGE_DURATION_MS; // 0..1, loops
+
+    const bannerWidth = banner.clientWidth;
+    const walkerX = -40 + progress * (bannerWidth + 80); // enters off-left, exits off-right
+    walker.style.transform = `translateX(${walkerX}px)`;
+
+    tiles.forEach((tile, i) => {
+      const tileFrac = (i + 0.5) / BO_BRIDGE_TILES; // this tile's position along the crossing, 0..1
+      let diff = progress - tileFrac;
+      // handle the loop seam so the reveal window still works right as
+      // progress wraps from ~1 back to 0
+      if (diff > 0.5) diff -= 1;
+      if (diff < -0.5) diff += 1;
+      const shown = diff > -BO_BRIDGE_REVEAL_WINDOW && diff < BO_BRIDGE_REVEAL_WINDOW;
+      tile.classList.toggle("shown", shown);
+    });
+
+    boBridgeRafId = requestAnimationFrame(frame);
   }
-  glassState.rafId = requestAnimationFrame(frame);
+  boBridgeRafId = requestAnimationFrame(frame);
 }
-
-function showGlassQuestion() {
-  updateGlassHud();
-  document.getElementById(`glass-tile-${glassState.stepIndex}`).classList.add("current");
-  const light = document.getElementById("glass-light");
-  light.textContent = "🔴";
-  light.classList.remove("green");
-
-  const q = glassQuestionPool[Math.floor(Math.random() * glassQuestionPool.length)];
-  const wrongOptions = q.options.filter(o => o !== q.answer);
-  const wrongPick = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
-  const pair = shuffle([q.answer, wrongPick]);
-
-  document.getElementById("glass-prompt").textContent = q.prompt;
-
-  const panelIds = ["glass-panel-a", "glass-panel-b"];
-  panelIds.forEach((id, i) => {
-    const btn = document.getElementById(id);
-    btn.textContent = pair[i];
-    btn.disabled = false;
-    btn.className = "glass-panel";
-    btn.onclick = () => handleGlassPanel(pair[i] === q.answer, id);
-  });
-
-  document.getElementById("glass-question-overlay").classList.remove("hidden");
-}
-
-function handleGlassPanel(isCorrect, clickedId) {
-  if (glassState.ended) return;
-  document.getElementById("glass-panel-a").disabled = true;
-  document.getElementById("glass-panel-b").disabled = true;
-  if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", "glass-bridge", isCorrect);
-
-  const tile = document.getElementById(`glass-tile-${glassState.stepIndex}`);
-
-  if (isCorrect) {
-    document.getElementById(clickedId).classList.add("safe");
-    const light = document.getElementById("glass-light");
-    light.textContent = "🟢";
-    light.classList.add("green");
-    tile.classList.remove("current", "crack-1", "crack-2");
-    tile.classList.add("done");
-    glassState.stepIndex += 1;
-    glassState.attempt = 1;
-    updateGlassHud();
-    setTimeout(() => {
-      document.getElementById("glass-question-overlay").classList.add("hidden");
-      if (glassState.stepIndex >= GLASS_TOTAL_STEPS) endGlassBridge(true);
-      else glassState.paused = false; // player must hold the button again to keep walking
-    }, 600);
-  } else {
-    document.getElementById(clickedId).classList.add("broken");
-    if (glassState.attempt >= GLASS_MAX_ATTEMPTS) {
-      tile.classList.add("crack-3");
-      if (navigator.vibrate) navigator.vibrate([80, 60, 80, 60, 250]);
-      setTimeout(() => {
-        document.getElementById("glass-question-overlay").classList.add("hidden");
-        document.getElementById("glass-player").classList.add("falling");
-        setTimeout(() => endGlassBridge(false), 500);
-      }, 500);
-    } else {
-      tile.classList.add(glassState.attempt === 1 ? "crack-1" : "crack-2");
-      glassState.attempt += 1;
-      updateGlassHud();
-      setTimeout(() => showGlassQuestion(), 600); // same tile, fresh question, one try burned
-    }
-  }
-}
-
-function endGlassBridge(won) {
-  glassState.ended = true;
-  document.getElementById("glass-end-emoji").textContent = won ? "🏆" : "💦";
-  document.getElementById("glass-end-title").textContent = won ? "You crossed the bridge!" : "You fell!";
-  document.getElementById("glass-end-sub").textContent = `Made it to step ${glassState.stepIndex}/${GLASS_TOTAL_STEPS}`;
-  document.getElementById("glass-end-overlay").classList.remove("hidden");
-}
-
-(function setupGlassMoveButton() {
-  const btn = document.getElementById("glass-move-btn");
-  const start = e => { e.preventDefault(); if (glassState && !glassState.paused) glassState.moving = true; };
-  const stop = () => { if (glassState) glassState.moving = false; };
-  btn.addEventListener("pointerdown", start);
-  btn.addEventListener("pointerup", stop);
-  btn.addEventListener("pointercancel", stop);
-  btn.addEventListener("pointerleave", stop);
-})();
-
-document.getElementById("glass-end-replay").addEventListener("click", () => launchGlassBridge());

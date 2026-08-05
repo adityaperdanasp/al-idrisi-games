@@ -999,86 +999,35 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
   margin-bottom: 20px;
 }
 
-/* ---------- MOCKUP: Glass Bridge (ported from MathVille, top-down vertical walk) ---------- */
-.glass-world {
-  position: relative; width: 100%; height: calc(100vh - 220px); min-height: 380px;
-  margin-top: 8px; border-radius: 20px; overflow: hidden;
-  background: linear-gradient(180deg, #cfe8f5 0%, #eaf6fb 100%);
-  box-shadow: inset 0 0 0 3px var(--card-border);
+/* ---------- Bo Bridge: ambient decoration on the Storybook Trail (not a game) ---------- */
+.bo-bridge-banner {
+  position: relative; width: 100%; height: 64px; margin: 4px 0 18px;
+  overflow: hidden; /* still needed so Bo is clipped while off-screen entering/exiting */
+  border-radius: 16px;
+  background: rgba(207, 232, 245, 0.35); /* thin tint only, no border/outline */
 }
-.glass-track-area { position: absolute; left: 0; right: 0; top: 20px; bottom: 96px; }
-.glass-path {
-  position: absolute; left: 50%; top: 0; bottom: 0; width: 90px;
-  transform: translateX(-50%); display: flex; flex-direction: column-reverse; gap: 4px;
+.bo-bridge-tiles {
+  position: absolute; left: 0; right: 0; bottom: 12px; height: 16px;
+  display: flex; justify-content: space-between; padding: 0 24px;
 }
-.glass-tile {
-  flex: 1; border-radius: 12px; border: 3px solid rgba(255,255,255,.9);
-  background: linear-gradient(160deg, rgba(255,255,255,.55), rgba(191,227,240,.35));
-  box-shadow: 0 4px 12px rgba(59,90,120,.2), inset 0 0 14px rgba(255,255,255,.4);
-  transition: background .3s ease;
+.bo-bridge-tile {
+  width: 26px; height: 100%; border-radius: 5px;
+  border: 2px solid rgba(255,255,255,.9);
+  background: linear-gradient(160deg, rgba(255,255,255,.8), rgba(191,227,240,.5));
+  box-shadow: 0 2px 6px rgba(59,90,120,.2);
+  opacity: 0; transform: scale(.6);
+  transition: opacity .5s ease, transform .5s ease;
 }
-.glass-tile.current { border-color: var(--accent-2); animation: glassTilePulse 1.4s ease-in-out infinite; }
-@keyframes glassTilePulse { 0%, 100% { box-shadow: 0 0 0 rgba(255,216,102,0); } 50% { box-shadow: 0 0 16px rgba(255,216,102,.8); } }
-.glass-tile.done { background: linear-gradient(160deg, rgba(52,168,83,.55), rgba(52,168,83,.28)); }
-.glass-tile.crack-1 { background: linear-gradient(160deg, rgba(209,68,60,.3), rgba(209,68,60,.16)); }
-.glass-tile.crack-2 { background: linear-gradient(160deg, rgba(209,68,60,.5), rgba(209,68,60,.3)); animation: glassTileShake .3s ease; }
-.glass-tile.crack-3 { background: linear-gradient(160deg, rgba(209,68,60,.75), rgba(209,68,60,.55)); animation: glassTileBreak .5s ease forwards; }
-@keyframes glassTileShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
-@keyframes glassTileBreak { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(.8) rotate(4deg); opacity: .3; } }
-
-.glass-player {
-  position: absolute; left: 50%; bottom: 0%; transform: translate(-50%, 40%);
-  font-size: 34px; z-index: 2; transition: bottom .05s linear;
+.bo-bridge-tile.shown { opacity: 1; transform: scale(1); }
+.bo-bridge-walker {
+  position: absolute; bottom: 10px; left: 0; width: 36px; height: 36px;
+  will-change: transform;
 }
-.glass-player.falling { animation: glassPlayerFall .5s ease forwards; }
-@keyframes glassPlayerFall { to { transform: translate(-50%, 40%) translateY(70px) rotate(20deg); opacity: 0; } }
-
-.glass-move-btn {
-  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-  width: 220px; padding: 16px; border-radius: 16px; border: none;
-  background: var(--accent-1); color: #fff; font-family: var(--font); font-weight: 700; font-size: 16px;
-  letter-spacing: .04em; box-shadow: 0 6px 0 var(--accent-1-dark); touch-action: none;
+.bo-bridge-walker-face {
+  width: 100%; height: 100%; display: block; object-fit: contain;
+  animation: boBridgeBob .4s ease-in-out infinite alternate;
 }
-.glass-move-btn:active { transform: translateX(-50%) translateY(4px); box-shadow: 0 2px 0 var(--accent-1-dark); }
-
-.glass-overlay {
-  position: fixed; inset: 0; background: rgba(74,53,32,.55); z-index: 50;
-  display: flex; align-items: center; justify-content: center; padding: 24px;
-}
-.glass-overlay-card {
-  background: var(--paper); border-radius: 20px; padding: 20px; max-width: 360px; width: 100%;
-  box-shadow: 0 8px 24px rgba(0,0,0,.28);
-}
-.glass-light { font-size: 40px; text-align: center; margin-bottom: 8px; animation: glassLightPulse 1s ease-in-out infinite; }
-.glass-light.green { animation: none; }
-@keyframes glassLightPulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
-.glass-prompt { font-family: var(--font); font-weight: 700; font-size: 18px; line-height: 1.35; color: var(--ink); text-align: center; margin-bottom: 16px; }
-.glass-panels { display: flex; gap: 16px; width: 100%; }
-.glass-panel {
-  flex: 1; min-height: 90px; border-radius: 16px; border: 3px solid rgba(255,255,255,.9);
-  background: linear-gradient(160deg, rgba(255,255,255,.7), rgba(191,227,240,.35));
-  box-shadow: 0 6px 18px rgba(59,90,120,.25), inset 0 0 20px rgba(255,255,255,.4);
-  font-family: var(--font); font-weight: 700; font-size: 18px; color: var(--ink); cursor: pointer;
-  padding: 8px; transition: transform .1s ease;
-}
-.glass-panel:active { transform: scale(.96); }
-.glass-panel:disabled { cursor: default; }
-.glass-panel.safe { animation: glassSafe .7s ease; background: linear-gradient(160deg, rgba(52,168,83,.6), rgba(52,168,83,.3)); }
-@keyframes glassSafe {
-  0% { box-shadow: 0 0 0 rgba(52,168,83,0); }
-  40% { box-shadow: 0 0 30px rgba(52,168,83,.8); }
-  100% { box-shadow: 0 0 0 rgba(52,168,83,0); }
-}
-.glass-panel.broken { animation: glassBreak .7s ease forwards; background: linear-gradient(160deg, rgba(209,68,60,.5), rgba(209,68,60,.32)); }
-@keyframes glassBreak {
-  0% { transform: scale(1) rotate(0); opacity: 1; }
-  40% { transform: scale(1.05) rotate(-2deg); }
-  100% { transform: scale(.85) rotate(6deg); opacity: .25; }
-}
-.glass-end-card { text-align: center; }
-.glass-end-emoji { font-size: 52px; margin-bottom: 6px; }
-.glass-end-title { font-family: var(--font); font-weight: 700; font-size: 22px; color: var(--ink); margin-bottom: 6px; }
-.glass-end-sub { font-size: 14px; color: #8a7d6d; margin-bottom: 18px; }
+@keyframes boBridgeBob { from { transform: translateY(0); } to { transform: translateY(-4px); } }
 
 /* ---------- Responsive ----------
    The phone-frame card (rounded corners, drop shadow, fixed 390x844) is a
