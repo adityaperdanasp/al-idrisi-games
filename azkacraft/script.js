@@ -170,8 +170,10 @@ function showScreen(id, opts = {}) {
   if (id === "screen-stickers") renderStickers();
 
   // Background music: soft "menu" loop everywhere except the actual
-  // lesson screen, which gets the more energetic "game" loop.
-  if (window.AIGBgm) AIGBgm.play(id === "screen-game" ? "game" : "menu");
+  // lesson screen and Glass Bridge Challenge, which get the more
+  // energetic "game" loop (Glass Bridge has no dedicated track of its
+  // own -- reuses "game" since it's the tenser of the two options).
+  if (window.AIGBgm) AIGBgm.play(id === "screen-game" || id === "screen-glass" ? "game" : "menu");
 }
 
 function wireNavigation() {
