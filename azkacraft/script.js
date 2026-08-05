@@ -1286,3 +1286,179 @@ function startBoBridgeAnim() {
   }
   boBridgeRafId = requestAnimationFrame(frame);
 }
+
+document.getElementById("bo-bridge-banner").addEventListener("click", launchGlassBridge);
+
+/* =================================================================
+   GLASS BRIDGE CHALLENGE (top-down vertical walk)
+   -----------------------------------------------------------------
+   Reintroduced per explicit request -- tapping the Bo Bridge banner
+   (the ambient decoration above) launches this as a real game again.
+   Player holds #glass-move-btn to walk up a vertical column of 10
+   tiles (requestAnimationFrame loop, same "hold to move" shape as a
+   reflex mini-game). Reaching a tile boundary pauses movement and pops
+   a 2-option MC question pulled from THIS game's own question bank
+   (chapters 1-5 only -- 6/7 are "Reading Comprehension"/"Creative
+   Writing", whose MC questions all reference a passage that isn't
+   shown here, so they're excluded, same rule already used by
+   MathVille's Focus Round/Plane Mode cross-game question pools).
+   Wrong answer cracks the tile and re-rolls a fresh question on the
+   SAME tile -- 3 tries total before it shatters, the player sprite
+   falls, and the phone vibrates. Entirely separate screen/state --
+   no shared code with the rest of the game, and no code shared with
+   startBoBridgeAnim() above either (that one keeps running as pure
+   decoration whether or not this game has ever been played).
+   ================================================================= */
+const GLASS_TOTAL_STEPS = 10;
+const GLASS_MAX_ATTEMPTS = 3;
+const GLASS_MOVE_SPEED = 1.3; // % of track per frame while held
+let glassState = null;
+let glassQuestionPool = null;
+
+function ensureGlassQuestionPool() {
+  if (glassQuestionPool || !QUESTION_BANK) return;
+  glassQuestionPool = [];
+  QUESTION_BANK.chapters.forEach(ch => {
+    if (ch.id === 6 || ch.id === 7) return; // passage-based, can't stand alone
+    ch.questions.forEach(q => {
+      if (q.type === "mc" && Array.isArray(q.options) && q.options.length >= 2) {
+        glassQuestionPool.push({ prompt: q.prompt, options: q.options, answer: q.answer });
+      }
+    });
+  });
+}
+
+function launchGlassBridge() {
+  ensureGlassQuestionPool();
+  showScreen("screen-glass");
+  glassState = { stepIndex: 0, attempt: 1, progress: 0, moving: false, paused: false, ended: false, rafId: null };
+  document.getElementById("glass-end-overlay").classList.add("hidden");
+  document.getElementById("glass-question-overlay").classList.add("hidden");
+  document.getElementById("glass-player").classList.remove("falling");
+  document.getElementById("glass-player").style.bottom = "0%";
+  updateGlassHud();
+  renderGlassPath();
+  startGlassLoop();
+}
+
+function updateGlassHud() {
+  document.getElementById("glass-step").textContent = `Step ${glassState.stepIndex}/${GLASS_TOTAL_STEPS}`;
+  document.getElementById("glass-attempts").textContent = `Try ${glassState.attempt}/${GLASS_MAX_ATTEMPTS}`;
+}
+
+function renderGlassPath() {
+  const path = document.getElementById("glass-path");
+  path.innerHTML = "";
+  for (let i = 0; i < GLASS_TOTAL_STEPS; i++) {
+    const tile = document.createElement("div");
+    tile.className = "glass-tile";
+    tile.id = `glass-tile-${i}`;
+    path.appendChild(tile);
+  }
+}
+
+function startGlassLoop() {
+  function frame() {
+    if (!glassState || glassState.ended) return;
+    if (glassState.moving && !glassState.paused) {
+      const nextBoundary = (glassState.stepIndex + 1) * (100 / GLASS_TOTAL_STEPS);
+      glassState.progress = Math.min(nextBoundary, glassState.progress + GLASS_MOVE_SPEED);
+      document.getElementById("glass-player").style.bottom = glassState.progress + "%";
+      if (glassState.progress >= nextBoundary - 0.01) {
+        glassState.paused = true;
+        glassState.moving = false;
+        showGlassQuestion();
+      }
+    }
+    glassState.rafId = requestAnimationFrame(frame);
+  }
+  glassState.rafId = requestAnimationFrame(frame);
+}
+
+function showGlassQuestion() {
+  updateGlassHud();
+  document.getElementById(`glass-tile-${glassState.stepIndex}`).classList.add("current");
+  const light = document.getElementById("glass-light");
+  light.textContent = "🔴";
+  light.classList.remove("green");
+
+  const q = glassQuestionPool[Math.floor(Math.random() * glassQuestionPool.length)];
+  const wrongOptions = q.options.filter(o => o !== q.answer);
+  const wrongPick = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
+  const pair = shuffle([q.answer, wrongPick]);
+
+  document.getElementById("glass-prompt").textContent = q.prompt;
+
+  const panelIds = ["glass-panel-a", "glass-panel-b"];
+  panelIds.forEach((id, i) => {
+    const btn = document.getElementById(id);
+    btn.textContent = pair[i];
+    btn.disabled = false;
+    btn.className = "glass-panel";
+    btn.onclick = () => handleGlassPanel(pair[i] === q.answer, id);
+  });
+
+  document.getElementById("glass-question-overlay").classList.remove("hidden");
+}
+
+function handleGlassPanel(isCorrect, clickedId) {
+  if (glassState.ended) return;
+  document.getElementById("glass-panel-a").disabled = true;
+  document.getElementById("glass-panel-b").disabled = true;
+  if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", "glass-bridge", isCorrect);
+
+  const tile = document.getElementById(`glass-tile-${glassState.stepIndex}`);
+
+  if (isCorrect) {
+    document.getElementById(clickedId).classList.add("safe");
+    const light = document.getElementById("glass-light");
+    light.textContent = "🟢";
+    light.classList.add("green");
+    tile.classList.remove("current", "crack-1", "crack-2");
+    tile.classList.add("done");
+    glassState.stepIndex += 1;
+    glassState.attempt = 1;
+    updateGlassHud();
+    setTimeout(() => {
+      document.getElementById("glass-question-overlay").classList.add("hidden");
+      if (glassState.stepIndex >= GLASS_TOTAL_STEPS) endGlassBridge(true);
+      else glassState.paused = false; // player must hold the button again to keep walking
+    }, 600);
+  } else {
+    document.getElementById(clickedId).classList.add("broken");
+    if (glassState.attempt >= GLASS_MAX_ATTEMPTS) {
+      tile.classList.add("crack-3");
+      if (navigator.vibrate) navigator.vibrate([80, 60, 80, 60, 250]);
+      setTimeout(() => {
+        document.getElementById("glass-question-overlay").classList.add("hidden");
+        document.getElementById("glass-player").classList.add("falling");
+        setTimeout(() => endGlassBridge(false), 500);
+      }, 500);
+    } else {
+      tile.classList.add(glassState.attempt === 1 ? "crack-1" : "crack-2");
+      glassState.attempt += 1;
+      updateGlassHud();
+      setTimeout(() => showGlassQuestion(), 600); // same tile, fresh question, one try burned
+    }
+  }
+}
+
+function endGlassBridge(won) {
+  glassState.ended = true;
+  document.getElementById("glass-end-emoji").textContent = won ? "🏆" : "💦";
+  document.getElementById("glass-end-title").textContent = won ? "You crossed the bridge!" : "You fell!";
+  document.getElementById("glass-end-sub").textContent = `Made it to step ${glassState.stepIndex}/${GLASS_TOTAL_STEPS}`;
+  document.getElementById("glass-end-overlay").classList.remove("hidden");
+}
+
+(function setupGlassMoveButton() {
+  const btn = document.getElementById("glass-move-btn");
+  const start = e => { e.preventDefault(); if (glassState && !glassState.paused) glassState.moving = true; };
+  const stop = () => { if (glassState) glassState.moving = false; };
+  btn.addEventListener("pointerdown", start);
+  btn.addEventListener("pointerup", stop);
+  btn.addEventListener("pointercancel", stop);
+  btn.addEventListener("pointerleave", stop);
+})();
+
+document.getElementById("glass-end-replay").addEventListener("click", () => launchGlassBridge());

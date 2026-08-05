@@ -36,12 +36,13 @@ Hub berisi game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green M
 |---|---|---|
 | DinoRace | `dinorace` | 2-player racing murni (soal matematika udah dicabut 2026-08-05, lihat bagian di bawah) — cuma bisa diakses via `dinorace.lol` atau URL langsung `playalidrisi.fun/dinorace/`, gak ke-link dari landing page manapun |
 
-**BUKAN game, murni dekorasi (jangan ketuker):**
+**Bo Bridge — dekorasi ambient DAN entry point ke game (jangan ketuker dua fungsi ini):**
 
 | Nama | Lokasi | Catatan |
 |---|---|---|
-| Bo Bridge | Language & Arts, Storybook Trail | Animasi ambient Bo jalan di atas kaca, looping — gak ada klik/soal/menang-kalah sama sekali |
-| Roaming car+dino | Landing page hub | Dekorasi kejar-kejaran, tap mobil = shortcut ke Drive Mode MathVille |
+| Bo Bridge (animasi) | Language & Arts, Storybook Trail (banner `#bo-bridge-banner`) | Bo jalan ngelewatin kaca, looping terus — jalan otomatis, gak perlu diapa-apain |
+| Glass Bridge Challenge (game) | TAP banner Bo Bridge yang sama | 10 kaca top-down, hold-to-move, soal MC Language & Arts per kaca, retak/jatuh+getar — lihat detail di bawah |
+| Roaming car+dino | Landing page hub | Murni dekorasi kejar-kejaran, tap mobil = shortcut ke Drive Mode MathVille |
 
 ## Deploy
 
@@ -227,19 +228,22 @@ Semua fase (1-6) kelar dan **udah di-merge ke `main` + deploy production** (`fea
 
 Semua branch di atas (`feature/plane-mode`, `-v2`, `-v3`, `feature/vehicle-select`) statusnya **udah ke-merge penuh ke `main`** — kalau mau beres-beres, aman dihapus kapan aja (gak akan ilang riwayatnya, udah nempel di `main`).
 
-## Language & Arts — Bo Bridge (ambient decoration, LIVE di production)
+## Language & Arts — Bo Bridge (ambient animation) + Glass Bridge Challenge (game via tap)
 
-Ide awalnya dari brainstorm "game apa dari Squid Game yang bisa diadaptasi" — jadi mini-game "Glass Bridge Challenge" math/language-driven yang bisa diklik (top-down vertical walk, hold-to-move, soal MC per kaca, retak/jatuh, dst — sempet dibangun penuh di MathVille dulu, lalu dipindah ke Language & Arts). **Fitur mini-game itu SEKARANG DICABUT TOTAL** (2026-08-05) — diganti jadi **Bo Bridge**, murni animasi hiasan, bukan game lagi, per keputusan eksplisit user: "glass bridge jangan jadi card dibawah solo... ditaro di dalam page setelah user click solo... sebagai animasi... kaya dino di landing page playalidrisi".
+Ide awalnya dari brainstorm "game apa dari Squid Game yang bisa diadaptasi" — jadi mini-game "Glass Bridge Challenge" (top-down vertical walk, hold-to-move, soal MC per kaca, retak/jatuh, dst — sempet dibangun penuh di MathVille dulu, lalu dipindah ke Language & Arts). Sempet **dicabut total** (2026-08-05 pagi) diganti jadi cuma animasi hiasan "Bo Bridge" doang, TAPI **beberapa saat kemudian di-reintroduce lagi** (2026-08-05, sesi yang sama) per keputusan eksplisit user: tap banner Bo Bridge sekarang beneran BUKA game itu lagi. Jadi sekarang keduanya hidup berdampingan di 1 elemen yang sama — banner-nya tetep jalan sebagai animasi ambient terus-terusan, TAPI juga jadi tombol (`<button>`) yang kalau di-tap masuk ke `#screen-glass`.
 
-**Konsep**: Bo (maskot brain pink) jalan ngelewatin sebaris kaca di banner kecil (`#bo-bridge-banner`) tepat di bawah judul "Your Storybook Trail" (`#screen-map`), masuk dari satu ujung layar, keluar di ujung lain, LOOPING terus — kaca-kacanya muncul perlahan di depan Bo dan menghilang perlahan di belakangnya (moving "reveal window" berbasis jarak ke posisi Bo). **Murni dekoratif — gak ada klik, gak ada soal, gak ada menang/kalah**, `aria-hidden="true"`. Pola engine-nya sama kayak hub landing page's roaming car+dino (`requestAnimationFrame`-driven position), tapi lebih sederhana (jalan lurus, gak ada chase AI).
+**Bo Bridge (animasi, gak berubah)**: Bo (maskot brain pink) jalan ngelewatin sebaris kaca di `#bo-bridge-banner` tepat di bawah judul "Your Storybook Trail" (`#screen-map`), masuk dari satu ujung layar, keluar di ujung lain, LOOPING terus — kaca-kacanya muncul perlahan di depan Bo dan menghilang perlahan di belakangnya. `startBoBridgeAnim()`, rAF loop, berhenti otomatis begitu `#screen-map` gak lagi `.active`, restart otomatis kalau balik. Detail lengkap gak berubah dari sebelumnya.
 
-**Implementasi** (`startBoBridgeAnim()` di `azkacraft/script.js`, dipanggil dari `renderBookshelf()` tiap kali masuk `#screen-map`): rAF loop hitung `progress` (0-1, loop tiap `BO_BRIDGE_DURATION_MS`=8s) buat posisi `translateX` Bo, plus toggle class `.shown` per kaca berdasarkan jarak `progress` ke posisi kaca itu (`BO_BRIDGE_REVEAL_WINDOW`=0.16, ada wraparound-safe math buat seam loop). Loop **otomatis berhenti sendiri** (`boBridgeRafId = null`) begitu `#screen-map` gak lagi `.active` (cek di awal tiap frame) — gak ada rAF nyangkut di background pas user pindah screen, dan otomatis restart kalau balik lagi ke trail.
+**Glass Bridge Challenge (game, reintroduce)**: anak tahan tombol `#glass-move-btn` buat "jalan" naik kolom 10 kaca (`requestAnimationFrame` loop). Nyampe tiap kaca, gerakan pause otomatis, muncul soal MC 2 pilihan dari question bank Language & Arts sendiri (chapter 1-5, 6/7 di-skip — sama persis kayak sebelumnya, lihat `ensureGlassQuestionPool()`). Salah = kaca retak + soal baru di-reroll di kaca YANG SAMA, sampe `GLASS_MAX_ATTEMPTS` (3) percobaan. Percobaan ke-3 masih salah = kaca pecah, karakter jatuh, HP getar (`navigator.vibrate`). Nyampe kaca ke-10 = menang.
+- **Player sprite berubah**: BUKAN lagi emoji 🧍 (versi sebelum dicabut) — sekarang SVG lingkaran sederhana "orang tampak dari atas" (oranye, mirip gaya top-down car-nya Drive Mode MathVille), per permintaan eksplisit "pake icon orang tampak atas, kaya di drive mode". Bo sendiri TIDAK PERNAH muncul di dalam game ini — Bo cuma di banner ambient-nya.
+- Entry point: tap `#bo-bridge-banner` (sekarang elemen `<button>`, bukan `<div>`, biar keyboard-accessible) → `launchGlassBridge()`. Tombol "Exit" balik ke `#screen-map` (banner ambient-nya lanjut jalan lagi di situ).
+- Kode game 100% terpisah dari `startBoBridgeAnim()` — gak ada shared state, cuma numpang trigger dari click listener yang sama elemennya.
 
-**Asset**: `azkacraft/bo-face-transparent.png` — hasil crop+background-removal dari `icon-512.png` (app icon Bo yang aslinya di dalem kartu kuning bulat), background kuning/gold-nya di-chroma-key hapus (threshold hue+saturation) biar Bo bisa ditampilin "polos" tanpa bingkai kartu. ⚠️ Proses background-removal itu SEMPET korup 1 mata (kena hapus juga karena kebetulan ke-detect sebagai warna "gold" mirip background) — mata udah direkonstruksi manual (pupil hitam digambar ulang pake PIL) biar gak keliatan "kosong serem" kayak feedback awal user. **Path-nya HARUS relatif tanpa `../`** (`bo-face-transparent.png`, bukan `../bo-face-transparent.png`) — beda sama pola `../icon-192.png` yang dipake buat avatar chat Bo di tempat lain (yang itu emang cuma jalan di hub, 404 di `azkasocial.fun` standalone, pre-existing bug yang gak disentuh di sini) — soalnya `azkacraft/` folder ini di-deploy dual (hub: nested di bawah `playalidrisi.fun/azkacraft/`, standalone: JADI root-nya `azkasocial.fun`), jadi asset yang dipake di sini kudu di-referensiin relatif ke folder `azkacraft/` sendiri (sama kayak `style.css`/`script.js`/`questions.json`), BUKAN `../` ke folder di atasnya.
+**Asset Bo**: `azkacraft/bo-face-transparent.png` — hasil crop+background-removal dari `icon-512.png` (app icon Bo yang aslinya di dalem kartu kuning bulat), background kuning/gold-nya di-chroma-key hapus. ⚠️ Proses background-removal itu SEMPET korup 1 mata (kena hapus juga karena kebetulan ke-detect sebagai warna "gold" mirip background) — mata udah direkonstruksi manual (pupil hitam digambar ulang pake PIL). **Path-nya HARUS relatif tanpa `../`** (`bo-face-transparent.png`) — beda sama pola `../icon-192.png` yang dipake buat avatar chat Bo di tempat lain (yang itu emang cuma jalan di hub, 404 di `azkasocial.fun` standalone, pre-existing bug yang gak disentuh di sini) — `azkacraft/` folder ini di-deploy dual (hub: nested di bawah `playalidrisi.fun/azkacraft/`, standalone: JADI root-nya `azkasocial.fun`), jadi asset kudu relatif ke folder `azkacraft/` sendiri, BUKAN `../` ke atasnya.
 
-**Styling**: banner cuma tint tipis (`rgba(207,232,245,.35)`, gak ada border/box-shadow) — awalnya sempet dibikin kayak card biru solid + border, direvisi jadi lebih subtle per feedback "ga usah pake card biru... ga usah pake listing cardnya".
+**Styling banner**: tint tipis (`rgba(207,232,245,.35)`, gak ada border/box-shadow), plus `cursor:pointer` + subtle scale-down `:active` biar kerasa "bisa dipencet" — awalnya sempet card biru solid + border, direvisi per feedback "ga usah pake card biru... ga usah pake listing cardnya".
 
-Semua kode interaktif lama (`glassState`, `launchGlassBridge`, soal MC, retak/jatuh, dll) udah dihapus total dari `azkacraft/index.html`/`script.js`/`style.css` — diverifikasi via grep, nol referensi tersisa. Dual-deploy ke hub (`playalidrisi.fun`) + standalone (`azkasocial.fun`), diverifikasi via curl kalau `bo-face-transparent.png` sukses ke-load (200) di dua-duanya.
+Dual-deploy ke hub (`playalidrisi.fun`) + standalone (`azkasocial.fun`).
 
 ## Android app — Capacitor dipertahankan, TWA lama DEPRECATED (keputusan 2026-08-03)
 

@@ -192,16 +192,18 @@
             <span class="title-deco" style="transform:rotate(8deg)">✏️</span>
           </div>
 
-          <!-- Bo Bridge: pure ambient decoration, not a game -- Bo walks
-               across a row of glass tiles that materialize ahead of him
-               and dissolve behind him, looping edge-to-edge forever. See
-               startBoBridgeAnim() in script.js. -->
-          <div class="bo-bridge-banner" id="bo-bridge-banner" aria-hidden="true">
+          <!-- Bo Bridge: Bo walks across a row of glass tiles that
+               materialize ahead of him and dissolve behind him, looping
+               edge-to-edge forever (see startBoBridgeAnim() in
+               script.js) -- ambient by default, but now also a tap
+               target: pressing it launches the real Glass Bridge
+               Challenge game (#screen-glass), per explicit request. -->
+          <button class="bo-bridge-banner" id="bo-bridge-banner" aria-label="Play Glass Bridge Challenge">
             <div class="bo-bridge-tiles" id="bo-bridge-tiles"></div>
             <div class="bo-bridge-walker" id="bo-bridge-walker">
               <img src="bo-face-transparent.png" alt="" class="bo-bridge-walker-face">
             </div>
-          </div>
+          </button>
 
           <div id="bookshelf" class="timeline"></div>
         </div>
@@ -265,6 +267,64 @@
   </div>
   </div>
   </div>
+ </div>
+</section>
+
+<!-- ============ GLASS BRIDGE CHALLENGE (top-down vertical walk) ============
+     Reintroduced per explicit request -- tapping the Bo Bridge banner
+     on the Storybook Trail launches this real game. Hold the button to
+     climb a 10-tile glass column. Reaching a tile pauses movement and
+     pops a question (pulled from this game's own MC bank, chapters 1-5
+     -- 6/7 skipped since those questions reference a passage that
+     isn't shown here). Wrong answer cracks the tile and re-rolls a
+     fresh question on the SAME tile, up to 3 tries, before it shatters
+     (fall + vibrate). Entirely separate screen/state from the rest of
+     the game. Player sprite is a plain top-down person SVG (matching
+     MathVille Drive Mode's top-down car), NOT Bo -- Bo only appears as
+     the ambient walker on the trail banner, never inside this game. -->
+<section id="screen-glass" class="screen">
+ <div class="app-page">
+  <div class="phone-frame">
+  <div class="phone-inner">
+  <div class="panel-content game-panel">
+  <header class="game-header">
+    <button class="btn-back pill-btn" data-back="screen-map">← Exit</button>
+    <div class="score-chip" id="glass-step">Step 0/10</div>
+    <div class="score-chip" id="glass-attempts">Try 1/3</div>
+  </header>
+  <div id="glass-world" class="glass-world">
+    <div class="glass-track-area">
+      <div class="glass-path" id="glass-path"></div>
+      <div class="glass-player" id="glass-player">
+        <svg viewBox="0 0 24 24" width="22" height="22">
+          <circle cx="12" cy="12" r="10" fill="#F5A25D" stroke="#C67A3A" stroke-width="2" />
+          <circle cx="12" cy="12" r="4.5" fill="#FFE0B8" />
+        </svg>
+      </div>
+    </div>
+    <button class="glass-move-btn" id="glass-move-btn">HOLD TO ADVANCE</button>
+  </div>
+  </div>
+  </div>
+  </div>
+ </div>
+ <div id="glass-question-overlay" class="glass-overlay hidden">
+   <div class="glass-overlay-card">
+     <div class="glass-light" id="glass-light">🔴</div>
+     <div class="glass-prompt" id="glass-prompt"></div>
+     <div class="glass-panels">
+       <button class="glass-panel" id="glass-panel-a"></button>
+       <button class="glass-panel" id="glass-panel-b"></button>
+     </div>
+   </div>
+ </div>
+ <div id="glass-end-overlay" class="glass-overlay hidden">
+   <div class="glass-overlay-card glass-end-card">
+     <div class="glass-end-emoji" id="glass-end-emoji">🏆</div>
+     <div class="glass-end-title" id="glass-end-title"></div>
+     <div class="glass-end-sub" id="glass-end-sub"></div>
+     <button class="btn btn-primary" id="glass-end-replay">Play Again</button>
+   </div>
  </div>
 </section>
 
