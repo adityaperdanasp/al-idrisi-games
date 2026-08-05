@@ -2,12 +2,46 @@
 
 Hub UI sekarang di-rebrand jadi **"BrainBox"** (nama tampilan, favicon, badge, hero title semua diganti) — tapi identifier teknis (nama repo, Firebase project `al-idrisi-games`, domain `playalidrisi.fun`, Android package `fun.playalidrisi.twa`) **sengaja gak diubah**, cuma teks/branding yang user lihat. Jangan bingung sama project **terpisah** `~/Documents/brain-box` (domain `brainbox.lol`, repo/Firebase/Vercel sendiri) — itu app lain yang kebetulan juga namanya "Brain Box" dari awal, gak ada hubungannya sama sekali secara infra dengan hub ini.
 
-Hub berisi 4 game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green Montessori School, ~26 murid+guru, roster di `players.js`):
+Hub berisi game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green Montessori School, ~26 murid+guru, roster di `players.js`). Ringkasan lengkap:
 - **multipleazka** — Math Race (multiplayer N-seat racing, Firebase Realtime DB)
 - **azkacraft** — Language & Arts (storybook-style lessons + voice cheering)
 - **azkauniverse** — SolarQuest (AI Science Adventure)
 - **mathville** — Grade 4 math (9 curriculum chapters, town-map + alternate Drive Mode free-roam driving game)
 - **dinorace** — 2-Player Dino Racing. **Full-merge diputuskan 2026-08-03**: dulu snapshot manual dari project terpisah (`~/Documents/dinorace`, domain `dinorace.lol`, Firebase project sendiri `dinorace-d9b8c`), sekarang Firebase-nya udah disatuin ke project hub (`al-idrisi-games`) — lihat detail lengkap di bagian "DinoRace merge" di bawah. GitHub repo asli (`~/Documents/dinorace`) & Vercel project `dinorace.lol` MASIH ada & masih di-maintain manual (dual-deploy, lihat bawah), cuma Firebase-nya doang yang udah jadi satu.
+
+### Daftar lengkap game & mode interaktif (2026-08-05)
+
+**Game utama, ada card di landing page hub** (`index.html`'s `.sc-game-list`):
+
+| Nama tampilan | Folder/kode | Tipe |
+|---|---|---|
+| Math Race | `multipleazka` | Racing kuis matematika, multiplayer 2-3 pemain (Firebase RTDB realtime) |
+| Language & Arts | `azkacraft` | Storybook lessons, 7 chapter (Spelling, Antonyms, Prefixes/Suffixes, Contractions, Capitalization, Reading Comprehension, Creative Writing) — Solo Adventure + Multiplayer |
+| SolarQuest | `azkauniverse` | AI Science Adventure |
+| MathVille | `mathville` | Town-map, 9 chapter kurikulum matematika — lihat sub-mode di bawah |
+| Focus Round | `focus-round` (thin redirect) | Practice 20 soal campuran lintas 3 game (math/lang/science), numpang engine render MathVille |
+
+**Sub-mode/mini-game di DALAM MathVille** (semua 100% kode terpisah dari Town Map, gak saling ganggu):
+
+| Nama | Cara masuk | Tipe |
+|---|---|---|
+| Town Map | default masuk MathVille | 9 chapter kurikulum, tap kota buat practice round |
+| Drive Mode | 🚗 icon topbar / deep-link `?drive=1` | Free-roam mobil, kejar-kejaran sama dino, nabrak city = masuk chapter |
+| Plane Mode | pilih "Pesawat" di vehicle picker Drive Mode | Shmup/bullet-hell ala Raiden, soal MC jadi hook utama (bomb reward) |
+| Red Light Green Light | 🚦 icon topbar (masih berlabel "mockup") | Reflex mini-game, hold-to-move, lampu merah/hijau |
+
+**Game terpisah, TIDAK ada card di landing page hub:**
+
+| Nama | Folder | Catatan |
+|---|---|---|
+| DinoRace | `dinorace` | 2-player racing murni (soal matematika udah dicabut 2026-08-05, lihat bagian di bawah) — cuma bisa diakses via `dinorace.lol` atau URL langsung `playalidrisi.fun/dinorace/`, gak ke-link dari landing page manapun |
+
+**BUKAN game, murni dekorasi (jangan ketuker):**
+
+| Nama | Lokasi | Catatan |
+|---|---|---|
+| Bo Bridge | Language & Arts, Storybook Trail | Animasi ambient Bo jalan di atas kaca, looping — gak ada klik/soal/menang-kalah sama sekali |
+| Roaming car+dino | Landing page hub | Dekorasi kejar-kejaran, tap mobil = shortcut ke Drive Mode MathVille |
 
 ## Deploy
 
