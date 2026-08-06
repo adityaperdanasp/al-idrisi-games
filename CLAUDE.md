@@ -273,6 +273,27 @@ Network-first: online selalu ambil versi terbaru (gak masking update), fallback 
 - **Baca `/pushTokens` butuh full-admin bypass rules** — udah dicoba service-account OAuth2 token (scope `firebase.database`) tapi RTDB REST API nolak terus ("Unauthorized request.", kemungkinan IAM role gap). Solusi yang jalan: **legacy RTDB database secret** (`FIREBASE_DATABASE_SECRET` env var, dari Firebase Console → Project Settings → Service accounts → Database secrets → generate) dipake via `?auth=` query param.
 - Env vars Vercel: `FIREBASE_SERVICE_ACCOUNT_JSON` (buat sign FCM), `FIREBASE_DATABASE_SECRET` (buat baca pushTokens), `CRON_SECRET` (verifikasi request beneran dari Vercel Cron, bukan hit publik sembarangan) — semua "Sensitive" type (write-only, gak bisa dibaca ulang lewat `vercel env pull` walau udah di-set, itu emang behavior normalnya bukan bug).
 
+## Ninja Runner mode (ala Sansu Ninja) — DIBAHAS + DI-PROTOTYPE VISUAL, BELUM ADA KODE SAMA SEKALI
+
+Ide dari riset app edukasi Jepang (2026-08-05, lihat bagian referensi di atas kalau ada) — user pengen bikin mode baru terinspirasi **算数忍者 (Sansu Ninja / "Math Ninja")**, app matematika Jepang yang populer (2.9 juta rating App Store, 4.4★) karena karakter LARI terus + soal muncul ngambang, bukan kuis statis diem.
+
+⚠️ **PENTING**: semua yang ada di bagian ini masih murni demo visual lewat `visualize` widget tool (render di chat doang, ephemeral, gak nempel ke project sama sekali) — **belum ada satu baris kode pun yang ditulis ke file project**. Sesi berikutnya yang mau lanjutin ini harus bangun dari nol berdasarkan spec di bawah, bukan nyari kode yang udah ada.
+
+**Yang udah disepakati/di-demo (lewat widget, bukan kode beneran)**:
+1. **Karakter lari** — side-view ninja (bukan top-down kayak Glass Bridge), full CSS animation: kaki+tangan gantian ayun (pola sama kayak `.dino-leg-swing` yang udah ada buat dino landing page, di-upgrade lebih banyak sendi), jubah kibar, debu kecil di tiap langkah, pedang nempel di tangan.
+2. **Encounter soal** — karakter tetep "lari di tempat", muncul kartu soal + 3 bulatan jawaban ngambang di atas (persis pola Sansu Ninja: tap sambil jalan, gak perlu berhenti).
+3. **Efek jawaban BENAR** — pedang nebas (kilatan putih), musuh (monster simpel, bentuk blob) meledak jadi partikel + combo counter naik. **Catatan penting**: mekanik "tebas musuh" ini BUKAN dikonfirmasi ada di Sansu Ninja asli (dari screenshot yang dicek gak keliatan elemen ini) — ini ide TAMBAHAN dari kita sendiri, bukan niru persis.
+4. **Efek jawaban SALAH** — bulatan yang ditap goyang + jadi merah sebentar, gak ada tebasan, boleh coba bulatan lain (gak instant-fail).
+5. **Reward card collection** — SVG-based, 3 tingkat rarity (Common/Rare/Legendary) beda gradient+border+badge+glow. **Batasan eksplisit yang udah disampein ke user**: gak bisa bikin ilustrasi karakter sedetail Sansu Ninja (pose/baju/aksesoris), maksimal bentuk geometris + gradient + efek glow/sparkle.
+
+**Yang BELUM diputusin (perlu dibahas sebelum mulai coding beneran)**:
+- Masuk sebagai mode baru di game mana? (kandidat kuat: MathVille, pola sama kayak Plane Mode jadi alternatif di Drive Mode picker — TAPI belum final)
+- Topik/chapter soal-nya dari mana? (kalau di MathVille, chapter mana; atau campur kayak Plane Mode's cross-game pool)
+- Entry point / cara masuk dari mana
+- Reward card: disimpen ke Firebase kayak progress lain, atau localStorage doang? Ada halaman "koleksi" terpisah?
+
+Referensi app yang dipakai buat riset: Sansu Ninja (App Store JP, `id838086772`), Todo Math (App Store US, `id666465255`).
+
 ## Domain migration — DIBAHAS, BELUM DIEKSEKUSI
 
 User mau pindahin `brainbox.lol` dari project **brain-box** (yang lama) ke hub ini (`al-idrisi-games`), dengan cara beli domain baru (`AIBrainbox.fun`) buat project brain-box yang lama biar gak kehilangan domain sama sekali. Rencana aman (belum dijalanin per 2026-07-28):
