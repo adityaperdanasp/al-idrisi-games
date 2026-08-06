@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=52" />
+<link rel="stylesheet" href="style.css?v=53" />
 </head>
 <body>
 
@@ -240,6 +240,19 @@
        SCREEN: Landing — pick Solo or Multiplayer
        =============================================================== -->
   <section id="screen-landing" class="screen active">
+    <!-- MOCKUP: ambient floating sparkle particles, pure CSS/decorative
+         (per Sansu Ninja reference -- floating sakura petals over every
+         screen). No JS, no logic, purely visual polish for the plainest
+         screen in the app. -->
+    <div class="mv-particles" aria-hidden="true">
+      <span class="mv-particle" style="left:8%; animation-delay:0s; animation-duration:7s;">✨</span>
+      <span class="mv-particle" style="left:20%; animation-delay:1.6s; animation-duration:8.5s;">⭐</span>
+      <span class="mv-particle" style="left:34%; animation-delay:3.2s; animation-duration:6.5s;">✨</span>
+      <span class="mv-particle" style="left:50%; animation-delay:0.8s; animation-duration:9s;">🌟</span>
+      <span class="mv-particle" style="left:64%; animation-delay:2.4s; animation-duration:7.5s;">✨</span>
+      <span class="mv-particle" style="left:78%; animation-delay:4s; animation-duration:8s;">⭐</span>
+      <span class="mv-particle" style="left:90%; animation-delay:1.2s; animation-duration:6.8s;">✨</span>
+    </div>
     <div class="hero">
       <div class="hero-icon" aria-hidden="true">🏘️</div>
       <h1 class="title-xl">MathVille</h1>
