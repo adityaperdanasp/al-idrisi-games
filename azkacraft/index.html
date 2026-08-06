@@ -195,10 +195,16 @@
           <!-- Bo Bridge: Bo walks across a row of glass tiles that
                materialize ahead of him and dissolve behind him, looping
                edge-to-edge forever (see startBoBridgeAnim() in
-               script.js) -- ambient by default, but now also a tap
-               target: pressing it launches the real Glass Bridge
-               Challenge game (#screen-glass), per explicit request. -->
+               script.js) -- ambient by default, but also a tap target:
+               pressing it launches the real Glass Bridge Challenge game
+               (#screen-glass). Discoverability fix (2026-08-05): the
+               banner used to look purely decorative (no card/border, per
+               earlier "pure Bo" feedback) so nobody realized it was
+               tappable -- added a "Tap to play!" hint bubble, a subtle
+               idle border/shadow, and a slow pulse animation so it reads
+               as a button without going back to the old solid card look. -->
           <button class="bo-bridge-banner" id="bo-bridge-banner" aria-label="Play Glass Bridge Challenge">
+            <span class="bo-bridge-hint">Tap to play!</span>
             <div class="bo-bridge-tiles" id="bo-bridge-tiles"></div>
             <div class="bo-bridge-walker" id="bo-bridge-walker">
               <img src="bo-face-transparent.png" alt="" class="bo-bridge-walker-face">

@@ -1003,11 +1003,23 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
 .bo-bridge-banner {
   position: relative; width: 100%; height: 64px; margin: 4px 0 18px;
   overflow: hidden; /* still needed so Bo is clipped while off-screen entering/exiting */
-  border-radius: 16px; cursor: pointer; border: none; padding: 0; display: block;
-  background: rgba(207, 232, 245, 0.35); /* thin tint only, no border/outline */
+  border-radius: 16px; cursor: pointer; padding: 0; display: block;
+  background: rgba(207, 232, 245, 0.35); /* thin tint, not a solid card */
+  border: 2px solid rgba(255, 255, 255, .7);
   transition: transform .1s ease;
+  animation: boBridgePulse 2.4s ease-in-out infinite;
 }
 .bo-bridge-banner:active { transform: scale(.98); }
+@keyframes boBridgePulse {
+  0%, 100% { box-shadow: 0 3px 10px rgba(59, 90, 120, .12); }
+  50% { box-shadow: 0 3px 16px rgba(255, 138, 61, .4); }
+}
+.bo-bridge-hint {
+  position: absolute; top: 6px; right: 10px; z-index: 3;
+  font-family: var(--font); font-weight: 800; font-size: 10px; color: #fff;
+  background: #FF8A3D; padding: 2px 8px; border-radius: 8px 8px 2px 8px;
+  pointer-events: none; animation: gameBoHintPop 3.2s ease-out infinite;
+}
 .bo-bridge-tiles {
   position: absolute; left: 0; right: 0; bottom: 12px; height: 16px;
   display: flex; justify-content: space-between; padding: 0 24px;
