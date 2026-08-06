@@ -68,6 +68,206 @@ window.MATHVILLE_BANK = {
         {
           prompt: "A bus had 48 passengers. At the first stop, 15 got off and 22 got on. How many passengers are on the bus now?",
           answer: "55"
+        },
+        {
+          prompt: "Sarah collected 234 stickers. Her friend gave her 178 more. How many stickers does she have now?",
+          answer: "412"
+        },
+        {
+          prompt: "A farmer had 560 chickens. He sold 245 of them. How many chickens are left?",
+          answer: "315"
+        },
+        {
+          prompt: "A library had 3,450 books. They received a donation of 1,275 more books. How many books does the library have now?",
+          answer: "4,725"
+        },
+        {
+          prompt: "A movie theater has 850 seats. 612 seats are taken. How many seats are empty?",
+          answer: "238"
+        },
+        {
+          prompt: "A shop had 1,200 candies. They sold 450 in the morning and 380 in the afternoon. How many candies are left?",
+          answer: "370"
+        },
+        {
+          prompt: "There are 1,542 red marbles and 987 blue marbles in a jar. How many marbles are there in total?",
+          answer: "2,529"
+        },
+        {
+          prompt: "A school has 2,300 students. 1,875 are in the elementary section. How many students are in other sections?",
+          answer: "425"
+        },
+        {
+          prompt: "A baker made 328 cookies on Monday and 415 on Tuesday. How many cookies did she make in total?",
+          answer: "743"
+        },
+        {
+          prompt: "A zoo has 640 animals. 128 of them are birds. How many animals are not birds?",
+          answer: "512"
+        },
+        {
+          prompt: "A train had 480 passengers. At the first stop, 95 got off and 60 got on. How many passengers are on the train now?",
+          answer: "445"
+        },
+        {
+          prompt: "A farmer planted 2,150 corn seeds and 1,890 wheat seeds. How many seeds did he plant in total?",
+          answer: "4,040"
+        },
+        {
+          prompt: "A stadium can hold 15,000 people. 11,342 tickets have been sold. How many tickets are left?",
+          answer: "3,658"
+        },
+        {
+          prompt: "A toy store sold 156 toy cars and 289 toy trains this month. How many toys did they sell in total?",
+          answer: "445"
+        },
+        {
+          prompt: "Emma had 540 dollars saved. She spent 215 dollars on a new bicycle. How much money does she have left?",
+          answer: "325"
+        },
+        {
+          prompt: "A garden had 320 flowers. 85 wilted and the gardener planted 140 new ones. How many flowers are in the garden now?",
+          answer: "375"
+        },
+        {
+          prompt: "A school collected 1,320 kg of paper and 875 kg of plastic for recycling. How many kilograms did they collect in total?",
+          answer: "2,195"
+        },
+        {
+          prompt: "A bakery had 900 loaves of bread. They sold 634 loaves by noon. How many loaves are left?",
+          answer: "266"
+        },
+        {
+          prompt: "There were 4,215 fans at the football game and 3,680 fans at the basketball game. How many fans attended both games combined?",
+          answer: "7,895"
+        },
+        {
+          prompt: "A parking lot has 750 spaces. 528 cars are currently parked. How many spaces are empty?",
+          answer: "222"
+        },
+        {
+          prompt: "A library had 6,500 books. They gave away 1,200 old books and bought 950 new ones. How many books does the library have now?",
+          answer: "6,250"
+        },
+        {
+          prompt: "A farmer harvested 1,864 apples and 2,047 oranges. How many pieces of fruit did he harvest in total?",
+          answer: "3,911"
+        },
+        {
+          prompt: "A company had 3,200 employees. 468 of them retired this year. How many employees remain?",
+          answer: "2,732"
+        },
+        {
+          prompt: "A classroom has 24 boys and 28 girls. How many students are there in total?",
+          answer: "52"
+        },
+        {
+          prompt: "A jar had 500 jellybeans. Tom ate 145 of them. How many jellybeans are left?",
+          answer: "355"
+        },
+        {
+          prompt: "A theater sold 380 tickets for the morning show and 295 for the afternoon show, but 60 people didn't show up. How many people actually watched the show?",
+          answer: "615"
+        },
+        {
+          prompt: "A bookstore has 1,675 fiction books and 1,340 non-fiction books. How many books are there in total?",
+          answer: "3,015"
+        },
+        {
+          prompt: "A water tank holds 8,000 liters. 3,250 liters have been used. How many liters are left?",
+          answer: "4,750"
+        },
+        {
+          prompt: "A soccer team scored 3 goals in the first half and 2 goals in the second half. How many goals did they score in total?",
+          answer: "5"
+        },
+        {
+          prompt: "A plane was flying at 35,000 feet. It descended 12,500 feet. What is its new altitude, in feet?",
+          answer: "22,500"
+        },
+        {
+          prompt: "A store had 2,400 shirts. They sold 890 shirts and received a new shipment of 650 shirts. How many shirts does the store have now?",
+          answer: "2,160"
+        },
+        {
+          prompt: "A charity collected 12,450 dollars in the first week and 9,875 dollars in the second week. How much money did they collect in total?",
+          answer: "22,325"
+        },
+        {
+          prompt: "A road trip is 1,250 km long. The family has already driven 780 km. How many kilometers are left?",
+          answer: "470"
+        },
+        {
+          prompt: "A farm has 342 cows and 518 sheep. How many animals are there in total?",
+          answer: "860"
+        },
+        {
+          prompt: "A video game has 1,000 coins to collect. A player has collected 645 coins. How many coins are left to collect?",
+          answer: "355"
+        },
+        {
+          prompt: "A concert hall has 5,000 seats. 3,200 tickets were sold, then 450 people canceled their tickets. How many tickets are now available?",
+          answer: "2,250"
+        },
+        {
+          prompt: "A pet shop has 89 goldfish and 156 guppies. How many fish are there in total?",
+          answer: "245"
+        },
+        {
+          prompt: "A mountain is 4,800 meters tall. A hiker has climbed 2,975 meters. How many more meters does she need to climb?",
+          answer: "1,825"
+        },
+        {
+          prompt: "A publisher printed 6,340 copies of one book and 4,215 copies of another. How many books did they print in total?",
+          answer: "10,555"
+        },
+        {
+          prompt: "A warehouse has 9,600 boxes. 4,380 boxes were shipped out. How many boxes remain?",
+          answer: "5,220"
+        },
+        {
+          prompt: "A school had 850 students. 65 students transferred out and 92 new students enrolled. How many students are there now?",
+          answer: "877"
+        },
+        {
+          prompt: "A carnival sold 720 popcorn boxes and 615 cotton candy sticks. How many items did they sell in total?",
+          answer: "1,335"
+        },
+        {
+          prompt: "An orchard had 5,400 apple trees. A storm destroyed 1,250 of them. How many trees are left?",
+          answer: "4,150"
+        },
+        {
+          prompt: "A museum had 2,180 visitors on Saturday and 1,945 visitors on Sunday. How many visitors came over the weekend?",
+          answer: "4,125"
+        },
+        {
+          prompt: "A cyclist plans to ride 340 km this month. So far, she has ridden 215 km. How many kilometers does she have left to ride?",
+          answer: "125"
+        },
+        {
+          prompt: "A store had 1,600 books. They donated 340 books to a school and received 275 new books. How many books does the store have now?",
+          answer: "1,535"
+        },
+        {
+          prompt: "A choir has 45 sopranos and 38 altos. How many singers are there in total?",
+          answer: "83"
+        },
+        {
+          prompt: "A company had a budget of 50,000 dollars. They spent 32,450 dollars on new equipment. How much money is left in the budget?",
+          answer: "17,550"
+        },
+        {
+          prompt: "A fisherman caught 128 fish on Monday and 96 fish on Tuesday. How many fish did he catch in total?",
+          answer: "224"
+        },
+        {
+          prompt: "A theater has 1,850 seats. During a show, 1,432 seats are occupied. How many seats are empty?",
+          answer: "418"
+        },
+        {
+          prompt: "A bakery started with 2,000 donuts. They sold 875 in the morning, then baked 420 more in the afternoon. How many donuts do they have now?",
+          answer: "1,545"
         }
       ]
     },
