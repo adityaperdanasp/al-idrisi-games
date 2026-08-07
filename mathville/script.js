@@ -3919,12 +3919,13 @@ function launchNinjaRunner() {
   ensurePlaneQuestionPools();
   showScreen("screen-ninja");
   if (window.AIGBgm && AIGBgm.playPlaneTrack) AIGBgm.playPlaneTrack(); // reuse Plane Mode's energetic track (per explicit request instead of new/copyrighted music)
-  ninjaState = { qnum: 1, score: 0, wrongLog: [], ended: false };
+  if (ninjaState && ninjaState.laneTimer) clearTimeout(ninjaState.laneTimer); // a stale timer from a previous run must not fire into this fresh state
+  ninjaState = { qnum: 1, score: 0, wrongLog: [], ended: false, laneTimer: null };
   $("ninja-finish-overlay").classList.add("hidden");
   $("ninja-review-overlay").classList.add("hidden");
   $("ninja-qnum").textContent = `Soal 1/${NINJA_TOTAL_Q}`;
   $("ninja-score").textContent = "⭐ 0";
-  renderNinjaGates();
+  ninjaStartRunLane();
 }
 
 function ninjaSetGuard(on) {
@@ -3933,11 +3934,103 @@ function ninjaSetGuard(on) {
   runner.classList.toggle("running", !on);
 }
 
+// One-shot jump hop -- player-triggered, and now actually DOES something:
+// if a rock obstacle is currently on screen and hasn't been resolved yet,
+// jumping dodges it (see ninjaResolveObstacle). Temporarily drops .running
+// so the leg-swing animation doesn't fight the hop's translateY, restores
+// it once the hop finishes.
+function ninjaDoJump() {
+  const runner = $("ninja-runner");
+  if (runner.classList.contains("guard") || runner.classList.contains("jumping")) return;
+  runner.classList.remove("running");
+  runner.classList.add("jumping");
+  setTimeout(() => {
+    runner.classList.remove("jumping");
+    runner.classList.add("running");
+  }, 450);
+  if (ninjaState && document.getElementById("ninja-obstacle-el")) {
+    ninjaState.obstacleDodged = true;
+  }
+}
+
+// Chrome-dino-style running beat between questions, now a real 2-stage
+// encounter instead of a decorative fixed-length wait:
+//   1. a rock obstacle approaches -- tap JUMP while it's on screen to dodge
+//      it (ninjaDoJump sets obstacleDodged); resolved in ninjaResolveObstacle.
+//   2. an enemy then approaches -- IT ACTUALLY REACHING the runner (not a
+//      blind timer) is what triggers the subject-card picker, in
+//      ninjaResolveEnemy.
+// No fail state / doesn't block progress either way (this is a low-stakes
+// runner, not a lives-based game) -- but jumping (or not) now visibly
+// changes what happens, and the enemy encounter is the real trigger.
+// Once the card picker/question is up there's no timer at all -- answering
+// is untimed ("jawab berapa lama ya bebas").
+const NINJA_OBSTACLE_MS = 1800;
+const NINJA_ENEMY_MS = 1800;
+function ninjaStartRunLane() {
+  $("ninja-gates").classList.add("hidden");
+  $("ninja-qcard").classList.add("hidden");
+  $("ninja-bubbles").classList.add("hidden");
+  ninjaSetGuard(false);
+  ninjaState.obstacleDodged = false;
+  $("ninja-hint").textContent = "Batu di depan! Tap JUMP buat lompatin 🪨";
+
+  const lane = $("ninja-run-lane");
+  lane.innerHTML = `<div class="ninja-obstacle" id="ninja-obstacle-el">🪨</div>`;
+  lane.classList.remove("hidden");
+  $("ninja-jump-btn").classList.remove("hidden");
+
+  ninjaState.laneTimer = setTimeout(ninjaResolveObstacle, NINJA_OBSTACLE_MS);
+}
+
+function ninjaResolveObstacle() {
+  const obstacle = document.getElementById("ninja-obstacle-el");
+  if (obstacle) {
+    obstacle.classList.add(ninjaState.obstacleDodged ? "dodged" : "bumped");
+    setTimeout(() => obstacle.remove(), 350);
+  }
+  $("ninja-hint").textContent = "Musuh mendekat! Bersiap jawab soal 👹";
+  const enemy = document.createElement("div");
+  enemy.className = "ninja-enemy";
+  enemy.textContent = "👹";
+  $("ninja-run-lane").appendChild(enemy);
+  ninjaState.laneTimer = setTimeout(ninjaResolveEnemy, NINJA_ENEMY_MS);
+}
+
+// The enemy's approach animation has finished -- it has "reached" the
+// runner. THIS is now what triggers the subject-card picker.
+function ninjaResolveEnemy() {
+  $("ninja-run-lane").classList.add("hidden");
+  $("ninja-jump-btn").classList.add("hidden");
+  renderNinjaGates();
+}
+
 function ninjaBuildQuestion(subjectKey, difficulty) {
   if (subjectKey === "math") return buildQuickMc(rollDriveQuestion(difficulty));
   const pool = subjectKey === "lang" ? planeLanguagePool : planeSolarPool;
   return pickFromPlanePool(pool) || buildQuickMc(rollDriveQuestion(difficulty)); // pool not ready/empty -- fall back to math rather than block the round
 }
+
+// Small painted face (white eyes + dark pupils + smile curve) matching the
+// Twig Sprout/Star Ninja/Golden Sensei reward-card reference exactly --
+// replaces the earlier 🙂 emoji placeholder, which was never swapped out for
+// the real design per explicit feedback ("design card tidak sesuai
+// pembicaraan kita").
+const NINJA_CARD_FACE_SVG = `
+  <svg viewBox="0 0 40 40" width="34" height="34">
+    <circle cx="14" cy="17" r="3.4" fill="#fff" />
+    <circle cx="26" cy="17" r="3.4" fill="#fff" />
+    <circle cx="14" cy="17.5" r="1.5" fill="#2b1f14" />
+    <circle cx="26" cy="17.5" r="1.5" fill="#2b1f14" />
+    <path d="M12 24 Q20 30 28 24" stroke="#2b1f14" stroke-width="2.2" fill="none" stroke-linecap="round" />
+  </svg>
+`;
+
+// Rarity-style names shown on the badge instead of raw EASY/MEDIUM/HARD --
+// per explicit request, reusing the Twig Sprout/Star Ninja/Golden Sensei
+// reward-card names the whole card design is modeled on. Underlying diff
+// key (easy/medium/hard) is unchanged -- still drives points + badge color.
+const NINJA_DIFF_LABELS = { easy: "Twig Sprout", medium: "Star Ninja", hard: "Golden Sensei" };
 
 function renderNinjaGates() {
   ninjaSetGuard(false);
@@ -3951,11 +4044,12 @@ function renderNinjaGates() {
   Object.keys(NINJA_SUBJECTS).forEach(key => {
     const diff = NINJA_DIFFS[rand(0, 2)];
     const card = document.createElement("button");
+    card.type = "button";
     card.className = `ninja-card ${key}${diff === "hard" ? " diff-hard" : ""}`;
     card.innerHTML = `
-      <div class="ninja-inner-frame"><div class="ninja-face-wrap">🙂</div></div>
+      <div class="ninja-inner-frame"><div class="ninja-face-wrap">${NINJA_CARD_FACE_SVG}</div></div>
       <div class="ninja-card-title">${NINJA_SUBJECTS[key]}</div>
-      <div class="ninja-diff-badge ${diff}">${diff.toUpperCase()}</div>
+      <div class="ninja-diff-badge ${diff}">${NINJA_DIFF_LABELS[diff]}</div>
     `;
     card.addEventListener("click", () => ninjaPickCard(key, diff));
     gates.appendChild(card);
@@ -4010,7 +4104,7 @@ function ninjaAdvance() {
   ninjaState.qnum++;
   if (ninjaState.qnum > NINJA_TOTAL_Q) { ninjaShowFinish(); return; }
   $("ninja-qnum").textContent = `Soal ${ninjaState.qnum}/${NINJA_TOTAL_Q}`;
-  renderNinjaGates();
+  ninjaStartRunLane();
 }
 
 const NINJA_WIN_XP = 20;
@@ -4069,5 +4163,15 @@ $("ninja-review-done").addEventListener("click", () => {
   showScreen("screen-map");
 });
 
+$("ninja-jump-btn").addEventListener("click", ninjaDoJump);
 $("btn-ninja").addEventListener("click", launchNinjaRunner);
+
+// Deep link from the hub's landing-page Ninja Runner card (?ninja=1) --
+// jump straight into Ninja Runner mode. Placed here (not alongside the
+// ?drive=1/?focus=1 checks earlier in the file) because `ninjaState` is
+// declared with `let` further down than that -- calling launchNinjaRunner()
+// before its temporal dead zone ends throws a ReferenceError.
+if (new URLSearchParams(location.search).get("ninja") === "1") {
+  launchNinjaRunner();
+}
 

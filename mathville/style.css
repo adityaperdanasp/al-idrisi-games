@@ -1063,13 +1063,19 @@ button { font-family: inherit; }
 .ninja-gate-row { position: absolute; top: 20px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 4; padding: 0 8px; }
 .ninja-card {
   width: 30%; max-width: 130px; height: 190px; border-radius: 16px; cursor: pointer;
-  padding: 0; position: relative; transition: transform .12s ease; border: none;
+  padding: 0; position: relative; transition: transform .12s ease, box-shadow .12s ease; border: none;
+  box-shadow: 0 5px 0 rgba(0,0,0,.16), 0 8px 14px rgba(0,0,0,.15);
 }
-.ninja-card:active { transform: scale(.96); }
+.ninja-card::before {
+  content: ""; position: absolute; inset: 0; border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,255,255,0) 42%);
+  pointer-events: none;
+}
+.ninja-card:active { transform: translateY(3px) scale(.97); box-shadow: 0 2px 0 rgba(0,0,0,.16), 0 4px 8px rgba(0,0,0,.12); }
 .ninja-card.math { background: linear-gradient(180deg, #f6ead8, #f0dcc4); border: 3px solid #c1793e; }
 .ninja-card.lang { background: linear-gradient(180deg, #e3f2e3, #c1e1c1); border: 3px solid #4f9a4f; }
 .ninja-card.sci  { background: linear-gradient(180deg, #dce8f9, #c1d4f6); border: 3px solid #5b7fd6; }
-.ninja-card.diff-hard { box-shadow: 0 0 14px 3px rgba(246, 185, 59, .6); }
+.ninja-card.diff-hard { box-shadow: 0 5px 0 rgba(0,0,0,.16), 0 8px 14px rgba(0,0,0,.15), 0 0 14px 3px rgba(246, 185, 59, .6); }
 .ninja-inner-frame {
   position: absolute; left: 6px; top: 6px; right: 6px; height: 116px; border-radius: 12px;
   background: #fffaf0; display: flex; align-items: center; justify-content: center;
@@ -1080,18 +1086,55 @@ button { font-family: inherit; }
 .ninja-card.sci .ninja-face-wrap  { background: #5b7fd6; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
 .ninja-card-title { text-align: center; font: 800 13px "Baloo 2", sans-serif; color: var(--ink); margin-top: 128px; }
 .ninja-diff-badge {
-  display: block; margin: 4px auto 0; width: fit-content; padding: 2px 9px; border-radius: 8px;
-  font: 800 9px "Baloo 2", sans-serif; color: #fff;
+  display: block; margin: 4px auto 0; width: fit-content; max-width: 92%; padding: 2px 8px; border-radius: 8px;
+  font: 800 8.5px "Baloo 2", sans-serif; color: #fff; white-space: nowrap;
 }
 .ninja-diff-badge.easy { background: #7a9a89; }
 .ninja-diff-badge.medium { background: #c9821f; }
 .ninja-diff-badge.hard { background: #b53d18; }
 
+/* Jump hop -- placed AFTER .ninja-runner.running in source order so it wins
+   the cascade on the (brief) frames where JS has both classes applied. */
+.ninja-runner.jumping { animation: ninjaJumpHop .45s ease; }
+@keyframes ninjaJumpHop { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-34px); } 70% { transform: translateY(-34px); } }
+
+.ninja-run-lane { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.ninja-obstacle, .ninja-enemy {
+  position: absolute; bottom: 40px; font-size: 30px;
+  filter: drop-shadow(0 3px 3px rgba(0,0,0,.2));
+}
+/* Durations match NINJA_OBSTACLE_MS/NINJA_ENEMY_MS in script.js -- keep in
+   sync if those constants change. End positions now land close to where
+   .ninja-runner actually sits (left:24px) so the enemy visibly "reaches"
+   the runner instead of stopping partway across the lane. */
+.ninja-obstacle { animation: ninjaObstacleRun 1.8s linear forwards; }
+.ninja-enemy { animation: ninjaEnemyRun 1.8s linear forwards; }
+@keyframes ninjaObstacleRun { from { right: -40px; } to { right: 80%; } }
+@keyframes ninjaEnemyRun { from { right: -40px; } to { right: 84%; } }
+
+/* Obstacle outcome, shown briefly right as its approach animation ends
+   (see ninjaResolveObstacle) -- dodged = jumped in time, bumped = didn't. */
+.ninja-obstacle.dodged { animation: ninjaObstacleDodged .35s ease forwards; }
+.ninja-obstacle.bumped { animation: ninjaObstacleBumped .35s ease forwards; }
+@keyframes ninjaObstacleDodged { to { transform: translateY(-30px) scale(1.3); opacity: 0; } }
+@keyframes ninjaObstacleBumped { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-6px); } 60% { transform: translateX(6px); } to { transform: translateX(0); opacity: 0; } }
+
+.ninja-jump-btn {
+  position: absolute; bottom: 20px; right: 20px; z-index: 7;
+  padding: 12px 18px; border: none; border-radius: 14px; cursor: pointer;
+  background: var(--wood); color: #fff; font: 800 14px "Baloo 2", sans-serif;
+  box-shadow: 0 5px 0 var(--wood-dark);
+}
+.ninja-jump-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--wood-dark); }
+
 .ninja-encounter {
   position: absolute; top: 20px; left: 0; right: 0; bottom: 100px;
   display: flex; flex-direction: column; align-items: center; gap: 14px;
   padding: 0 12px; z-index: 6; overflow-y: auto;
+  pointer-events: none; /* empty by default (children hidden) -- without this it silently
+    swallows taps meant for .ninja-gate-row underneath, even with nothing visible */
 }
+.ninja-qcard, .ninja-bubbles { pointer-events: auto; }
 .ninja-qcard {
   position: relative; flex-shrink: 0;
   background: var(--card); border: 3px solid #e4572e; border-radius: 14px; padding: 14px 20px;
