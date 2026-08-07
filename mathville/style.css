@@ -1104,13 +1104,16 @@ button { font-family: inherit; }
   filter: drop-shadow(0 3px 3px rgba(0,0,0,.2));
 }
 /* Durations match NINJA_OBSTACLE_MS/NINJA_ENEMY_MS in script.js -- keep in
-   sync if those constants change. End positions now land close to where
-   .ninja-runner actually sits (left:24px) so the enemy visibly "reaches"
-   the runner instead of stopping partway across the lane. */
+   sync if those constants change. Positioned with `left` (not `right`) so
+   the resting spot is a FIXED PIXEL distance from .ninja-runner
+   (left:24px, width:54px) regardless of the lane's actual width -- "one
+   slash away" per explicit request, so ninjaSlashEnemy()'s step-forward +
+   slash-flash always lines up against the enemy visually, container
+   width aside. */
 .ninja-obstacle { animation: ninjaObstacleRun 1.8s linear forwards; }
 .ninja-enemy { animation: ninjaEnemyRun 1.8s linear forwards; }
-@keyframes ninjaObstacleRun { from { right: -40px; } to { right: 80%; } }
-@keyframes ninjaEnemyRun { from { right: -40px; } to { right: 84%; } }
+@keyframes ninjaObstacleRun { from { left: 100%; } to { left: 140px; } }
+@keyframes ninjaEnemyRun { from { left: 100%; } to { left: 108px; } }
 
 /* Obstacle outcome, shown briefly right as its approach animation ends
    (see ninjaResolveObstacle) -- dodged = jumped in time, bumped = didn't. */
@@ -1118,6 +1121,41 @@ button { font-family: inherit; }
 .ninja-obstacle.bumped { animation: ninjaObstacleBumped .35s ease forwards; }
 @keyframes ninjaObstacleDodged { to { transform: translateY(-30px) scale(1.3); opacity: 0; } }
 @keyframes ninjaObstacleBumped { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-6px); } 60% { transform: translateX(6px); } to { transform: translateX(0); opacity: 0; } }
+
+/* Melee slash on a correct answer -- see ninjaSlashEnemy(). Ninja steps
+   forward one beat, a quick white slash streak flashes across the "one
+   slash" gap, and the enemy either fully disappears (regular enemy, or a
+   boss's finishing hit) or just flashes/shakes without disappearing (a
+   boss's non-lethal hit, so it's still there for the next question). */
+.ninja-runner.stepping { transition: transform .15s ease-out; transform: translateX(18px); }
+
+.ninja-slash-fx {
+  position: absolute; width: 70px; height: 6px; left: 70px; bottom: 66px;
+  background: linear-gradient(90deg, transparent, #fff, transparent);
+  transform: rotate(-35deg) scaleX(0); transform-origin: left center;
+  box-shadow: 0 0 10px 2px rgba(255,255,255,.9);
+  animation: ninjaSlashFx .25s ease-out forwards;
+  z-index: 6;
+}
+@keyframes ninjaSlashFx {
+  0% { transform: rotate(-35deg) scaleX(0); opacity: 1; }
+  55% { transform: rotate(-35deg) scaleX(1); opacity: 1; }
+  100% { transform: rotate(-35deg) scaleX(1); opacity: 0; }
+}
+
+.ninja-enemy.sliced { animation: ninjaEnemySliced .35s ease forwards !important; }
+@keyframes ninjaEnemySliced {
+  0% { filter: brightness(1); transform: scale(1); opacity: 1; }
+  30% { filter: brightness(3) drop-shadow(0 0 8px #fff); transform: scale(1.15); opacity: 1; }
+  100% { filter: brightness(1); transform: scale(1.3) rotate(20deg); opacity: 0; }
+}
+
+.ninja-enemy.hit-flash { animation: ninjaEnemyHitFlash .25s ease; }
+@keyframes ninjaEnemyHitFlash {
+  0%, 100% { filter: brightness(1); transform: translateX(0); }
+  30% { filter: brightness(3); transform: translateX(-4px); }
+  60% { filter: brightness(1); transform: translateX(4px); }
+}
 
 /* Streak bonus HUD pill + toast -- see ninjaStreakBonus()/updateNinjaStreakHud() */
 .ninja-streak-pill {

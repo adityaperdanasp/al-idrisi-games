@@ -4084,6 +4084,7 @@ function ninjaResolveObstacle() {
     setTimeout(() => obstacle.remove(), 350);
   }
   const enemy = document.createElement("div");
+  enemy.id = "ninja-enemy-el";
   if (ninjaState.pendingBoss) {
     const bossType = NINJA_BOSS_TYPES[ninjaState.bossesDefeated % NINJA_BOSS_TYPES.length];
     enemy.className = "ninja-enemy ninja-boss-enemy";
@@ -4099,12 +4100,15 @@ function ninjaResolveObstacle() {
 }
 
 // The enemy's approach animation has finished -- it has "reached" the
-// runner. THIS is now what triggers the subject-card picker. If this lane
-// was flagged as a boss checkpoint (see ninjaAdvance), activates boss mode
+// runner (stopping "one slash" away, see ninjaEnemyRun's left:108px). THIS
+// is now what triggers the subject-card picker. If this lane was flagged
+// as a boss checkpoint (see ninjaAdvance), activates boss mode
 // (ninjaPickCard's answer handler branches on ninjaState.inBoss) before
-// showing the same 3-card picker.
+// showing the same 3-card picker. The run-lane itself is deliberately
+// NOT hidden here (unlike before) -- the enemy needs to stay visible
+// through the question so ninjaSlashEnemy() has something to slash on a
+// correct answer.
 function ninjaResolveEnemy() {
-  $("ninja-run-lane").classList.add("hidden");
   $("ninja-jump-btn").classList.add("hidden");
   if (ninjaState.pendingBoss) {
     ninjaState.pendingBoss = false;
@@ -4114,6 +4118,33 @@ function ninjaResolveEnemy() {
     updateNinjaBossHp();
   }
   renderNinjaGates();
+}
+
+// Melee slash on a correct answer -- ninja steps forward one beat, a
+// quick white slash-streak flashes across the gap, and the currently
+// standing enemy either fully disappears (removeEnemy=true: a regular
+// enemy, or a boss's finishing hit) or just flashes/shakes in place
+// (removeEnemy=false: a boss's non-lethal hit -- it needs to still be
+// there for the next question in the same checkpoint).
+function ninjaSlashEnemy(removeEnemy) {
+  const runner = $("ninja-runner");
+  runner.classList.add("stepping");
+  setTimeout(() => runner.classList.remove("stepping"), 200);
+
+  const fx = document.createElement("div");
+  fx.className = "ninja-slash-fx";
+  $("ninja-run-lane").appendChild(fx);
+  setTimeout(() => fx.remove(), 300);
+
+  const enemy = document.getElementById("ninja-enemy-el");
+  if (!enemy) return;
+  if (removeEnemy) {
+    enemy.classList.add("sliced");
+    setTimeout(() => enemy.remove(), 350);
+  } else {
+    enemy.classList.add("hit-flash");
+    setTimeout(() => enemy.classList.remove("hit-flash"), 250);
+  }
 }
 
 function updateNinjaBossHp() {
@@ -4217,11 +4248,13 @@ function ninjaPickCard(subjectKey, difficulty) {
         if (ninjaState.inBoss) {
           ninjaState.bossHp -= 1;
           updateNinjaBossHp();
+          ninjaSlashEnemy(ninjaState.bossHp <= 0); // only the finishing hit fully removes the boss
           ninjaSliceQuestion(q.prompt, () => {
             if (ninjaState.bossHp <= 0) defeatNinjaBoss();
             else renderNinjaGates();
           });
         } else {
+          ninjaSlashEnemy(true); // a regular enemy is always a one-hit slash
           ninjaSliceQuestion(q.prompt, () => ninjaAdvance());
         }
       } else {
