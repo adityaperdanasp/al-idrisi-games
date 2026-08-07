@@ -1183,7 +1183,22 @@ button { font-family: inherit; }
 }
 .ninja-finish-title { font: 800 20px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 6px; }
 .ninja-finish-sub { font: 700 14px "Baloo 2", sans-serif; color: var(--ink-soft); margin-bottom: 16px; }
-.ninja-finish-score { font: 800 30px "Baloo 2", sans-serif; color: #c9821f; margin-bottom: 18px; }
+.ninja-finish-score { font: 800 30px "Baloo 2", sans-serif; color: #c9821f; margin-bottom: 4px; }
+.ninja-finish-best { font: 700 13px "Baloo 2", sans-serif; color: var(--ink-soft); margin-bottom: 12px; }
+.ninja-finish-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, #fff3d6, #ffe3a3); border: 2px solid #e4b13a;
+  border-radius: 999px; padding: 8px 16px; margin-bottom: 18px;
+  font: 800 15px "Baloo 2", sans-serif; color: #8a6a1f;
+}
+
+/* Boss enemy during a boss checkpoint (see ninjaResolveObstacle/ninjaResolveEnemy) --
+   bigger + a subtle shake so it reads as a bigger threat than a regular enemy. */
+.ninja-boss-enemy { font-size: 46px !important; animation: ninjaBossShake .4s ease-in-out infinite; }
+@keyframes ninjaBossShake {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
 
 .ninja-review-bo { width: 56px; height: 56px; border-radius: 50%; margin-bottom: 6px; }
 .ninja-review-title { font: 800 15px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 12px; }

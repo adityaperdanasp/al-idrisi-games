@@ -199,7 +199,7 @@ function loadProgress() {
     const raw = localStorage.getItem("mathville.progress");
     if (raw) return JSON.parse(raw);
   } catch (e) { /* corrupt data — fall through to fresh progress */ }
-  return { chapters: {}, xpTotal: 0, planeHighScore: 0 };
+  return { chapters: {}, xpTotal: 0, planeHighScore: 0, ninjaHighScore: 0 };
 }
 let PROGRESS = loadProgress();
 
@@ -218,8 +218,9 @@ function saveChapterProgress(chapterId, stars, xp) {
     // other 3 games use — so the teacher/parent dashboard can show chapter
     // completion for MathVille too, not just topicStats/play count.
     // setProgress does a full overwrite (.set(), not .update()), so every
-    // call site must include planeHighScore too or it gets wiped out.
-    AIGLeaderboard.setProgress("mathville", { chapters: PROGRESS.chapters, xpTotal: PROGRESS.xpTotal, planeHighScore: PROGRESS.planeHighScore });
+    // call site must include planeHighScore/ninjaHighScore too or they get
+    // wiped out.
+    AIGLeaderboard.setProgress("mathville", { chapters: PROGRESS.chapters, xpTotal: PROGRESS.xpTotal, planeHighScore: PROGRESS.planeHighScore, ninjaHighScore: PROGRESS.ninjaHighScore });
   }
 }
 
@@ -3945,6 +3946,40 @@ function showNinjaToast(msg) {
   world.appendChild(toast);
   setTimeout(() => toast.remove(), 1600);
 }
+// Obstacle/enemy variety for the run-lane beat -- was always the same
+// 🪨/👹 pair every round, per feedback that felt monotonous. Picked fresh
+// each round via rand(), purely visual (doesn't change jump-dodge/
+// enemy-encounter mechanics at all).
+const NINJA_OBSTACLE_TYPES = ["🪨", "🪵", "🌵", "🧱"];
+const NINJA_ENEMY_TYPES = ["👹", "👺", "🥷", "🐍"];
+
+// Boss checkpoint every NINJA_BOSS_EVERY questions (with NINJA_TOTAL_Q=20
+// that's a single checkpoint at question 11). Needs NINJA_BOSS_HP correct
+// answers to defeat -- wrong answers during a boss fight cost nothing but
+// don't chip its HP either, same forgiving philosophy as the rest of Ninja
+// Runner. Cycles through NINJA_BOSS_TYPES by bossesDefeated so repeat boss
+// checkpoints (if NINJA_TOTAL_Q ever grows) aren't the same enemy.
+const NINJA_BOSS_EVERY = 10;
+const NINJA_BOSS_HP = 3;
+const NINJA_BOSS_BONUS = 100;
+const NINJA_BOSS_TYPES = [
+  { emoji: "👹", name: "Oni Boss" },
+  { emoji: "🐉", name: "Dragon Boss" },
+  { emoji: "🦂", name: "Scorpion Boss" }
+];
+
+// Overall performance rank shown at finish (see ninjaComputeRank) --
+// deliberately reuses the same Twig Sprout/Star Ninja/Golden Sensei names
+// as the per-card difficulty badges, as a thematic "you achieved this
+// rank overall" callback rather than a separate vocabulary.
+function ninjaComputeRank() {
+  const correct = NINJA_TOTAL_Q - ninjaState.wrongLog.length;
+  const accuracy = correct / NINJA_TOTAL_Q;
+  if (accuracy >= 0.85 && ninjaState.hardCorrectCount >= 5) return { emoji: "🏆", label: "Golden Sensei" };
+  if (accuracy >= 0.6) return { emoji: "⭐", label: "Star Ninja" };
+  return { emoji: "🌱", label: "Twig Sprout" };
+}
+
 const NINJA_DIFFS = ["easy", "medium", "hard"];
 const NINJA_SUBJECTS = { math: "MATH", lang: "LANG & ARTS", sci: "SCIENCE" };
 let ninjaState = null;
@@ -3954,13 +3989,36 @@ function launchNinjaRunner() {
   showScreen("screen-ninja");
   if (window.AIGBgm && AIGBgm.playPlaneTrack) AIGBgm.playPlaneTrack(); // reuse Plane Mode's energetic track (per explicit request instead of new/copyrighted music)
   if (ninjaState && ninjaState.laneTimer) clearTimeout(ninjaState.laneTimer); // a stale timer from a previous run must not fire into this fresh state
-  ninjaState = { qnum: 1, score: 0, streak: 0, wrongLog: [], ended: false, laneTimer: null };
+  ninjaState = {
+    qnum: 1, score: 0, streak: 0, hardCorrectCount: 0, wrongLog: [], ended: false, laneTimer: null,
+    pendingBoss: false, inBoss: false, bossHp: 0, bossesDefeated: 0
+  };
   $("ninja-streak").classList.add("hidden");
+  $("ninja-boss-hp").classList.add("hidden");
   $("ninja-finish-overlay").classList.add("hidden");
   $("ninja-review-overlay").classList.add("hidden");
   $("ninja-qnum").textContent = `Soal 1/${NINJA_TOTAL_Q}`;
   $("ninja-score").textContent = "⭐ 0";
+  updateNinjaBestHud();
   ninjaStartRunLane();
+}
+
+// High score persists across sessions the same way Plane Mode's does
+// (PROGRESS.ninjaHighScore, see loadProgress/saveChapterProgress) -- a
+// reason to chase a personal best across replays, not just this round's
+// score. Called on every point change instead of a raw $("ninja-score")
+// assignment so the high-score check never gets skipped at a call site.
+function updateNinjaScore() {
+  $("ninja-score").textContent = `⭐ ${ninjaState.score}`;
+  if (ninjaState.score > (PROGRESS.ninjaHighScore || 0)) {
+    PROGRESS.ninjaHighScore = ninjaState.score;
+    saveProgressToStorage();
+    updateNinjaBestHud();
+  }
+}
+
+function updateNinjaBestHud() {
+  $("ninja-best").textContent = "🏅 " + (PROGRESS.ninjaHighScore || 0);
 }
 
 function ninjaSetGuard(on) {
@@ -4008,10 +4066,11 @@ function ninjaStartRunLane() {
   $("ninja-bubbles").classList.add("hidden");
   ninjaSetGuard(false);
   ninjaState.obstacleDodged = false;
-  $("ninja-hint").textContent = "Batu di depan! Tap JUMP buat lompatin 🪨";
+  const obstacleEmoji = NINJA_OBSTACLE_TYPES[rand(0, NINJA_OBSTACLE_TYPES.length - 1)];
+  $("ninja-hint").textContent = "Rintangan di depan! Tap JUMP buat lompatin " + obstacleEmoji;
 
   const lane = $("ninja-run-lane");
-  lane.innerHTML = `<div class="ninja-obstacle" id="ninja-obstacle-el">🪨</div>`;
+  lane.innerHTML = `<div class="ninja-obstacle" id="ninja-obstacle-el">${obstacleEmoji}</div>`;
   lane.classList.remove("hidden");
   $("ninja-jump-btn").classList.remove("hidden");
 
@@ -4024,20 +4083,53 @@ function ninjaResolveObstacle() {
     obstacle.classList.add(ninjaState.obstacleDodged ? "dodged" : "bumped");
     setTimeout(() => obstacle.remove(), 350);
   }
-  $("ninja-hint").textContent = "Musuh mendekat! Bersiap jawab soal 👹";
   const enemy = document.createElement("div");
-  enemy.className = "ninja-enemy";
-  enemy.textContent = "👹";
+  if (ninjaState.pendingBoss) {
+    const bossType = NINJA_BOSS_TYPES[ninjaState.bossesDefeated % NINJA_BOSS_TYPES.length];
+    enemy.className = "ninja-enemy ninja-boss-enemy";
+    enemy.textContent = bossType.emoji;
+    $("ninja-hint").textContent = `⚔️ ${bossType.name} mendekat!`;
+  } else {
+    enemy.className = "ninja-enemy";
+    enemy.textContent = NINJA_ENEMY_TYPES[rand(0, NINJA_ENEMY_TYPES.length - 1)];
+    $("ninja-hint").textContent = "Musuh mendekat! Bersiap jawab soal " + enemy.textContent;
+  }
   $("ninja-run-lane").appendChild(enemy);
   ninjaState.laneTimer = setTimeout(ninjaResolveEnemy, NINJA_ENEMY_MS);
 }
 
 // The enemy's approach animation has finished -- it has "reached" the
-// runner. THIS is now what triggers the subject-card picker.
+// runner. THIS is now what triggers the subject-card picker. If this lane
+// was flagged as a boss checkpoint (see ninjaAdvance), activates boss mode
+// (ninjaPickCard's answer handler branches on ninjaState.inBoss) before
+// showing the same 3-card picker.
 function ninjaResolveEnemy() {
   $("ninja-run-lane").classList.add("hidden");
   $("ninja-jump-btn").classList.add("hidden");
+  if (ninjaState.pendingBoss) {
+    ninjaState.pendingBoss = false;
+    ninjaState.inBoss = true;
+    ninjaState.bossHp = NINJA_BOSS_HP;
+    $("ninja-boss-hp").classList.remove("hidden");
+    updateNinjaBossHp();
+  }
   renderNinjaGates();
+}
+
+function updateNinjaBossHp() {
+  $("ninja-boss-hp-fill").style.width = (ninjaState.bossHp / NINJA_BOSS_HP * 100) + "%";
+}
+
+// A boss fight is won -- flat score bonus, boss HP bar hidden, then
+// continues into the next regular question same as any other advance.
+function defeatNinjaBoss() {
+  ninjaState.inBoss = false;
+  ninjaState.bossesDefeated += 1;
+  ninjaState.score += NINJA_BOSS_BONUS;
+  updateNinjaScore();
+  $("ninja-boss-hp").classList.add("hidden");
+  showNinjaToast(`💥 Boss defeated! +${NINJA_BOSS_BONUS} bonus`);
+  ninjaAdvance();
 }
 
 function ninjaBuildQuestion(subjectKey, difficulty) {
@@ -4074,7 +4166,9 @@ function renderNinjaGates() {
   gates.classList.remove("hidden");
   $("ninja-qcard").classList.add("hidden");
   $("ninja-bubbles").classList.add("hidden");
-  $("ninja-hint").textContent = "Pilih subject (kesulitan tiap kartu acak):";
+  $("ninja-hint").textContent = ninjaState.inBoss
+    ? `⚔️ Kalahin boss! Jawab benar (sisa HP: ${ninjaState.bossHp})`
+    : "Pilih subject (kesulitan tiap kartu acak):";
 
   Object.keys(NINJA_SUBJECTS).forEach(key => {
     const diff = NINJA_DIFFS[rand(0, 2)];
@@ -4115,37 +4209,53 @@ function ninjaPickCard(subjectKey, difficulty) {
         const prevBonus = ninjaStreakBonus(ninjaState.streak);
         ninjaState.streak += 1;
         const bonus = ninjaStreakBonus(ninjaState.streak);
+        if (difficulty === "hard") ninjaState.hardCorrectCount += 1;
         ninjaState.score += NINJA_PTS[difficulty] + bonus;
-        $("ninja-score").textContent = `⭐ ${ninjaState.score}`;
+        updateNinjaScore();
         updateNinjaStreakHud();
         if (bonus > prevBonus) showNinjaToast(`🔥 ${ninjaState.streak} in a row! +${bonus} bonus`);
-        ninjaSliceQuestion(q.prompt);
+        if (ninjaState.inBoss) {
+          ninjaState.bossHp -= 1;
+          updateNinjaBossHp();
+          ninjaSliceQuestion(q.prompt, () => {
+            if (ninjaState.bossHp <= 0) defeatNinjaBoss();
+            else renderNinjaGates();
+          });
+        } else {
+          ninjaSliceQuestion(q.prompt, () => ninjaAdvance());
+        }
       } else {
         ninjaState.streak = 0;
         updateNinjaStreakHud();
         ninjaState.wrongLog.push({ prompt: q.prompt, subject: NINJA_SUBJECTS[subjectKey], your: opt, correct: q.correctLabel });
         btn.classList.add("wrong-flash");
-        setTimeout(() => ninjaAdvance(), 550);
+        setTimeout(() => {
+          if (ninjaState.inBoss) renderNinjaGates(); // boss fight isn't over -- try again, doesn't advance qnum
+          else ninjaAdvance();
+        }, 550);
       }
     });
     bubbles.appendChild(btn);
   });
 }
 
-function ninjaSliceQuestion(promptText) {
+function ninjaSliceQuestion(promptText, onDone) {
   $("ninja-bubbles").classList.add("hidden");
   $("ninja-hint").textContent = "";
   $("ninja-qcard").innerHTML = `
     <div class="ninja-qhalf ninja-qhalf-a">${promptText}</div>
     <div class="ninja-qhalf ninja-qhalf-b">${promptText}</div>
   `;
-  setTimeout(() => ninjaAdvance(), 550);
+  setTimeout(onDone, 550);
 }
 
 function ninjaAdvance() {
   ninjaState.qnum++;
   if (ninjaState.qnum > NINJA_TOTAL_Q) { ninjaShowFinish(); return; }
   $("ninja-qnum").textContent = `Soal ${ninjaState.qnum}/${NINJA_TOTAL_Q}`;
+  // Boss checkpoint every NINJA_BOSS_EVERY questions -- flagged here, then
+  // actually activated once the enemy "reaches" the runner (ninjaResolveEnemy).
+  ninjaState.pendingBoss = (ninjaState.qnum - 1) % NINJA_BOSS_EVERY === 0;
   ninjaStartRunLane();
 }
 
@@ -4160,6 +4270,9 @@ function ninjaShowFinish() {
   $("ninja-bubbles").classList.add("hidden");
   $("ninja-hint").textContent = "";
   $("ninja-final-score").textContent = `${ninjaState.score} poin`;
+  $("ninja-final-best").textContent = `Best: ${Math.max(ninjaState.score, PROGRESS.ninjaHighScore || 0)}`;
+  const rank = ninjaComputeRank();
+  $("ninja-finish-badge").innerHTML = `${rank.emoji} ${rank.label}`;
   $("ninja-finish-overlay").classList.remove("hidden");
   saveChapterProgress("ninja-runner", 3, NINJA_WIN_XP);
 }
