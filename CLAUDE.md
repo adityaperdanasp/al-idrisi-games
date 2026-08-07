@@ -28,6 +28,7 @@ Hub berisi game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green M
 | Town Map | default masuk MathVille | 9 chapter kurikulum, tap kota buat practice round |
 | Drive Mode | 🚗 icon topbar / deep-link `?drive=1` | Free-roam mobil, kejar-kejaran sama dino, nabrak city = masuk chapter |
 | Plane Mode | pilih "Pesawat" di vehicle picker Drive Mode | Shmup/bullet-hell ala Raiden, soal MC jadi hook utama (bomb reward) |
+| Ninja Runner | 🥷 icon topbar | Runner ala Sansu Ninja, 3 kartu subject (Math/Lang/Sci) random difficulty, 20 soal/round, review bareng Bo di akhir |
 
 ~~Red Light Green Light~~ — **DIHAPUS TOTAL** (2026-08-05), per keputusan eksplisit user ("cabut aja delete game ga jelas"). Beda sama Glass Bridge yang dipindah ke Language & Arts, RLGL gak dipindah kemana-mana, langsung dicabut abis: topbar icon, `#screen-redlight`, semua `rlglState`/JS, semua `.rlgl-*` CSS — diverifikasi zero leftover reference via grep.
 
@@ -273,24 +274,28 @@ Network-first: online selalu ambil versi terbaru (gak masking update), fallback 
 - **Baca `/pushTokens` butuh full-admin bypass rules** — udah dicoba service-account OAuth2 token (scope `firebase.database`) tapi RTDB REST API nolak terus ("Unauthorized request.", kemungkinan IAM role gap). Solusi yang jalan: **legacy RTDB database secret** (`FIREBASE_DATABASE_SECRET` env var, dari Firebase Console → Project Settings → Service accounts → Database secrets → generate) dipake via `?auth=` query param.
 - Env vars Vercel: `FIREBASE_SERVICE_ACCOUNT_JSON` (buat sign FCM), `FIREBASE_DATABASE_SECRET` (buat baca pushTokens), `CRON_SECRET` (verifikasi request beneran dari Vercel Cron, bukan hit publik sembarangan) — semua "Sensitive" type (write-only, gak bisa dibaca ulang lewat `vercel env pull` walau udah di-set, itu emang behavior normalnya bukan bug).
 
-## Ninja Runner mode (ala Sansu Ninja) — DIBAHAS + DI-PROTOTYPE VISUAL, BELUM ADA KODE SAMA SEKALI
+## Ninja Runner mode (ala Sansu Ninja) — LIVE di production
 
-Ide dari riset app edukasi Jepang (2026-08-05, lihat bagian referensi di atas kalau ada) — user pengen bikin mode baru terinspirasi **算数忍者 (Sansu Ninja / "Math Ninja")**, app matematika Jepang yang populer (2.9 juta rating App Store, 4.4★) karena karakter LARI terus + soal muncul ngambang, bukan kuis statis diem.
+Ide dari riset app edukasi Jepang (2026-08-05) — terinspirasi **算数忍者 (Sansu Ninja / "Math Ninja")**, app matematika Jepang populer (2.9 juta rating App Store, 4.4★). Awalnya di-iterasi lewat beberapa ronde demo visual (`visualize` widget tool, ephemeral chat-only) sebelum dibangun beneran — riwayat evolusi konsepnya (buat konteks kalau ada yang nanya "kenapa gini"):
+1. Demo pertama: karakter lari + encounter soal + musuh blob ketebas kalau jawaban benar + reward card 3 rarity (Common/Rare/Legendary, SVG-based). **Catatan yang masih relevan**: mekanik "tebas musuh" itu BUKAN dikonfirmasi ada di Sansu Ninja asli (dari screenshot yang dicek gak keliatan elemen ini) — ide tambahan dari brainstorm kita sendiri.
+2. Revisi: bukan musuh yang ketebas, tapi **kartu soalnya sendiri** yang kebelah diagonal pas jawaban benar — efek final yang dipakai.
+3. Revisi: bukan pilih tingkat kesulitan (Easy/Medium/Hard sebagai 3 kartu terpisah), tapi **3 kartu = 3 SUBJECT** (Math cream/Language & Arts hijau/Science biru), masing-masing kartu dapet tingkat kesulitan RANDOM independen — anak milih berdasarkan subject yang disuka, bukan berdasarkan gampang/susahnya.
+4. Reward card collection **DICORET dari scope** — gak jadi dibangun (kompleksitas Firebase + halaman koleksi terpisah dianggap gak worth-it buat versi pertama ini; kalau mau ditambah lagi nanti itu extension terpisah).
 
-⚠️ **PENTING**: semua yang ada di bagian ini masih murni demo visual lewat `visualize` widget tool (render di chat doang, ephemeral, gak nempel ke project sama sekali) — **belum ada satu baris kode pun yang ditulis ke file project**. Sesi berikutnya yang mau lanjutin ini harus bangun dari nol berdasarkan spec di bawah, bukan nyari kode yang udah ada.
-
-**Yang udah disepakati/di-demo (lewat widget, bukan kode beneran)**:
-1. **Karakter lari** — side-view ninja (bukan top-down kayak Glass Bridge), full CSS animation: kaki+tangan gantian ayun (pola sama kayak `.dino-leg-swing` yang udah ada buat dino landing page, di-upgrade lebih banyak sendi), jubah kibar, debu kecil di tiap langkah, pedang nempel di tangan.
-2. **Encounter soal** — karakter tetep "lari di tempat", muncul kartu soal + 3 bulatan jawaban ngambang di atas (persis pola Sansu Ninja: tap sambil jalan, gak perlu berhenti).
-3. **Efek jawaban BENAR** — pedang nebas (kilatan putih), musuh (monster simpel, bentuk blob) meledak jadi partikel + combo counter naik. **Catatan penting**: mekanik "tebas musuh" ini BUKAN dikonfirmasi ada di Sansu Ninja asli (dari screenshot yang dicek gak keliatan elemen ini) — ini ide TAMBAHAN dari kita sendiri, bukan niru persis.
-4. **Efek jawaban SALAH** — bulatan yang ditap goyang + jadi merah sebentar, gak ada tebasan, boleh coba bulatan lain (gak instant-fail).
-5. **Reward card collection** — SVG-based, 3 tingkat rarity (Common/Rare/Legendary) beda gradient+border+badge+glow. **Batasan eksplisit yang udah disampein ke user**: gak bisa bikin ilustrasi karakter sedetail Sansu Ninja (pose/baju/aksesoris), maksimal bentuk geometris + gradient + efek glow/sparkle.
-
-**Yang BELUM diputusin (perlu dibahas sebelum mulai coding beneran)**:
-- Masuk sebagai mode baru di game mana? (kandidat kuat: MathVille, pola sama kayak Plane Mode jadi alternatif di Drive Mode picker — TAPI belum final)
-- Topik/chapter soal-nya dari mana? (kalau di MathVille, chapter mana; atau campur kayak Plane Mode's cross-game pool)
-- Entry point / cara masuk dari mana
-- Reward card: disimpen ke Firebase kayak progress lain, atau localStorage doang? Ada halaman "koleksi" terpisah?
+**Implementasi final (2026-08-05, `mathville/index.html`/`script.js`/`style.css`)**:
+- **Entry point**: icon 🥷 di topbar MathVille (`btn-ninja`, visibility sama kayak `btn-map`/`btn-drive` — hidden di landing/pair, muncul di semua screen lain) → `launchNinjaRunner()` → `#screen-ninja`.
+- **Karakter**: side-view ninja CSS (bukan top-down kayak Glass Bridge/Bo Bridge) — kaki+tangan gantian ayun pas `.running`, sword-guard idle (kaki freeze, pedang diangkat+wiggle) pas `.guard` (lagi jawab soal). ⚠️ **Gotcha yang ketemu & difix**: pedang punya z-index lebih rendah dari kepala/mask secara default, jadi pas rotasi ke pose guard dia ketutupan/invisible — fix-nya kasih `z-index:5` khusus di state `.guard .ninja-sword`.
+- **3 kartu subject per round**: Math (cream `#f0dcc4`, ikon lingkaran), Language & Arts (hijau `#c1e1c1`, ikon bintang), Science (biru `#c1d4f6`, ikon bintang) — tiap kartu independen di-random Easy/Medium/Hard (`NINJA_DIFFS[rand(0,2)]`, bisa Hard+Hard+Medium, gak fixed slot). Poin per tier: Easy 10, Medium 25, Hard 50 (`NINJA_PTS`).
+- **Sumber soal — numpang infrastruktur yang udah ada, gak bikin bank baru**:
+  - Math: `buildQuickMc(rollDriveQuestion(difficulty))` — sama generator Drive Mode/Plane Mode, BENERAN difficulty-aware.
+  - Language & Arts / Science: `pickFromPlanePool(planeLanguagePool / planeSolarPool)` — numpang cross-game pool yang tadinya dibangun buat Plane Mode (`ensurePlaneQuestionPools()`). ⚠️ **Simplifikasi yang didokumentasikan di kode**: pool ini gak ada tag difficulty, jadi buat 2 subject ini Easy/Medium/Hard cuma ngubah POIN doang (10/25/50), bukan soal yang beneran lebih susah — soal-nya sama aja regardless tier yang dipilih.
+- **Jawaban benar**: kartu soal kebelah diagonal 2 bagian (`.ninja-qhalf-a`/`.ninja-qhalf-b`, `clip-path` + animasi translate+rotate+fade berlawanan arah), poin nambah, lanjut ke kartu subject berikutnya.
+- **Jawaban salah**: bulatan jawaban goyang+merah sebentar (`.wrong-flash`), attempt dicatat ke `wrongLog`, langsung lanjut ke soal berikutnya (single-attempt per soal, bukan retry — biar round tetep fix 20 soal).
+- ⚠️ **Gotcha yang ketemu & difix**: soal cerita panjang (word problem, terutama yang baru ditambahin ke Addition & Subtraction) bikin card soal lebih tinggi dari perkiraan, dan posisi bulatan jawaban yang tadinya `position:absolute; top:134px` (fixed offset) numpuk DI ATAS teks soal buat card yang tinggi. Fix: bungkus qcard+bubbles dalam `.ninja-encounter` (flex-column, gak pakai fixed top offset), jadi bulatan otomatis ngikutin tinggi card berapapun.
+- **Musik**: `AIGBgm.playPlaneTrack()` (reuse track "game" yang lebih energik, sama yang dipake Plane Mode) pas masuk, `AIGBgm.playDefaultTrack()` pas keluar — user sempet nanya bisa pake lagu Squid Game asli, TAPI itu berhak cipta Netflix jadi gak bisa disourcing; solusinya reuse track yang udah ada, bukan generate/cari baru.
+- **20 soal per round**, HUD `#ninja-qnum`/`#ninja-score` real-time. Abis soal ke-20: overlay finish "🏁 Your journey has completed." + skor final + `saveChapterProgress("ninja-runner", 3, NINJA_WIN_XP=20)` (XP + Firebase progress, pola sama kayak Plane Mode win).
+- **Review bareng Bo**: overlay terpisah abis finish, cuma nampilin soal yang SALAH (dari `wrongLog`), satu-satu dengan Prev/Next (disabled di ujung), tampilin jawaban-kamu (merah) vs jawaban-benar (hijau). Kalau `wrongLog` kosong, tampilin pesan "Sempurna, gak ada yang salah!" tanpa nav Prev/Next. Bo pakai `icon-192.png` yang sama kayak avatar Bo lainnya (bukan `bo-face-transparent.png` yang di azkacraft — itu punya path khusus buat konteks lain).
+- Semua diverifikasi in-browser: 3 subject narik soal beneran dari sumber masing-masing, jawaban benar/salah lewat klik UI asli, guard pose+pedang keliatan, XP/Firebase progress kesimpen, finish+review (dengan salah maupun sempurna) jalan, zero console error.
 
 Referensi app yang dipakai buat riset: Sansu Ninja (App Store JP, `id838086772`), Todo Math (App Store US, `id666465255`).
 
