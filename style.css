@@ -756,7 +756,20 @@ body {
 .sc-game-card.lang { background: #f6c1e0; transform: rotate(-0.6deg); }
 .sc-game-card.solar { background: #c1e1c1; transform: rotate(0.6deg); }
 .sc-game-card.town { background: #f0dcc4; transform: rotate(-0.6deg); }
-.sc-game-card.focus { background: #e6d4f7; transform: rotate(0.6deg); }
+.sc-game-card.focus { background: #e6d4f7; transform: rotate(0.6deg); padding-bottom: 30px; overflow: hidden; }
+
+/* ---------- Focus Round card: decorative side-view ninja jog loop ---------- */
+.sc-focus-runner { position: absolute; left: 0; right: 0; bottom: 6px; height: 22px; overflow: hidden; pointer-events: none; }
+.sc-focus-ninja { position: absolute; bottom: 0; left: -22px; width: 18px; height: 22px; animation: scFocusNinjaRun 3.5s linear infinite; }
+@keyframes scFocusNinjaRun { from { left: -22px; } to { left: 100%; } }
+.sc-fn-torso { position: absolute; left: 5px; top: 6px; width: 8px; height: 11px; background: #2b3a55; border-radius: 3px; }
+.sc-fn-head { position: absolute; left: 5.5px; top: 0px; width: 7px; height: 7px; background: #f0b98d; border-radius: 50%; }
+.sc-fn-band { position: absolute; left: 4px; top: 1.5px; width: 9px; height: 2px; background: #e4572e; }
+.sc-fn-leg { position: absolute; top: 15px; width: 3px; height: 8px; background: #1c2740; border-radius: 2px; transform-origin: top center; }
+.sc-fn-leg.l1 { left: 6px; animation: scFocusLegA .28s ease-in-out infinite; }
+.sc-fn-leg.l2 { left: 10px; animation: scFocusLegB .28s ease-in-out infinite; }
+@keyframes scFocusLegA { 0%, 100% { transform: rotate(30deg); } 50% { transform: rotate(-30deg); } }
+@keyframes scFocusLegB { 0%, 100% { transform: rotate(-30deg); } 50% { transform: rotate(30deg); } }
 
 .sc-game-icon {
   width: 52px;
