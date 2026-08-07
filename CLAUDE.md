@@ -44,7 +44,7 @@ Hub berisi game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green M
 |---|---|---|
 | Bo Bridge (animasi) | Language & Arts, Storybook Trail (banner `#bo-bridge-banner`) | Bo jalan ngelewatin kaca, looping terus — jalan otomatis, gak perlu diapa-apain |
 | Glass Bridge Challenge (game) | TAP banner Bo Bridge yang sama | 10 kaca top-down, hold-to-move, soal MC Language & Arts per kaca, retak/jatuh+getar — lihat detail di bawah |
-| Roaming car+dino | Landing page hub | Murni dekorasi kejar-kejaran, tap mobil = shortcut ke Drive Mode MathVille |
+| Roaming car+ninja | Landing page hub | Murni dekorasi kejar-kejaran, tap mobil = shortcut ke Drive Mode MathVille. **Karakter yang ngejar sempet dino, diganti jadi ninja (2026-08-05)** matching MathVille's Ninja Runner — cuma swap SVG-nya doang (`#roam-dino-sprite`), id/class (`.dino-leg`/`.dino-leg-l`/`.dino-leg-r`) dan semua chase-AI JS-nya (`roamState.dino`, dll) SENGAJA gak diubah biar animasi jalan tetep sama persis. |
 
 ## Deploy
 
