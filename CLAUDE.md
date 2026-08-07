@@ -44,7 +44,8 @@ Hub berisi game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green M
 |---|---|---|
 | Bo Bridge (animasi) | Language & Arts, Storybook Trail (banner `#bo-bridge-banner`) | Bo jalan ngelewatin kaca, looping terus — jalan otomatis, gak perlu diapa-apain |
 | Glass Bridge Challenge (game) | TAP banner Bo Bridge yang sama | 10 kaca top-down, hold-to-move, soal MC Language & Arts per kaca, retak/jatuh+getar — lihat detail di bawah |
-| Roaming car+ninja | Landing page hub | Murni dekorasi kejar-kejaran, tap mobil = shortcut ke Drive Mode MathVille. **Karakter yang ngejar sempet dino, diganti jadi ninja (2026-08-05)** matching MathVille's Ninja Runner — cuma swap SVG-nya doang (`#roam-dino-sprite`), id/class (`.dino-leg`/`.dino-leg-l`/`.dino-leg-r`) dan semua chase-AI JS-nya (`roamState.dino`, dll) SENGAJA gak diubah biar animasi jalan tetep sama persis. |
+| Roaming car+dino | Landing page hub | Murni dekorasi kejar-kejaran, tap mobil = shortcut ke Drive Mode MathVille. **Sempet di-swap jadi ninja (2026-08-05), TAPI langsung di-revert balik ke dino** ("hahaha salah gw. tetep balikin ke dino") — jangan diulang lagi kecuali diminta eksplisit. |
+| Ninja jogging (side-view) | Card "Focus Round" doang, landing page hub | Dekorasi baru (2026-08-05) — ninja versi kecil lari horizontal loop di bagian bawah card Focus Round aja (bukan roam-layer chase yang di atas). CSS self-contained di `style.css` root hub (`.sc-focus-*`), gak numpang `mathville/style.css`. Murni dekorasi, seluruh card udah jadi link ke `focus-round/`. |
 
 ## Deploy
 
