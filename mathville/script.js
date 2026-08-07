@@ -4166,28 +4166,39 @@ function ninjaResolveEnemy() {
 // there for the next question in the same checkpoint).
 function ninjaSlashEnemy(removeEnemy) {
   const runner = $("ninja-runner");
-  runner.classList.add("stepping");
-  setTimeout(() => runner.classList.remove("stepping"), 200);
+  runner.classList.add("throwing");
+  setTimeout(() => runner.classList.remove("throwing"), 200);
 
-  const fx = document.createElement("div");
-  fx.className = "ninja-slash-fx";
-  $("ninja-run-lane").appendChild(fx);
-  setTimeout(() => fx.remove(), 300);
+  const kunai = document.createElement("div");
+  kunai.className = "ninja-kunai-fx";
+  $("ninja-run-lane").appendChild(kunai);
+  setTimeout(() => kunai.remove(), 200);
 
   const enemy = document.getElementById("ninja-enemy-el");
   if (!enemy) return;
-  if (removeEnemy) {
-    enemy.classList.add("sliced");
-    setTimeout(() => enemy.remove(), 350);
-    if (ninjaState.lives < NINJA_MAX_LIVES) {
-      ninjaState.lives += 1;
-      updateNinjaLivesHud();
-      showNinjaToast("❤️ +1 life!");
+
+  // Wait for the kunai's flight animation (.18s) to land before the
+  // impact flash + hit/kill effect -- keeps the visual hit in sync with
+  // the throw instead of resolving instantly.
+  setTimeout(() => {
+    const impact = document.createElement("div");
+    impact.className = "ninja-kunai-impact";
+    $("ninja-run-lane").appendChild(impact);
+    setTimeout(() => impact.remove(), 250);
+
+    if (removeEnemy) {
+      enemy.classList.add("sliced");
+      setTimeout(() => enemy.remove(), 350);
+      if (ninjaState.lives < NINJA_MAX_LIVES) {
+        ninjaState.lives += 1;
+        updateNinjaLivesHud();
+        showNinjaToast("❤️ +1 life!");
+      }
+    } else {
+      enemy.classList.add("hit-flash");
+      setTimeout(() => enemy.classList.remove("hit-flash"), 250);
     }
-  } else {
-    enemy.classList.add("hit-flash");
-    setTimeout(() => enemy.classList.remove("hit-flash"), 250);
-  }
+  }, 180);
 }
 
 function updateNinjaBossHp() {

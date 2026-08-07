@@ -1122,25 +1122,42 @@ button { font-family: inherit; }
 @keyframes ninjaObstacleDodged { to { transform: translateY(-30px) scale(1.3); opacity: 0; } }
 @keyframes ninjaObstacleBumped { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-6px); } 60% { transform: translateX(6px); } to { transform: translateX(0); opacity: 0; } }
 
-/* Melee slash on a correct answer -- see ninjaSlashEnemy(). Ninja steps
-   forward one beat, a quick white slash streak flashes across the "one
-   slash" gap, and the enemy either fully disappears (regular enemy, or a
-   boss's finishing hit) or just flashes/shakes without disappearing (a
-   boss's non-lethal hit, so it's still there for the next question). */
-.ninja-runner.stepping { transition: transform .15s ease-out; transform: translateX(18px); }
+/* Kunai throw on a correct answer -- see ninjaSlashEnemy(). Ninja stays put
+   and just flicks the sword forward (throw pose), a kunai flies across the
+   "one slash" gap and lands with an impact flash, then the enemy either
+   fully disappears (regular enemy, or a boss's finishing hit) or just
+   flashes/shakes without disappearing (a boss's non-lethal hit, so it's
+   still there for the next question). */
+.ninja-runner.throwing .ninja-sword { animation: ninjaThrowFlick .18s ease-out; }
+@keyframes ninjaThrowFlick {
+  0% { transform: rotate(15deg); }
+  40% { transform: rotate(-45deg); }
+  100% { transform: rotate(15deg); }
+}
 
-.ninja-slash-fx {
-  position: absolute; width: 70px; height: 6px; left: 70px; bottom: 66px;
-  background: linear-gradient(90deg, transparent, #fff, transparent);
-  transform: rotate(-35deg) scaleX(0); transform-origin: left center;
-  box-shadow: 0 0 10px 2px rgba(255,255,255,.9);
-  animation: ninjaSlashFx .25s ease-out forwards;
+.ninja-kunai-fx {
+  position: absolute; left: 70px; bottom: 66px; width: 16px; height: 4px;
+  background: linear-gradient(90deg, #9aa5b3, #d8dee6);
+  border-radius: 1px; box-shadow: 0 0 4px 1px rgba(255,255,255,.7);
+  animation: ninjaKunaiFly .18s linear forwards;
   z-index: 6;
 }
-@keyframes ninjaSlashFx {
-  0% { transform: rotate(-35deg) scaleX(0); opacity: 1; }
-  55% { transform: rotate(-35deg) scaleX(1); opacity: 1; }
-  100% { transform: rotate(-35deg) scaleX(1); opacity: 0; }
+@keyframes ninjaKunaiFly {
+  0% { left: 70px; transform: rotate(0deg); }
+  100% { left: 104px; transform: rotate(620deg); }
+}
+
+.ninja-kunai-impact {
+  position: absolute; left: 96px; bottom: 58px; width: 26px; height: 26px;
+  background: radial-gradient(circle, #fff, transparent 70%);
+  border-radius: 50%; transform: scale(0);
+  animation: ninjaKunaiImpact .22s ease-out forwards;
+  z-index: 6;
+}
+@keyframes ninjaKunaiImpact {
+  0% { transform: scale(0); opacity: 1; }
+  60% { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
 }
 
 .ninja-enemy.sliced { animation: ninjaEnemySliced .35s ease forwards !important; }
