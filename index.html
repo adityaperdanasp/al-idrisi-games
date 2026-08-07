@@ -23,28 +23,23 @@
 </head>
 <body>
 
-<!-- Decorative roaming car+ninja, hub landing screen only — the ninja
+<!-- Decorative roaming car+dino, hub landing screen only — the dino
      never actually catches the car (its own forward step is capped so
      it can't close the gap). Tapping the car jumps straight into Math
-     Race. Same top-down art as Math Race's own landing screen.
-     Character swapped from the original dino to a ninja (matching
-     MathVille's Ninja Runner mode) per explicit request -- same top-
-     down composition (body ellipse + head circle + legs poking out
-     below) and the SAME .dino-leg/.dino-leg-l/.dino-leg-r class names
-     so the existing chase-AI JS and roamLegSwing walk animation both
-     keep working completely untouched, only the SVG markup changed. -->
+     Race. Same top-down art as Math Race's own landing screen. -->
 <div id="roam-layer" class="roam-layer hidden" aria-hidden="true">
   <div id="roam-dino" class="roam-dino">
     <div class="roam-dino-shadow"></div>
     <div id="roam-dino-sprite" class="roam-dino-sprite">
       <svg viewBox="0 0 30 40" width="27" height="36">
-        <ellipse cx="15" cy="24" rx="9" ry="10" fill="#2B3A55" stroke="#1C2740" stroke-width="1.5" />
-        <rect class="dino-leg dino-leg-l" x="8" y="30" width="4" height="8" rx="2" fill="#1C2740" />
-        <rect class="dino-leg dino-leg-r" x="18" y="30" width="4" height="8" rx="2" fill="#1C2740" />
-        <circle cx="15" cy="10" r="8.5" fill="#F0B98D" stroke="#C67A3A" stroke-width="1.5" />
-        <rect x="6" y="7" width="18" height="4" fill="#E4572E" />
-        <rect x="10" y="11" width="10" height="4.5" rx="1.5" fill="#1C2740" />
-        <rect x="20.5" y="3" width="2.5" height="16" rx="1" fill="#D8DEE6" stroke="#9AA5B3" stroke-width="0.5" transform="rotate(20 21.75 11)" />
+        <path d="M15 39 Q9 34 15 29 Q21 34 15 39 Z" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.2" />
+        <ellipse cx="15" cy="24" rx="9" ry="10" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.5" />
+        <rect class="dino-leg dino-leg-l" x="4" y="27" width="4" height="8" rx="2" fill="#3F7A3D" />
+        <rect class="dino-leg dino-leg-r" x="22" y="27" width="4" height="8" rx="2" fill="#3F7A3D" />
+        <path d="M15 2 Q9 2.5 8.5 9 Q8 15 15 17.5 Q22 15 21.5 9 Q21 2.5 15 2 Z"
+              fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.5" />
+        <circle cx="9.3" cy="9.5" r="1.5" fill="#1B2B1A" />
+        <circle cx="20.7" cy="9.5" r="1.5" fill="#1B2B1A" />
       </svg>
     </div>
   </div>
