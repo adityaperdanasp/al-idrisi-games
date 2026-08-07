@@ -3968,13 +3968,39 @@ const NINJA_BOSS_TYPES = [
   { emoji: "🦂", name: "Scorpion Boss" }
 ];
 
+// Lives -- per explicit request, turns Ninja Runner from a zero-penalty
+// practice mode into one with real (but recoverable) risk. Losing all
+// lives before NINJA_TOTAL_Q questions are done ends the round early
+// (see ninjaGameOver) with whatever score/progress was made so far --
+// still saved/counted, per explicit choice, not a punishing wipe.
+const NINJA_START_LIVES = 3;
+const NINJA_MAX_LIVES = 5;
+
+// Deducts a life and updates the HUD. Callers are responsible for
+// checking ninjaState.lives <= 0 afterward and routing to ninjaGameOver()
+// at the right moment (immediately for the obstacle bump, after the
+// wrong-flash animation for a wrong answer) -- this helper only ever
+// touches the number, never navigates.
+function ninjaLoseLife() {
+  ninjaState.lives -= 1;
+  updateNinjaLivesHud();
+}
+
+function updateNinjaLivesHud() {
+  $("ninja-lives").textContent = "❤️".repeat(Math.max(0, ninjaState.lives)) + "🖤".repeat(NINJA_MAX_LIVES - Math.max(0, ninjaState.lives));
+}
+
 // Overall performance rank shown at finish (see ninjaComputeRank) --
 // deliberately reuses the same Twig Sprout/Star Ninja/Golden Sensei names
 // as the per-card difficulty badges, as a thematic "you achieved this
-// rank overall" callback rather than a separate vocabulary.
+// rank overall" callback rather than a separate vocabulary. Uses
+// totalAnswered (every answer given, including boss-fight retries that
+// don't advance qnum) rather than NINJA_TOTAL_Q as the denominator, since
+// a round can now end early via ninjaGameOver before reaching question 20.
 function ninjaComputeRank() {
-  const correct = NINJA_TOTAL_Q - ninjaState.wrongLog.length;
-  const accuracy = correct / NINJA_TOTAL_Q;
+  const totalAnswered = Math.max(1, ninjaState.totalAnswered);
+  const correct = totalAnswered - ninjaState.wrongLog.length;
+  const accuracy = correct / totalAnswered;
   if (accuracy >= 0.85 && ninjaState.hardCorrectCount >= 5) return { emoji: "🏆", label: "Golden Sensei" };
   if (accuracy >= 0.6) return { emoji: "⭐", label: "Star Ninja" };
   return { emoji: "🌱", label: "Twig Sprout" };
@@ -3991,7 +4017,8 @@ function launchNinjaRunner() {
   if (ninjaState && ninjaState.laneTimer) clearTimeout(ninjaState.laneTimer); // a stale timer from a previous run must not fire into this fresh state
   ninjaState = {
     qnum: 1, score: 0, streak: 0, hardCorrectCount: 0, wrongLog: [], ended: false, laneTimer: null,
-    pendingBoss: false, inBoss: false, bossHp: 0, bossesDefeated: 0
+    pendingBoss: false, inBoss: false, bossHp: 0, bossesDefeated: 0,
+    lives: NINJA_START_LIVES, totalAnswered: 0
   };
   $("ninja-streak").classList.add("hidden");
   $("ninja-boss-hp").classList.add("hidden");
@@ -4000,6 +4027,7 @@ function launchNinjaRunner() {
   $("ninja-qnum").textContent = `Soal 1/${NINJA_TOTAL_Q}`;
   $("ninja-score").textContent = "⭐ 0";
   updateNinjaBestHud();
+  updateNinjaLivesHud();
   ninjaStartRunLane();
 }
 
@@ -4079,9 +4107,19 @@ function ninjaStartRunLane() {
 
 function ninjaResolveObstacle() {
   const obstacle = document.getElementById("ninja-obstacle-el");
+  let bumped = false;
   if (obstacle) {
+    bumped = !ninjaState.obstacleDodged;
     obstacle.classList.add(ninjaState.obstacleDodged ? "dodged" : "bumped");
     setTimeout(() => obstacle.remove(), 350);
+  }
+  if (bumped) {
+    ninjaLoseLife();
+    if (ninjaState.lives <= 0) {
+      // let the bump animation read before cutting to the finish screen
+      ninjaState.laneTimer = setTimeout(ninjaGameOver, 400);
+      return;
+    }
   }
   const enemy = document.createElement("div");
   enemy.id = "ninja-enemy-el";
@@ -4141,6 +4179,11 @@ function ninjaSlashEnemy(removeEnemy) {
   if (removeEnemy) {
     enemy.classList.add("sliced");
     setTimeout(() => enemy.remove(), 350);
+    if (ninjaState.lives < NINJA_MAX_LIVES) {
+      ninjaState.lives += 1;
+      updateNinjaLivesHud();
+      showNinjaToast("❤️ +1 life!");
+    }
   } else {
     enemy.classList.add("hit-flash");
     setTimeout(() => enemy.classList.remove("hit-flash"), 250);
@@ -4237,6 +4280,7 @@ function ninjaPickCard(subjectKey, difficulty) {
       const isCorrect = labelsEqual(opt, q.correctLabel);
       if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "ninja-runner", isCorrect);
       if (isCorrect) {
+        ninjaState.totalAnswered += 1;
         const prevBonus = ninjaStreakBonus(ninjaState.streak);
         ninjaState.streak += 1;
         const bonus = ninjaStreakBonus(ninjaState.streak);
@@ -4258,11 +4302,14 @@ function ninjaPickCard(subjectKey, difficulty) {
           ninjaSliceQuestion(q.prompt, () => ninjaAdvance());
         }
       } else {
+        ninjaState.totalAnswered += 1;
         ninjaState.streak = 0;
         updateNinjaStreakHud();
         ninjaState.wrongLog.push({ prompt: q.prompt, subject: NINJA_SUBJECTS[subjectKey], your: opt, correct: q.correctLabel });
         btn.classList.add("wrong-flash");
+        ninjaLoseLife();
         setTimeout(() => {
+          if (ninjaState.lives <= 0) { ninjaGameOver(); return; }
           if (ninjaState.inBoss) renderNinjaGates(); // boss fight isn't over -- try again, doesn't advance qnum
           else ninjaAdvance();
         }, 550);
@@ -4295,6 +4342,21 @@ function ninjaAdvance() {
 const NINJA_WIN_XP = 20;
 
 function ninjaShowFinish() {
+  $("ninja-finish-title").textContent = "🏁 Your journey has completed.";
+  $("ninja-finish-sub").textContent = `${NINJA_TOTAL_Q} soal selesai dijawab!`;
+  ninjaFinishCommon();
+}
+
+// Lives hit 0 before finishing all the questions -- still ends the run and
+// still saves score/XP/rank, just with a distinct "kalah" title/sub instead
+// of the normal completion copy.
+function ninjaGameOver() {
+  $("ninja-finish-title").textContent = "💀 Nyawa habis!";
+  $("ninja-finish-sub").textContent = `Berhasil jawab ${ninjaState.totalAnswered} soal sebelum kalah.`;
+  ninjaFinishCommon();
+}
+
+function ninjaFinishCommon() {
   ninjaState.ended = true;
   ninjaSetGuard(false);
   $("ninja-runner").classList.remove("running");

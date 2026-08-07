@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=62" />
+<link rel="stylesheet" href="style.css?v=63" />
 </head>
 <body>
 
@@ -649,6 +649,7 @@
           <span class="drive-hud-pill" id="ninja-qnum">Soal 1/20</span>
           <span class="drive-hud-pill" id="ninja-score">⭐ 0</span>
           <span class="drive-hud-pill" id="ninja-best">🏅 0</span>
+          <span class="drive-hud-pill" id="ninja-lives">❤️❤️❤️🖤🖤</span>
           <span class="drive-hud-pill ninja-streak-pill hidden" id="ninja-streak">🔥 0</span>
         </div>
       </div>
@@ -689,8 +690,8 @@
 
     <div class="ninja-overlay hidden" id="ninja-finish-overlay">
       <div class="ninja-finish-card">
-        <div class="ninja-finish-title">🏁 Your journey has completed.</div>
-        <div class="ninja-finish-sub">20 soal selesai dijawab!</div>
+        <div class="ninja-finish-title" id="ninja-finish-title">🏁 Your journey has completed.</div>
+        <div class="ninja-finish-sub" id="ninja-finish-sub">20 soal selesai dijawab!</div>
         <div class="ninja-finish-score" id="ninja-final-score">0 poin</div>
         <div class="ninja-finish-best" id="ninja-final-best">Best: 0</div>
         <div class="ninja-finish-badge" id="ninja-finish-badge"></div>
@@ -718,6 +719,6 @@
 <script src="questions.js?v=3"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=75"></script>
+<script src="script.js?v=76"></script>
 </body>
 </html>
