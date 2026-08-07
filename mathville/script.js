@@ -171,10 +171,12 @@ function showScreen(id) {
   const hideNav = id === "screen-landing" || id === "screen-pair";
   $("btn-map").classList.toggle("hidden", hideNav);
   $("btn-drive").classList.toggle("hidden", hideNav);
+  $("btn-ninja").classList.toggle("hidden", hideNav);
   // Screens that already have their own Bo (Drive Mode's car, the reward
   // screen's AI Tutor card) or where it'd just be clutter (landing, pair
-  // setup, Plane Mode) hide the persistent widget instead.
-  const hideGameBo = ["screen-landing", "screen-pair", "screen-drive", "screen-plane", "screen-reward"].includes(id);
+  // setup, Plane Mode, Ninja Runner has its own review-with-Bo overlay)
+  // hide the persistent widget instead.
+  const hideGameBo = ["screen-landing", "screen-pair", "screen-drive", "screen-plane", "screen-reward", "screen-ninja"].includes(id);
   const gameBo = $("game-bo");
   if (gameBo) gameBo.classList.toggle("hidden", hideGameBo);
   // The map's width can only be measured once the screen is actually
@@ -3878,4 +3880,194 @@ if (pendingJoinCode) {
   $("join-code-input").value = pendingJoinCode;
   showScreen("screen-pair");
 }
+
+/* =================================================================
+   NINJA RUNNER (cross-subject runner mode, Sansu Ninja-inspired)
+   -----------------------------------------------------------------
+   Character auto-runs; each round shows 3 subject cards (Math/
+   Language & Arts/Science), each independently randomized to Easy/
+   Medium/Hard (so a round might be Hard+Hard+Medium, never fixed
+   slots) -- kids pick by SUBJECT they want, not by difficulty. Picking
+   a card pauses the run (character switches to a sword-guard idle,
+   legs freeze, blade wiggles) and shows one MC question; a correct
+   answer slices the question card itself in half diagonally, a wrong
+   answer just flashes red and moves on (single attempt per question,
+   keeps the round a fixed 20 questions long). Finishes with a score
+   screen, then an optional Bo-led review of only the questions
+   answered wrong, paginated one at a time.
+
+   Question sourcing -- deliberately reuses existing infrastructure,
+   no new banks:
+   - Math: rollDriveQuestion(difficulty) + buildQuickMc(), same
+     generator Drive Mode/Plane Mode use -- genuinely difficulty-aware.
+   - Language & Arts / Science: ensurePlaneQuestionPools()'s existing
+     cross-game pools (built for Plane Mode). ⚠️ Known simplification:
+     those pools have no difficulty tags, so for these two subjects
+     Easy/Medium/Hard only changes the POINT VALUE (10/25/50), not the
+     actual question difficulty -- same pool regardless of tier picked.
+
+   Entirely separate state from Drive Mode/Plane Mode -- no shared
+   code beyond the question-pool helpers above and showScreen().
+   ================================================================= */
+const NINJA_TOTAL_Q = 20;
+const NINJA_PTS = { easy: 10, medium: 25, hard: 50 };
+const NINJA_DIFFS = ["easy", "medium", "hard"];
+const NINJA_SUBJECTS = { math: "MATH", lang: "LANG & ARTS", sci: "SCIENCE" };
+let ninjaState = null;
+
+function launchNinjaRunner() {
+  ensurePlaneQuestionPools();
+  showScreen("screen-ninja");
+  if (window.AIGBgm && AIGBgm.playPlaneTrack) AIGBgm.playPlaneTrack(); // reuse Plane Mode's energetic track (per explicit request instead of new/copyrighted music)
+  ninjaState = { qnum: 1, score: 0, wrongLog: [], ended: false };
+  $("ninja-finish-overlay").classList.add("hidden");
+  $("ninja-review-overlay").classList.add("hidden");
+  $("ninja-qnum").textContent = `Soal 1/${NINJA_TOTAL_Q}`;
+  $("ninja-score").textContent = "⭐ 0";
+  renderNinjaGates();
+}
+
+function ninjaSetGuard(on) {
+  const runner = $("ninja-runner");
+  runner.classList.toggle("guard", on);
+  runner.classList.toggle("running", !on);
+}
+
+function ninjaBuildQuestion(subjectKey, difficulty) {
+  if (subjectKey === "math") return buildQuickMc(rollDriveQuestion(difficulty));
+  const pool = subjectKey === "lang" ? planeLanguagePool : planeSolarPool;
+  return pickFromPlanePool(pool) || buildQuickMc(rollDriveQuestion(difficulty)); // pool not ready/empty -- fall back to math rather than block the round
+}
+
+function renderNinjaGates() {
+  ninjaSetGuard(false);
+  const gates = $("ninja-gates");
+  gates.innerHTML = "";
+  gates.classList.remove("hidden");
+  $("ninja-qcard").classList.add("hidden");
+  $("ninja-bubbles").classList.add("hidden");
+  $("ninja-hint").textContent = "Pilih subject (kesulitan tiap kartu acak):";
+
+  Object.keys(NINJA_SUBJECTS).forEach(key => {
+    const diff = NINJA_DIFFS[rand(0, 2)];
+    const card = document.createElement("button");
+    card.className = `ninja-card ${key}${diff === "hard" ? " diff-hard" : ""}`;
+    card.innerHTML = `
+      <div class="ninja-inner-frame"><div class="ninja-face-wrap">🙂</div></div>
+      <div class="ninja-card-title">${NINJA_SUBJECTS[key]}</div>
+      <div class="ninja-diff-badge ${diff}">${diff.toUpperCase()}</div>
+    `;
+    card.addEventListener("click", () => ninjaPickCard(key, diff));
+    gates.appendChild(card);
+  });
+}
+
+function ninjaPickCard(subjectKey, difficulty) {
+  $("ninja-gates").classList.add("hidden");
+  ninjaSetGuard(true);
+  const q = ninjaBuildQuestion(subjectKey, difficulty);
+  const qcard = $("ninja-qcard");
+  qcard.classList.remove("hidden");
+  qcard.innerHTML = `<span>${q.prompt}</span>`;
+
+  const bubbles = $("ninja-bubbles");
+  bubbles.innerHTML = "";
+  bubbles.classList.remove("hidden");
+  $("ninja-hint").textContent = `Jawab soal ${NINJA_SUBJECTS[subjectKey]} (${difficulty.toUpperCase()}):`;
+
+  shuffle(q.options).forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "ninja-rbubble";
+    btn.textContent = opt;
+    btn.addEventListener("click", () => {
+      const isCorrect = labelsEqual(opt, q.correctLabel);
+      if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "ninja-runner", isCorrect);
+      if (isCorrect) {
+        ninjaState.score += NINJA_PTS[difficulty];
+        $("ninja-score").textContent = `⭐ ${ninjaState.score}`;
+        ninjaSliceQuestion(q.prompt);
+      } else {
+        ninjaState.wrongLog.push({ prompt: q.prompt, subject: NINJA_SUBJECTS[subjectKey], your: opt, correct: q.correctLabel });
+        btn.classList.add("wrong-flash");
+        setTimeout(() => ninjaAdvance(), 550);
+      }
+    });
+    bubbles.appendChild(btn);
+  });
+}
+
+function ninjaSliceQuestion(promptText) {
+  $("ninja-bubbles").classList.add("hidden");
+  $("ninja-hint").textContent = "";
+  $("ninja-qcard").innerHTML = `
+    <div class="ninja-qhalf ninja-qhalf-a">${promptText}</div>
+    <div class="ninja-qhalf ninja-qhalf-b">${promptText}</div>
+  `;
+  setTimeout(() => ninjaAdvance(), 550);
+}
+
+function ninjaAdvance() {
+  ninjaState.qnum++;
+  if (ninjaState.qnum > NINJA_TOTAL_Q) { ninjaShowFinish(); return; }
+  $("ninja-qnum").textContent = `Soal ${ninjaState.qnum}/${NINJA_TOTAL_Q}`;
+  renderNinjaGates();
+}
+
+const NINJA_WIN_XP = 20;
+
+function ninjaShowFinish() {
+  ninjaState.ended = true;
+  ninjaSetGuard(false);
+  $("ninja-runner").classList.remove("running");
+  $("ninja-gates").classList.add("hidden");
+  $("ninja-qcard").classList.add("hidden");
+  $("ninja-bubbles").classList.add("hidden");
+  $("ninja-hint").textContent = "";
+  $("ninja-final-score").textContent = `${ninjaState.score} poin`;
+  $("ninja-finish-overlay").classList.remove("hidden");
+  saveChapterProgress("ninja-runner", 3, NINJA_WIN_XP);
+}
+
+let ninjaReviewIdx = 0;
+function ninjaShowReview() {
+  $("ninja-finish-overlay").classList.add("hidden");
+  $("ninja-review-overlay").classList.remove("hidden");
+  const prevBtn = $("ninja-review-prev"), nextBtn = $("ninja-review-next");
+  if (ninjaState.wrongLog.length === 0) {
+    $("ninja-review-title").textContent = "Bo here! Sempurna, gak ada yang salah!";
+    $("ninja-review-qbox").innerHTML = `<div class="ninja-review-q">🎉 Semua soal kejawab benar!</div>`;
+    $("ninja-review-count").textContent = "";
+    prevBtn.classList.add("hidden");
+    nextBtn.classList.add("hidden");
+    return;
+  }
+  prevBtn.classList.remove("hidden");
+  nextBtn.classList.remove("hidden");
+  ninjaReviewIdx = 0;
+  ninjaRenderReviewCard();
+}
+
+function ninjaRenderReviewCard() {
+  const item = ninjaState.wrongLog[ninjaReviewIdx];
+  $("ninja-review-title").textContent = `Bo here! Yuk kita bahas (${item.subject}):`;
+  $("ninja-review-qbox").innerHTML = `
+    <div class="ninja-review-q">${item.prompt}</div>
+    <div class="ninja-review-your">Jawaban kamu: ${item.your}</div>
+    <div class="ninja-review-correct">Jawaban benar: ${item.correct}</div>
+  `;
+  $("ninja-review-count").textContent = `${ninjaReviewIdx + 1} / ${ninjaState.wrongLog.length}`;
+  $("ninja-review-prev").disabled = ninjaReviewIdx === 0;
+  $("ninja-review-next").disabled = ninjaReviewIdx === ninjaState.wrongLog.length - 1;
+}
+
+$("ninja-review-prev").addEventListener("click", () => { if (ninjaReviewIdx > 0) { ninjaReviewIdx--; ninjaRenderReviewCard(); } });
+$("ninja-review-next").addEventListener("click", () => { if (ninjaReviewIdx < ninjaState.wrongLog.length - 1) { ninjaReviewIdx++; ninjaRenderReviewCard(); } });
+$("ninja-review-btn").addEventListener("click", ninjaShowReview);
+$("ninja-review-done").addEventListener("click", () => {
+  $("ninja-review-overlay").classList.add("hidden");
+  if (window.AIGBgm && AIGBgm.playDefaultTrack) AIGBgm.playDefaultTrack();
+  showScreen("screen-map");
+});
+
+$("btn-ninja").addEventListener("click", launchNinjaRunner);
 

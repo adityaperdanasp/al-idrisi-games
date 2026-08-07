@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=53" />
+<link rel="stylesheet" href="style.css?v=56" />
 </head>
 <body>
 
@@ -40,6 +40,7 @@
   <button id="btn-home" class="icon-btn" aria-label="Home" title="Home">🏠</button>
   <div id="btn-map" class="icon-btn hidden" aria-label="Map" title="Map">🗺️</div>
   <div id="btn-drive" class="icon-btn hidden" aria-label="Drive Mode" title="Drive Mode">🚗</div>
+  <div id="btn-ninja" class="icon-btn hidden" aria-label="Ninja Runner" title="Ninja Runner">🥷</div>
   <div class="topbar-spacer"></div>
   <div id="xp-badge" class="xp-badge"><span>✨</span><span id="xp-total">0</span> XP</div>
 </header>
@@ -628,12 +629,79 @@
     <button class="btn btn-primary btn-cta" id="btn-reward-continue">Continue</button>
   </section>
 
+  <!-- ===============================================================
+       NINJA RUNNER — cross-subject runner mode (Sansu Ninja-inspired).
+       Character auto-runs; player picks one of 3 subject cards (Math/
+       Language & Arts/Science, each independently randomized Easy/
+       Medium/Hard) each round, answers an MC question while the
+       character holds guard, and a correct answer slices the question
+       card itself in half. 20 questions per round, then a finish
+       screen + a Bo-led review of anything answered wrong. Reuses
+       Plane Mode's cross-game question pools (ensurePlaneQuestionPools)
+       for Language/Science and rollDriveQuestion for Math -- no new
+       question banks. Entirely separate state -- no shared code with
+       Drive Mode/Plane Mode beyond those question-pool helpers.
+       =============================================================== -->
+  <section id="screen-ninja" class="screen">
+    <div class="map-header drive-header">
+      <div>
+        <h2 class="title-lg">Ninja Runner</h2>
+        <div class="drive-hud">
+          <span class="drive-hud-pill" id="ninja-qnum">Soal 1/20</span>
+          <span class="drive-hud-pill" id="ninja-score">⭐ 0</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="ninja-world" class="ninja-world">
+      <div class="ninja-ground"></div>
+
+      <div class="ninja-runner running" id="ninja-runner">
+        <div class="ninja-leg l1"></div><div class="ninja-leg l2"></div>
+        <div class="ninja-torso"></div><div class="ninja-head"></div>
+        <div class="ninja-band"></div><div class="ninja-mask"></div>
+        <div class="ninja-sword"></div>
+      </div>
+
+      <div class="ninja-gate-row" id="ninja-gates"></div>
+
+      <div class="ninja-encounter">
+        <div class="ninja-qcard hidden" id="ninja-qcard"></div>
+        <div class="ninja-bubbles hidden" id="ninja-bubbles"></div>
+      </div>
+    </div>
+
+    <div class="ninja-hint" id="ninja-hint">Pilih subject (kesulitan tiap kartu acak):</div>
+
+    <div class="ninja-overlay hidden" id="ninja-finish-overlay">
+      <div class="ninja-finish-card">
+        <div class="ninja-finish-title">🏁 Your journey has completed.</div>
+        <div class="ninja-finish-sub">20 soal selesai dijawab!</div>
+        <div class="ninja-finish-score" id="ninja-final-score">0 poin</div>
+        <button class="btn btn-primary" id="ninja-review-btn">Lihat Review bareng Bo →</button>
+      </div>
+    </div>
+
+    <div class="ninja-overlay hidden" id="ninja-review-overlay">
+      <div class="ninja-review-card">
+        <img class="ninja-review-bo" src="../icon-192.png" alt="Bo">
+        <div class="ninja-review-title" id="ninja-review-title">Bo here! Yuk kita bahas...</div>
+        <div class="ninja-review-qbox" id="ninja-review-qbox"></div>
+        <div class="ninja-review-nav">
+          <button class="btn btn-secondary" id="ninja-review-prev">← Prev</button>
+          <span class="ninja-review-count" id="ninja-review-count"></span>
+          <button class="btn btn-secondary" id="ninja-review-next">Next →</button>
+        </div>
+        <button class="btn btn-primary ninja-review-done" id="ninja-review-done">Selesai</button>
+      </div>
+    </div>
+  </section>
 
 </main>
 
 <script src="questions.js?v=3"></script>
 <script src="generators.js?v=2"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=66"></script>
+<script src="script.js?v=67"></script>
 </body>
 </html>

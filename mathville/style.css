@@ -1021,3 +1021,123 @@ button { font-family: inherit; }
 
 .mp-result-row.me { border: 2px solid var(--wood); }
 
+/* ---------- Ninja Runner (cross-subject runner mode) ---------- */
+.ninja-world {
+  position: relative; width: 100%; height: calc(100vh - 175px); min-height: 380px;
+  margin-top: 8px; border-radius: 20px; overflow: hidden;
+  background: linear-gradient(180deg, #fdf3e0 0%, #f6e3ba 100%);
+  box-shadow: inset 0 0 0 3px var(--taupe);
+}
+.ninja-ground {
+  position: absolute; left: 0; right: 0; bottom: 40px; height: 4px;
+  background: repeating-linear-gradient(90deg, #d9b876 0 24px, transparent 24px 48px);
+  animation: ninjaGroundScroll .5s linear infinite;
+}
+@keyframes ninjaGroundScroll { from { background-position-x: 0; } to { background-position-x: -48px; } }
+
+.ninja-runner { position: absolute; left: 24px; bottom: 44px; width: 54px; height: 90px; z-index: 3; }
+.ninja-runner.running { animation: ninjaBob .3s ease-in-out infinite; }
+@keyframes ninjaBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.ninja-torso { position: absolute; left: 16px; top: 18px; width: 24px; height: 32px; background: #2b3a55; border-radius: 8px; z-index: 2; }
+.ninja-head { position: absolute; left: 17px; top: -4px; width: 22px; height: 22px; background: #f0b98d; border-radius: 50%; z-index: 3; }
+.ninja-band { position: absolute; left: 14px; top: 3px; width: 28px; height: 6px; background: #e4572e; z-index: 4; }
+.ninja-mask { position: absolute; left: 20px; top: 10px; width: 16px; height: 7px; background: #1c2740; z-index: 4; }
+.ninja-sword {
+  position: absolute; left: 38px; top: 6px; width: 4px; height: 26px;
+  background: linear-gradient(180deg, #d8dee6, #9aa5b3); border-radius: 2px;
+  transform-origin: bottom center; transform: rotate(15deg); z-index: 2;
+}
+.ninja-runner.guard .ninja-sword {
+  animation: ninjaSwordWiggle .18s ease-in-out infinite;
+  transform: rotate(-60deg); left: 34px; top: -2px; z-index: 5;
+}
+@keyframes ninjaSwordWiggle { 0%, 100% { transform: rotate(-70deg); } 50% { transform: rotate(-50deg); } }
+.ninja-leg { position: absolute; top: 48px; width: 8px; height: 28px; background: #1c2740; border-radius: 4px; transform-origin: top center; z-index: 1; }
+.ninja-leg.l1 { left: 18px; } .ninja-leg.l2 { left: 30px; }
+.ninja-runner.running .l1 { animation: ninjaLegA .3s ease-in-out infinite; }
+.ninja-runner.running .l2 { animation: ninjaLegB .3s ease-in-out infinite; }
+@keyframes ninjaLegA { 0%, 100% { transform: rotate(28deg); } 50% { transform: rotate(-28deg); } }
+@keyframes ninjaLegB { 0%, 100% { transform: rotate(-28deg); } 50% { transform: rotate(28deg); } }
+.ninja-runner.guard .ninja-leg { transform: rotate(0deg) !important; animation: none !important; }
+
+.ninja-gate-row { position: absolute; top: 20px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 4; padding: 0 8px; }
+.ninja-card {
+  width: 30%; max-width: 130px; height: 190px; border-radius: 16px; cursor: pointer;
+  padding: 0; position: relative; transition: transform .12s ease; border: none;
+}
+.ninja-card:active { transform: scale(.96); }
+.ninja-card.math { background: linear-gradient(180deg, #f6ead8, #f0dcc4); border: 3px solid #c1793e; }
+.ninja-card.lang { background: linear-gradient(180deg, #e3f2e3, #c1e1c1); border: 3px solid #4f9a4f; }
+.ninja-card.sci  { background: linear-gradient(180deg, #dce8f9, #c1d4f6); border: 3px solid #5b7fd6; }
+.ninja-card.diff-hard { box-shadow: 0 0 14px 3px rgba(246, 185, 59, .6); }
+.ninja-inner-frame {
+  position: absolute; left: 6px; top: 6px; right: 6px; height: 116px; border-radius: 12px;
+  background: #fffaf0; display: flex; align-items: center; justify-content: center;
+}
+.ninja-face-wrap { width: 66px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 26px; }
+.ninja-card.math .ninja-face-wrap { background: #c1793e; border-radius: 50%; }
+.ninja-card.lang .ninja-face-wrap { background: #4f9a4f; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.ninja-card.sci .ninja-face-wrap  { background: #5b7fd6; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.ninja-card-title { text-align: center; font: 800 13px "Baloo 2", sans-serif; color: var(--ink); margin-top: 128px; }
+.ninja-diff-badge {
+  display: block; margin: 4px auto 0; width: fit-content; padding: 2px 9px; border-radius: 8px;
+  font: 800 9px "Baloo 2", sans-serif; color: #fff;
+}
+.ninja-diff-badge.easy { background: #7a9a89; }
+.ninja-diff-badge.medium { background: #c9821f; }
+.ninja-diff-badge.hard { background: #b53d18; }
+
+.ninja-encounter {
+  position: absolute; top: 20px; left: 0; right: 0; bottom: 100px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 0 12px; z-index: 6; overflow-y: auto;
+}
+.ninja-qcard {
+  position: relative; flex-shrink: 0;
+  background: var(--card); border: 3px solid #e4572e; border-radius: 14px; padding: 14px 20px;
+  font: 800 17px "Baloo 2", sans-serif; color: var(--ink); box-shadow: 0 4px 0 rgba(0,0,0,.1);
+  text-align: center; max-width: 320px;
+}
+.ninja-qhalf {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--card); border-radius: 14px; padding: 14px;
+}
+.ninja-qhalf-a { clip-path: polygon(0 0, 100% 0, 0 100%); animation: ninjaSliceA .5s ease forwards; }
+.ninja-qhalf-b { clip-path: polygon(100% 0, 100% 100%, 0 100%); animation: ninjaSliceB .5s ease forwards; }
+@keyframes ninjaSliceA { to { transform: translate(-40px, -30px) rotate(-18deg); opacity: 0; } }
+@keyframes ninjaSliceB { to { transform: translate(40px, 30px) rotate(18deg); opacity: 0; } }
+
+.ninja-bubbles { flex-shrink: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 0 12px; }
+.ninja-rbubble {
+  min-width: 50px; height: 44px; padding: 0 10px; border-radius: 22px; border: none; cursor: pointer;
+  background: linear-gradient(160deg, #ffd166, #f4a531); color: #4a2e00; font: 800 14px "Baloo 2", sans-serif;
+  box-shadow: 0 3px 0 #c9821f;
+}
+.ninja-rbubble:active { transform: translateY(2px); }
+.ninja-rbubble.wrong-flash { animation: ninjaShake .3s ease; background: linear-gradient(160deg, #f28b82, #d9534f); color: #fff; }
+@keyframes ninjaShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+.ninja-hint { text-align: center; font: 700 13px "Baloo 2", sans-serif; color: var(--ink-soft); margin-top: 8px; }
+
+.ninja-overlay {
+  position: fixed; inset: 0; background: rgba(43,31,20,.75); z-index: 50;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.ninja-finish-card, .ninja-review-card {
+  background: var(--card); border-radius: 20px; padding: 24px 26px; text-align: center; max-width: 340px; width: 100%;
+}
+.ninja-finish-title { font: 800 20px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 6px; }
+.ninja-finish-sub { font: 700 14px "Baloo 2", sans-serif; color: var(--ink-soft); margin-bottom: 16px; }
+.ninja-finish-score { font: 800 30px "Baloo 2", sans-serif; color: #c9821f; margin-bottom: 18px; }
+
+.ninja-review-bo { width: 56px; height: 56px; border-radius: 50%; margin-bottom: 6px; }
+.ninja-review-title { font: 800 15px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 12px; }
+.ninja-review-qbox { background: var(--cream); border: 2px solid var(--taupe); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+.ninja-review-q { font: 800 15px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 8px; }
+.ninja-review-your { font: 700 13px "Baloo 2", sans-serif; color: var(--bad); }
+.ninja-review-correct { font: 700 13px "Baloo 2", sans-serif; color: var(--good); }
+.ninja-review-nav { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 14px; }
+.ninja-review-nav .btn { padding: 8px 16px; font-size: 13px; }
+.ninja-review-count { font: 700 12px "Baloo 2", sans-serif; color: var(--ink-soft); }
+.ninja-review-done { width: 100%; }
+
