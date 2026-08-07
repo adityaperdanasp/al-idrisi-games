@@ -32,15 +32,23 @@
   function genPlaceValue(difficulty) {
     const DIGIT_RANGE = { easy: [2, 3], medium: [3, 5], hard: [4, 7] };
     const [minD, maxD] = DIGIT_RANGE[difficulty] || DIGIT_RANGE.hard;
-    let digit, num, idx, digitsCount, power;
+    let digit, num, idx, digitsCount, power, numStr;
     do {
       digitsCount = rand(minD, maxD);
       num = randDigits(digitsCount);
-      const digitsArr = String(num).split("").map(Number);
+      numStr = String(num);
+      const digitsArr = numStr.split("").map(Number);
       idx = rand(0, digitsArr.length - 1);
       digit = digitsArr[idx];
       power = digitsArr.length - 1 - idx;
-    } while (digit === 0);
+      // Reject a 0 digit (no place-value question asks about a zero) AND
+      // reject any digit that repeats elsewhere in the number -- e.g.
+      // asking "what's the value of the 3 in 393" is ambiguous since 3
+      // shows up twice. Same guard as buildPlaceValueStep() in script.js
+      // (mathville's own Place Value chapter) -- this generator feeds
+      // Drive Mode/Plane Mode/Ninja Runner's quick quizzes and didn't
+      // have the same protection.
+    } while (digit === 0 || numStr.indexOf(String(digit)) !== numStr.lastIndexOf(String(digit)));
     const value = digit * Math.pow(10, power);
     return { prompt: `What is the value of the digit ${digit} in ${fmt(num)}?`, answer: fmt(value) };
   }
