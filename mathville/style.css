@@ -1119,6 +1119,18 @@ button { font-family: inherit; }
 @keyframes ninjaObstacleDodged { to { transform: translateY(-30px) scale(1.3); opacity: 0; } }
 @keyframes ninjaObstacleBumped { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-6px); } 60% { transform: translateX(6px); } to { transform: translateX(0); opacity: 0; } }
 
+/* Streak bonus HUD pill + toast -- see ninjaStreakBonus()/updateNinjaStreakHud() */
+.ninja-streak-pill {
+  background: linear-gradient(135deg, #ffb347, #e4572e) !important;
+  color: #fff !important;
+  animation: ninjaStreakPulse 1s ease-in-out infinite;
+}
+@keyframes ninjaStreakPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 2px 4px rgba(59,42,26,.12); }
+  50% { transform: scale(1.08); box-shadow: 0 2px 10px rgba(228,87,46,.5); }
+}
+.ninja-toast-good { background: #e4572e; }
+
 .ninja-jump-btn {
   position: absolute; bottom: 20px; right: 20px; z-index: 7;
   padding: 12px 18px; border: none; border-radius: 14px; cursor: pointer;

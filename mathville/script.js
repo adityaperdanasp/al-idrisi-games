@@ -3910,6 +3910,41 @@ if (pendingJoinCode) {
    ================================================================= */
 const NINJA_TOTAL_Q = 20;
 const NINJA_PTS = { easy: 10, medium: 25, hard: 50 };
+// Streak bonus -- consecutive correct answers (across any subject/
+// difficulty) add extra points on top of the question's own NINJA_PTS
+// value, tiered so hitting each milestone feels like a small celebration
+// rather than a smooth ramp. Resets to 0 on any wrong answer.
+// { streak: bonus } -- looked up via the highest key <= current streak.
+const NINJA_STREAK_BONUS_TIERS = [[3, 5], [5, 15], [10, 30]];
+function ninjaStreakBonus(streak) {
+  let bonus = 0;
+  for (const [need, pts] of NINJA_STREAK_BONUS_TIERS) if (streak >= need) bonus = pts;
+  return bonus;
+}
+
+// Shown once the streak reaches 2 (one away from the first bonus tier) so
+// it reads as "building toward something" rather than appearing only
+// once a bonus is already active.
+function updateNinjaStreakHud() {
+  const el = $("ninja-streak");
+  if (ninjaState.streak >= 2) {
+    el.textContent = `🔥 ${ninjaState.streak}`;
+    el.classList.remove("hidden");
+  } else {
+    el.classList.add("hidden");
+  }
+}
+
+// Same positioning/animation as showPlaneToast, own color + parent
+// (#ninja-world instead of #plane-world).
+function showNinjaToast(msg) {
+  const world = $("ninja-world");
+  const toast = document.createElement("div");
+  toast.className = "drive-toast ninja-toast-good";
+  toast.textContent = msg;
+  world.appendChild(toast);
+  setTimeout(() => toast.remove(), 1600);
+}
 const NINJA_DIFFS = ["easy", "medium", "hard"];
 const NINJA_SUBJECTS = { math: "MATH", lang: "LANG & ARTS", sci: "SCIENCE" };
 let ninjaState = null;
@@ -3919,7 +3954,8 @@ function launchNinjaRunner() {
   showScreen("screen-ninja");
   if (window.AIGBgm && AIGBgm.playPlaneTrack) AIGBgm.playPlaneTrack(); // reuse Plane Mode's energetic track (per explicit request instead of new/copyrighted music)
   if (ninjaState && ninjaState.laneTimer) clearTimeout(ninjaState.laneTimer); // a stale timer from a previous run must not fire into this fresh state
-  ninjaState = { qnum: 1, score: 0, wrongLog: [], ended: false, laneTimer: null };
+  ninjaState = { qnum: 1, score: 0, streak: 0, wrongLog: [], ended: false, laneTimer: null };
+  $("ninja-streak").classList.add("hidden");
   $("ninja-finish-overlay").classList.add("hidden");
   $("ninja-review-overlay").classList.add("hidden");
   $("ninja-qnum").textContent = `Soal 1/${NINJA_TOTAL_Q}`;
@@ -4076,10 +4112,17 @@ function ninjaPickCard(subjectKey, difficulty) {
       const isCorrect = labelsEqual(opt, q.correctLabel);
       if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "ninja-runner", isCorrect);
       if (isCorrect) {
-        ninjaState.score += NINJA_PTS[difficulty];
+        const prevBonus = ninjaStreakBonus(ninjaState.streak);
+        ninjaState.streak += 1;
+        const bonus = ninjaStreakBonus(ninjaState.streak);
+        ninjaState.score += NINJA_PTS[difficulty] + bonus;
         $("ninja-score").textContent = `⭐ ${ninjaState.score}`;
+        updateNinjaStreakHud();
+        if (bonus > prevBonus) showNinjaToast(`🔥 ${ninjaState.streak} in a row! +${bonus} bonus`);
         ninjaSliceQuestion(q.prompt);
       } else {
+        ninjaState.streak = 0;
+        updateNinjaStreakHud();
         ninjaState.wrongLog.push({ prompt: q.prompt, subject: NINJA_SUBJECTS[subjectKey], your: opt, correct: q.correctLabel });
         btn.classList.add("wrong-flash");
         setTimeout(() => ninjaAdvance(), 550);
