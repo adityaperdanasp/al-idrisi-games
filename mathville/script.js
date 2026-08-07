@@ -171,7 +171,6 @@ function showScreen(id) {
   const hideNav = id === "screen-landing" || id === "screen-pair";
   $("btn-map").classList.toggle("hidden", hideNav);
   $("btn-drive").classList.toggle("hidden", hideNav);
-  $("btn-ninja").classList.toggle("hidden", hideNav);
   // Screens that already have their own Bo (Drive Mode's car, the reward
   // screen's AI Tutor card) or where it'd just be clutter (landing, pair
   // setup, Plane Mode, Ninja Runner has its own review-with-Bo overlay)
@@ -4164,13 +4163,14 @@ $("ninja-review-done").addEventListener("click", () => {
 });
 
 $("ninja-jump-btn").addEventListener("click", ninjaDoJump);
-$("btn-ninja").addEventListener("click", launchNinjaRunner);
 
-// Deep link from the hub's landing-page Ninja Runner card (?ninja=1) --
-// jump straight into Ninja Runner mode. Placed here (not alongside the
-// ?drive=1/?focus=1 checks earlier in the file) because `ninjaState` is
-// declared with `let` further down than that -- calling launchNinjaRunner()
-// before its temporal dead zone ends throws a ReferenceError.
+// Ninja Runner has no entry point inside MathVille itself anymore (no
+// topbar icon) -- it's a standalone hub card + URL (ninja-runner/, a thin
+// redirect into this ?ninja=1 deep link), same footing as Focus Round.
+// Placed here (not alongside the ?drive=1/?focus=1 checks earlier in the
+// file) because `ninjaState` is declared with `let` further down than
+// that -- calling launchNinjaRunner() before its temporal dead zone ends
+// throws a ReferenceError.
 if (new URLSearchParams(location.search).get("ninja") === "1") {
   launchNinjaRunner();
 }

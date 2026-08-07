@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>BrainBox — Ninja Runner</title>
+<!-- Ninja Runner has its own hub card + URL (not nested under MathVille's
+     own icon/nav) since its questions are mixed-subject, not MathVille-
+     specific -- same reasoning and same trick as Focus Round: this is a
+     thin redirect into MathVille's own ?ninja=1 deep link rather than a
+     full standalone rebuild of the run-lane/question/reward engine, which
+     would mean maintaining two copies of the same rendering code.
+     location.replace (not .href) so the back button skips over this page
+     entirely. -->
+<script>location.replace("../mathville/index.html?ninja=1");</script>
+</head>
+<body>
+  <p>Loading Ninja Runner… if nothing happens, <a href="../mathville/index.html?ninja=1">tap here</a>.</p>
+</body>
+</html>

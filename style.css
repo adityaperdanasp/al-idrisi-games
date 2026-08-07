@@ -757,7 +757,7 @@ body {
 .sc-game-card.solar { background: #c1e1c1; transform: rotate(0.6deg); }
 .sc-game-card.town { background: #f0dcc4; transform: rotate(-0.6deg); }
 .sc-game-card.focus { background: #e6d4f7; transform: rotate(0.6deg); padding-bottom: 30px; overflow: hidden; }
-.sc-game-card.ninja { background: #f6e3b4; transform: rotate(-0.6deg); }
+.sc-game-card.ninja { background: #c1f0e8; transform: rotate(-0.6deg); }
 
 /* ---------- Focus Round card: decorative side-view ninja jog loop ---------- */
 .sc-focus-runner { position: absolute; left: 0; right: 0; bottom: 6px; height: 22px; overflow: hidden; pointer-events: none; }
@@ -813,8 +813,8 @@ body {
 .sc-game-card.town .sc-game-sub { color: #a97a4f; }
 .sc-game-card.focus .sc-game-title { color: #6b3f9b; }
 .sc-game-card.focus .sc-game-sub { color: #8f6db8; }
-.sc-game-card.ninja .sc-game-title { color: #8a6a1f; }
-.sc-game-card.ninja .sc-game-sub { color: #ad8f4f; }
+.sc-game-card.ninja .sc-game-title { color: #1f6e5c; }
+.sc-game-card.ninja .sc-game-sub { color: #4f9384; }
 
 /* ---------- "Who's actually playing?" step (student vs their parent) ---------- */
 .sc-whois-overlay {
