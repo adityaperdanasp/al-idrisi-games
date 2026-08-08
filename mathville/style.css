@@ -1257,12 +1257,12 @@ button { font-family: inherit; }
 
 .ninja-review-bo { width: 56px; height: 56px; border-radius: 50%; margin-bottom: 6px; }
 .ninja-review-title { font: 800 15px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 12px; }
-.ninja-review-qbox { background: var(--cream); border: 2px solid var(--taupe); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+.ninja-review-qbox { background: var(--cream); border: 2px solid var(--taupe); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; text-align: left; }
 .ninja-review-q { font: 800 15px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 8px; }
-.ninja-review-your { font: 700 13px "Baloo 2", sans-serif; color: var(--bad); }
-.ninja-review-correct { font: 700 13px "Baloo 2", sans-serif; color: var(--good); }
+.ninja-review-explain { font: 700 13px "Baloo 2", sans-serif; color: var(--ink-soft); line-height: 1.55; }
+.ninja-review-explain .rw-wrong { color: var(--bad); font-weight: 800; }
+.ninja-review-explain .rw-correct { color: var(--good); font-weight: 800; }
 .ninja-review-nav { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 14px; }
 .ninja-review-nav .btn { padding: 8px 16px; font-size: 13px; }
-.ninja-review-count { font: 700 12px "Baloo 2", sans-serif; color: var(--ink-soft); }
 .ninja-review-done { width: 100%; }
 

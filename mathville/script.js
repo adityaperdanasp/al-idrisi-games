@@ -4383,6 +4383,16 @@ function ninjaFinishCommon() {
   saveChapterProgress("ninja-runner", 3, NINJA_WIN_XP);
 }
 
+// Short, varied English encouragement lines -- picked by review index so
+// the same card always shows the same line on Prev/Next, rather than
+// re-rolling randomly every render.
+const NINJA_REVIEW_ENCOURAGEMENTS = [
+  "Be more careful with this one next time!",
+  "So close — you've got this, keep it up!",
+  "No worries, mistakes help you learn!",
+  "Stay sharp, ninja — you're improving!"
+];
+
 let ninjaReviewIdx = 0;
 function ninjaShowReview() {
   $("ninja-finish-overlay").classList.add("hidden");
@@ -4391,7 +4401,6 @@ function ninjaShowReview() {
   if (ninjaState.wrongLog.length === 0) {
     $("ninja-review-title").textContent = "Bo here! Sempurna, gak ada yang salah!";
     $("ninja-review-qbox").innerHTML = `<div class="ninja-review-q">🎉 Semua soal kejawab benar!</div>`;
-    $("ninja-review-count").textContent = "";
     prevBtn.classList.add("hidden");
     nextBtn.classList.add("hidden");
     return;
@@ -4404,13 +4413,12 @@ function ninjaShowReview() {
 
 function ninjaRenderReviewCard() {
   const item = ninjaState.wrongLog[ninjaReviewIdx];
+  const tip = NINJA_REVIEW_ENCOURAGEMENTS[ninjaReviewIdx % NINJA_REVIEW_ENCOURAGEMENTS.length];
   $("ninja-review-title").textContent = `Bo here! Yuk kita bahas (${item.subject}):`;
   $("ninja-review-qbox").innerHTML = `
     <div class="ninja-review-q">${item.prompt}</div>
-    <div class="ninja-review-your">Jawaban kamu: ${item.your}</div>
-    <div class="ninja-review-correct">Jawaban benar: ${item.correct}</div>
+    <div class="ninja-review-explain">Kamu jawab <span class="rw-wrong">${item.your}</span>, padahal jawaban yang tepat itu <span class="rw-correct">${item.correct}</span>. ${tip}</div>
   `;
-  $("ninja-review-count").textContent = `${ninjaReviewIdx + 1} / ${ninjaState.wrongLog.length}`;
   $("ninja-review-prev").disabled = ninjaReviewIdx === 0;
   $("ninja-review-next").disabled = ninjaReviewIdx === ninjaState.wrongLog.length - 1;
 }
