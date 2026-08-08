@@ -965,6 +965,11 @@ button { font-family: inherit; }
   filter: drop-shadow(0 2px 3px rgba(0,0,0,.3));
   z-index: 5; opacity: .95;
 }
+.plane-wingman svg { width: 100%; height: 100%; }
+
+/* The wingmen pickup is drawn, not an emoji -- see PLANE_POWERUP_SVG. */
+.plane-powerup svg { width: 26px; height: 26px; }
+.hud-plane-icon { width: 13px; height: 15px; vertical-align: -3px; }
 @keyframes planeHit {
   0%, 100% { filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); opacity: 1; }
   50% { filter: drop-shadow(0 0 8px var(--bad)) brightness(1.4); opacity: .4; }
@@ -1000,12 +1005,17 @@ button { font-family: inherit; }
   filter: drop-shadow(0 0 6px rgba(255,255,255,.7));
   z-index: 4;
 }
+/* Boss size lives here only -- the SVGs carry a viewBox but no fixed
+   width/height, so they scale to whatever this box is. If this changes,
+   PLANE_BOSS_HIT_MULT in script.js has to change with it or shots will
+   visibly pass through the artwork. */
 .plane-boss {
-  position: absolute; width: 56px; height: 56px; margin-left: -28px; margin-top: -28px;
-  display: flex; align-items: center; justify-content: center; font-size: 42px;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,.4));
+  position: absolute; width: 112px; height: 112px; margin-left: -56px; margin-top: -56px;
+  display: flex; align-items: center; justify-content: center;
+  filter: drop-shadow(0 5px 8px rgba(0,0,0,.45));
   z-index: 4;
 }
+.plane-boss svg { width: 100%; height: 100%; }
 .plane-boss-hp {
   width: 100%; height: 10px; border-radius: 6px; background: rgba(0,0,0,.25);
   margin-top: 8px; overflow: hidden;

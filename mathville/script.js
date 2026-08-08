@@ -1577,6 +1577,12 @@ const PLANE_ENEMY_SPEED = 0.35;        // % of world height per frame
 const PLANE_HIT_RADIUS_PX = 22;        // bullet-enemy, ship-enemy, ship-enemy-bullet collision radius
 const PLANE_MAX_LIVES = 3;
 const PLANE_ENEMY_BULLET_SPEED = 1.1 * 0.8; // % of world height per frame -- slower than the player's, dodgeable; -20% per feedback (also slows boss bullets, which reuse this same constant via spawnPlaneEnemyBullet)
+// Keeps enemy fire pointed downward -- see spawnPlaneEnemyBullet. The
+// minimum aim is in world-% (how far "below" the shooter the aim point is
+// forced to sit); the margin is in radians, keeping the shot clear of dead
+// horizontal after random spread is added.
+const PLANE_MIN_DOWNWARD_AIM = 6;
+const PLANE_DOWNWARD_ANGLE_MARGIN = 0.18;
 const PLANE_ENEMY_FIRE_MIN_MS = 1400;
 const PLANE_ENEMY_FIRE_MAX_MS = 2600;
 const PLANE_HIT_INVULN_MS = 1500;      // matches DRIVE_BITE_COOLDOWN_MS's feel
@@ -1641,13 +1647,26 @@ const PLANE_POWERUP_EMOJI = { rapid: "⚡", shield: "🛡️", heal: "❤️", w
 // they were flying sideways. Teal keeps them readable as friendly and
 // distinct from both the player (blue) and a 2P partner (orange).
 const PLANE_WINGMAN_SVG = `
-  <svg viewBox="0 0 24 28" width="22" height="26">
+  <svg viewBox="0 0 24 28">
     <path d="M12 1 L16 16 L12 13.5 L8 16 Z" fill="#5BC0A8" stroke="#2E7D6B" stroke-width="1.3" stroke-linejoin="round"/>
     <path d="M12 13.5 L12 25" stroke="#2E7D6B" stroke-width="1.7" stroke-linecap="round"/>
     <path d="M3 18 L12 13.5 L12 19 Z" fill="#8AD9C6" stroke="#2E7D6B" stroke-width="1"/>
     <path d="M21 18 L12 13.5 L12 19 Z" fill="#8AD9C6" stroke="#2E7D6B" stroke-width="1"/>
     <circle cx="12" cy="9" r="2.2" fill="#DFF7F0"/>
   </svg>`;
+
+// The wingmen pickup is drawn rather than an emoji, because emoji planes
+// are rendered at different angles on different phones (iOS draws 🛩️
+// banked, Android flatter) -- there's no way to guarantee "pointing up"
+// with a character. This is the same little aircraft you actually get,
+// nose up, identical on every device.
+const PLANE_POWERUP_SVG = { wingmen: PLANE_WINGMAN_SVG };
+
+// Powerups are emoji except where a drawn icon is needed (above).
+function setPlanePowerupIcon(el, type) {
+  if (PLANE_POWERUP_SVG[type]) el.innerHTML = PLANE_POWERUP_SVG[type];
+  else el.textContent = PLANE_POWERUP_EMOJI[type] || "";
+}
 
 // Variety pass (per feedback: "too static", every enemy the same sprite
 // flying dead straight). Each spawn picks one of these; moveStyle changes
@@ -1697,9 +1716,11 @@ const PLANE_BOSS_FIRE_MAX_MS = 1300;
 // heavy bomber (tanky), interceptor (fast), gunship (slow but hits hard),
 // delta-wing (the one that sweeps a figure-8). All face nose-DOWN, toward
 // the player.
+// No width/height on these -- .plane-boss in style.css sizes them, so the
+// boss can be scaled from one place without touching eight drawings.
 const PLANE_BOSS_SVGS = {
-  // Heavy bomber -- broad straight wings, four engine pods.
-  bomber: `<svg viewBox="0 0 60 60" width="56" height="56">
+  // Heavy bomber -- broad straight wings, engine pods.
+  bomber: `<svg viewBox="0 0 60 60">
       <path d="M3 28 L30 21 L57 28 L57 35 L30 31 L3 35 Z" fill="#C0392B" stroke="#6E1B12" stroke-width="2" stroke-linejoin="round"/>
       <rect x="10" y="26" width="8" height="11" rx="3.5" fill="#6E1B12"/>
       <rect x="42" y="26" width="8" height="11" rx="3.5" fill="#6E1B12"/>
@@ -1708,14 +1729,14 @@ const PLANE_BOSS_SVGS = {
       <ellipse cx="30" cy="41" rx="5" ry="7" fill="#FFE9A8" stroke="#6E1B12" stroke-width="1.5"/>
     </svg>`,
   // Interceptor -- swept-back wings, slim body.
-  interceptor: `<svg viewBox="0 0 60 60" width="56" height="56">
+  interceptor: `<svg viewBox="0 0 60 60">
       <path d="M5 16 L30 31 L55 16 L55 25 L30 41 L5 25 Z" fill="#8E44AD" stroke="#43206B" stroke-width="2" stroke-linejoin="round"/>
       <path d="M30 3 L36 17 L36 45 L30 57 L24 45 L24 17 Z" fill="#A96FD1" stroke="#43206B" stroke-width="2" stroke-linejoin="round"/>
       <rect x="26" y="6" width="8" height="7" rx="2.5" fill="#43206B"/>
       <ellipse cx="30" cy="40" rx="4.5" ry="6.5" fill="#EBDBF7" stroke="#43206B" stroke-width="1.5"/>
     </svg>`,
   // Gunship -- chunky armoured hull, twin side cannons.
-  gunship: `<svg viewBox="0 0 60 60" width="56" height="56">
+  gunship: `<svg viewBox="0 0 60 60">
       <path d="M2 25 L30 19 L58 25 L58 38 L30 32 L2 38 Z" fill="#1E8449" stroke="#0B3D22" stroke-width="2" stroke-linejoin="round"/>
       <rect x="7" y="23" width="10" height="16" rx="4" fill="#0B3D22"/>
       <rect x="43" y="23" width="10" height="16" rx="4" fill="#0B3D22"/>
@@ -1723,20 +1744,67 @@ const PLANE_BOSS_SVGS = {
       <rect x="27" y="49" width="6" height="9" rx="2.5" fill="#0B3D22"/>
       <ellipse cx="30" cy="39" rx="5.5" ry="7" fill="#E8F8EF" stroke="#0B3D22" stroke-width="1.5"/>
     </svg>`,
-  // Delta wing -- one big arrowhead, the figure-8 sweeper.
-  delta: `<svg viewBox="0 0 60 60" width="56" height="56">
+  // Delta wing -- one big arrowhead.
+  delta: `<svg viewBox="0 0 60 60">
       <path d="M30 56 L3 19 L14 13 L30 30 L46 13 L57 19 Z" fill="#1B9AAA" stroke="#0A4A53" stroke-width="2" stroke-linejoin="round"/>
       <path d="M30 3 L38 22 L34 47 L30 55 L26 47 L22 22 Z" fill="#4FC3D0" stroke="#0A4A53" stroke-width="2" stroke-linejoin="round"/>
       <ellipse cx="30" cy="36" rx="4.5" ry="6" fill="#E4F7FA" stroke="#0A4A53" stroke-width="1.5"/>
+    </svg>`,
+  // Twin-boom -- two tail booms joined by a tailplane.
+  twinboom: `<svg viewBox="0 0 60 60">
+      <rect x="10" y="8" width="40" height="6" rx="3" fill="#B9601B" stroke="#7A3B08" stroke-width="1.6"/>
+      <rect x="9" y="10" width="8" height="34" rx="4" fill="#E8862E" stroke="#7A3B08" stroke-width="1.8"/>
+      <rect x="43" y="10" width="8" height="34" rx="4" fill="#E8862E" stroke="#7A3B08" stroke-width="1.8"/>
+      <path d="M6 28 L30 23 L54 28 L54 34 L30 30 L6 34 Z" fill="#D9741F" stroke="#7A3B08" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M30 10 L36 22 L36 42 L30 54 L24 42 L24 22 Z" fill="#F59B45" stroke="#7A3B08" stroke-width="2" stroke-linejoin="round"/>
+      <ellipse cx="30" cy="38" rx="4.5" ry="6" fill="#FFF1DC" stroke="#7A3B08" stroke-width="1.5"/>
+    </svg>`,
+  // Flying wing -- no separate fuselage, engines buried in the wing.
+  flyingwing: `<svg viewBox="0 0 60 60">
+      <path d="M30 54 L2 30 L8 20 L22 26 L30 8 L38 26 L52 20 L58 30 Z" fill="#4C4C9D" stroke="#26264F" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M30 14 L35 28 L30 46 L25 28 Z" fill="#6E6EC7" stroke="#26264F" stroke-width="1.6" stroke-linejoin="round"/>
+      <circle cx="14" cy="27" r="3" fill="#26264F"/>
+      <circle cx="46" cy="27" r="3" fill="#26264F"/>
+      <ellipse cx="30" cy="34" rx="4" ry="5.5" fill="#E3E3FA" stroke="#26264F" stroke-width="1.5"/>
+    </svg>`,
+  // Fighter -- canards up front plus swept main wings.
+  fighter: `<svg viewBox="0 0 60 60">
+      <path d="M7 20 L30 32 L53 20 L53 27 L30 42 L7 27 Z" fill="#C2185B" stroke="#6D0A31" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M17 40 L30 44 L43 40 L43 45 L30 49 L17 45 Z" fill="#AD1457" stroke="#6D0A31" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M30 3 L36 18 L35 44 L30 57 L25 44 L24 18 Z" fill="#E04A85" stroke="#6D0A31" stroke-width="2" stroke-linejoin="round"/>
+      <rect x="27" y="5" width="6" height="6" rx="2" fill="#6D0A31"/>
+      <ellipse cx="30" cy="36" rx="4.2" ry="6" fill="#FCE4EC" stroke="#6D0A31" stroke-width="1.5"/>
+    </svg>`,
+  // Rocket plane -- narrow body, big thrusters at the back.
+  rocket: `<svg viewBox="0 0 60 60">
+      <path d="M12 30 L30 24 L48 30 L48 36 L30 31 L12 36 Z" fill="#C98A12" stroke="#6B4405" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M20 6 L27 14 L27 6 Z" fill="#6B4405"/>
+      <path d="M40 6 L33 14 L33 6 Z" fill="#6B4405"/>
+      <path d="M30 4 L37 20 L37 42 L30 56 L23 42 L23 20 Z" fill="#F0B429" stroke="#6B4405" stroke-width="2" stroke-linejoin="round"/>
+      <rect x="24" y="3" width="12" height="7" rx="3" fill="#8A5A08" stroke="#6B4405" stroke-width="1.4"/>
+      <ellipse cx="30" cy="38" rx="4.5" ry="6.5" fill="#FFF6DF" stroke="#6B4405" stroke-width="1.5"/>
     </svg>`
 };
 
+// Eight bosses now (was four) so the cycle takes twice as long to repeat
+// -- bossesDefeated % length picks the next one, so a long run shows all
+// eight before anything comes back around.
 const PLANE_BOSS_TYPES = [
-  { svg: "bomber",      hpMult: 1.0,  speedMult: 1.0, fireMult: 1.0, moveStyle: "bounce",  bulletClass: "boss" },
-  { svg: "interceptor", hpMult: 0.85, speedMult: 1.4, fireMult: 0.7, moveStyle: "bounce",  bulletClass: "boss" },
-  { svg: "gunship",     hpMult: 1.3,  speedMult: 0.6, fireMult: 1.3, moveStyle: "bounce",  bulletClass: "boss" },
-  { svg: "delta",       hpMult: 1.0,  speedMult: 1.0, fireMult: 0.9, moveStyle: "figure8", bulletClass: "boss" }
+  { svg: "bomber",      hpMult: 1.0,  speedMult: 1.0, fireMult: 1.0,  moveStyle: "bounce",  bulletClass: "boss" },
+  { svg: "interceptor", hpMult: 0.85, speedMult: 1.4, fireMult: 0.7,  moveStyle: "bounce",  bulletClass: "boss" },
+  { svg: "gunship",     hpMult: 1.3,  speedMult: 0.6, fireMult: 1.3,  moveStyle: "bounce",  bulletClass: "boss" },
+  { svg: "delta",       hpMult: 1.0,  speedMult: 1.0, fireMult: 0.9,  moveStyle: "figure8", bulletClass: "boss" },
+  { svg: "twinboom",    hpMult: 1.15, speedMult: 0.9, fireMult: 0.85, moveStyle: "bounce",  bulletClass: "boss" },
+  { svg: "flyingwing",  hpMult: 0.95, speedMult: 1.2, fireMult: 1.1,  moveStyle: "figure8", bulletClass: "boss" },
+  { svg: "fighter",     hpMult: 0.9,  speedMult: 1.5, fireMult: 0.75, moveStyle: "bounce",  bulletClass: "boss" },
+  { svg: "rocket",      hpMult: 1.25, speedMult: 0.7, fireMult: 1.2,  moveStyle: "figure8", bulletClass: "boss" }
 ];
+
+// Bosses are drawn at 112px (see .plane-boss) = a 56px radius, so their
+// hitbox multiplier has to land near 56/PLANE_HIT_RADIUS_PX. Without this
+// the artwork would be twice the size of what bullets actually collide
+// with, and shots would visibly pass straight through it.
+const PLANE_BOSS_HIT_MULT = 2.5;
 
 // Question interval also tightens per boss defeat (floor so it never
 // becomes unplayable) -- this is how the round gets "harder" over time
@@ -1937,8 +2005,17 @@ function spawnPlaneEnemyBullet(enemy, spreadDeg) {
     targetX = parseFloat(peerShip.style.left) || targetX;
     targetY = parseFloat(peerShip.style.top) || targetY;
   }
-  const dx = targetX - fromX, dy = targetY - fromY;
+  // Enemies only ever shoot DOWNWARD. They still lean their aim left/right
+  // toward whoever they're targeting, but once you've climbed above them
+  // they can't turn around and fire back up -- so getting above an enemy is
+  // now a real way to be safe from its guns (its body is still dangerous).
+  // Forcing a minimum downward component handles the aim; clamping the
+  // final angle handles the random spread, which could otherwise tip a
+  // near-horizontal shot back upwards.
+  const dx = targetX - fromX;
+  const dy = Math.max(targetY - fromY, PLANE_MIN_DOWNWARD_AIM);
   let angle = Math.atan2(dy, dx) + (Math.random() * 2 - 1) * (spreadDeg * Math.PI / 180);
+  angle = Math.max(PLANE_DOWNWARD_ANGLE_MARGIN, Math.min(Math.PI - PLANE_DOWNWARD_ANGLE_MARGIN, angle));
   const vx = Math.cos(angle) * PLANE_ENEMY_BULLET_SPEED;
   const vy = Math.sin(angle) * PLANE_ENEMY_BULLET_SPEED;
   // `cls` is kept on the object (not just the element) so the host can
@@ -2079,7 +2156,7 @@ function spawnPlanePowerup(x, y) {
   const id = "p" + (planeState.nextPowerupId++);
   const el = document.createElement("div");
   el.className = "plane-powerup";
-  el.textContent = PLANE_POWERUP_EMOJI[type];
+  setPlanePowerupIcon(el, type);
   $("plane-world").appendChild(el);
   planeState.powerups.push({ id, x, y, type, el });
 }
@@ -2894,7 +2971,7 @@ function p2pSyncList(current, incoming, baseClass, assign) {
       const isEnemy = baseClass === "plane-enemy";
       el.className = baseClass + " plane-remote" + (extra && !isEnemy && !isPowerup ? " " + extra : "");
       if (isEnemy) el.textContent = extra || "";
-      if (isPowerup) el.textContent = PLANE_POWERUP_EMOJI[extra] || "";
+      if (isPowerup) setPlanePowerupIcon(el, extra);
       el.style.left = x + "%";
       el.style.top = y + "%";
       $("plane-world").appendChild(el);
@@ -3329,7 +3406,7 @@ function startPlaneLoop() {
       // reaching 0 defeats it (doesn't end the round -- see handleBossDefeat).
       if (planeState.boss) {
         for (const bullet of planeState.bullets.slice()) {
-          if (planePxDist(planeState.boss.x, planeState.boss.y, bullet.x, bullet.y) < PLANE_HIT_RADIUS_PX * 1.4) {
+          if (planePxDist(planeState.boss.x, planeState.boss.y, bullet.x, bullet.y) < PLANE_HIT_RADIUS_PX * PLANE_BOSS_HIT_MULT) {
             bullet.el.remove();
             planeState.bullets = planeState.bullets.filter(b => b !== bullet);
             spawnPlaneExplosion(bullet.x, bullet.y);
@@ -3382,7 +3459,7 @@ function startPlaneLoop() {
 
       // Ship vs boss body -- just hurts the ship, boss only takes damage
       // from being shot (contact alone shouldn't end an 8-hit fight early).
-      if (planeState.boss && planePxDist(planeState.boss.x, planeState.boss.y, planeState.x, planeState.y) < PLANE_HIT_RADIUS_PX * 1.4) {
+      if (planeState.boss && planePxDist(planeState.boss.x, planeState.boss.y, planeState.x, planeState.y) < PLANE_HIT_RADIUS_PX * PLANE_BOSS_HIT_MULT) {
         planeTakeHit();
         if (planeState.ended) return;
       }
