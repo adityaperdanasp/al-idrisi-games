@@ -756,21 +756,21 @@ body {
 .sc-game-card.lang { background: #f6c1e0; transform: rotate(-0.6deg); }
 .sc-game-card.solar { background: #c1e1c1; transform: rotate(0.6deg); }
 .sc-game-card.town { background: #f0dcc4; transform: rotate(-0.6deg); }
-.sc-game-card.focus { background: #e6d4f7; transform: rotate(0.6deg); padding-bottom: 30px; overflow: hidden; }
-.sc-game-card.ninja { background: #c1f0e8; transform: rotate(-0.6deg); }
+.sc-game-card.focus { background: #e6d4f7; transform: rotate(0.6deg); }
+.sc-game-card.ninja { background: #dbe4fb; transform: rotate(-0.6deg); padding-bottom: 30px; overflow: hidden; }
 
-/* ---------- Focus Round card: decorative side-view ninja jog loop ---------- */
-.sc-focus-runner { position: absolute; left: 0; right: 0; bottom: 6px; height: 22px; overflow: hidden; pointer-events: none; }
-.sc-focus-ninja { position: absolute; bottom: 0; left: -22px; width: 18px; height: 22px; animation: scFocusNinjaRun 3.5s linear infinite; }
-@keyframes scFocusNinjaRun { from { left: -22px; } to { left: 100%; } }
-.sc-fn-torso { position: absolute; left: 5px; top: 6px; width: 8px; height: 11px; background: #2b3a55; border-radius: 3px; }
-.sc-fn-head { position: absolute; left: 5.5px; top: 0px; width: 7px; height: 7px; background: #f0b98d; border-radius: 50%; }
-.sc-fn-band { position: absolute; left: 4px; top: 1.5px; width: 9px; height: 2px; background: #e4572e; }
-.sc-fn-leg { position: absolute; top: 15px; width: 3px; height: 8px; background: #1c2740; border-radius: 2px; transform-origin: top center; }
-.sc-fn-leg.l1 { left: 6px; animation: scFocusLegA .28s ease-in-out infinite; }
-.sc-fn-leg.l2 { left: 10px; animation: scFocusLegB .28s ease-in-out infinite; }
-@keyframes scFocusLegA { 0%, 100% { transform: rotate(30deg); } 50% { transform: rotate(-30deg); } }
-@keyframes scFocusLegB { 0%, 100% { transform: rotate(-30deg); } 50% { transform: rotate(30deg); } }
+/* ---------- Ninja Runner card: decorative side-view ninja jog loop ---------- */
+.sc-card-runner { position: absolute; left: 0; right: 0; bottom: 6px; height: 22px; overflow: hidden; pointer-events: none; }
+.sc-card-ninja { position: absolute; bottom: 0; left: -22px; width: 18px; height: 22px; animation: scCardNinjaRun 3.5s linear infinite; }
+@keyframes scCardNinjaRun { from { left: -22px; } to { left: 100%; } }
+.sc-cn-torso { position: absolute; left: 5px; top: 6px; width: 8px; height: 11px; background: #8b90c9; border-radius: 3px; }
+.sc-cn-head { position: absolute; left: 5.5px; top: 0px; width: 7px; height: 7px; background: #f7cdb8; border-radius: 50%; }
+.sc-cn-band { position: absolute; left: 4px; top: 1.5px; width: 9px; height: 2px; background: #f4a6a0; border-radius: 1px; }
+.sc-cn-leg { position: absolute; top: 15px; width: 3px; height: 8px; background: #6b6f9e; border-radius: 2px; transform-origin: top center; }
+.sc-cn-leg.l1 { left: 6px; animation: scCardLegA .28s ease-in-out infinite; }
+.sc-cn-leg.l2 { left: 10px; animation: scCardLegB .28s ease-in-out infinite; }
+@keyframes scCardLegA { 0%, 100% { transform: rotate(30deg); } 50% { transform: rotate(-30deg); } }
+@keyframes scCardLegB { 0%, 100% { transform: rotate(-30deg); } 50% { transform: rotate(30deg); } }
 
 .sc-game-icon {
   width: 52px;
@@ -813,8 +813,8 @@ body {
 .sc-game-card.town .sc-game-sub { color: #a97a4f; }
 .sc-game-card.focus .sc-game-title { color: #6b3f9b; }
 .sc-game-card.focus .sc-game-sub { color: #8f6db8; }
-.sc-game-card.ninja .sc-game-title { color: #1f6e5c; }
-.sc-game-card.ninja .sc-game-sub { color: #4f9384; }
+.sc-game-card.ninja .sc-game-title { color: #4a4f7a; }
+.sc-game-card.ninja .sc-game-sub { color: #6f74a0; }
 
 /* ---------- "Who's actually playing?" step (student vs their parent) ---------- */
 .sc-whois-overlay {

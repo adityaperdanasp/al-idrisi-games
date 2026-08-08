@@ -368,17 +368,6 @@
             <span class="sc-game-title">Focus Round</span>
             <span class="sc-game-sub">Mix topics, 20 quick questions</span>
           </span>
-          <!-- Decorative side-view ninja jogging left-to-right in a loop
-               along the bottom of this card only -- matches MathVille's
-               Ninja Runner mode (which Focus Round's mixed-topic questions
-               are conceptually closest to), but here it's PURE decoration,
-               no click target, no game. -->
-          <div class="sc-focus-runner" aria-hidden="true">
-            <div class="sc-focus-ninja">
-              <div class="sc-fn-leg l1"></div><div class="sc-fn-leg l2"></div>
-              <div class="sc-fn-torso"></div><div class="sc-fn-head"></div><div class="sc-fn-band"></div>
-            </div>
-          </div>
         </a>
         <!-- Own card + own URL, same footing as Focus Round above (see
              ninja-runner/index.html -- a thin redirect into MathVille's
@@ -389,15 +378,27 @@
         <a class="sc-game-card ninja" href="ninja-runner/">
           <span class="sc-game-icon">
             <svg viewBox="0 0 36 36" width="36" height="36">
-              <circle cx="18" cy="19" r="13" fill="#3a3a5c"/>
-              <rect x="7" y="15" width="22" height="6" fill="#e4572e"/>
-              <rect x="10" y="18" width="16" height="4" fill="#1c2740"/>
+              <circle cx="18" cy="19" r="13" fill="#a5a8dc"/>
+              <rect x="7" y="15" width="22" height="6" rx="3" fill="#f4a6a0"/>
+              <rect x="10" y="18" width="16" height="5" rx="2.5" fill="#6b6f9e"/>
+              <circle cx="14.5" cy="20.5" r="1.6" fill="#fff"/>
+              <circle cx="21.5" cy="20.5" r="1.6" fill="#fff"/>
             </svg>
           </span>
           <span class="sc-game-txt">
             <span class="sc-game-title">Ninja Runner</span>
             <span class="sc-game-sub">Pick your favourite subject</span>
           </span>
+          <!-- Decorative side-view ninja jogging left-to-right in a loop
+               along the bottom of this card only -- pure decoration, no
+               click target, no game (the actual game engine has its own
+               running ninja on-screen once you're inside). -->
+          <div class="sc-card-runner" aria-hidden="true">
+            <div class="sc-card-ninja">
+              <div class="sc-cn-leg l1"></div><div class="sc-cn-leg l2"></div>
+              <div class="sc-cn-torso"></div><div class="sc-cn-head"></div><div class="sc-cn-band"></div>
+            </div>
+          </div>
         </a>
       </div>
 
