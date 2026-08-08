@@ -4074,6 +4074,37 @@ function ninjaDoJump() {
   }
 }
 
+// Crouch dodge for the flying-enemy encounter's thrown shuriken -- same
+// one-shot-hop shape as ninjaDoJump but a crouch instead of a hop, and
+// flags duckedInTime instead of obstacleDodged. Kept as its own function
+// (rather than overloading ninjaDoJump) since the two dodges animate
+// differently and gate on different on-screen elements.
+function ninjaDoDuck() {
+  const runner = $("ninja-runner");
+  if (runner.classList.contains("guard") || runner.classList.contains("ducking")) return;
+  runner.classList.remove("running");
+  runner.classList.add("ducking");
+  setTimeout(() => {
+    runner.classList.remove("ducking");
+    runner.classList.add("running");
+  }, 350);
+  if (ninjaState && document.getElementById("ninja-enemy-el")?.classList.contains("ninja-flying-enemy")) {
+    ninjaState.duckedInTime = true;
+  }
+}
+
+// The dodge button is shared between JUMP (ground obstacle) and DUCK
+// (flying enemy's shuriken) -- ninjaStartRunLane()/ninjaStartFlyingEncounter()
+// relabel it per round, this just routes the tap to whichever dodge is
+// actually active.
+function ninjaHandleDodgeBtn() {
+  if (document.getElementById("ninja-enemy-el")?.classList.contains("ninja-flying-enemy")) {
+    ninjaDoDuck();
+  } else {
+    ninjaDoJump();
+  }
+}
+
 // Chrome-dino-style running beat between questions, now a real 2-stage
 // encounter instead of a decorative fixed-length wait:
 //   1. a rock obstacle approaches -- tap JUMP while it's on screen to dodge
@@ -4088,12 +4119,39 @@ function ninjaDoJump() {
 // is untimed ("jawab berapa lama ya bebas").
 const NINJA_OBSTACLE_MS = 1800;
 const NINJA_ENEMY_MS = 1800;
+
+// Flying-enemy encounter -- an alternative to the ground obstacle+enemy
+// pair above, rolled per round (never on a boss round, so boss pacing
+// stays untouched). Combines 3 things in one encounter: it flies at head
+// height instead of ground level, it throws a shuriken partway through
+// its approach that must be DUCKed instead of JUMPed, and (like every
+// other enemy) it still needs a correct answer afterward to actually
+// defeat it -- dodging the shuriken only avoids the life penalty.
+const NINJA_FLYING_TYPES = ["🦅", "🦇", "🐝"];
+const NINJA_FLYING_CHANCE = 0.35;
+const NINJA_FLYING_MS = 1800;
+const NINJA_SHURIKEN_THROW_AT = 900;
+const NINJA_SHURIKEN_MS = 500;
+
+function ninjaResetDodgeBtn() {
+  const btn = $("ninja-jump-btn");
+  btn.textContent = "⬆ JUMP";
+  btn.classList.remove("duck-mode");
+}
+
 function ninjaStartRunLane() {
   $("ninja-gates").classList.add("hidden");
   $("ninja-qcard").classList.add("hidden");
   $("ninja-bubbles").classList.add("hidden");
   ninjaSetGuard(false);
   ninjaState.obstacleDodged = false;
+  ninjaResetDodgeBtn();
+
+  if (!ninjaState.pendingBoss && Math.random() < NINJA_FLYING_CHANCE) {
+    ninjaStartFlyingEncounter();
+    return;
+  }
+
   const obstacleEmoji = NINJA_OBSTACLE_TYPES[rand(0, NINJA_OBSTACLE_TYPES.length - 1)];
   $("ninja-hint").textContent = "Obstacle ahead! Tap JUMP to hop over " + obstacleEmoji;
 
@@ -4103,6 +4161,58 @@ function ninjaStartRunLane() {
   $("ninja-jump-btn").classList.remove("hidden");
 
   ninjaState.laneTimer = setTimeout(ninjaResolveObstacle, NINJA_OBSTACLE_MS);
+}
+
+function ninjaStartFlyingEncounter() {
+  ninjaState.duckedInTime = false;
+  const flyingEmoji = NINJA_FLYING_TYPES[rand(0, NINJA_FLYING_TYPES.length - 1)];
+  $("ninja-hint").textContent = "A flying enemy incoming! Tap DUCK to dodge its shuriken " + flyingEmoji;
+
+  const lane = $("ninja-run-lane");
+  lane.innerHTML = `<div class="ninja-enemy ninja-flying-enemy" id="ninja-enemy-el">${flyingEmoji}</div>`;
+  lane.classList.remove("hidden");
+
+  const btn = $("ninja-jump-btn");
+  btn.textContent = "⬇ DUCK";
+  btn.classList.add("duck-mode");
+  btn.classList.remove("hidden");
+
+  setTimeout(ninjaThrowShuriken, NINJA_SHURIKEN_THROW_AT);
+  ninjaState.laneTimer = setTimeout(ninjaResolveFlying, NINJA_FLYING_MS);
+}
+
+function ninjaThrowShuriken() {
+  const flying = document.getElementById("ninja-enemy-el");
+  if (!flying || !flying.classList.contains("ninja-flying-enemy")) return;
+  const shuriken = document.createElement("div");
+  shuriken.className = "ninja-shuriken";
+  $("ninja-run-lane").appendChild(shuriken);
+  setTimeout(() => shuriken.remove(), NINJA_SHURIKEN_MS + 100);
+}
+
+function ninjaResolveFlying() {
+  const flying = document.getElementById("ninja-enemy-el");
+  const dodged = ninjaState.duckedInTime;
+  ninjaResetDodgeBtn();
+  $("ninja-jump-btn").classList.add("hidden");
+
+  if (!dodged) {
+    ninjaLoseLife();
+    if (flying) {
+      flying.classList.add("hit-flash");
+      setTimeout(() => flying.classList.remove("hit-flash"), 250);
+    }
+    if (ninjaState.lives <= 0) {
+      ninjaState.laneTimer = setTimeout(ninjaGameOver, 400);
+      return;
+    }
+  } else {
+    const runner = $("ninja-runner");
+    runner.classList.add("ducking");
+    setTimeout(() => runner.classList.remove("ducking"), 350);
+  }
+
+  ninjaResolveEnemy();
 }
 
 function ninjaResolveObstacle() {
@@ -4432,7 +4542,7 @@ $("ninja-review-done").addEventListener("click", () => {
   showScreen("screen-map");
 });
 
-$("ninja-jump-btn").addEventListener("click", ninjaDoJump);
+$("ninja-jump-btn").addEventListener("click", ninjaHandleDodgeBtn);
 
 // Ninja Runner has no entry point inside MathVille itself anymore (no
 // topbar icon) -- it's a standalone hub card + URL (ninja-runner/, a thin
