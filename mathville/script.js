@@ -4096,18 +4096,6 @@ function ninjaDoDuck() {
   }
 }
 
-// The dodge button is shared between JUMP (ground obstacle) and DUCK
-// (flying enemy's shuriken) -- ninjaStartRunLane()/ninjaStartFlyingEncounter()
-// relabel it per round, this just routes the tap to whichever dodge is
-// actually active.
-function ninjaHandleDodgeBtn() {
-  if (document.getElementById("ninja-enemy-el")?.classList.contains("ninja-flying-enemy")) {
-    ninjaDoDuck();
-  } else {
-    ninjaDoJump();
-  }
-}
-
 // Chrome-dino-style running beat between questions, now a real 2-stage
 // encounter instead of a decorative fixed-length wait:
 //   1. a rock obstacle approaches -- tap JUMP while it's on screen to dodge
@@ -4136,10 +4124,16 @@ const NINJA_FLYING_MS = 1800;
 const NINJA_SHURIKEN_THROW_AT = 900;
 const NINJA_SHURIKEN_MS = 500;
 
-function ninjaResetDodgeBtn() {
-  const btn = $("ninja-jump-btn");
-  btn.textContent = "⬆ JUMP";
-  btn.classList.remove("duck-mode");
+// JUMP and DODGE show together for any run-lane encounter -- see the
+// index.html comment above these buttons for why this is 2 fixed
+// buttons instead of one that relabels itself.
+function ninjaShowDodgeBtns() {
+  $("ninja-jump-btn").classList.remove("hidden");
+  $("ninja-dodge-btn").classList.remove("hidden");
+}
+function ninjaHideDodgeBtns() {
+  $("ninja-jump-btn").classList.add("hidden");
+  $("ninja-dodge-btn").classList.add("hidden");
 }
 
 function ninjaStartRunLane() {
@@ -4148,7 +4142,6 @@ function ninjaStartRunLane() {
   $("ninja-bubbles").classList.add("hidden");
   ninjaSetGuard(false);
   ninjaState.obstacleDodged = false;
-  ninjaResetDodgeBtn();
 
   if (!ninjaState.pendingBoss && Math.random() < NINJA_FLYING_CHANCE) {
     ninjaStartFlyingEncounter();
@@ -4161,7 +4154,7 @@ function ninjaStartRunLane() {
   const lane = $("ninja-run-lane");
   lane.innerHTML = `<div class="ninja-obstacle" id="ninja-obstacle-el">${obstacleEmoji}</div>`;
   lane.classList.remove("hidden");
-  $("ninja-jump-btn").classList.remove("hidden");
+  ninjaShowDodgeBtns();
 
   ninjaState.laneTimer = setTimeout(ninjaResolveObstacle, NINJA_OBSTACLE_MS);
 }
@@ -4169,7 +4162,7 @@ function ninjaStartRunLane() {
 function ninjaStartFlyingEncounter() {
   ninjaState.duckedInTime = false;
   const flyingEmoji = NINJA_FLYING_TYPES[rand(0, NINJA_FLYING_TYPES.length - 1)];
-  $("ninja-hint").textContent = "A flying enemy incoming! Tap DUCK to dodge its shuriken " + flyingEmoji;
+  $("ninja-hint").textContent = "A flying enemy incoming! Tap DODGE to dodge its shuriken " + flyingEmoji;
 
   // Flying types (bird/bat/wasp) already read as complete creatures as
   // plain emoji -- unlike the humanoid ground/boss enemies (oni mask,
@@ -4178,11 +4171,7 @@ function ninjaStartFlyingEncounter() {
   const lane = $("ninja-run-lane");
   lane.innerHTML = `<div class="ninja-enemy ninja-flying-enemy" id="ninja-enemy-el">${flyingEmoji}</div>`;
   lane.classList.remove("hidden");
-
-  const btn = $("ninja-jump-btn");
-  btn.textContent = "⬇ DUCK";
-  btn.classList.add("duck-mode");
-  btn.classList.remove("hidden");
+  ninjaShowDodgeBtns();
 
   setTimeout(ninjaThrowShuriken, NINJA_SHURIKEN_THROW_AT);
   ninjaState.laneTimer = setTimeout(ninjaResolveFlying, NINJA_FLYING_MS);
@@ -4200,8 +4189,7 @@ function ninjaThrowShuriken() {
 function ninjaResolveFlying() {
   const flying = document.getElementById("ninja-enemy-el");
   const dodged = ninjaState.duckedInTime;
-  ninjaResetDodgeBtn();
-  $("ninja-jump-btn").classList.add("hidden");
+  ninjaHideDodgeBtns();
 
   if (!dodged) {
     ninjaLoseLife();
@@ -4278,7 +4266,7 @@ function ninjaResolveObstacle() {
 // through the question so ninjaSlashEnemy() has something to slash on a
 // correct answer.
 function ninjaResolveEnemy() {
-  $("ninja-jump-btn").classList.add("hidden");
+  ninjaHideDodgeBtns();
   if (ninjaState.pendingBoss) {
     ninjaState.pendingBoss = false;
     ninjaState.inBoss = true;
@@ -4565,7 +4553,8 @@ $("ninja-review-done").addEventListener("click", () => {
   window.location.href = "../";
 });
 
-$("ninja-jump-btn").addEventListener("click", ninjaHandleDodgeBtn);
+$("ninja-jump-btn").addEventListener("click", ninjaDoJump);
+$("ninja-dodge-btn").addEventListener("click", ninjaDoDuck);
 
 // Ninja Runner has no entry point inside MathVille itself anymore (no
 // topbar icon) -- it's a standalone hub card + URL (ninja-runner/, a thin

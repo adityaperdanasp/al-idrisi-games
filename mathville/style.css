@@ -1251,18 +1251,19 @@ button { font-family: inherit; }
 }
 .ninja-toast-good { background: #e4572e; }
 
-.ninja-jump-btn {
-  position: absolute; bottom: 20px; right: 20px; z-index: 7;
+.ninja-jump-btn, .ninja-dodge-btn {
+  position: absolute; bottom: 20px; z-index: 7;
   padding: 12px 18px; border: none; border-radius: 14px; cursor: pointer;
-  background: var(--wood); color: #fff; font: 800 14px "Baloo 2", sans-serif;
-  box-shadow: 0 5px 0 var(--wood-dark);
+  color: #fff; font: 800 14px "Baloo 2", sans-serif;
 }
+/* JUMP (ground obstacles) on the left, DODGE (flying enemy's shuriken)
+   on the right -- 2 fixed, always-paired buttons rather than one that
+   silently relabels itself, per explicit feedback that the single
+   dynamic button read as unclear/no dodge control at all. */
+.ninja-jump-btn { left: 20px; background: var(--wood); box-shadow: 0 5px 0 var(--wood-dark); }
 .ninja-jump-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--wood-dark); }
-/* DUCK mode -- shares the same button/position as JUMP (see
-   ninjaHandleDodgeBtn), swapped to a cool blue so it visually reads as a
-   different action during a flying-enemy encounter. */
-.ninja-jump-btn.duck-mode { background: #3a6ea5; box-shadow: 0 5px 0 #274a73; }
-.ninja-jump-btn.duck-mode:active { box-shadow: 0 2px 0 #274a73; }
+.ninja-dodge-btn { right: 20px; background: #3a6ea5; box-shadow: 0 5px 0 #274a73; }
+.ninja-dodge-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #274a73; }
 
 .ninja-encounter {
   position: absolute; top: 20px; left: 0; right: 0; bottom: 100px;

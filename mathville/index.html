@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=67" />
+<link rel="stylesheet" href="style.css?v=68" />
 </head>
 <body>
 
@@ -671,12 +671,17 @@
         <div class="ninja-sword"></div>
       </div>
 
-      <!-- Chrome-dino-style running beat between questions -- obstacle +
-           "enemy" scroll in from the right, player can tap JUMP for fun
-           (ninjaDoJump(), purely cosmetic, no collision/fail state), then
-           this auto-resolves into the subject cards. -->
+      <!-- Chrome-dino-style running beat between questions -- ground
+           obstacles need JUMP, flying enemies' shurikens need DODGE.
+           Both buttons show together for any run-lane encounter (see
+           ninjaStartRunLane/ninjaStartFlyingEncounter) so the control
+           scheme is always the same 2 buttons, not one that silently
+           relabels itself -- pressing the "wrong" one for what's on
+           screen just does nothing (see ninjaDoJump/ninjaDoDuck's own
+           on-screen-element guards). -->
       <div class="ninja-run-lane hidden" id="ninja-run-lane"></div>
       <button class="ninja-jump-btn hidden" id="ninja-jump-btn">⬆ JUMP</button>
+      <button class="ninja-dodge-btn hidden" id="ninja-dodge-btn">⬇ DODGE</button>
 
       <div class="ninja-gate-row" id="ninja-gates"></div>
 
@@ -718,6 +723,6 @@
 <script src="questions.js?v=3"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=82"></script>
+<script src="script.js?v=83"></script>
 </body>
 </html>
