@@ -1630,7 +1630,24 @@ const PLANE_WINGMEN_DURATION_MS = 10000; // 2 small escort ships that auto-fire 
 const PLANE_SPREAD_DURATION_MS = 10000;  // ship fires 2 angled shots instead of 1 straight one
 const PLANE_SPREAD_ANGLE_DEG = 18;       // how far each spread shot leans from straight up
 const PLANE_POWERUP_TYPES = ["rapid", "shield", "heal", "wingmen", "spread"];
-const PLANE_POWERUP_EMOJI = { rapid: "⚡", shield: "🛡️", heal: "❤️", wingmen: "👯", spread: "🔱" };
+// The wingmen pickup used to be 👯 (two dancers in bunny costumes) --
+// wrong read entirely for a kids' game, and it didn't say "you get escort
+// planes" either. A small plane does both jobs.
+const PLANE_POWERUP_EMOJI = { rapid: "⚡", shield: "🛡️", heal: "❤️", wingmen: "🛩️", spread: "🔱" };
+
+// Escort ships from the wingmen power-up. Drawn as a real little aircraft
+// pointing UP, matching the player's own ship -- the 🛩️ emoji used before
+// is drawn side-on/banked, so two of them flanking the player looked like
+// they were flying sideways. Teal keeps them readable as friendly and
+// distinct from both the player (blue) and a 2P partner (orange).
+const PLANE_WINGMAN_SVG = `
+  <svg viewBox="0 0 24 28" width="22" height="26">
+    <path d="M12 1 L16 16 L12 13.5 L8 16 Z" fill="#5BC0A8" stroke="#2E7D6B" stroke-width="1.3" stroke-linejoin="round"/>
+    <path d="M12 13.5 L12 25" stroke="#2E7D6B" stroke-width="1.7" stroke-linecap="round"/>
+    <path d="M3 18 L12 13.5 L12 19 Z" fill="#8AD9C6" stroke="#2E7D6B" stroke-width="1"/>
+    <path d="M21 18 L12 13.5 L12 19 Z" fill="#8AD9C6" stroke="#2E7D6B" stroke-width="1"/>
+    <circle cx="12" cy="9" r="2.2" fill="#DFF7F0"/>
+  </svg>`;
 
 // Variety pass (per feedback: "too static", every enemy the same sprite
 // flying dead straight). Each spawn picks one of these; moveStyle changes
@@ -1673,11 +1690,52 @@ const PLANE_BOSS_MAX_HP = 16;            // 2x the original 8, per feedback
 const PLANE_BOSS_SPEED = 0.25;          // % world width per frame
 const PLANE_BOSS_FIRE_MIN_MS = 700;
 const PLANE_BOSS_FIRE_MAX_MS = 1300;
+// Bosses are drawn aircraft rather than emoji (🐉/🦂/👹/🦑 before) -- same
+// on-screen size, but they now read as the big enemy plane at the end of a
+// wave instead of a random creature. Each silhouette matches how that boss
+// actually behaves, so you can tell what you're up against at a glance:
+// heavy bomber (tanky), interceptor (fast), gunship (slow but hits hard),
+// delta-wing (the one that sweeps a figure-8). All face nose-DOWN, toward
+// the player.
+const PLANE_BOSS_SVGS = {
+  // Heavy bomber -- broad straight wings, four engine pods.
+  bomber: `<svg viewBox="0 0 60 60" width="56" height="56">
+      <path d="M3 28 L30 21 L57 28 L57 35 L30 31 L3 35 Z" fill="#C0392B" stroke="#6E1B12" stroke-width="2" stroke-linejoin="round"/>
+      <rect x="10" y="26" width="8" height="11" rx="3.5" fill="#6E1B12"/>
+      <rect x="42" y="26" width="8" height="11" rx="3.5" fill="#6E1B12"/>
+      <path d="M19 9 L30 5 L41 9 L41 14 L30 11 L19 14 Z" fill="#A93226" stroke="#6E1B12" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M30 4 L37 18 L37 44 L30 56 L23 44 L23 18 Z" fill="#E74C3C" stroke="#6E1B12" stroke-width="2" stroke-linejoin="round"/>
+      <ellipse cx="30" cy="41" rx="5" ry="7" fill="#FFE9A8" stroke="#6E1B12" stroke-width="1.5"/>
+    </svg>`,
+  // Interceptor -- swept-back wings, slim body.
+  interceptor: `<svg viewBox="0 0 60 60" width="56" height="56">
+      <path d="M5 16 L30 31 L55 16 L55 25 L30 41 L5 25 Z" fill="#8E44AD" stroke="#43206B" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M30 3 L36 17 L36 45 L30 57 L24 45 L24 17 Z" fill="#A96FD1" stroke="#43206B" stroke-width="2" stroke-linejoin="round"/>
+      <rect x="26" y="6" width="8" height="7" rx="2.5" fill="#43206B"/>
+      <ellipse cx="30" cy="40" rx="4.5" ry="6.5" fill="#EBDBF7" stroke="#43206B" stroke-width="1.5"/>
+    </svg>`,
+  // Gunship -- chunky armoured hull, twin side cannons.
+  gunship: `<svg viewBox="0 0 60 60" width="56" height="56">
+      <path d="M2 25 L30 19 L58 25 L58 38 L30 32 L2 38 Z" fill="#1E8449" stroke="#0B3D22" stroke-width="2" stroke-linejoin="round"/>
+      <rect x="7" y="23" width="10" height="16" rx="4" fill="#0B3D22"/>
+      <rect x="43" y="23" width="10" height="16" rx="4" fill="#0B3D22"/>
+      <path d="M30 6 L39 20 L39 42 L30 54 L21 42 L21 20 Z" fill="#27AE60" stroke="#0B3D22" stroke-width="2" stroke-linejoin="round"/>
+      <rect x="27" y="49" width="6" height="9" rx="2.5" fill="#0B3D22"/>
+      <ellipse cx="30" cy="39" rx="5.5" ry="7" fill="#E8F8EF" stroke="#0B3D22" stroke-width="1.5"/>
+    </svg>`,
+  // Delta wing -- one big arrowhead, the figure-8 sweeper.
+  delta: `<svg viewBox="0 0 60 60" width="56" height="56">
+      <path d="M30 56 L3 19 L14 13 L30 30 L46 13 L57 19 Z" fill="#1B9AAA" stroke="#0A4A53" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M30 3 L38 22 L34 47 L30 55 L26 47 L22 22 Z" fill="#4FC3D0" stroke="#0A4A53" stroke-width="2" stroke-linejoin="round"/>
+      <ellipse cx="30" cy="36" rx="4.5" ry="6" fill="#E4F7FA" stroke="#0A4A53" stroke-width="1.5"/>
+    </svg>`
+};
+
 const PLANE_BOSS_TYPES = [
-  { emoji: "🐉", hpMult: 1.0, speedMult: 1.0, fireMult: 1.0, moveStyle: "bounce", bulletClass: "boss" },
-  { emoji: "🦂", hpMult: 0.85, speedMult: 1.4, fireMult: 0.7, moveStyle: "bounce", bulletClass: "boss" },
-  { emoji: "👹", hpMult: 1.3, speedMult: 0.6, fireMult: 1.3, moveStyle: "bounce", bulletClass: "boss" },
-  { emoji: "🦑", hpMult: 1.0, speedMult: 1.0, fireMult: 0.9, moveStyle: "figure8", bulletClass: "boss" }
+  { svg: "bomber",      hpMult: 1.0,  speedMult: 1.0, fireMult: 1.0, moveStyle: "bounce",  bulletClass: "boss" },
+  { svg: "interceptor", hpMult: 0.85, speedMult: 1.4, fireMult: 0.7, moveStyle: "bounce",  bulletClass: "boss" },
+  { svg: "gunship",     hpMult: 1.3,  speedMult: 0.6, fireMult: 1.3, moveStyle: "bounce",  bulletClass: "boss" },
+  { svg: "delta",       hpMult: 1.0,  speedMult: 1.0, fireMult: 0.9, moveStyle: "figure8", bulletClass: "boss" }
 ];
 
 // Question interval also tightens per boss defeat (floor so it never
@@ -2054,7 +2112,7 @@ function ensurePlaneWingmen() {
   [-11, 11].forEach(offsetX => {
     const el = document.createElement("div");
     el.className = "plane-wingman";
-    el.textContent = "🛩️";
+    el.innerHTML = PLANE_WINGMAN_SVG;
     $("plane-world").appendChild(el);
     planeState.wingmen.push({ el, offsetX, lastFireAt: performance.now() });
   });
@@ -2081,14 +2139,17 @@ function updatePlaneBuffHud() {
 // .x/.y off whatever "enemy" object it's given.
 function spawnPlaneBoss() {
   planeState.bossSpawned = true;
-  const type = PLANE_BOSS_TYPES[planeState.bossesDefeated % PLANE_BOSS_TYPES.length];
+  const typeIdx = planeState.bossesDefeated % PLANE_BOSS_TYPES.length;
+  const type = PLANE_BOSS_TYPES[typeIdx];
   const el = document.createElement("div");
   el.className = "plane-boss";
-  el.textContent = type.emoji;
+  el.innerHTML = PLANE_BOSS_SVGS[type.svg];
   $("plane-world").appendChild(el);
   const hp = Math.round(PLANE_BOSS_MAX_HP * type.hpMult);
   planeState.boss = {
-    x: 50, y: 18, el, hp, maxHp: hp, dir: 1, type, t: 0,
+    // typeIdx is kept so 2P world snapshots can name the boss in one
+    // number and the guest can draw the identical aircraft.
+    x: 50, y: 18, el, hp, maxHp: hp, dir: 1, type, typeIdx, t: 0,
     nextFireAt: performance.now() + rand(PLANE_BOSS_FIRE_MIN_MS, PLANE_BOSS_FIRE_MAX_MS) * type.fireMult
   };
   updatePlaneBossHp();
@@ -2857,13 +2918,14 @@ function p2pSyncBoss(bo) {
     $("plane-boss-hp").classList.add("hidden");
     return;
   }
-  const [x, y, hp, maxHp, emoji] = bo;
+  const [x, y, hp, maxHp, typeIdx] = bo;
   if (!planeState.boss) {
     const el = document.createElement("div");
     el.className = "plane-boss plane-remote";
-    el.textContent = emoji;
+    const type = PLANE_BOSS_TYPES[typeIdx] || PLANE_BOSS_TYPES[0];
+    el.innerHTML = PLANE_BOSS_SVGS[type.svg];
     $("plane-world").appendChild(el);
-    planeState.boss = { x, y, hp, maxHp, el };
+    planeState.boss = { x, y, hp, maxHp, el, typeIdx };
     $("plane-boss-hp").classList.remove("hidden");
   }
   const boss = planeState.boss;
@@ -2941,7 +3003,7 @@ function p2pTick(now) {
       // emoji back up from PLANE_POWERUP_EMOJI itself.
       pu: planeState.powerups.map(p => [p.id, round1(p.x), round1(p.y), p.type]),
       bo: planeState.boss
-        ? [round1(planeState.boss.x), round1(planeState.boss.y), planeState.boss.hp, planeState.boss.maxHp, planeState.boss.type.emoji]
+        ? [round1(planeState.boss.x), round1(planeState.boss.y), planeState.boss.hp, planeState.boss.maxHp, planeState.boss.typeIdx]
         : null
     });
   } else {

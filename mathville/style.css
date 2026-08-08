@@ -957,11 +957,13 @@ button { font-family: inherit; }
 
 /* Wingmen power-up escorts -- smaller than the main ship, no hit/collision
    styling of their own since they're purely offensive (can't be shot). */
+/* Sized to the escort SVG (see PLANE_WINGMAN_SVG) rather than a font,
+   since these are drawn ships now, not emoji. */
 .plane-wingman {
-  position: absolute; width: 20px; height: 20px; margin-left: -10px; margin-top: -10px;
-  display: flex; align-items: center; justify-content: center; font-size: 15px;
+  position: absolute; width: 24px; height: 26px; margin-left: -12px; margin-top: -13px;
+  display: flex; align-items: center; justify-content: center;
   filter: drop-shadow(0 2px 3px rgba(0,0,0,.3));
-  z-index: 5; opacity: .92;
+  z-index: 5; opacity: .95;
 }
 @keyframes planeHit {
   0%, 100% { filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); opacity: 1; }
