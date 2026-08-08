@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=68" />
+<link rel="stylesheet" href="style.css?v=69" />
 </head>
 <body>
 
@@ -71,6 +71,26 @@
       <button class="vehicle-skin-back" id="vehicle-skin-back" aria-label="Back">← Back</button>
       <div class="drive-difficulty-title" id="vehicle-skin-title">Pick a design</div>
       <div class="vehicle-skin-grid" id="vehicle-skin-grid"></div>
+    </div>
+  </div>
+
+  <!-- Solo vs 2-player choice, shown only after picking a PLANE skin (Drive
+       Mode's car has no 2-player version). Outside every .screen for the
+       same reason as the vehicle picker above -- it has to be visible
+       before we've decided which screen to switch to. -->
+  <div id="plane-mode-overlay" class="drive-question-overlay hidden">
+    <div class="drive-question-card drive-difficulty-card">
+      <div class="drive-difficulty-title">How do you want to fly?</div>
+      <button class="drive-difficulty-btn" data-planemode="solo">
+        <span class="drive-difficulty-emoji">✈️</span>
+        <span class="drive-difficulty-name">Solo</span>
+        <span class="drive-difficulty-desc">Fly the mission alone</span>
+      </button>
+      <button class="drive-difficulty-btn" data-planemode="2p">
+        <span class="drive-difficulty-emoji">👥</span>
+        <span class="drive-difficulty-name">2 Players</span>
+        <span class="drive-difficulty-desc">Two phones, same sky</span>
+      </button>
     </div>
   </div>
 
@@ -452,6 +472,39 @@
   </section>
 
   <!-- ===============================================================
+       SCREEN: Plane Mode 2-player pairing. Firebase is used ONLY to
+       swap WebRTC connection details (offer/answer/ICE) -- once the two
+       phones are connected the game data goes peer-to-peer over a
+       DataChannel, NOT through Firebase, which is what keeps the delay
+       low enough for a dodge-based shmup. Signalling is stored under
+       mathvilleGames/{code}/planeSignal because the RTDB rules only
+       allow specific top-level paths (a new planeGames/ root is denied)
+       -- see CLAUDE.md's note about rules having no wildcard fallback.
+       =============================================================== -->
+  <section id="screen-plane2p" class="screen">
+    <h2 class="title-lg">Fly Together</h2>
+
+    <div id="p2p-choose">
+      <button class="btn btn-primary" id="btn-p2p-create">Create Game</button>
+      <div class="pair-divider">or</div>
+      <input class="pair-input" id="p2p-code-input" placeholder="Enter 6-letter code" maxlength="6" autocapitalize="characters" />
+      <button class="btn btn-secondary" id="btn-p2p-join">Join Game</button>
+      <p class="pair-error" id="p2p-error"></p>
+    </div>
+
+    <div id="p2p-waiting" class="hidden">
+      <p id="p2p-waiting-text">Waiting for the other pilot to join…</p>
+      <div class="code-display-wrap">
+        <span class="code-display" id="p2p-code-display"></span>
+        <button class="btn btn-copy" id="btn-p2p-copy">Copy code</button>
+      </div>
+      <p class="p2p-status" id="p2p-status"></p>
+    </div>
+
+    <button class="btn btn-secondary" data-back="screen-landing">Back</button>
+  </section>
+
+  <!-- ===============================================================
        SCREEN: Plane Mode — vertical shmup: scrolling sky, joystick-
        controlled ship, auto-fire, enemies with wave difficulty that
        ramps over time, power-ups (rapid fire / shield), a boss fight
@@ -468,6 +521,8 @@
           <span class="drive-hud-pill" id="plane-score">⭐ 0</span>
           <span class="drive-hud-pill" id="plane-best">🏅 0</span>
           <span class="drive-hud-pill" id="plane-lives">❤️❤️❤️</span>
+          <!-- Partner's score/lives, 2-player only (see plane2p.js). -->
+          <span class="drive-hud-pill plane-peer-pill hidden" id="plane-peer-hud">👥 0 ❤️❤️❤️</span>
           <span class="drive-hud-pill hidden" id="plane-buff-rapid">⚡</span>
           <span class="drive-hud-pill hidden" id="plane-buff-shield">🛡️</span>
           <span class="drive-hud-pill hidden" id="plane-buff-wingmen">👯</span>
@@ -493,10 +548,28 @@
         </svg>
       </div>
 
+      <!-- Partner's ship, 2-player only. Position comes from the peer over
+           the DataChannel ~20x/sec; the CSS transition on this element is
+           what smooths those steps into continuous motion instead of
+           visible teleporting (see .plane-peer-ship in style.css). -->
+      <div id="plane-peer-ship" class="plane-ship plane-peer-ship hidden">
+        <svg viewBox="0 0 30 34" width="27" height="30">
+          <path d="M15 1 L20 20 L15 17 L10 20 Z" fill="#E4844A" stroke="#A85B27" stroke-width="1.5" stroke-linejoin="round" />
+          <path d="M15 17 L15 33" stroke="#A85B27" stroke-width="2" stroke-linecap="round" />
+          <path d="M4 22 L15 17 L15 24 Z" fill="#F0B07E" stroke="#A85B27" stroke-width="1.2" />
+          <path d="M26 22 L15 17 L15 24 Z" fill="#F0B07E" stroke="#A85B27" stroke-width="1.2" />
+          <circle cx="15" cy="12" r="3" fill="#FFE7C9" />
+        </svg>
+      </div>
+
       <div class="joystick" id="plane-joystick" aria-label="Fly">
         <div class="joystick-knob" id="plane-joystick-knob"></div>
       </div>
     </div>
+
+    <!-- 2-player status strip: "waiting for partner", "partner is down",
+         connection warnings. Never shown in solo. -->
+    <div id="plane-2p-banner" class="plane-2p-banner hidden"></div>
 
     <!-- Periodic math question -- reuses Drive Mode's quick-MC generator
          (rollDriveQuestion/buildQuickMc), own overlay/ids since this
@@ -528,6 +601,8 @@
         <div class="drive-end-emoji" id="plane-end-emoji">💥</div>
         <div class="drive-end-title" id="plane-end-title"></div>
         <div class="drive-end-sub" id="plane-end-sub"></div>
+        <!-- Both pilots' final scores, 2-player only. -->
+        <div class="plane-end-scores hidden" id="plane-end-scores"></div>
         <button class="btn btn-primary" id="plane-end-replay">Play Again</button>
       </div>
     </div>
@@ -723,6 +798,6 @@
 <script src="questions.js?v=3"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=83"></script>
+<script src="script.js?v=84"></script>
 </body>
 </html>

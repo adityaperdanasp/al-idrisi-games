@@ -1497,9 +1497,29 @@ function playVehiclePicker(onPicked) {
   $("vehicle-skin-back").addEventListener("click", backHandler);
 }
 
+// Plane only: after the skin, ask solo vs 2-player. The car has no
+// 2-player version, so it skips this entirely.
+function playPlaneModePicker(onPicked) {
+  const overlay = $("plane-mode-overlay");
+  overlay.classList.remove("hidden");
+  const buttons = overlay.querySelectorAll("[data-planemode]");
+  function handler(e) {
+    buttons.forEach(b => b.removeEventListener("click", handler));
+    overlay.classList.add("hidden");
+    onPicked(e.currentTarget.dataset.planemode);
+  }
+  buttons.forEach(b => b.addEventListener("click", handler));
+}
+
 function launchDriveMode() {
   playVehiclePicker(vehicle => {
-    if (vehicle === "plane") { launchPlaneMode(); return; }
+    if (vehicle === "plane") {
+      playPlaneModePicker(mode => {
+        if (mode === "2p") launchPlane2P();
+        else launchPlaneMode();
+      });
+      return;
+    }
 
     // The difficulty picker overlay lives INSIDE #screen-drive's markup, so
     // it stays invisible (display:none, inherited from its non-active
@@ -1675,11 +1695,16 @@ const PLANE_WIN_XP = 20;
 let planeJoyVec = { x: 0, y: 0 };
 let planeState = null;
 
-function launchPlaneMode() {
+// `is2p` is passed only by p2pStartGame() once the DataChannel is open.
+// Everything role-specific keys off planeState.is2p / p2p.role from there
+// -- solo behaviour is untouched when it's false.
+function launchPlaneMode(is2p) {
   if (window.AIGBgm && AIGBgm.playPlaneTrack) AIGBgm.playPlaneTrack();
   applyVehicleSkin("plane");
   showScreen("screen-plane");
   planeState = {
+    is2p: !!is2p,
+    down: false,              // 2P: out of lives but still spectating (see p2pLocalDown)
     x: 50, y: 82,              // ship position, % of plane-world
     bullets: [],                // { id, x, y, el } -- player's own shots
     enemyBullets: [],           // { id, x, y, el } -- shots fired back at the ship
@@ -1726,6 +1751,19 @@ function launchPlaneMode() {
   $("plane-buff-shield").classList.add("hidden");
   $("plane-buff-wingmen").classList.add("hidden");
   $("plane-buff-spread").classList.add("hidden");
+  $("plane-end-scores").classList.add("hidden");
+  // 2P-only chrome: partner ship/HUD/banner stay hidden in solo.
+  $("plane-peer-ship").classList.toggle("hidden", !is2p);
+  $("plane-peer-ship").classList.remove("down");
+  $("plane-peer-hud").classList.toggle("hidden", !is2p);
+  $("plane-world").querySelectorAll(".plane-peer-bullet").forEach(el => el.remove());
+  if (is2p) {
+    p2p.peerBulletEls = [];
+    p2p.recentKills.clear();
+    p2p.peer = { score: 0, lives: PLANE_MAX_LIVES, down: false };
+    updatePlanePeerHud();
+  }
+  p2pSetBanner("");
   updatePlaneScore();
   updatePlaneLives();
   updatePlaneBestHud();
@@ -1734,7 +1772,8 @@ function launchPlaneMode() {
   const rect = $("plane-world").getBoundingClientRect();
   if (rect.width === 0) {
     // Same early-paint gotcha as goToDrive() -- retry once real layout exists.
-    requestAnimationFrame(() => launchPlaneMode());
+    // Must pass is2p through, or the retry would silently drop back to solo.
+    requestAnimationFrame(() => launchPlaneMode(is2p));
     return;
   }
   planeState.worldRect = rect;
@@ -1826,15 +1865,27 @@ function spawnPlaneEnemyBullet(enemy, spreadDeg) {
   if (spreadDeg === undefined) spreadDeg = 24;
   const id = "eb" + (planeState.nextEnemyBulletId++);
   const el = document.createElement("div");
-  const bulletClass = enemy.type && enemy.type.bulletClass ? " " + enemy.type.bulletClass : "";
-  el.className = "plane-enemy-bullet" + bulletClass;
+  const cls = enemy.type && enemy.type.bulletClass ? enemy.type.bulletClass : "";
+  el.className = "plane-enemy-bullet" + (cls ? " " + cls : "");
   $("plane-world").appendChild(el);
   const fromX = enemy.x, fromY = enemy.y + 3;
-  const dx = planeState.x - fromX, dy = planeState.y - fromY;
+  // Only the host spawns these in 2P, so without picking a target the
+  // guest would never be shot at once -- every bullet would aim at the
+  // host's ship. Pick between the two pilots (skipping one who's already
+  // down) so both actually have to dodge.
+  let targetX = planeState.x, targetY = planeState.y;
+  if (planeState.is2p && !p2p.peer.down && (planeState.down || Math.random() < 0.5)) {
+    const peerShip = $("plane-peer-ship");
+    targetX = parseFloat(peerShip.style.left) || targetX;
+    targetY = parseFloat(peerShip.style.top) || targetY;
+  }
+  const dx = targetX - fromX, dy = targetY - fromY;
   let angle = Math.atan2(dy, dx) + (Math.random() * 2 - 1) * (spreadDeg * Math.PI / 180);
   const vx = Math.cos(angle) * PLANE_ENEMY_BULLET_SPEED;
   const vy = Math.sin(angle) * PLANE_ENEMY_BULLET_SPEED;
-  planeState.enemyBullets.push({ id, x: fromX, y: fromY, vx, vy, el });
+  // `cls` is kept on the object (not just the element) so the host can
+  // include it in world snapshots and the guest can render the same shape.
+  planeState.enemyBullets.push({ id, x: fromX, y: fromY, vx, vy, el, cls });
 }
 
 // Phase 3 "juice" -- a burst emoji that scales up + fades out at (x, y)
@@ -1867,6 +1918,9 @@ function shakePlaneWorld() {
 function planeTakeHit() {
   const now = performance.now();
   if (now < planeState.invulnUntil) return;
+  // Already out of lives in a 2-player round -- still on screen as a
+  // spectator, but nothing can hurt you any more.
+  if (planeState.down) return;
   // A shield absorbs the hit entirely -- no life lost, no invuln window
   // needed since the shield itself is the protection. Still shakes the
   // world so the hit registers as feedback rather than feeling like nothing
@@ -1884,7 +1938,12 @@ function planeTakeHit() {
   shakePlaneWorld();
   if (planeState.lives <= 0) {
     spawnPlaneExplosion(planeState.x, planeState.y, true);
-    if (planeState.respawnsUsed < PLANE_MAX_RESPAWNS) {
+    // 2P: no respawn gauntlet -- that pauses the round, which would strand
+    // the partner (and freeze their world entirely if we're the host).
+    // You're simply down, and keep watching until they are too.
+    if (planeState.is2p) {
+      p2pLocalDown();
+    } else if (planeState.respawnsUsed < PLANE_MAX_RESPAWNS) {
       startPlaneRespawnChallenge();
     } else {
       endPlaneMode();
@@ -2090,6 +2149,9 @@ function handleBossDefeat() {
   if (typeof confetti === "function") {
     confetti({ particleCount: 80, spread: 90, origin: { y: 0.3 } });
   }
+  // Only the host runs this in 2P (it owns the boss), so tell the guest to
+  // celebrate too -- it would otherwise just see the boss vanish.
+  if (planeState.is2p && p2p.role === "host") p2pSend({ t: "bd" });
 }
 
 // Correct answer clears the screen (all current enemies + enemy bullets)
@@ -2439,9 +2501,25 @@ async function buildFocusRoundSteps(selected) {
   render();
 })();
 
-function showPlaneQuestion() {
-  planeState.paused = true;
-  const step = rollPlaneQuestion();
+// `preset` is set only in 2P, when the host has already rolled the
+// question and sent it over -- both phones must show the SAME question,
+// but each answers it on their own (one can be right while the other is
+// wrong; scores are separate).
+function showPlaneQuestion(preset) {
+  const is2p = planeState.is2p;
+  // Solo pauses the world to answer. 2P can't: the host pausing would
+  // freeze the guest's whole world too, and pausing only one side would
+  // leave the other waiting. Instead the round keeps running and the
+  // answering pilot is invulnerable while their overlay is up, so nobody
+  // dies to something they couldn't see behind the question card.
+  if (is2p) {
+    planeState.invulnUntil = Math.max(planeState.invulnUntil, performance.now() + 60000);
+  } else {
+    planeState.paused = true;
+  }
+
+  const step = preset || rollPlaneQuestion();
+  if (is2p && !preset && p2p.role === "host") p2pSend({ t: "q", q: step });
 
   $("plane-question-prompt").textContent = step.prompt;
   const grid = $("plane-question-options");
@@ -2459,29 +2537,27 @@ function showPlaneQuestion() {
       });
       if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "plane-mode", isCorrect);
       if (isCorrect) {
-        // Bomb reward: wipe every enemy and enemy bullet on screen right now.
-        planeState.enemies.forEach(e => { spawnPlaneExplosion(e.x, e.y); e.el.remove(); });
-        planeState.enemyBullets.forEach(b => b.el.remove());
-        planeState.enemies = [];
-        planeState.enemyBullets = [];
         planeState.score += 3;
         updatePlaneScore();
-        shakePlaneWorld();
-        // Regular enemies get wiped outright above -- the boss isn't in
-        // that array, so without this a correct answer during a boss
-        // fight would do nothing to it at all. Chips its HP instead of a
-        // full wipe (it's meant to survive several hits).
-        if (planeState.boss) {
-          spawnPlaneExplosion(planeState.boss.x, planeState.boss.y);
-          planeState.boss.hp -= PLANE_BOSS_QUESTION_DAMAGE;
-          updatePlaneBossHp();
-          if (planeState.boss.hp <= 0) handleBossDefeat();
-        }
+        // Bomb reward: wipe every enemy and enemy bullet on screen right
+        // now. The boss isn't in that array, so it gets chipped instead of
+        // wiped (it's meant to survive several hits). In 2P the world is
+        // the host's to change -- the guest asks and sees it in the next
+        // snapshot, so the two screens can't drift apart.
+        if (!is2p || p2p.role === "host") planeApplyBomb();
+        else p2pSend({ t: "bomb" });
       }
       setTimeout(() => {
         $("plane-question-overlay").classList.add("hidden");
         planeState.lastQuestionAt = performance.now();
-        if (planeState && !planeState.ended) planeState.paused = false;
+        if (!planeState || planeState.ended) return;
+        if (is2p) {
+          // Drop the answering-window invulnerability, but keep a normal
+          // hit-invuln beat so you aren't shot the instant the card lifts.
+          planeState.invulnUntil = performance.now() + PLANE_HIT_INVULN_MS;
+        } else {
+          planeState.paused = false;
+        }
       }, 900);
     });
     grid.appendChild(btn);
@@ -2489,12 +2565,527 @@ function showPlaneQuestion() {
   $("plane-question-overlay").classList.remove("hidden");
 }
 
+/* =================================================================
+   PLANE MODE — 2 PLAYERS, PEER-TO-PEER (WebRTC)
+
+   Two phones, one sky: same enemies, same boss, same questions, but
+   separate scores and separate lives.
+
+   WHY WebRTC AND NOT FIREBASE FOR THE GAME DATA
+   Firebase RTDB is a synced database, not a game transport -- every
+   update round-trips through a server, which lands around 150-400ms.
+   That's fine for MathVille's quiz multiplayer (nobody dodges a
+   fraction of a second), but this is a bullet-hell where a late
+   position IS a wrong position. So Firebase is used ONLY to swap
+   connection details once (offer/answer/ICE), then the two phones talk
+   directly over a DataChannel.
+   Signalling lives at mathvilleGames/{code}/planeSignal -- NOT a new
+   planeGames/ root, which the RTDB rules deny outright (they're
+   explicit per top-level path with no wildcard fallback; verified: a
+   write to planeGames/ returns 401, nested under mathvilleGames/
+   returns 200).
+
+   WHO SIMULATES WHAT
+   The player who created the room is the HOST and owns the shared
+   world: enemy spawns and movement, enemy bullets, the boss, power-up
+   drops, and when each question appears. It broadcasts that world
+   ~20x/sec. The GUEST doesn't simulate any of it -- it renders what it
+   receives (smoothed by a CSS transition, see .plane-remote) into the
+   very same planeState.enemies/enemyBullets/boss arrays the solo game
+   uses, so every collision check below works unchanged for both roles.
+
+   WHY EACH PLAYER JUDGES THEIR OWN DAMAGE
+   The obvious design -- host decides who got hit -- feels terrible over
+   a network: the host is judging your ship against a position that is
+   already a few hundred ms stale, so you dodge on your screen and get
+   hit anyway. Instead each player runs the ship-vs-bullet and
+   ship-vs-enemy checks LOCALLY, against exactly what's drawn on their
+   own screen. If you dodged it on your screen, you dodged it. Lives
+   and score are per-player anyway, so there's nothing for the two
+   sides to disagree about.
+   Kills are handled the same way: you remove the enemy you shot
+   immediately (instant feedback) and tell the host, which drops it
+   from the authoritative list. Both players hitting the same enemy in
+   the same instant just means both get the point -- harmless in co-op,
+   and much better than waiting a round-trip to find out if your shot
+   counted.
+
+   DEATH
+   Running out of lives ends YOUR flying, not the round: you get a
+   "Game Over" banner but keep watching your partner's screen. The
+   round only really ends once both pilots are down.
+   ================================================================= */
+const P2P_SEND_INTERVAL_MS = 50;      // 20 world updates/sec -- .plane-remote's CSS transition smooths the gaps
+const P2P_KILL_GRACE_MS = 700;        // ignore an enemy id this long after killing it, so a snapshot still in flight doesn't resurrect it
+const P2P_LINK_TIMEOUT_MS = 3000;     // no packet for this long = warn about the connection
+const P2P_ICE = { iceServers: [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" }
+] };
+
+let p2p = null;
+
+function p2pReset() {
+  if (p2p && p2p.pc) { try { p2p.pc.close(); } catch (e) {} }
+  if (p2p && p2p.signalRef) { try { p2p.signalRef.off(); } catch (e) {} }
+  p2p = null;
+}
+
+function p2pActive() { return !!(p2p && p2p.channel && p2p.channel.readyState === "open"); }
+
+function p2pSend(obj) {
+  if (!p2pActive()) return;
+  try { p2p.channel.send(JSON.stringify(obj)); } catch (e) {}
+}
+
+function p2pSetBanner(text, warn) {
+  const el = $("plane-2p-banner");
+  if (!text) { el.classList.add("hidden"); return; }
+  el.textContent = text;
+  el.classList.toggle("warn", !!warn);
+  el.classList.remove("hidden");
+}
+
+/* ---- Signalling over Firebase (connection setup only) ---- */
+
+function p2pSignalRef(code) {
+  return aigDb.ref(`${MV_ROOT}/${code}/planeSignal`);
+}
+
+// Shared by both sides: wire up the peer connection's ICE trickle and the
+// DataChannel handlers. `mySlot`/`theirSlot` keep each side's candidates in
+// their own list so neither reads back its own.
+function p2pAttachPeer(pc, code, mySlot, theirSlot) {
+  pc.onicecandidate = e => {
+    if (e.candidate) p2pSignalRef(code).child(mySlot).push(e.candidate.toJSON());
+  };
+  p2pSignalRef(code).child(theirSlot).on("child_added", snap => {
+    const cand = snap.val();
+    if (cand) pc.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+  });
+  pc.onconnectionstatechange = () => {
+    if (!p2p) return;
+    if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+      p2pSetBanner("Connection lost", true);
+    }
+  };
+}
+
+function p2pAttachChannel(channel) {
+  p2p.channel = channel;
+  channel.onopen = () => {
+    p2p.lastRecvAt = performance.now();
+    p2pStartGame();
+  };
+  channel.onmessage = e => {
+    p2p.lastRecvAt = performance.now();
+    let msg;
+    try { msg = JSON.parse(e.data); } catch (err) { return; }
+    p2pHandleMessage(msg);
+  };
+  channel.onclose = () => p2pSetBanner("Partner disconnected", true);
+}
+
+async function p2pCreateRoom() {
+  const code = mvMakeCode();
+  p2p = { role: "host", code, pc: null, channel: null, peer: { score: 0, lives: PLANE_MAX_LIVES, down: false },
+          lastSendAt: 0, lastRecvAt: 0, pendingKills: [], pendingPickups: [], pendingBossHits: 0,
+          recentKills: new Map(), remoteEls: new Map(), peerBulletEls: [], started: false };
+
+  const pc = new RTCPeerConnection(P2P_ICE);
+  p2p.pc = pc;
+  // The host opens the channel; ordered+reliable is the default and is
+  // fine here -- payloads are small and a dropped world update would be
+  // more disruptive than a few ms of head-of-line waiting.
+  const channel = pc.createDataChannel("plane", { ordered: true });
+  p2pAttachChannel(channel);
+  p2pAttachPeer(pc, code, "hostIce", "guestIce");
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await p2pSignalRef(code).set({
+    kind: "plane2p",
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    offer: { type: offer.type, sdp: offer.sdp }
+  });
+
+  p2p.signalRef = p2pSignalRef(code);
+  p2p.signalRef.child("answer").on("value", async snap => {
+    const ans = snap.val();
+    if (!ans || pc.currentRemoteDescription) return;
+    await pc.setRemoteDescription(new RTCSessionDescription(ans));
+  });
+  return code;
+}
+
+async function p2pJoinRoom(code) {
+  const snap = await p2pSignalRef(code).get();
+  if (!snap.exists()) throw new Error("No game found with that code.");
+  const data = snap.val();
+  if (!data.offer) throw new Error("That game isn't ready yet.");
+  if (data.answer) throw new Error("That game is already full.");
+
+  p2p = { role: "guest", code, pc: null, channel: null, peer: { score: 0, lives: PLANE_MAX_LIVES, down: false },
+          lastSendAt: 0, lastRecvAt: 0, pendingKills: [], pendingPickups: [], pendingBossHits: 0,
+          recentKills: new Map(), remoteEls: new Map(), peerBulletEls: [], started: false };
+
+  const pc = new RTCPeerConnection(P2P_ICE);
+  p2p.pc = pc;
+  pc.ondatachannel = e => p2pAttachChannel(e.channel);
+  p2pAttachPeer(pc, code, "guestIce", "hostIce");
+
+  await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  await p2pSignalRef(code).child("answer").set({ type: answer.type, sdp: answer.sdp });
+  p2p.signalRef = p2pSignalRef(code);
+}
+
+/* ---- Handshake done -> start the round on both phones ---- */
+
+function p2pStartGame() {
+  if (!p2p || p2p.started) return;
+  p2p.started = true;
+  p2pSetBanner("");
+  // Both sides launch their own round; the host's simulation is what
+  // actually drives the shared world from here.
+  launchPlaneMode(true);
+}
+
+/* ---- Incoming messages ---- */
+
+function p2pHandleMessage(msg) {
+  if (!planeState) return;
+  switch (msg.t) {
+    case "w":  p2pApplyWorld(msg); break;
+    case "g":  p2pApplyGuest(msg); break;
+    case "q":  showPlaneQuestion(msg.q); break;
+    case "bomb":
+      // Partner answered correctly -- the bomb is a world change, so only
+      // the host applies it; the guest sees the result in the next snapshot.
+      if (p2p.role === "host") planeApplyBomb();
+      break;
+    case "bd": if (p2p.role === "guest") p2pGuestBossDefeated(); break;
+    case "over": p2pPeerFinished(msg); break;
+  }
+}
+
+// Guest -> host: partner's ship/bullets/status plus anything it claimed
+// since the last packet (kills, pickups, boss hits) for the host to apply
+// to the authoritative world.
+function p2pApplyGuest(msg) {
+  p2pUpdatePeerFromStatus(msg.st, msg.s, msg.sb);
+  if (p2p.role !== "host") return;
+  if (msg.k && msg.k.length) {
+    for (const id of msg.k) {
+      const enemy = planeState.enemies.find(e => e.id === id);
+      if (enemy) {
+        enemy.el.remove();
+        planeState.enemies = planeState.enemies.filter(e => e !== enemy);
+      }
+    }
+  }
+  if (msg.pk && msg.pk.length) {
+    for (const id of msg.pk) {
+      const pu = planeState.powerups.find(p => p.id === id);
+      if (pu) {
+        pu.el.remove();
+        planeState.powerups = planeState.powerups.filter(p => p !== pu);
+      }
+    }
+  }
+  if (msg.bh && planeState.boss) {
+    planeState.boss.hp -= msg.bh;
+    updatePlaneBossHp();
+    if (planeState.boss.hp <= 0) handleBossDefeat();
+  }
+}
+
+// Host -> guest: the whole shared world. Rebuilt into the same
+// planeState arrays the solo game uses, so collision code doesn't care
+// which role it's running as.
+function p2pApplyWorld(msg) {
+  if (p2p.role !== "guest") return;
+  p2pUpdatePeerFromStatus(msg.st, msg.s, msg.sb);
+  p2pSyncList(planeState.enemies, msg.e || [], "plane-enemy", arr => { planeState.enemies = arr; });
+  p2pSyncList(planeState.enemyBullets, msg.b || [], "plane-enemy-bullet", arr => { planeState.enemyBullets = arr; });
+  p2pSyncList(planeState.powerups, msg.pu || [], "plane-powerup", arr => { planeState.powerups = arr; });
+  p2pSyncBoss(msg.bo);
+}
+
+// Generic "make my local list look like theirs": update what exists,
+// create what's new, drop what's gone. Entities keep their DOM element
+// across updates so the CSS transition has something to animate.
+function p2pSyncList(current, incoming, baseClass, assign) {
+  const now = performance.now();
+  const byId = new Map(current.map(item => [item.id, item]));
+  const next = [];
+  for (const [id, x, y, extra] of incoming) {
+    // Skip anything we just shot -- the host hasn't processed our kill yet
+    // and re-adding it here would make it flicker back to life.
+    if (p2p.recentKills.has(id) && now - p2p.recentKills.get(id) < P2P_KILL_GRACE_MS) continue;
+    let item = byId.get(id);
+    if (!item) {
+      const el = document.createElement("div");
+      // `extra` means something different per list: an emoji for enemies,
+      // a power-up type, or an enemy-bullet shape class.
+      const isPowerup = baseClass === "plane-powerup";
+      const isEnemy = baseClass === "plane-enemy";
+      el.className = baseClass + " plane-remote" + (extra && !isEnemy && !isPowerup ? " " + extra : "");
+      if (isEnemy) el.textContent = extra || "";
+      if (isPowerup) el.textContent = PLANE_POWERUP_EMOJI[extra] || "";
+      el.style.left = x + "%";
+      el.style.top = y + "%";
+      $("plane-world").appendChild(el);
+      item = { id, x, y, el };
+      if (isPowerup) item.type = extra;
+    } else {
+      byId.delete(id);
+    }
+    item.x = x; item.y = y;
+    item.el.style.left = x + "%";
+    item.el.style.top = y + "%";
+    next.push(item);
+  }
+  for (const stale of byId.values()) stale.el.remove();
+  assign(next);
+}
+
+function p2pSyncBoss(bo) {
+  if (!bo) {
+    if (planeState.boss) { planeState.boss.el.remove(); planeState.boss = null; }
+    $("plane-boss-hp").classList.add("hidden");
+    return;
+  }
+  const [x, y, hp, maxHp, emoji] = bo;
+  if (!planeState.boss) {
+    const el = document.createElement("div");
+    el.className = "plane-boss plane-remote";
+    el.textContent = emoji;
+    $("plane-world").appendChild(el);
+    planeState.boss = { x, y, hp, maxHp, el };
+    $("plane-boss-hp").classList.remove("hidden");
+  }
+  const boss = planeState.boss;
+  boss.x = x; boss.y = y; boss.hp = hp; boss.maxHp = maxHp;
+  boss.el.style.left = x + "%";
+  boss.el.style.top = y + "%";
+  updatePlaneBossHp();
+}
+
+// Partner's ship, bullets and HUD -- identical handling on both sides.
+function p2pUpdatePeerFromStatus(st, ship, bullets) {
+  if (ship) {
+    const el = $("plane-peer-ship");
+    el.classList.remove("hidden");
+    el.style.left = ship[0] + "%";
+    el.style.top = ship[1] + "%";
+  }
+  if (st) {
+    p2p.peer.score = st[0];
+    p2p.peer.lives = st[1];
+    const wasDown = p2p.peer.down;
+    p2p.peer.down = !!st[2];
+    $("plane-peer-ship").classList.toggle("down", p2p.peer.down);
+    if (p2p.peer.down && !wasDown) p2pRefreshBanner();
+    updatePlanePeerHud();
+  }
+  p2pRenderPeerBullets(bullets || []);
+}
+
+function p2pRenderPeerBullets(list) {
+  const world = $("plane-world");
+  while (p2p.peerBulletEls.length < list.length) {
+    const el = document.createElement("div");
+    el.className = "plane-peer-bullet";
+    world.appendChild(el);
+    p2p.peerBulletEls.push(el);
+  }
+  while (p2p.peerBulletEls.length > list.length) {
+    p2p.peerBulletEls.pop().remove();
+  }
+  list.forEach((b, i) => {
+    p2p.peerBulletEls[i].style.left = b[0] + "%";
+    p2p.peerBulletEls[i].style.top = b[1] + "%";
+  });
+}
+
+function updatePlanePeerHud() {
+  const pill = $("plane-peer-hud");
+  pill.classList.remove("hidden");
+  const hearts = p2p.peer.down ? "💀" : "❤️".repeat(Math.max(0, p2p.peer.lives));
+  pill.textContent = `👥 ${p2p.peer.score} ${hearts}`;
+}
+
+/* ---- Outgoing: called once per frame, throttled to P2P_SEND_INTERVAL_MS ---- */
+
+function p2pTick(now) {
+  if (!p2pActive()) return;
+  if (now - p2p.lastRecvAt > P2P_LINK_TIMEOUT_MS) {
+    p2pSetBanner(p2p.role === "guest" ? "Waiting for host…" : "Waiting for partner…", true);
+  }
+  if (now - p2p.lastSendAt < P2P_SEND_INTERVAL_MS) return;
+  p2p.lastSendAt = now;
+
+  const st = [planeState.score, planeState.lives, planeState.down ? 1 : 0];
+  const ship = [round1(planeState.x), round1(planeState.y)];
+  const myBullets = planeState.bullets.map(b => [round1(b.x), round1(b.y)]);
+
+  if (p2p.role === "host") {
+    p2pSend({
+      t: "w", st, s: ship, sb: myBullets,
+      e: planeState.enemies.map(e => [e.id, round1(e.x), round1(e.y), e.type.emoji]),
+      b: planeState.enemyBullets.map(b => [b.id, round1(b.x), round1(b.y), b.cls || ""]),
+      // Sends the power-up TYPE, not its emoji -- the guest needs the type
+      // to apply the right buff when it picks one up, and can look the
+      // emoji back up from PLANE_POWERUP_EMOJI itself.
+      pu: planeState.powerups.map(p => [p.id, round1(p.x), round1(p.y), p.type]),
+      bo: planeState.boss
+        ? [round1(planeState.boss.x), round1(planeState.boss.y), planeState.boss.hp, planeState.boss.maxHp, planeState.boss.type.emoji]
+        : null
+    });
+  } else {
+    p2pSend({
+      t: "g", st, s: ship, sb: myBullets,
+      k: p2p.pendingKills.splice(0),
+      pk: p2p.pendingPickups.splice(0),
+      bh: (() => { const n = p2p.pendingBossHits; p2p.pendingBossHits = 0; return n; })()
+    });
+  }
+}
+
+function round1(n) { return Math.round(n * 10) / 10; }
+
+/* ---- Shared helpers used by both roles ---- */
+
+// The bomb reward (correct answer) is a change to the shared world, so it
+// always runs on the host -- the guest requests it and sees the result.
+function planeApplyBomb() {
+  planeState.enemies.forEach(e => { spawnPlaneExplosion(e.x, e.y); e.el.remove(); });
+  planeState.enemyBullets.forEach(b => b.el.remove());
+  planeState.enemies = [];
+  planeState.enemyBullets = [];
+  shakePlaneWorld();
+  if (planeState.boss) {
+    spawnPlaneExplosion(planeState.boss.x, planeState.boss.y);
+    planeState.boss.hp -= PLANE_BOSS_QUESTION_DAMAGE;
+    updatePlaneBossHp();
+    if (planeState.boss.hp <= 0) handleBossDefeat();
+  }
+}
+
+function p2pGuestBossDefeated() {
+  showPlaneToast("💥 Boss defeated!");
+  if (typeof confetti === "function") confetti({ particleCount: 90, spread: 70, origin: { y: 0.4 } });
+}
+
+// One pilot ran out of lives. Their own flying stops, but the round keeps
+// going (and they keep watching) until the other one is down too.
+function p2pLocalDown() {
+  planeState.down = true;
+  // Carries the final score rather than relying on the last routine tick
+  // having landed -- otherwise the end screen could show a score that's
+  // one update stale (e.g. missing the +3 from a question answered right
+  // before going down).
+  p2pSend({ t: "over", sc: planeState.score });
+  p2pRefreshBanner();
+  if (p2p.peer.down) p2pFinishRound();
+}
+
+function p2pPeerFinished(msg) {
+  if (msg && typeof msg.sc === "number") p2p.peer.score = msg.sc;
+  p2p.peer.down = true;
+  $("plane-peer-ship").classList.add("down");
+  updatePlanePeerHud();
+  p2pRefreshBanner();
+  if (planeState.down) p2pFinishRound();
+}
+
+function p2pRefreshBanner() {
+  if (!planeState) return;
+  if (planeState.down && !p2p.peer.down) p2pSetBanner("💀 Game Over — watching your partner…");
+  else if (!planeState.down && p2p.peer.down) p2pSetBanner("Your partner is down — you're the last one flying!");
+  else p2pSetBanner("");
+}
+
+function p2pFinishRound() {
+  p2pSetBanner("");
+  planeState.ended = true;
+  planeState.paused = true;
+  if (planeState.rafId) cancelAnimationFrame(planeState.rafId);
+  $("plane-end-emoji").textContent = "🏁";
+  $("plane-end-title").textContent = "Both pilots are down";
+  $("plane-end-sub").textContent = "";
+  const rows = $("plane-end-scores");
+  rows.classList.remove("hidden");
+  rows.innerHTML = `
+    <div class="plane-end-score-row me"><span>You</span><span>⭐ ${planeState.score}</span></div>
+    <div class="plane-end-score-row"><span>Partner</span><span>⭐ ${p2p.peer.score}</span></div>
+  `;
+  $("plane-end-overlay").classList.add("lost");
+  $("plane-end-overlay").classList.remove("hidden");
+}
+
+/* ---- Pairing screen wiring ---- */
+
+function launchPlane2P() {
+  showScreen("screen-plane2p");
+  $("p2p-choose").classList.remove("hidden");
+  $("p2p-waiting").classList.add("hidden");
+  $("p2p-error").textContent = "";
+  $("p2p-code-input").value = "";
+  $("p2p-status").textContent = "";
+  p2pReset();
+}
+
+$("btn-p2p-create").addEventListener("click", async () => {
+  $("p2p-error").textContent = "";
+  try {
+    const code = await p2pCreateRoom();
+    $("p2p-choose").classList.add("hidden");
+    $("p2p-waiting").classList.remove("hidden");
+    $("p2p-code-display").textContent = code;
+    $("p2p-status").textContent = "Share this code with the other pilot.";
+  } catch (e) {
+    $("p2p-error").textContent = "Couldn't create the game. Check your connection.";
+  }
+});
+
+$("btn-p2p-join").addEventListener("click", async () => {
+  const code = $("p2p-code-input").value.trim().toUpperCase();
+  $("p2p-error").textContent = "";
+  if (code.length !== 6) { $("p2p-error").textContent = "Code must be 6 characters."; return; }
+  try {
+    await p2pJoinRoom(code);
+    $("p2p-choose").classList.add("hidden");
+    $("p2p-waiting").classList.remove("hidden");
+    $("p2p-code-display").textContent = code;
+    $("p2p-status").textContent = "Connecting to the other pilot…";
+  } catch (e) {
+    $("p2p-error").textContent = e.message || "Couldn't join that game.";
+  }
+});
+
+$("btn-p2p-copy").addEventListener("click", () => {
+  const code = $("p2p-code-display").textContent;
+  if (navigator.clipboard) navigator.clipboard.writeText(code);
+  $("btn-p2p-copy").textContent = "Copied!";
+  setTimeout(() => { $("btn-p2p-copy").textContent = "Copy code"; }, 1200);
+});
+
 function startPlaneLoop() {
   let lastSpawnAt = performance.now();
 
   function frame(now) {
     if (!planeState || planeState.ended) return;
     if (!planeState.paused) {
+      // In 2P only the host simulates the shared world (enemies, their
+      // bullets, the boss, power-ups, question timing). The guest receives
+      // all of that and just renders it -- but everything below that is
+      // about the LOCAL ship (movement, firing, collisions) still runs on
+      // both, which is what keeps each pilot's own controls and own damage
+      // free of any network delay.
+      const isHostSim = !planeState.is2p || p2p.role === "host";
       // Wave difficulty -- ramps with elapsed flight time, each side capped.
       const level = Math.floor((now - planeState.startTime) / PLANE_DIFFICULTY_RAMP_MS);
       const effSpawnInterval = Math.max(PLANE_MIN_SPAWN_INTERVAL_MS, (PLANE_ENEMY_SPAWN_INTERVAL_MS - level * PLANE_SPAWN_INTERVAL_STEP_MS) / planeState.enemyDensityMult);
@@ -2507,8 +3098,9 @@ function startPlaneLoop() {
       $("plane-ship").style.top = planeState.y + "%";
 
       // Auto-fire -- rapid-fire power-up halves the interval while active.
+      // A downed 2P pilot is a spectator: still on screen, no longer shooting.
       const fireInterval = now < planeState.rapidUntil ? PLANE_RAPID_FIRE_INTERVAL_MS : PLANE_FIRE_INTERVAL_MS;
-      if (now - planeState.lastFireAt > fireInterval) {
+      if (!planeState.down && now - planeState.lastFireAt > fireInterval) {
         planeState.lastFireAt = now;
         spawnPlaneBullet();
       }
@@ -2534,11 +3126,11 @@ function startPlaneLoop() {
 
       // Enemy spawn -- stops once the boss threshold is reached, so the
       // boss fight isn't cluttered with regular waves in the background.
-      if (!planeState.bossSpawned && now - lastSpawnAt > effSpawnInterval) {
+      if (isHostSim && !planeState.bossSpawned && now - lastSpawnAt > effSpawnInterval) {
         lastSpawnAt = now;
         spawnPlaneEnemy();
       }
-      if (!planeState.bossSpawned && !planeState.boss && planeState.score >= planeState.bossScoreThreshold) {
+      if (isHostSim && !planeState.bossSpawned && !planeState.boss && planeState.score >= planeState.bossScoreThreshold) {
         spawnPlaneBoss();
       }
 
@@ -2548,15 +3140,19 @@ function startPlaneLoop() {
       // still fall through to the rAF reschedule at the bottom of frame()
       // -- returning early here would stop the loop for good, since
       // nothing else re-arms it once paused.
-      if (now - planeState.lastQuestionAt > planeState.questionIntervalMs) {
+      // In 2P the host decides WHEN a question appears and sends the exact
+      // same one over, so both pilots always face an identical question.
+      if (isHostSim && now - planeState.lastQuestionAt > planeState.questionIntervalMs) {
         showPlaneQuestion();
       }
 
       // Enemies fire back, each on its own staggered timer.
-      for (const enemy of planeState.enemies) {
-        if (now > enemy.nextFireAt) {
-          spawnPlaneEnemyBullet(enemy);
-          enemy.nextFireAt = now + rand(PLANE_ENEMY_FIRE_MIN_MS, PLANE_ENEMY_FIRE_MAX_MS);
+      if (isHostSim) {
+        for (const enemy of planeState.enemies) {
+          if (now > enemy.nextFireAt) {
+            spawnPlaneEnemyBullet(enemy);
+            enemy.nextFireAt = now + rand(PLANE_ENEMY_FIRE_MIN_MS, PLANE_ENEMY_FIRE_MAX_MS);
+          }
         }
       }
 
@@ -2564,7 +3160,7 @@ function startPlaneLoop() {
       // figure-8, and fires on its own, faster timer. Reuses
       // spawnPlaneEnemyBullet -- it only reads .x/.y off whatever object
       // it's given.
-      if (planeState.boss) {
+      if (isHostSim && planeState.boss) {
         const boss = planeState.boss;
         boss.t += 1;
         if (boss.type.moveStyle === "figure8") {
@@ -2597,7 +3193,7 @@ function startPlaneLoop() {
       // Move enemy bullets along their aimed direction, drop off-screen ones
       // (any edge now, not just the bottom, since they're no longer purely
       // vertical).
-      planeState.enemyBullets = planeState.enemyBullets.filter(b => {
+      if (isHostSim) planeState.enemyBullets = planeState.enemyBullets.filter(b => {
         b.x += b.vx;
         b.y += b.vy;
         if (b.y > 106 || b.y < -6 || b.x < -6 || b.x > 106) { b.el.remove(); return false; }
@@ -2612,7 +3208,7 @@ function startPlaneLoop() {
       // PLANE_ENEMY_REVERSE_CHANCE's comment) -- plus a per-type
       // horizontal wobble/drift/dart so they don't all fly in a single
       // dead-straight lane.
-      planeState.enemies = planeState.enemies.filter(e => {
+      if (isHostSim) planeState.enemies = planeState.enemies.filter(e => {
         if (!e.reverseRolled && e.y > planeState.y + PLANE_ENEMY_REVERSE_MARGIN) {
           e.reverseRolled = true;
           if (Math.random() < PLANE_ENEMY_REVERSE_CHANCE) e.reversed = true;
@@ -2633,7 +3229,7 @@ function startPlaneLoop() {
       });
 
       // Move power-ups down, drop off-screen ones.
-      planeState.powerups = planeState.powerups.filter(p => {
+      if (isHostSim) planeState.powerups = planeState.powerups.filter(p => {
         p.y += PLANE_POWERUP_FALL_SPEED;
         if (p.y > 106) { p.el.remove(); return false; }
         p.el.style.left = p.x + "%";
@@ -2654,6 +3250,14 @@ function startPlaneLoop() {
             planeState.bullets = planeState.bullets.filter(b => b !== bullet);
             planeState.score += 1;
             updatePlaneScore();
+            // Guest: the kill is applied here immediately so shooting feels
+            // instant, then reported so the host drops it from the shared
+            // world too. recentKills stops an already-in-flight snapshot
+            // from briefly resurrecting it (see p2pSyncList).
+            if (!isHostSim) {
+              p2p.pendingKills.push(enemy.id);
+              p2p.recentKills.set(enemy.id, now);
+            }
             break;
           }
         }
@@ -2669,6 +3273,10 @@ function startPlaneLoop() {
             spawnPlaneExplosion(bullet.x, bullet.y);
             planeState.boss.hp -= 1;
             updatePlaneBossHp();
+            // Guest: the local HP drop is just instant feedback -- the host
+            // owns the boss, so report the hit and let the next snapshot be
+            // the truth. Only the host may declare it defeated.
+            if (!isHostSim) { p2p.pendingBossHits += 1; break; }
             if (planeState.boss.hp <= 0) {
               handleBossDefeat();
               break;
@@ -2685,6 +3293,7 @@ function startPlaneLoop() {
           planeState.powerups = planeState.powerups.filter(pu => pu !== p);
           applyPlanePowerup(p.type);
           updatePlaneBuffHud();
+          if (!isHostSim) p2p.pendingPickups.push(p.id);
         }
       }
 
@@ -2716,12 +3325,22 @@ function startPlaneLoop() {
         if (planeState.ended) return;
       }
     }
+    // Outside the paused check on purpose: status/position should keep
+    // flowing to the partner even while a local overlay is up, so their
+    // view of us never goes stale.
+    if (planeState.is2p) p2pTick(now);
     planeState.rafId = requestAnimationFrame(frame);
   }
   planeState.rafId = requestAnimationFrame(frame);
 }
 
-$("plane-end-replay").addEventListener("click", () => launchPlaneMode());
+// After a 2P round the peer connection is spent (and the partner has their
+// own end screen), so "Play Again" goes back to pairing rather than
+// silently restarting into a half-dead session.
+$("plane-end-replay").addEventListener("click", () => {
+  if (planeState && planeState.is2p) { p2pReset(); launchPlane2P(); return; }
+  launchPlaneMode();
+});
 
 // Deep link from the hub's landing-page roaming car (?drive=1) — jump
 // straight into Drive Mode instead of the Solo/Multiplayer picker.

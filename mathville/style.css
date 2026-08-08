@@ -1015,6 +1015,54 @@ button { font-family: inherit; }
 
 #plane-end-overlay.lost .drive-end-title { color: var(--bad); }
 
+/* ---------- Plane Mode 2-player (peer-to-peer over WebRTC) ----------
+   Everything the partner controls arrives in ~20 updates/sec rather than
+   every frame, so those elements get a short CSS transition on left/top:
+   the browser glides them between updates instead of visibly teleporting.
+   The duration is deliberately a touch longer than the send interval so
+   there's no stutter if one update is late. Your OWN ship never gets
+   this -- it's driven locally every frame and must feel instant. */
+.plane-peer-ship, .plane-remote {
+  transition: left 70ms linear, top 70ms linear;
+}
+.plane-peer-ship { opacity: .92; }
+/* Partner is out of lives but still spectating -- ghost their ship so it
+   reads as "not in play" without disappearing entirely. */
+.plane-peer-ship.down { opacity: .3; filter: grayscale(1) drop-shadow(0 3px 4px rgba(0,0,0,.35)); }
+
+/* Partner's shots, in their ship's orange rather than your yellow, so
+   it's obvious who is hitting what. */
+.plane-peer-bullet {
+  position: absolute; width: 5px; height: 14px; margin-left: -2.5px; margin-top: -7px;
+  background: linear-gradient(180deg, #ffd9b0, #e4844a);
+  border-radius: 3px; box-shadow: 0 0 6px rgba(228,132,74,.8);
+  transition: left 70ms linear, top 70ms linear;
+  z-index: 4;
+}
+
+.plane-peer-pill { background: #f6e0cd !important; color: #a85b27 !important; }
+
+.plane-2p-banner {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 96px;
+  padding: 8px 16px; border-radius: 999px; z-index: 8;
+  background: rgba(28,39,64,.86); color: #fff;
+  font: 800 13px "Baloo 2", sans-serif; white-space: nowrap;
+  pointer-events: none;
+}
+.plane-2p-banner.warn { background: rgba(181,61,24,.9); }
+
+.plane-end-scores {
+  display: flex; flex-direction: column; gap: 6px; margin: 10px 0 14px;
+}
+.plane-end-score-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px; border-radius: 12px; background: var(--cream);
+  font: 800 14px "Baloo 2", sans-serif; color: var(--ink);
+}
+.plane-end-score-row.me { border: 2px solid var(--wood); }
+
+.p2p-status { font: 700 13px "Baloo 2", sans-serif; color: var(--ink-soft); margin-top: 10px; }
+
 /* Positive-feeling variant of .drive-toast, used for the "Boss defeated!"
    milestone rather than Drive Mode's warning-red default. */
 .plane-toast-good { background: var(--wood); }
