@@ -1906,7 +1906,7 @@ function startPlaneRespawnChallenge() {
 }
 
 function updatePlaneRespawnProgress() {
-  $("plane-respawn-progress").textContent = `${planeState.respawnCorrectCount} / ${PLANE_RESPAWN_CORRECT_NEEDED} benar`;
+  $("plane-respawn-progress").textContent = `${planeState.respawnCorrectCount} / ${PLANE_RESPAWN_CORRECT_NEEDED} correct`;
 }
 
 function rollPlaneRespawnQuestion() {
@@ -4024,7 +4024,7 @@ function launchNinjaRunner() {
   $("ninja-boss-hp").classList.add("hidden");
   $("ninja-finish-overlay").classList.add("hidden");
   $("ninja-review-overlay").classList.add("hidden");
-  $("ninja-qnum").textContent = `Soal 1/${NINJA_TOTAL_Q}`;
+  $("ninja-qnum").textContent = `Q 1/${NINJA_TOTAL_Q}`;
   $("ninja-score").textContent = "⭐ 0";
   updateNinjaBestHud();
   updateNinjaLivesHud();
@@ -4095,7 +4095,7 @@ function ninjaStartRunLane() {
   ninjaSetGuard(false);
   ninjaState.obstacleDodged = false;
   const obstacleEmoji = NINJA_OBSTACLE_TYPES[rand(0, NINJA_OBSTACLE_TYPES.length - 1)];
-  $("ninja-hint").textContent = "Rintangan di depan! Tap JUMP buat lompatin " + obstacleEmoji;
+  $("ninja-hint").textContent = "Obstacle ahead! Tap JUMP to hop over " + obstacleEmoji;
 
   const lane = $("ninja-run-lane");
   lane.innerHTML = `<div class="ninja-obstacle" id="ninja-obstacle-el">${obstacleEmoji}</div>`;
@@ -4127,11 +4127,11 @@ function ninjaResolveObstacle() {
     const bossType = NINJA_BOSS_TYPES[ninjaState.bossesDefeated % NINJA_BOSS_TYPES.length];
     enemy.className = "ninja-enemy ninja-boss-enemy";
     enemy.textContent = bossType.emoji;
-    $("ninja-hint").textContent = `⚔️ ${bossType.name} mendekat!`;
+    $("ninja-hint").textContent = `⚔️ ${bossType.name} is approaching!`;
   } else {
     enemy.className = "ninja-enemy";
     enemy.textContent = NINJA_ENEMY_TYPES[rand(0, NINJA_ENEMY_TYPES.length - 1)];
-    $("ninja-hint").textContent = "Musuh mendekat! Bersiap jawab soal " + enemy.textContent;
+    $("ninja-hint").textContent = "An enemy is approaching! Get ready to answer " + enemy.textContent;
   }
   $("ninja-run-lane").appendChild(enemy);
   ninjaState.laneTimer = setTimeout(ninjaResolveEnemy, NINJA_ENEMY_MS);
@@ -4252,8 +4252,8 @@ function renderNinjaGates() {
   $("ninja-qcard").classList.add("hidden");
   $("ninja-bubbles").classList.add("hidden");
   $("ninja-hint").textContent = ninjaState.inBoss
-    ? `⚔️ Kalahin boss! Jawab benar (sisa HP: ${ninjaState.bossHp})`
-    : "Pilih subject (kesulitan tiap kartu acak):";
+    ? `⚔️ Defeat the boss! Answer correctly (HP left: ${ninjaState.bossHp})`
+    : "Pick a subject (each card's difficulty is random):";
 
   Object.keys(NINJA_SUBJECTS).forEach(key => {
     const diff = NINJA_DIFFS[rand(0, 2)];
@@ -4281,7 +4281,7 @@ function ninjaPickCard(subjectKey, difficulty) {
   const bubbles = $("ninja-bubbles");
   bubbles.innerHTML = "";
   bubbles.classList.remove("hidden");
-  $("ninja-hint").textContent = `Jawab soal ${NINJA_SUBJECTS[subjectKey]} (${difficulty.toUpperCase()}):`;
+  $("ninja-hint").textContent = `Answer this ${NINJA_SUBJECTS[subjectKey]} question (${difficulty.toUpperCase()}):`;
 
   shuffle(q.options).forEach(opt => {
     const btn = document.createElement("button");
@@ -4343,7 +4343,7 @@ function ninjaSliceQuestion(promptText, onDone) {
 function ninjaAdvance() {
   ninjaState.qnum++;
   if (ninjaState.qnum > NINJA_TOTAL_Q) { ninjaShowFinish(); return; }
-  $("ninja-qnum").textContent = `Soal ${ninjaState.qnum}/${NINJA_TOTAL_Q}`;
+  $("ninja-qnum").textContent = `Q ${ninjaState.qnum}/${NINJA_TOTAL_Q}`;
   // Boss checkpoint every NINJA_BOSS_EVERY questions -- flagged here, then
   // actually activated once the enemy "reaches" the runner (ninjaResolveEnemy).
   ninjaState.pendingBoss = (ninjaState.qnum - 1) % NINJA_BOSS_EVERY === 0;
@@ -4354,16 +4354,16 @@ const NINJA_WIN_XP = 20;
 
 function ninjaShowFinish() {
   $("ninja-finish-title").textContent = "🏁 Your journey has completed.";
-  $("ninja-finish-sub").textContent = `${NINJA_TOTAL_Q} soal selesai dijawab!`;
+  $("ninja-finish-sub").textContent = `${NINJA_TOTAL_Q} questions answered!`;
   ninjaFinishCommon();
 }
 
 // Lives hit 0 before finishing all the questions -- still ends the run and
-// still saves score/XP/rank, just with a distinct "kalah" title/sub instead
+// still saves score/XP/rank, just with a distinct "lost" title/sub instead
 // of the normal completion copy.
 function ninjaGameOver() {
-  $("ninja-finish-title").textContent = "💀 Nyawa habis!";
-  $("ninja-finish-sub").textContent = `Berhasil jawab ${ninjaState.totalAnswered} soal sebelum kalah.`;
+  $("ninja-finish-title").textContent = "💀 Out of lives!";
+  $("ninja-finish-sub").textContent = `Answered ${ninjaState.totalAnswered} question${ninjaState.totalAnswered === 1 ? "" : "s"} before losing.`;
   ninjaFinishCommon();
 }
 
@@ -4375,7 +4375,7 @@ function ninjaFinishCommon() {
   $("ninja-qcard").classList.add("hidden");
   $("ninja-bubbles").classList.add("hidden");
   $("ninja-hint").textContent = "";
-  $("ninja-final-score").textContent = `${ninjaState.score} poin`;
+  $("ninja-final-score").textContent = `${ninjaState.score} points`;
   $("ninja-final-best").textContent = `Best: ${Math.max(ninjaState.score, PROGRESS.ninjaHighScore || 0)}`;
   const rank = ninjaComputeRank();
   $("ninja-finish-badge").innerHTML = `${rank.emoji} ${rank.label}`;
@@ -4399,8 +4399,8 @@ function ninjaShowReview() {
   $("ninja-review-overlay").classList.remove("hidden");
   const prevBtn = $("ninja-review-prev"), nextBtn = $("ninja-review-next");
   if (ninjaState.wrongLog.length === 0) {
-    $("ninja-review-title").textContent = "Bo here! Sempurna, gak ada yang salah!";
-    $("ninja-review-qbox").innerHTML = `<div class="ninja-review-q">🎉 Semua soal kejawab benar!</div>`;
+    $("ninja-review-title").textContent = "Bo here! Perfect, nothing to review!";
+    $("ninja-review-qbox").innerHTML = `<div class="ninja-review-q">🎉 Every question answered correctly!</div>`;
     prevBtn.classList.add("hidden");
     nextBtn.classList.add("hidden");
     return;
@@ -4414,10 +4414,10 @@ function ninjaShowReview() {
 function ninjaRenderReviewCard() {
   const item = ninjaState.wrongLog[ninjaReviewIdx];
   const tip = NINJA_REVIEW_ENCOURAGEMENTS[ninjaReviewIdx % NINJA_REVIEW_ENCOURAGEMENTS.length];
-  $("ninja-review-title").textContent = `Bo here! Yuk kita bahas (${item.subject}):`;
+  $("ninja-review-title").textContent = `Bo here! Let's go over this (${item.subject}):`;
   $("ninja-review-qbox").innerHTML = `
     <div class="ninja-review-q">${item.prompt}</div>
-    <div class="ninja-review-explain">Kamu jawab <span class="rw-wrong">${item.your}</span>, padahal jawaban yang tepat itu <span class="rw-correct">${item.correct}</span>. ${tip}</div>
+    <div class="ninja-review-explain">You answered <span class="rw-wrong">${item.your}</span>, but the correct answer was <span class="rw-correct">${item.correct}</span>. ${tip}</div>
   `;
   $("ninja-review-prev").disabled = ninjaReviewIdx === 0;
   $("ninja-review-next").disabled = ninjaReviewIdx === ninjaState.wrongLog.length - 1;
