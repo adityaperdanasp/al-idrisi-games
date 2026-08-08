@@ -168,7 +168,7 @@ const state = {
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   $(id).classList.add("active");
-  const hideNav = id === "screen-landing" || id === "screen-pair";
+  const hideNav = id === "screen-landing" || id === "screen-pair" || id === "screen-ninja";
   $("btn-map").classList.toggle("hidden", hideNav);
   $("btn-drive").classList.toggle("hidden", hideNav);
   // Screens that already have their own Bo (Drive Mode's car, the reward
@@ -4558,9 +4558,11 @@ $("ninja-review-prev").addEventListener("click", () => { if (ninjaReviewIdx > 0)
 $("ninja-review-next").addEventListener("click", () => { if (ninjaReviewIdx < ninjaState.wrongLog.length - 1) { ninjaReviewIdx++; ninjaRenderReviewCard(); } });
 $("ninja-review-btn").addEventListener("click", ninjaShowReview);
 $("ninja-review-done").addEventListener("click", () => {
-  $("ninja-review-overlay").classList.add("hidden");
-  if (window.AIGBgm && AIGBgm.playDefaultTrack) AIGBgm.playDefaultTrack();
-  showScreen("screen-map");
+  // Ninja Runner has no entry point inside MathVille anymore (see note
+  // below) -- screen-ninja is only ever reached via the ?ninja=1 deep
+  // link, so "done" should mirror btn-home and go back to the hub
+  // landing page, not MathVille's own Town Map.
+  window.location.href = "../";
 });
 
 $("ninja-jump-btn").addEventListener("click", ninjaHandleDodgeBtn);
