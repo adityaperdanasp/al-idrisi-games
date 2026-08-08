@@ -3984,6 +3984,9 @@ const NINJA_MAX_LIVES = 5;
 function ninjaLoseLife() {
   ninjaState.lives -= 1;
   updateNinjaLivesHud();
+  const runner = $("ninja-runner");
+  runner.classList.add("hit");
+  setTimeout(() => runner.classList.remove("hit"), 300);
 }
 
 function updateNinjaLivesHud() {
@@ -4168,6 +4171,10 @@ function ninjaStartFlyingEncounter() {
   const flyingEmoji = NINJA_FLYING_TYPES[rand(0, NINJA_FLYING_TYPES.length - 1)];
   $("ninja-hint").textContent = "A flying enemy incoming! Tap DUCK to dodge its shuriken " + flyingEmoji;
 
+  // Flying types (bird/bat/wasp) already read as complete creatures as
+  // plain emoji -- unlike the humanoid ground/boss enemies (oni mask,
+  // ninja, snake face) that needed a body added, giving this one legs
+  // would just look like a bird standing on a floating torso.
   const lane = $("ninja-run-lane");
   lane.innerHTML = `<div class="ninja-enemy ninja-flying-enemy" id="ninja-enemy-el">${flyingEmoji}</div>`;
   lane.classList.remove("hidden");
@@ -4215,6 +4222,19 @@ function ninjaResolveFlying() {
   ninjaResolveEnemy();
 }
 
+// Enemies get a full body (torso+legs+face) instead of a bare floating
+// emoji -- sized the same as the ninja's own sprite so it reads as an
+// actual character to fight, not a mask. The face emoji is still what
+// distinguishes enemy types; textContent (used for the hint text) still
+// resolves to just that emoji since the torso/legs carry no text.
+function ninjaEnemyBodyHtml(faceEmoji) {
+  return `
+    <div class="ninja-enemy-leg l1"></div><div class="ninja-enemy-leg l2"></div>
+    <div class="ninja-enemy-torso"></div>
+    <div class="ninja-enemy-face">${faceEmoji}</div>
+  `;
+}
+
 function ninjaResolveObstacle() {
   const obstacle = document.getElementById("ninja-obstacle-el");
   let bumped = false;
@@ -4236,12 +4256,13 @@ function ninjaResolveObstacle() {
   if (ninjaState.pendingBoss) {
     const bossType = NINJA_BOSS_TYPES[ninjaState.bossesDefeated % NINJA_BOSS_TYPES.length];
     enemy.className = "ninja-enemy ninja-boss-enemy";
-    enemy.textContent = bossType.emoji;
+    enemy.innerHTML = ninjaEnemyBodyHtml(bossType.emoji);
     $("ninja-hint").textContent = `⚔️ ${bossType.name} is approaching!`;
   } else {
     enemy.className = "ninja-enemy";
-    enemy.textContent = NINJA_ENEMY_TYPES[rand(0, NINJA_ENEMY_TYPES.length - 1)];
-    $("ninja-hint").textContent = "An enemy is approaching! Get ready to answer " + enemy.textContent;
+    const faceEmoji = NINJA_ENEMY_TYPES[rand(0, NINJA_ENEMY_TYPES.length - 1)];
+    enemy.innerHTML = ninjaEnemyBodyHtml(faceEmoji);
+    $("ninja-hint").textContent = "An enemy is approaching! Get ready to answer " + faceEmoji;
   }
   $("ninja-run-lane").appendChild(enemy);
   ninjaState.laneTimer = setTimeout(ninjaResolveEnemy, NINJA_ENEMY_MS);

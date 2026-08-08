@@ -1107,22 +1107,56 @@ button { font-family: inherit; }
   40%, 60% { transform: translateY(10px) scaleY(0.7); }
 }
 
+/* Hit reaction -- fires from ninjaLoseLife() on every life lost (bump,
+   flying-enemy hit, wrong answer), so damage is actually felt/seen
+   instead of just quietly decrementing the HUD hearts. Placed after
+   .running/.jumping/.ducking so it wins the cascade while active. */
+.ninja-runner.hit { animation: ninjaRunnerHit .3s ease; }
+@keyframes ninjaRunnerHit {
+  0%, 100% { filter: brightness(1); transform: translateX(0); }
+  25% { filter: brightness(2) drop-shadow(0 0 6px #e4372e); transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+}
+
 .ninja-run-lane { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
-.ninja-obstacle, .ninja-enemy {
+.ninja-obstacle {
   position: absolute; bottom: 40px; font-size: 30px;
   filter: drop-shadow(0 3px 3px rgba(0,0,0,.2));
+  animation: ninjaObstacleRun 1.8s linear forwards;
 }
-/* Durations match NINJA_OBSTACLE_MS/NINJA_ENEMY_MS in script.js -- keep in
-   sync if those constants change. Positioned with `left` (not `right`) so
-   the resting spot is a FIXED PIXEL distance from .ninja-runner
-   (left:24px, width:54px) regardless of the lane's actual width -- "one
-   slash away" per explicit request, so ninjaSlashEnemy()'s step-forward +
-   slash-flash always lines up against the enemy visually, container
-   width aside. */
-.ninja-obstacle { animation: ninjaObstacleRun 1.8s linear forwards; }
-.ninja-enemy { animation: ninjaEnemyRun 1.8s linear forwards; }
+/* Enemy body -- torso+legs+face instead of a bare emoji, sized the same
+   as .ninja-runner (54x90) so it reads as an actual character (see
+   ninjaEnemyBodyHtml). Duration matches NINJA_ENEMY_MS/NINJA_FLYING_MS in
+   script.js. Positioned with `left` (not `right`) so the resting spot is
+   a FIXED PIXEL distance from .ninja-runner (left:24px, width:54px)
+   regardless of the lane's actual width -- "one slash away" per explicit
+   request, so ninjaSlashEnemy()'s kunai throw always lines up against
+   the enemy visually, container width aside. */
+.ninja-enemy {
+  position: absolute; bottom: 40px; width: 54px; height: 90px;
+  animation: ninjaEnemyRun 1.8s linear forwards;
+}
 @keyframes ninjaObstacleRun { from { left: 100%; } to { left: 140px; } }
 @keyframes ninjaEnemyRun { from { left: 100%; } to { left: 108px; } }
+
+.ninja-enemy-torso {
+  position: absolute; left: 14px; top: 30px; width: 26px; height: 34px;
+  background: #7a2e2e; border-radius: 8px;
+  filter: drop-shadow(0 3px 3px rgba(0,0,0,.2));
+}
+.ninja-enemy-face {
+  position: absolute; left: 0; top: -8px; width: 54px; text-align: center;
+  font-size: 32px; filter: drop-shadow(0 3px 3px rgba(0,0,0,.2));
+}
+.ninja-enemy-leg {
+  position: absolute; top: 60px; width: 8px; height: 26px;
+  background: #5a1f1f; border-radius: 4px; transform-origin: top center;
+}
+.ninja-enemy-leg.l1 { left: 16px; animation: ninjaEnemyLegA .3s ease-in-out infinite; }
+.ninja-enemy-leg.l2 { left: 30px; animation: ninjaEnemyLegB .3s ease-in-out infinite; }
+@keyframes ninjaEnemyLegA { 0%, 100% { transform: rotate(24deg); } 50% { transform: rotate(-24deg); } }
+@keyframes ninjaEnemyLegB { 0%, 100% { transform: rotate(-24deg); } 50% { transform: rotate(24deg); } }
 
 /* Obstacle outcome, shown briefly right as its approach animation ends
    (see ninjaResolveObstacle) -- dodged = jumped in time, bumped = didn't. */
@@ -1136,7 +1170,10 @@ button { font-family: inherit; }
    animation (same 1.8s duration) with just `bottom` overridden here. It
    throws a shuriken partway through (see ninjaThrowShuriken) that must be
    DUCKed instead of JUMPed. */
-.ninja-flying-enemy { bottom: 120px; }
+.ninja-flying-enemy {
+  bottom: 120px; width: auto; height: auto; font-size: 30px;
+  filter: drop-shadow(0 3px 3px rgba(0,0,0,.2));
+}
 
 .ninja-shuriken {
   position: absolute; width: 16px; height: 16px; bottom: 120px;
@@ -1282,10 +1319,10 @@ button { font-family: inherit; }
 
 /* Boss enemy during a boss checkpoint (see ninjaResolveObstacle/ninjaResolveEnemy) --
    bigger + a subtle shake so it reads as a bigger threat than a regular enemy. */
-.ninja-boss-enemy { font-size: 46px !important; animation: ninjaBossShake .4s ease-in-out infinite; }
+.ninja-boss-enemy { animation: ninjaBossShake .4s ease-in-out infinite; }
 @keyframes ninjaBossShake {
-  0%, 100% { transform: rotate(-3deg); }
-  50% { transform: rotate(3deg); }
+  0%, 100% { transform: scale(1.3) rotate(-3deg); }
+  50% { transform: scale(1.3) rotate(3deg); }
 }
 
 .ninja-review-bo { width: 56px; height: 56px; border-radius: 50%; margin-bottom: 6px; }
