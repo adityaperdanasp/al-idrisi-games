@@ -1703,8 +1703,16 @@ const PLANE_ENEMY_REVERSE_CHANCE = 0.4;
 // PLANE_BOSS_TYPES (by bossesDefeated index) so it's not the same dragon
 // every time; each type's hpMult/speedMult/fire-rate multipliers give it a
 // distinct feel rather than just a palette swap.
-const PLANE_BOSS_SCORE_THRESHOLD = 15;
-const PLANE_BOSS_THRESHOLD_STEP = 15;
+// Raised from 15/15/flat to 40/40/×1.2 per feedback that bosses came too
+// close together, especially once enemy density (which climbs the SAME
+// 1.2x every boss kill) made score climb faster than the threshold did --
+// the gap between fights was actually SHRINKING over a run. Growing the
+// step by the same multiplier keeps the gap roughly flat/gently widening
+// instead: simulated ~26-55s apart for a strong player, ~33-79s average,
+// across 8 bosses (vs. 9-19s and shrinking before this change).
+const PLANE_BOSS_SCORE_THRESHOLD = 40;
+const PLANE_BOSS_THRESHOLD_STEP = 40;
+const PLANE_BOSS_THRESHOLD_GROWTH = 1.2;
 const PLANE_BOSS_MAX_HP = 16;            // 2x the original 8, per feedback
 const PLANE_BOSS_SPEED = 0.25;          // % world width per frame
 const PLANE_BOSS_FIRE_MIN_MS = 700;
@@ -1841,6 +1849,7 @@ function launchPlaneMode(is2p) {
     bossesDefeated: 0,
     enemyDensityMult: PLANE_ENEMY_DENSITY_START,
     bossScoreThreshold: PLANE_BOSS_SCORE_THRESHOLD,
+    bossThresholdStep: PLANE_BOSS_THRESHOLD_STEP, // grows each boss kill -- see handleBossDefeat
     questionIntervalMs: PLANE_QUESTION_INTERVAL_MS,
     score: 0,
     lives: PLANE_MAX_LIVES,
@@ -2276,7 +2285,11 @@ function handleBossDefeat() {
   planeState.bossSpawned = false;
   planeState.bossesDefeated += 1;
   planeState.enemyDensityMult *= PLANE_ENEMY_DENSITY_BOSS_MULT;
-  planeState.bossScoreThreshold += PLANE_BOSS_THRESHOLD_STEP;
+  // The step itself grows (not just the threshold) -- otherwise enemy
+  // density compounding every fight would out-pace a flat step and the
+  // gap between bosses would keep shrinking instead of holding steady.
+  planeState.bossScoreThreshold += planeState.bossThresholdStep;
+  planeState.bossThresholdStep *= PLANE_BOSS_THRESHOLD_GROWTH;
   planeState.questionIntervalMs = Math.max(
     PLANE_QUESTION_INTERVAL_MIN_MS,
     PLANE_QUESTION_INTERVAL_MS - planeState.bossesDefeated * PLANE_QUESTION_INTERVAL_STEP_MS
