@@ -1716,10 +1716,10 @@ const PLANE_ENEMY_REVERSE_CHANCE = 0.4;
 const PLANE_BOSS_SCORE_THRESHOLD = 40;
 const PLANE_BOSS_THRESHOLD_STEP = 40;
 const PLANE_BOSS_THRESHOLD_GROWTH = 1.2;
-const PLANE_BOSS_MAX_HP = 16;            // 2x the original 8, per feedback
+const PLANE_BOSS_MAX_HP = 21;            // 2x the original 8, then +30% per feedback (16 -> 20.8, rounded)
 const PLANE_BOSS_SPEED = 0.25;          // % world width per frame
-const PLANE_BOSS_FIRE_MIN_MS = 700;
-const PLANE_BOSS_FIRE_MAX_MS = 1300;
+const PLANE_BOSS_FIRE_MIN_MS = 560;     // was 700/1300, -20% (fires more often) per feedback
+const PLANE_BOSS_FIRE_MAX_MS = 1040;
 // Bosses are drawn aircraft rather than emoji (🐉/🦂/👹/🦑 before) -- same
 // on-screen size, but they now read as the big enemy plane at the end of a
 // wave instead of a random creature. Each silhouette matches how that boss
@@ -1870,6 +1870,7 @@ function launchPlaneMode(is2p) {
     nextPowerupId: 0,
     lastFireAt: 0,
     lastQuestionAt: performance.now(),
+    questionActive: false,
     startTime: performance.now(),
     rafId: null,
     paused: false,
@@ -2661,6 +2662,12 @@ async function buildFocusRoundSteps(selected) {
 // wrong; scores are separate).
 function showPlaneQuestion(preset) {
   const is2p = planeState.is2p;
+  // In 2P the round keeps running (see below) instead of pausing, so
+  // frame()'s interval check has nothing else stopping it from calling
+  // this again on the very next tick while the card is still up -- that
+  // was a real bug (new random question + new DOM every frame, ~60x/sec,
+  // card flickering too fast to tap). This flag is the guard.
+  planeState.questionActive = true;
   // Solo pauses the world to answer. 2P can't: the host pausing would
   // freeze the guest's whole world too, and pausing only one side would
   // leave the other waiting. Instead the round keeps running and the
@@ -2704,6 +2711,7 @@ function showPlaneQuestion(preset) {
       setTimeout(() => {
         $("plane-question-overlay").classList.add("hidden");
         planeState.lastQuestionAt = performance.now();
+        planeState.questionActive = false;
         if (!planeState || planeState.ended) return;
         if (is2p) {
           // Drop the answering-window invulnerability, but keep a normal
@@ -2955,7 +2963,7 @@ function p2pHandleMessage(msg) {
   switch (msg.t) {
     case "w":  p2pApplyWorld(msg); break;
     case "g":  p2pApplyGuest(msg); break;
-    case "q":  showPlaneQuestion(msg.q); break;
+    case "q":  if (!planeState.questionActive) showPlaneQuestion(msg.q); break;
     case "bomb":
       // Partner answered correctly -- the bomb is a world change, so only
       // the host applies it; the guest sees the result in the next snapshot.
@@ -3332,14 +3340,15 @@ function startPlaneLoop() {
       }
 
       // Periodic math question -- the actual reason this is a learning
-      // game and not just a shooter. Pauses the loop; showPlaneQuestion()
-      // itself resets lastQuestionAt and un-pauses once answered. Must
-      // still fall through to the rAF reschedule at the bottom of frame()
-      // -- returning early here would stop the loop for good, since
-      // nothing else re-arms it once paused.
+      // game and not just a shooter. In solo this also pauses the loop;
+      // in 2P the round keeps running instead (see showPlaneQuestion), so
+      // `questionActive` is what stops this from re-firing every single
+      // frame while the card is up and unanswered -- lastQuestionAt itself
+      // isn't updated until the answer's resolved, matching the "interval
+      // is measured from last answer, not last question shown" design.
       // In 2P the host decides WHEN a question appears and sends the exact
       // same one over, so both pilots always face an identical question.
-      if (isHostSim && now - planeState.lastQuestionAt > planeState.questionIntervalMs) {
+      if (isHostSim && !planeState.questionActive && now - planeState.lastQuestionAt > planeState.questionIntervalMs) {
         showPlaneQuestion();
       }
 
