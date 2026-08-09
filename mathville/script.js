@@ -2769,17 +2769,48 @@ function showPlaneQuestion(preset) {
 const P2P_SEND_INTERVAL_MS = 50;      // 20 world updates/sec -- .plane-remote's CSS transition smooths the gaps
 const P2P_KILL_GRACE_MS = 700;        // ignore an enemy id this long after killing it, so a snapshot still in flight doesn't resurrect it
 const P2P_LINK_TIMEOUT_MS = 3000;     // no packet for this long = warn about the connection
+const P2P_CONNECT_TIMEOUT_MS = 12000; // no open channel this long after a join attempt = give up and show an error instead of hanging forever
 const P2P_ICE = { iceServers: [
   { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" }
+  { urls: "stun:stun1.l.google.com:19302" },
+  // STUN alone only works when both phones' NATs are cooperative -- which
+  // usually holds on the same WiFi, but fails across two different
+  // networks (e.g. one on WiFi, one on cellular data), a very likely
+  // setup for "parent + kid, two phones". These TURN relays (free public
+  // OpenRelay project) are the fallback for that case.
+  { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+  { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+  { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
 ] };
 
 let p2p = null;
 
 function p2pReset() {
+  if (p2p && p2p.connectTimer) clearTimeout(p2p.connectTimer);
   if (p2p && p2p.pc) { try { p2p.pc.close(); } catch (e) {} }
   if (p2p && p2p.signalRef) { try { p2p.signalRef.off(); } catch (e) {} }
   p2p = null;
+}
+
+// Arm/disarm the "give up and show an error" timer for the pairing screen.
+// Only relevant before the round has started -- once the channel opens
+// p2pStartGame() disarms it, and mid-round drops are handled separately
+// by the .warn banner (P2P_LINK_TIMEOUT_MS).
+function p2pArmConnectTimeout() {
+  if (!p2p) return;
+  if (p2p.connectTimer) clearTimeout(p2p.connectTimer);
+  p2p.connectTimer = setTimeout(() => {
+    if (!p2p || p2p.started) return;
+    p2pConnectFailed("Couldn't connect to the other pilot. Try both phones on the same WiFi, then try again.");
+  }, P2P_CONNECT_TIMEOUT_MS);
+}
+
+function p2pConnectFailed(message) {
+  if (p2p && p2p.connectTimer) clearTimeout(p2p.connectTimer);
+  p2pReset();
+  $("p2p-waiting").classList.add("hidden");
+  $("p2p-choose").classList.remove("hidden");
+  $("p2p-error").textContent = message;
 }
 
 function p2pActive() { return !!(p2p && p2p.channel && p2p.channel.readyState === "open"); }
@@ -2817,7 +2848,11 @@ function p2pAttachPeer(pc, code, mySlot, theirSlot) {
   pc.onconnectionstatechange = () => {
     if (!p2p) return;
     if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
-      p2pSetBanner("Connection lost", true);
+      if (!p2p.started) {
+        p2pConnectFailed("Couldn't connect to the other pilot. Try both phones on the same WiFi, then try again.");
+      } else {
+        p2pSetBanner("Connection lost", true);
+      }
     }
   };
 }
@@ -2864,6 +2899,11 @@ async function p2pCreateRoom() {
   p2p.signalRef.child("answer").on("value", async snap => {
     const ans = snap.val();
     if (!ans || pc.currentRemoteDescription) return;
+    // A guest has actually answered -- that's when a real connection
+    // attempt starts, so that's when the give-up timer should start too
+    // (not at room creation, which can sit idle for as long as it takes
+    // to share the code).
+    p2pArmConnectTimeout();
     await pc.setRemoteDescription(new RTCSessionDescription(ans));
   });
   return code;
@@ -2890,12 +2930,14 @@ async function p2pJoinRoom(code) {
   await pc.setLocalDescription(answer);
   await p2pSignalRef(code).child("answer").set({ type: answer.type, sdp: answer.sdp });
   p2p.signalRef = p2pSignalRef(code);
+  p2pArmConnectTimeout();
 }
 
 /* ---- Handshake done -> start the round on both phones ---- */
 
 function p2pStartGame() {
   if (!p2p || p2p.started) return;
+  if (p2p.connectTimer) clearTimeout(p2p.connectTimer);
   p2p.started = true;
   p2pSetBanner("");
   // Both sides launch their own round; the host's simulation is what
