@@ -1898,8 +1898,9 @@ function launchPlaneMode(is2p) {
   $("plane-world").querySelectorAll(".plane-peer-bullet").forEach(el => el.remove());
   if (is2p) {
     p2p.peerBulletEls = [];
+    p2p.peerWingmenEls = [];
     p2p.recentKills.clear();
-    p2p.peer = { score: 0, lives: PLANE_MAX_LIVES, down: false };
+    p2p.peer = { score: 0, lives: PLANE_MAX_LIVES, down: false, wingmen: false };
     updatePlanePeerHud();
   }
   p2pSetBanner("");
@@ -2086,26 +2087,34 @@ function planeTakeHit() {
   shakePlaneWorld();
   if (planeState.lives <= 0) {
     spawnPlaneExplosion(planeState.x, planeState.y, true);
-    // 2P: no respawn gauntlet -- that pauses the round, which would strand
-    // the partner (and freeze their world entirely if we're the host).
-    // You're simply down, and keep watching until they are too.
-    if (planeState.is2p) {
-      p2pLocalDown();
-    } else if (planeState.respawnsUsed < PLANE_MAX_RESPAWNS) {
+    // Same respawn gauntlet as solo, 2P included -- only once every
+    // respawn is used does going to 0 lives become a real "down" (2P:
+    // spectator until the partner is down too; solo: real Game Over).
+    if (planeState.respawnsUsed < PLANE_MAX_RESPAWNS) {
       startPlaneRespawnChallenge();
+    } else if (planeState.is2p) {
+      p2pLocalDown();
     } else {
       endPlaneMode();
     }
   }
 }
 
-// Lives hit 0 but a respawn is still available -- pause the round and open
-// a gauntlet: keep asking questions (reusing rollPlaneQuestion(), same bank
-// as the normal in-flight question) until PLANE_RESPAWN_CORRECT_NEEDED are
-// answered correctly. A wrong answer doesn't cost anything but progress --
-// it just rolls the next question rather than ending the attempt.
+// Lives hit 0 but a respawn is still available -- open a gauntlet: keep
+// asking questions (reusing rollPlaneQuestion(), same bank as the normal
+// in-flight question) until PLANE_RESPAWN_CORRECT_NEEDED are answered
+// correctly. A wrong answer doesn't cost anything but progress -- it just
+// rolls the next question rather than ending the attempt.
+// Solo pauses the world for this like any other overlay. 2P can't (same
+// reasoning as showPlaneQuestion): pausing would freeze the host's shared
+// world or strand the guest, so the round keeps running and a long invuln
+// window keeps this ship safe while its pilot is heads-down answering.
 function startPlaneRespawnChallenge() {
-  planeState.paused = true;
+  if (planeState.is2p) {
+    planeState.invulnUntil = Math.max(planeState.invulnUntil, performance.now() + 60000);
+  } else {
+    planeState.paused = true;
+  }
   planeState.respawnCorrectCount = 0;
   updatePlaneRespawnProgress();
   $("plane-respawn-overlay").classList.remove("hidden");
@@ -2885,9 +2894,9 @@ function p2pAttachChannel(channel) {
 
 async function p2pCreateRoom() {
   const code = mvMakeCode();
-  p2p = { role: "host", code, pc: null, channel: null, peer: { score: 0, lives: PLANE_MAX_LIVES, down: false },
+  p2p = { role: "host", code, pc: null, channel: null, peer: { score: 0, lives: PLANE_MAX_LIVES, down: false, wingmen: false },
           lastSendAt: 0, lastRecvAt: 0, pendingKills: [], pendingPickups: [], pendingBossHits: 0,
-          recentKills: new Map(), remoteEls: new Map(), peerBulletEls: [], started: false };
+          recentKills: new Map(), remoteEls: new Map(), peerBulletEls: [], peerWingmenEls: [], started: false };
 
   const pc = new RTCPeerConnection(P2P_ICE);
   p2p.pc = pc;
@@ -2927,9 +2936,9 @@ async function p2pJoinRoom(code) {
   if (!data.offer) throw new Error("That game isn't ready yet.");
   if (data.answer) throw new Error("That game is already full.");
 
-  p2p = { role: "guest", code, pc: null, channel: null, peer: { score: 0, lives: PLANE_MAX_LIVES, down: false },
+  p2p = { role: "guest", code, pc: null, channel: null, peer: { score: 0, lives: PLANE_MAX_LIVES, down: false, wingmen: false },
           lastSendAt: 0, lastRecvAt: 0, pendingKills: [], pendingPickups: [], pendingBossHits: 0,
-          recentKills: new Map(), remoteEls: new Map(), peerBulletEls: [], started: false };
+          recentKills: new Map(), remoteEls: new Map(), peerBulletEls: [], peerWingmenEls: [], started: false };
 
   const pc = new RTCPeerConnection(P2P_ICE);
   p2p.pc = pc;
@@ -3091,11 +3100,42 @@ function p2pUpdatePeerFromStatus(st, ship, bullets) {
     p2p.peer.lives = st[1];
     const wasDown = p2p.peer.down;
     p2p.peer.down = !!st[2];
+    p2p.peer.wingmen = !!st[3];
     $("plane-peer-ship").classList.toggle("down", p2p.peer.down);
     if (p2p.peer.down && !wasDown) p2pRefreshBanner();
     updatePlanePeerHud();
   }
+  p2pUpdatePeerWingmen(ship);
   p2pRenderPeerBullets(bullets || []);
+}
+
+// Mirrors ensurePlaneWingmen/removePlaneWingmen but for the PARTNER's
+// escort ships -- the wingmen buff was always local-only state, so without
+// this the other pilot's screen never knew it existed. Spawns/despawns the
+// pair based on the wingmen flag from the last status packet, and tracks
+// them at the same offsets alongside whatever ship position just arrived.
+function p2pUpdatePeerWingmen(ship) {
+  if (!p2p.peerWingmenEls) p2p.peerWingmenEls = [];
+  const active = !!p2p.peer.wingmen;
+  if (active && !p2p.peerWingmenEls.length) {
+    [-11, 11].forEach(offsetX => {
+      const el = document.createElement("div");
+      el.className = "plane-wingman";
+      el.innerHTML = PLANE_WINGMAN_SVG;
+      $("plane-world").appendChild(el);
+      p2p.peerWingmenEls.push({ el, offsetX });
+    });
+  } else if (!active && p2p.peerWingmenEls.length) {
+    p2p.peerWingmenEls.forEach(w => w.el.remove());
+    p2p.peerWingmenEls = [];
+  }
+  if (ship && p2p.peerWingmenEls.length) {
+    p2p.peerWingmenEls.forEach(w => {
+      const wx = Math.max(4, Math.min(96, ship[0] + w.offsetX));
+      w.el.style.left = wx + "%";
+      w.el.style.top = (ship[1] + 6) + "%";
+    });
+  }
 }
 
 function p2pRenderPeerBullets(list) {
@@ -3132,7 +3172,10 @@ function p2pTick(now) {
   if (now - p2p.lastSendAt < P2P_SEND_INTERVAL_MS) return;
   p2p.lastSendAt = now;
 
-  const st = [planeState.score, planeState.lives, planeState.down ? 1 : 0];
+  // 4th slot: wingmen buff active, so the partner's screen can draw the
+  // escort ships too -- they only ever existed in the owning player's own
+  // planeState before this, so the OTHER pilot never saw them.
+  const st = [planeState.score, planeState.lives, planeState.down ? 1 : 0, now < planeState.wingmenUntil ? 1 : 0];
   const ship = [round1(planeState.x), round1(planeState.y)];
   const myBullets = planeState.bullets.map(b => [round1(b.x), round1(b.y)]);
 
