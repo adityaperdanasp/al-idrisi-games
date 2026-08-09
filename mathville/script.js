@@ -169,7 +169,10 @@ function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   $(id).classList.add("active");
   const hideNav = id === "screen-landing" || id === "screen-pair" || id === "screen-ninja";
-  $("btn-map").classList.toggle("hidden", hideNav);
+  // Plane Mode keeps Home + Drive Mode (its own vehicle picker) but drops
+  // the Map icon -- there's no path from a shmup back into the town map,
+  // only back to picking a vehicle or leaving to the hub.
+  $("btn-map").classList.toggle("hidden", hideNav || id === "screen-plane");
   $("btn-drive").classList.toggle("hidden", hideNav);
   // Screens that already have their own Bo (Drive Mode's car, the reward
   // screen's AI Tutor card) or where it'd just be clutter (landing, pair
