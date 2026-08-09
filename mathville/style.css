@@ -1181,7 +1181,9 @@ button { font-family: inherit; }
 
 .ninja-run-lane { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 .ninja-obstacle {
-  position: absolute; bottom: 40px; font-size: 30px;
+  /* Shorter than the jump hop's 34px rise (was 30px, read as too tall to
+     visibly clear) so a well-timed jump actually looks like it clears it. */
+  position: absolute; bottom: 40px; font-size: 22px;
   filter: drop-shadow(0 3px 3px rgba(0,0,0,.2));
   animation: ninjaObstacleRun 1.8s linear forwards;
 }
@@ -1285,11 +1287,22 @@ button { font-family: inherit; }
   100% { transform: scale(1.8); opacity: 0; }
 }
 
-.ninja-enemy.sliced { animation: ninjaEnemySliced .35s ease forwards !important; }
-@keyframes ninjaEnemySliced {
-  0% { filter: brightness(1); transform: scale(1); opacity: 1; }
-  30% { filter: brightness(3) drop-shadow(0 0 8px #fff); transform: scale(1.15); opacity: 1; }
-  100% { filter: brightness(1); transform: scale(1.3) rotate(20deg); opacity: 0; }
+/* Enemy shatter on a killing blow (ninjaSlashEnemy) -- same diagonal
+   clip-path halves as the question card's slice, sized/timed for the
+   taller 54x90 enemy body. The brightness flash at the start is the
+   "glass catching light" beat before the pieces fly apart. */
+.ninja-enemy-half { position: absolute; inset: 0; overflow: hidden; }
+.ninja-enemy-half-a { clip-path: polygon(0 0, 100% 0, 0 100%); animation: ninjaEnemySliceA .45s ease forwards; }
+.ninja-enemy-half-b { clip-path: polygon(100% 0, 100% 100%, 0 100%); animation: ninjaEnemySliceB .45s ease forwards; }
+@keyframes ninjaEnemySliceA {
+  0% { filter: brightness(1); transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  25% { filter: brightness(2.6) drop-shadow(0 0 8px #fff); }
+  100% { filter: brightness(1.3); transform: translate(-46px, -38px) rotate(-26deg); opacity: 0; }
+}
+@keyframes ninjaEnemySliceB {
+  0% { filter: brightness(1); transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  25% { filter: brightness(2.6) drop-shadow(0 0 8px #fff); }
+  100% { filter: brightness(1.3); transform: translate(46px, 38px) rotate(26deg); opacity: 0; }
 }
 
 .ninja-enemy.hit-flash { animation: ninjaEnemyHitFlash .25s ease; }

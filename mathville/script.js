@@ -4926,11 +4926,13 @@ function ninjaSetGuard(on) {
   runner.classList.toggle("running", !on);
 }
 
-// One-shot jump hop -- player-triggered, and now actually DOES something:
-// if a rock obstacle is currently on screen and hasn't been resolved yet,
-// jumping dodges it (see ninjaResolveObstacle). Temporarily drops .running
-// so the leg-swing animation doesn't fight the hop's translateY, restores
-// it once the hop finishes.
+// One-shot jump hop -- player-triggered. Whether this actually dodges the
+// obstacle is decided by TIMING, not by pressing at all (see
+// ninjaResolveObstacle): the obstacle "arrives" when its approach animation
+// ends, and only a hop still in the air at that exact moment clears it,
+// same as Dino Race -- jump too early or too late and you still get
+// bumped. Temporarily drops .running so the leg-swing animation doesn't
+// fight the hop's translateY, restores it once the hop finishes.
 function ninjaDoJump() {
   const runner = $("ninja-runner");
   if (runner.classList.contains("guard") || runner.classList.contains("jumping")) return;
@@ -4940,9 +4942,6 @@ function ninjaDoJump() {
     runner.classList.remove("jumping");
     runner.classList.add("running");
   }, 450);
-  if (ninjaState && document.getElementById("ninja-obstacle-el")) {
-    ninjaState.obstacleDodged = true;
-  }
 }
 
 // Crouch dodge for the flying-enemy encounter's thrown shuriken -- same
@@ -5009,7 +5008,6 @@ function ninjaStartRunLane() {
   $("ninja-qcard").classList.add("hidden");
   $("ninja-bubbles").classList.add("hidden");
   ninjaSetGuard(false);
-  ninjaState.obstacleDodged = false;
 
   if (!ninjaState.pendingBoss && Math.random() < NINJA_FLYING_CHANCE) {
     ninjaStartFlyingEncounter();
@@ -5095,8 +5093,12 @@ function ninjaResolveObstacle() {
   const obstacle = document.getElementById("ninja-obstacle-el");
   let bumped = false;
   if (obstacle) {
-    bumped = !ninjaState.obstacleDodged;
-    obstacle.classList.add(ninjaState.obstacleDodged ? "dodged" : "bumped");
+    // The obstacle's approach animation ends exactly now -- real
+    // collision, not "did you press jump at some point during the whole
+    // approach": only a hop still airborne at this instant clears it.
+    const dodged = $("ninja-runner").classList.contains("jumping");
+    bumped = !dodged;
+    obstacle.classList.add(dodged ? "dodged" : "bumped");
     setTimeout(() => obstacle.remove(), 350);
   }
   if (bumped) {
@@ -5174,8 +5176,15 @@ function ninjaSlashEnemy(removeEnemy) {
     setTimeout(() => impact.remove(), 250);
 
     if (removeEnemy) {
-      enemy.classList.add("sliced");
-      setTimeout(() => enemy.remove(), 350);
+      // Split into two diagonal halves that fly apart, same technique as
+      // the question card's slice (ninjaSliceQuestion) -- reads as the
+      // enemy actually shattering rather than just fading out in place.
+      const bodyHtml = enemy.innerHTML;
+      enemy.innerHTML = `
+        <div class="ninja-enemy-half ninja-enemy-half-a">${bodyHtml}</div>
+        <div class="ninja-enemy-half ninja-enemy-half-b">${bodyHtml}</div>
+      `;
+      setTimeout(() => enemy.remove(), 450);
       if (ninjaState.lives < NINJA_MAX_LIVES) {
         ninjaState.lives += 1;
         updateNinjaLivesHud();
