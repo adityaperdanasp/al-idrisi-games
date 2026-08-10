@@ -4899,7 +4899,10 @@ function launchNinjaRunner() {
   $("ninja-score").textContent = "⭐ 0";
   updateNinjaBestHud();
   updateNinjaLivesHud();
-  ninjaStartRunLane();
+  // Brief head start before the very first obstacle -- see
+  // NINJA_FIRST_OBSTACLE_DELAY_MS. Tracked on ninjaState.laneTimer like any
+  // other lane timer so a relaunch during this window still cancels it.
+  ninjaState.laneTimer = setTimeout(ninjaStartRunLane, NINJA_FIRST_OBSTACLE_DELAY_MS);
 }
 
 // High score persists across sessions the same way Plane Mode's does
@@ -4977,6 +4980,15 @@ function ninjaDoDuck() {
 // is untimed ("jawab berapa lama ya bebas").
 const NINJA_OBSTACLE_MS = 1800;
 const NINJA_ENEMY_MS = 1800;
+// The very first obstacle of a round used to start sliding in the instant
+// the screen appeared -- fine when any jump press during the whole 1.8s
+// counted as a dodge, but now that dodging needs real timing (see
+// ninjaResolveObstacle), a player who hasn't even gotten their bearings
+// yet could eat a "free" hit before they've seen a single obstacle. This
+// delay only applies to that first one (see launchNinjaRunner) -- every
+// later obstacle already has natural breathing room from the question
+// that came before it.
+const NINJA_FIRST_OBSTACLE_DELAY_MS = 700;
 
 // Flying-enemy encounter -- an alternative to the ground obstacle+enemy
 // pair above, rolled per round (never on a boss round, so boss pacing
