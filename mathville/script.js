@@ -1590,6 +1590,11 @@ const PLANE_ENEMY_FIRE_MIN_MS = 1400;
 const PLANE_ENEMY_FIRE_MAX_MS = 2600;
 const PLANE_HIT_INVULN_MS = 1500;      // matches DRIVE_BITE_COOLDOWN_MS's feel
 const PLANE_QUESTION_INTERVAL_MS = 10000; // a math question every ~10s of active flight (was 15s, per feedback)
+// Grace window after answering an in-flight question, solo AND 2P alike --
+// per explicit request: no damage while the question card is up, and stays
+// immune for 1s after it closes (frozen enemy bullets can be right on top
+// of the ship the instant the world unfreezes/unblocks, which felt unfair).
+const PLANE_QUESTION_ANSWER_INVULN_MS = 1000;
 // Answering correctly used to only bomb regular enemies -- if a boss is
 // up when the question fires, the correct answer now also chips its HP,
 // so questions stay useful/exciting during a boss fight instead of only
@@ -2722,13 +2727,12 @@ function showPlaneQuestion(preset) {
         planeState.lastQuestionAt = performance.now();
         planeState.questionActive = false;
         if (!planeState || planeState.ended) return;
-        if (is2p) {
-          // Drop the answering-window invulnerability, but keep a normal
-          // hit-invuln beat so you aren't shot the instant the card lifts.
-          planeState.invulnUntil = performance.now() + PLANE_HIT_INVULN_MS;
-        } else {
-          planeState.paused = false;
-        }
+        // Both solo and 2P: 1s of immunity after the card closes, per
+        // explicit request -- solo used to unpause with zero grace, so an
+        // enemy bullet frozen mid-flight right on top of the ship could hit
+        // the instant the world resumed.
+        planeState.invulnUntil = performance.now() + PLANE_QUESTION_ANSWER_INVULN_MS;
+        if (!is2p) planeState.paused = false;
       }, 900);
     });
     grid.appendChild(btn);
