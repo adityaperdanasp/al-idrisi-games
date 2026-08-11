@@ -25,7 +25,7 @@
     "place-value": "Place Value", "addition-subtraction": "Addition & Subtraction",
     "prime-numbers": "Prime Number", "gcf-lcm": "GCF & LCM", "multiplication": "Multiplication",
     "division": "Division", "mixed-operation": "Mixed Operation", "measurement": "Measurement",
-    "rounding": "Rounding"
+    "rounding": "Rounding", "word-problems": "Word Problems"
   };
 
   function sanitizeNameKey(name) {

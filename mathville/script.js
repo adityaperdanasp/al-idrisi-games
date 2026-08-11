@@ -41,6 +41,7 @@ const CHAPTER_META = {
   "mixed-operation": { location: "Crossroads Plaza", icon: "🚦", mapX: 80, mapY: 1090 },
   "measurement": { location: "General Store", icon: "🏪", mapX: 340, mapY: 1260 },
   "rounding": { location: "Clock Tower", icon: "🕰️", mapX: 80, mapY: 1430 },
+  "word-problems": { location: "The Library", icon: "📖", mapX: 340, mapY: 1600 },
   // Synthetic chapterId (never in MATHVILLE_BANK.chapters, same pattern as
   // Plane Mode's "plane-mode") so showReward()'s CHAPTER_META lookup and
   // saveChapterProgress() work unmodified for a Focus Round. Town-map
@@ -48,7 +49,7 @@ const CHAPTER_META = {
   // object's own keys, so this extra entry is inert there.
   "focus-round": { location: "Focus Round", icon: "🎯" }
 };
-const MAP_HEIGHT = 1520;
+const MAP_HEIGHT = 1690;
 
 // Decorative scenery scattered along the road — purely cosmetic, recolored
 // to the Blockville wood/gold/cherry/taupe palette.
@@ -71,7 +72,9 @@ const MAP_ORNAMENTS = [
   { x: 400, y: 1200, shape: "bush", color: "#E4572E", size: 42, kind: "sway" },
   { x: 20, y: 1290, shape: "bird", color: "#8a6a4a", size: 22, kind: "drift" },
   { x: 8, y: 1440, shape: "tree", color: "#8FAE6B", size: 36, kind: "sway" },
-  { x: 380, y: 1480, shape: "deer", color: "#B48A5A", size: 38, kind: "still" }
+  { x: 380, y: 1480, shape: "deer", color: "#B48A5A", size: 38, kind: "still" },
+  { x: 8, y: 1560, shape: "bush", color: "#C1793E", size: 40, kind: "sway" },
+  { x: 20, y: 1650, shape: "bird", color: "#8a6a4a", size: 24, kind: "drift" }
 ];
 
 function catmullRomPath(pts) {
@@ -635,7 +638,8 @@ const DRIVE_AIM_DEADZONE = 0.3; // joystick must be pushed this far out before i
 const DRIVE_CITY_POS = [
   { x: 15, y: 12 }, { x: 50, y: 9 }, { x: 85, y: 14 },
   { x: 12, y: 38 }, { x: 50, y: 40 }, { x: 88, y: 36 },
-  { x: 18, y: 64 }, { x: 50, y: 66 }, { x: 82, y: 62 }
+  { x: 18, y: 64 }, { x: 50, y: 66 }, { x: 82, y: 62 },
+  { x: 50, y: 82 } // 10th chapter (Word Problems) -- bottom-center, clear of both corner joysticks
 ];
 const DRIVE_QUICK_GEN_KEYS = [
   "place-value", "addition-subtraction-add", "addition-subtraction-sub",
@@ -652,7 +656,8 @@ const DRIVE_CITY_ICONS = {
   "division": "➗",
   "mixed-operation": "🔀",
   "measurement": "📏",
-  "rounding": "🎯"
+  "rounding": "🎯",
+  "word-problems": "📖"
 };
 // A little variety so obstacles don't all look like the same yellow
 // barrier — purely cosmetic, doesn't affect collision size/behavior.
@@ -3951,6 +3956,10 @@ function buildRound(chapterId) {
     for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
       steps.push(buildRoundingMcStep(MATHVILLE_GENERATORS.rounding()));
     }
+
+  } else if (chapterId === "word-problems") {
+    pickN(chapterData.questions, Math.min(ROUND_SIZE, chapterData.questions.length))
+      .forEach(q => steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer, image: q.image }));
   }
 
   return steps;

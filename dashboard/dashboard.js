@@ -37,7 +37,8 @@
     "division": "Division",
     "mixed-operation": "Mixed Operation",
     "measurement": "Measurement",
-    "rounding": "Rounding"
+    "rounding": "Rounding",
+    "word-problems": "Word Problems"
   };
 
   function escapeHtml(str) {
