@@ -6,7 +6,7 @@ Hub berisi game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green M
 - **multipleazka** — Math Race (multiplayer N-seat racing, Firebase Realtime DB)
 - **azkacraft** — Language & Arts (storybook-style lessons + voice cheering)
 - **azkauniverse** — SolarQuest (AI Science Adventure)
-- **mathville** — Grade 4 math (9 curriculum chapters, town-map + alternate Drive Mode free-roam driving game)
+- **mathville** — Grade 4 math (9 curriculum chapters + 1 capstone "Word Problems" review chapter = 10 total, town-map + alternate Drive Mode free-roam driving game)
 - **dinorace** — 2-Player Dino Racing. **Full-merge diputuskan 2026-08-03**: dulu snapshot manual dari project terpisah (`~/Documents/dinorace`, domain `dinorace.lol`, Firebase project sendiri `dinorace-d9b8c`), sekarang Firebase-nya udah disatuin ke project hub (`al-idrisi-games`) — lihat detail lengkap di bagian "DinoRace merge" di bawah. GitHub repo asli (`~/Documents/dinorace`) & Vercel project `dinorace.lol` MASIH ada & masih di-maintain manual (dual-deploy, lihat bawah), cuma Firebase-nya doang yang udah jadi satu.
 
 ### Daftar lengkap game & mode interaktif (2026-08-05)
@@ -18,14 +18,14 @@ Hub berisi game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green M
 | Math Race | `multipleazka` | Racing kuis matematika, multiplayer 2-3 pemain (Firebase RTDB realtime) |
 | Language & Arts | `azkacraft` | Storybook lessons, 7 chapter (Spelling, Antonyms, Prefixes/Suffixes, Contractions, Capitalization, Reading Comprehension, Creative Writing) — Solo Adventure + Multiplayer |
 | SolarQuest | `azkauniverse` | AI Science Adventure |
-| MathVille | `mathville` | Town-map, 9 chapter kurikulum matematika — lihat sub-mode di bawah |
+| MathVille | `mathville` | Town-map, 10 chapter matematika (9 kurikulum + 1 capstone "Word Problems") — lihat sub-mode di bawah |
 | Focus Round | `focus-round` (thin redirect) | Practice 20 soal campuran lintas 3 game (math/lang/science), numpang engine render MathVille |
 
 **Sub-mode/mini-game di DALAM MathVille** (semua 100% kode terpisah dari Town Map, gak saling ganggu):
 
 | Nama | Cara masuk | Tipe |
 |---|---|---|
-| Town Map | default masuk MathVille | 9 chapter kurikulum, tap kota buat practice round |
+| Town Map | default masuk MathVille | 10 chapter (9 kurikulum + Word Problems capstone di paling bawah), tap kota buat practice round |
 | Drive Mode | 🚗 icon topbar / deep-link `?drive=1` | Free-roam mobil, kejar-kejaran sama dino, nabrak city = masuk chapter |
 | Plane Mode | pilih "Pesawat" di vehicle picker Drive Mode | Shmup/bullet-hell ala Raiden, soal MC jadi hook utama (bomb reward) |
 | Ninja Runner | 🥷 icon topbar | Runner ala Sansu Ninja, 3 kartu subject (Math/Lang/Sci) random difficulty, 20 soal/round, review bareng Bo di akhir |
@@ -151,7 +151,7 @@ Fitur baru: anak (atau orang tua lewat Parent Portal) pilih sampe 8 topik LINTAS
 **Arsitektur**: `focus-round/index.html` cuma halaman **redirect tipis** (`location.replace` ke `mathville/index.html?focus=1`) — SENGAJA gak fork/duplicate seluruh engine render-soal (4 tipe UI: typein/mc/tap/match, reward, AI hint, dst) ke folder baru, karena itu berarti maintain 2 salinan kode yang sama (kelas bug yang sama kayak "azkacraft/azkauniverse field name beda" yang udah nyakitin sebelumnya). Semua logic beneran (`buildFocusRoundSteps`, `ensureFocusPools`, picker UI) tetep hidup di `mathville/script.js`/`mathville/index.html`, di-expose lewat `window.openFocusRoundPicker()` yang dipanggil deep-link `?focus=1`.
 
 **Sumber soal**:
-- Topik math (9 chapter) — reuse `buildRound(chapterId)` mathville APA ADANYA (dipanggil 2x per chapter buat variasi), termasuk soal tipe "match" bisa nongol di Focus Round persis kayak di chapter aslinya.
+- Topik math (10 chapter, termasuk Word Problems capstone) — reuse `buildRound(chapterId)` mathville APA ADANYA (dipanggil 2x per chapter buat variasi), termasuk soal tipe "match" bisa nongol di Focus Round persis kayak di chapter aslinya.
 - Topik language (5 dari 7 chapter azkacraft) — fetch `azkacraft/questions.json`, cuma ambil `type:"mc"`. **Reading Comprehension (id 6) dan Creative Writing (id 7) SENGAJA gak dimasukin ke picker** — soal mc mereka semua ngerujuk ke sebuah "passage"/cerita ("According to the text...") yang gak ditampilin di sini, jadi gak bisa dijawab berdiri sendiri.
 - Topik science (5 level azkauniverse) — fetch `azkauniverse/questions.json`, `type:"mc"` yang gak ada `image`.
 - Plane Mode's cross-game pool (`ensurePlaneQuestionPools()`) punya exclusion yang sama persis (chapter id 6 & 7 by id, bukan cek `type==="passage"` literal) — dulu sempet kelolos Creative Writing, udah di-port fix-nya dari Focus Round (2026-08-03).
@@ -174,6 +174,30 @@ Beda sama pipeline "guru generate insight draft → approve → kirim email" yan
 
 ⚠️ **Bug yang ketauan & udah difix pas ngembangin ini**: `submitAnswer()` di mathville manggil Firebase (`recordTopicAttempt`) secara SYNC tanpa try/catch — kalau itu throw (misal koneksi jelek di device asli), seluruh round macet permanen di soal itu (setTimeout buat lanjut gak pernah kejadwal), tanpa error yang keliatan ke user. Root cause dari laporan "abis soal terakhir diem aja" yang sempet gak ketemu lewat testing biasa. Udah dibungkus try/catch di `submitAnswer()` DAN handler match-type (GCF & LCM).
 
+## MathVille — Word Problems chapter (10th, capstone review)
+
+Chapter baru (2026-08-12), letaknya paling BAWAH Town Map (setelah Rounding Numbers), lokasi "The Library" 📖. Beda sama 9 chapter kurikulum di atasnya (masing-masing 1 topik spesifik) — chapter ini murni review: soal cerita yang nyampur semua 9 topik di atasnya (Place Value, Addition & Subtraction, Prime Numbers, GCF & LCM, Multiplication, Division, Mixed Operation, Measurement, Rounding), per keputusan eksplisit user ("isi soalnya seputar chapter diatasnya tapi khusus word problem").
+
+**Bank soal — 200 total** (2 batch @ 100, ditambahin 2026-08-12 di sesi yang sama, user minta batch ke-2 langsung abis liat batch pertama jalan): `mathville/questions.js`'s `word-problems` chapter, struktur `questions: [...]` polos (sama kayak `mixed-operation`/`prime-numbers`/`gcf-lcm` — bukan generator, gak ada `mode:`). ~11-12 soal per topik per batch. Round practice tetep `ROUND_SIZE=6` kayak semua chapter lain — 200 soal itu POOL-nya, bukan panjang 1 round; tiap buka chapter, `buildRound("word-problems")` narik 6 random dari 200.
+
+**Cara nulis soal — gak diketik manual, di-generate+diverifikasi via script Python** (`/private/tmp/.../scratchpad/gen_word_problems.py` dan `gen_word_problems_2.py`, sesi-lokal, gak masuk repo): tiap soal punya angka & jawaban yang dihitung PROGRAMMATICALLY dari variabel yang sama (bukan dua sumber independen yang bisa drift), jadi jawaban dijamin match sama arithmetic soalnya. Ditambah 3 automated guard yang jalan sebelum output ditulis:
+1. **Nol jawaban negatif** — nyekat soal cerita yang gak masuk akal (misal "dijual lebih banyak dari stok yang ada").
+2. **Nol jawaban desimal** — keypad in-game (`typein-keypad` di `renderTypeinStep()`) cuma punya tombol angka/koma/×/spasi/backspace, GAK ADA tombol titik. Soal desimal = gak bisa dijawab sama sekali. Ketemu 2 soal begini pas batch 1 (fence length dalam meter, curah hujan dalam cm) — difix dengan minta jawaban dalam satuan lebih kecil (cm/mm) yang integer, bukan dibulatin.
+3. **Nol jawaban teks murni** — keypad juga gak ada tombol huruf, jadi jawaban kayak `"Prime"`/`"No"` (misal dari pertanyaan "is X prime or composite?") GAK BISA DIKETIK SAMA SEKALI. Ketemu 3 soal begini (2 di batch 1, 1 di batch 2) — semua direvisi jadi pertanyaan numerik yang setara secara konsep (misal "is 51 prime?" → "berapa largest prime number of coins under 51").
+Plus 1 guard khusus divisi: soal yang framing-nya "exactly" harus punya pembagian bersih (`divmod` remainder harus 0), kecuali eksplisit ditandain `floor_ok=True` (framing "how many FULL boxes/cartons" yang emang boleh sisa).
+
+⚠️ **Gotcha yang ketemu pas nulis soal (bukan bug kode, tapi kelas kesalahan yang gampang lolos review manual)**: soal "8 boxes of 12 (96 ÷ 8 = 12)" awalnya nulis 2 angka (8 DAN 12) di bagian jawaban SEBELUM tanda kurung — `gradeTypein()` motong jawaban di `" ("` buat misahin "jawaban inti" dari "penjelasan", terus kalau jawaban inti punya >1 angka, dia REQUIRE user ngetik SEMUA angka itu (multi-number match). Soal yang cuma nanya 1 nilai ("berapa cookies per box?") tapi jawabannya ke-parse jadi 2-angka-wajib bakal nyalahin jawaban benar "12" doang. Fix: pastiin bagian SEBELUM `" ("` cuma punya angka yang beneran diminta soalnya, sisanya (termasuk angka pendukung) ditaro DI DALAM kurung.
+
+**Wiring** (semua tempat yang sebelumnya hardcode 9 chapter, sekarang 10):
+- `CHAPTER_META` (mapX/mapY posisi node terakhir, `MAP_HEIGHT` 1520→1690 biar row baru gak kepotong), `MAP_ORNAMENTS` (+2 dekorasi kecil biar area bawah gak kosong).
+- `buildRound()` — branch baru, pola sama persis kayak `mixed-operation` (`pickN` + semua `uiType:"typein"`).
+- Drive Mode: `DRIVE_CITY_POS` (+1 posisi ke-10, bottom-center `{x:50,y:82}`, jauh dari kedua joystick pojok) & `DRIVE_CITY_ICONS` — tanpa ini `buildDriveWorld()` bakal crash (`DRIVE_CITY_POS[9]` undefined) karena dia iterate `MATHVILLE_BANK.chapters` apa adanya.
+- Focus Round topic picker — checkbox baru di HUB (`mathville/index.html`) DAN Parent Portal (`parents/index.html`), field terpisah karena emang gak ada shared component (lihat pola yang sama di bagian Focus Round).
+- Dashboard & Parent Portal "Needs Practice" report — `MATHVILLE_CHAPTER_TITLES` map (2 salinan, `dashboard/dashboard.js` + `parents/script.js`) ditambahin entry `"word-problems": "Word Problems"`.
+- **SENGAJA gak ditambahin**: `INTRO_DEMOS` (lihat bagian "Chapter intro demo" di atas — chapter review gak butuh contoh soal baru).
+
+⚠️ **Bug lama yang ketauan pas QA chapter ini, BUKAN dari kerjaan ini** (udah di-flag jadi task terpisah, belum difix): `gradeTypein()`/`extractNumbers()` motong angka berkoma jadi 2 angka terpisah (`"7,398"` → `[7, 398]`, bukan `[7398]`), jadi kalau anak ngetik angka ribuan TANPA koma (`"7398"`, cara paling natural di keypad numerik) — DISALAHIN, padahal jawabannya bener. Ini bukan bug baru, udah ada dari dulu di SEMUA chapter yang jawabannya ≥1.000 (multiplication, addition-subtraction, dst) — cuma baru ketauan pas testing chapter Word Problems karena banyak jawabannya di rentang itu. Ditemuin lewat `gradeTypein("7398","7,398")` → `false` vs `gradeTypein("7,398","7,398")` → `true`, dites di question yang UDAH ADA dari lama (multiplication 822×9=7,398), jadi confirmed bukan regresi dari chapter baru ini.
+
 ## MathVille Drive Mode (free-roam alternatif tap-map)
 
 Mobil dikontrol joystick kiri (analog drag), dikejar 1 dino (2 dino kalau difficulty **Hard**) yang AI-nya ngehindar obstacle. Nabrak obstacle = poin + quiz kilat; nabrak city = masuk chapter itu; digigit dino 3x = game over.
@@ -185,7 +209,7 @@ Mobil dikontrol joystick kiri (analog drag), dikejar 1 dino (2 dino kalau diffic
 - Dino 5% lebih lambat **cuma di Hard** (`DRIVE_HARD_DINO_SLOW_MULT`, bukan `DINO_SPEED` global) — awalnya salah taro di konstanta global, ke-apply ke semua difficulty, udah difix.
 - Obstacle-avoidance dino diperkuat (range 55→80px, max turn 60°→~78°) — dino sempet keliatan nabrak obstacle karena reaksinya kependekan/kurang tajam.
 
-**Chapter intro demo**: SEMUA 9 chapter sekarang punya contoh soal kecil sebelum practice round mulai (`INTRO_DEMOS` di `mathville/script.js`), bukan cuma Place Value. 2 tipe: `"grid"` (digit/place-label boxes, khusus Place Value) dan `"steps"` (vertical worked-example, opsional `mono:true` buat column arithmetic yang butuh alignment).
+**Chapter intro demo**: SEMUA 9 chapter kurikulum punya contoh soal kecil sebelum practice round mulai (`INTRO_DEMOS` di `mathville/script.js`), bukan cuma Place Value. 2 tipe: `"grid"` (digit/place-label boxes, khusus Place Value) dan `"steps"` (vertical worked-example, opsional `mono:true` buat column arithmetic yang butuh alignment). Chapter ke-10 (Word Problems, capstone) SENGAJA gak punya entri di `INTRO_DEMOS` — `goToIntro()` udah nge-guard ini (`const demo = INTRO_DEMOS[chapterId]` undefined → demo box di-hide), jadi intro screen-nya tetep tampil normal (icon+title+intro text+tombol mulai), cuma tanpa contoh soal kecil di bawahnya. Gak dianggap gap karena chapter ini murni review/campuran, gak ngenalin konsep baru yang butuh dicontohin.
 
 **Bug fix (2026-07-30)**: `buildPlaceValueStep()` sempet generate soal ambigu — nanya "which place is the digit 7 in 9,793,708" padahal digit 7-nya muncul 2x di angka itu (kids justifiably confused, salah satu jawaban yang "benar" ditolak). Fix: reject digit yang muncul lebih dari sekali di angka (`numStr.indexOf(digit) !== numStr.lastIndexOf(digit)`), sama kayak reject digit "0" yang udah ada sebelumnya. Udah divalidasi 20k simulasi, max 13x retry sebelum dapet angka valid (gak ada risiko infinite loop).
 
