@@ -344,6 +344,42 @@ window.addEventListener("resize", () => {
 let mvTravelerIdx = null;
 const MV_HOP_MS = 2800; // per road segment — matches SolarQuest's ~3s ship hop
 
+// Custom SVG, replacing the 🚚 emoji -- relying on the emoji's default
+// drawn direction turned out device-dependent (looked backwards on a real
+// Android tablet even though the .facing-left flip logic itself was
+// correct). Drawn facing LEFT to match what the flip logic already
+// assumes is the default ("facing-left" class = mirror TO face right),
+// so mvPlaceTraveler()/mvWalkTo() below don't need any changes -- only
+// one #map-traveler ever exists at a time, so a single fixed gradient id
+// is safe (no per-instance suffix needed, unlike multipleazka's up-to-3
+// cars). Authored facing right, then mirrored via the wrapping <g>,
+// rather than hand-flipping every coordinate.
+const MV_TRUCK_SVG = `<svg viewBox="0 0 140 96" aria-hidden="true"><defs>
+    <linearGradient id="mvTruckBox" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff7ea"/><stop offset="1" stop-color="#e6d3b3"/>
+    </linearGradient>
+    <linearGradient id="mvTruckCab" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d99a5c"/><stop offset="1" stop-color="#a8632f"/>
+    </linearGradient>
+    <radialGradient id="mvTruckWheel" cx="0.4" cy="0.35" r="0.75">
+      <stop offset="0" stop-color="#5a4634"/><stop offset="1" stop-color="#241a10"/>
+    </radialGradient>
+  </defs>
+  <g transform="scale(-1,1) translate(-140,0)">
+    <ellipse cx="70" cy="84" rx="50" ry="6" fill="#3b2a1a" opacity="0.22"/>
+    <rect x="18" y="40" width="66" height="28" rx="4" fill="url(#mvTruckBox)" stroke="#a8632f" stroke-width="2"/>
+    <rect x="18" y="40" width="66" height="8" rx="3" fill="#ffffff" opacity="0.5"/>
+    <rect x="84" y="28" width="34" height="40" rx="6" fill="url(#mvTruckCab)"/>
+    <rect x="84" y="28" width="34" height="8" rx="4" fill="#ffffff" opacity="0.3"/>
+    <rect x="92" y="34" width="18" height="15" rx="3" fill="#dff0ff"/>
+    <rect x="92" y="34" width="18" height="6" fill="#ffffff" opacity="0.4"/>
+    <circle cx="40" cy="72" r="11" fill="url(#mvTruckWheel)"/>
+    <circle cx="40" cy="72" r="4.5" fill="#d8c7ae"/>
+    <circle cx="100" cy="72" r="11" fill="url(#mvTruckWheel)"/>
+    <circle cx="100" cy="72" r="4.5" fill="#d8c7ae"/>
+    <rect x="24" y="47" width="54" height="6" rx="2" fill="#c1793e" opacity="0.7"/>
+  </g></svg>`;
+
 function mvPlaceTraveler(chapters, defaultIdx) {
   if (mvTravelerIdx === null || mvTravelerIdx >= chapters.length) mvTravelerIdx = defaultIdx;
   const wrap = $("town-map-inner");
@@ -358,7 +394,7 @@ function mvPlaceTraveler(chapters, defaultIdx) {
     // must not block taps on nearby chapter icons) -- only the Bo face
     // opts back into pointer-events so it's still tappable.
     traveler.innerHTML = `
-      <span class="map-traveler-truck">🚚</span>
+      <span class="map-traveler-truck">${MV_TRUCK_SVG}</span>
       <span class="map-traveler-bo-hint" id="map-traveler-bo-hint">Bo here!</span>
       <img class="map-traveler-bo-face" id="map-traveler-bo-face" src="../icon-192.png" alt="Bo">
     `;

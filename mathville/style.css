@@ -222,7 +222,8 @@ button { font-family: inherit; }
   filter: drop-shadow(0 3px 4px rgba(59,42,26,.35)); z-index: 2; pointer-events: none;
   animation: mvIdleBob 1.6s ease-in-out infinite;
 }
-.map-traveler-truck { font-size: 30px; display: block; }
+.map-traveler-truck { display: block; }
+.map-traveler-truck svg { display: block; width: 36px; height: 25px; }
 .map-traveler.facing-left .map-traveler-truck { transform: scaleX(-1); }
 .map-traveler.walking { animation: mvWalkBounce .3s ease-in-out infinite; }
 @keyframes mvIdleBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
