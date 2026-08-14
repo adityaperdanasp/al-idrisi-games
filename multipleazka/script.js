@@ -106,8 +106,7 @@ const DIFFICULTY = {
 // Seconds given to pick a ride before the current selection auto-confirms.
 const VEHICLE_TIME = 10;
 
-// The six rides a player can choose before a race. Still used for the
-// vehicle-picker buttons (index.html) and as the fallback art on the track.
+// The six rides a player can choose before a race.
 const VEHICLE_EMOJI = {
   car: "🏎️",
   plane: "🛩️",
@@ -115,64 +114,6 @@ const VEHICLE_EMOJI = {
   bus: "🚌",
   truck: "🚚",
   train: "🚂"
-};
-
-// Ship and plane get custom SVG on the race track instead of their emoji
-// (see the .car CSS comment for why: their emoji's resting direction isn't
-// consistent across devices, which showed up as "kapal arah terbalik" on a
-// real device). Drawn facing LEFT, matching the assumed default of every
-// other ride's emoji -- so the single shared .car scaleX(-1) flip mirrors
-// these correctly too, with no per-vehicle exception needed. (Authored
-// facing right, then mirrored via the wrapping <g> below, rather than
-// hand-flipping every coordinate.)
-// Functions, not plain strings, because up to 3 cars can be on screen at
-// once (car-p1/p2/p3) -- gradient <defs> ids must be unique per SVG when
-// several copies land in the same document via innerHTML, or url(#id)
-// lookups can resolve to the wrong instance on some renderers.
-const VEHICLE_SVG = {
-  ship: slot => `<svg viewBox="0 0 140 96" aria-hidden="true"><defs>
-      <linearGradient id="mrShipHull-${slot}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#4a9bf0"/><stop offset="0.55" stop-color="#1266d8"/><stop offset="1" stop-color="#0a3f80"/>
-      </linearGradient>
-      <linearGradient id="mrShipCabin-${slot}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#3d8ae8"/><stop offset="1" stop-color="#0d4ea8"/>
-      </linearGradient>
-    </defs>
-    <g transform="scale(-1,1) translate(-140,0)">
-      <ellipse cx="70" cy="80" rx="46" ry="6" fill="#0a3f80" opacity="0.18"/>
-      <path d="M20 62 Q70 78 120 62 L108 62 Q70 70 32 62 Z" fill="url(#mrShipHull-${slot})"/>
-      <path d="M28 62 L34 44 Q70 38 106 44 L112 62 Z" fill="#f4f9ff" stroke="#0d4ea8" stroke-width="2"/>
-      <path d="M34 44 Q70 39 106 44 L106 48 Q70 43 34 48 Z" fill="#ffffff" opacity="0.7"/>
-      <rect x="54" y="24" width="24" height="20" rx="4" fill="url(#mrShipCabin-${slot})"/>
-      <rect x="54" y="24" width="24" height="6" rx="3" fill="#ffffff" opacity="0.35"/>
-      <rect x="59" y="30" width="6" height="6" rx="1" fill="#dff0ff"/>
-      <rect x="68" y="30" width="6" height="6" rx="1" fill="#dff0ff"/>
-      <line x1="90" y1="24" x2="90" y2="8" stroke="#0a3f80" stroke-width="3"/>
-      <path d="M91 8 L108 14 L91 18 Z" fill="#ff8a3d"/>
-      <circle cx="46" cy="52" r="4" fill="#ffffff"/>
-      <circle cx="60" cy="55" r="4" fill="#ffffff"/>
-      <circle cx="92" cy="55" r="4" fill="#ffffff"/>
-    </g></svg>`,
-  plane: slot => `<svg viewBox="0 0 140 96" aria-hidden="true"><defs>
-      <linearGradient id="mrPlaneFuse-${slot}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#4a9bf0"/><stop offset="0.5" stop-color="#1266d8"/><stop offset="1" stop-color="#0a3f80"/>
-      </linearGradient>
-      <linearGradient id="mrPlaneWing-${slot}" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#ffb073"/><stop offset="1" stop-color="#e06f22"/>
-      </linearGradient>
-    </defs>
-    <g transform="scale(-1,1) translate(-140,0)">
-      <ellipse cx="70" cy="80" rx="46" ry="6" fill="#0a3f80" opacity="0.16"/>
-      <path d="M40 40 L28 24 L34 24 L48 40 Z" fill="#0a3f80"/>
-      <path d="M55 48 L34 64 L46 64 L64 50 Z" fill="url(#mrPlaneWing-${slot})"/>
-      <path d="M18 46 Q40 38 96 42 Q116 43 128 46 Q116 49 96 50 Q40 54 18 46 Z" fill="url(#mrPlaneFuse-${slot})"/>
-      <path d="M22 43 Q50 38 96 41 L96 44 Q50 41 22 46 Z" fill="#ffffff" opacity="0.55"/>
-      <path d="M118 46 L134 46 L124 40 Z" fill="#0a3f80"/>
-      <path d="M55 46 L34 30 L46 30 L64 44 Z" fill="url(#mrPlaneWing-${slot})"/>
-      <circle cx="72" cy="46" r="4" fill="#eaf5ff"/>
-      <circle cx="86" cy="46" r="4" fill="#eaf5ff"/>
-      <circle cx="100" cy="46" r="4" fill="#eaf5ff"/>
-    </g></svg>`
 };
 
 // Kids cheering — spoken aloud + green popup.
@@ -819,15 +760,10 @@ function updateCar(slot, player, isMine) {
   const track = car.parentElement;
   const p = Math.min(player.progress || 0, 1);
 
-  // Show whichever ride this player picked (defaults to the F1 car). Ship
-  // and plane render as custom SVG (see VEHICLE_SVG) instead of emoji.
-  const vehicle = player.vehicle || "car";
-  if (car.dataset.vehicle !== vehicle) {
-    car.dataset.vehicle = vehicle;
-    const svgArt = VEHICLE_SVG[vehicle];
-    if (svgArt) car.innerHTML = svgArt(slot);
-    else car.textContent = VEHICLE_EMOJI[vehicle] || VEHICLE_EMOJI.car;
-  }
+  // Show whichever ride this player picked (defaults to the F1 car).
+  const emoji = VEHICLE_EMOJI[player.vehicle] || VEHICLE_EMOJI.car;
+  if (car.textContent !== emoji) car.textContent = emoji;
+  car.dataset.vehicle = player.vehicle || "car"; // lets CSS flip rides whose emoji art doesn't face the race direction
 
   // Car travels from just past the START label to just before the finish flag.
   const startX = 28;

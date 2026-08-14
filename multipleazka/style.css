@@ -412,21 +412,18 @@ h1, h2 { margin: 0 0 8px; }
 .car {
   position: absolute;
   left: 24px; top: 50%;
-  /* scaleX(-1) flips the art to FACE the finish line (drives right). Ship
+  /* scaleX(-1) flips the emoji to FACE the finish line (drives right). Ship
      and plane used to be excluded from this (their emoji supposedly already
-     leaned rightward), but that assumption didn't hold on every device's
-     emoji font -- they're custom SVG now (see VEHICLE_SVG in script.js),
-     drawn facing left like every other ride's default art, so this single
-     shared flip rule is correct for all six vehicles with no exceptions.
-     That also fixes the nitro-boost keyframe below, which hardcodes
-     scaleX(-1) -- it used to fight the ship/plane exception mid-pulse. */
+     leaned rightward) -- that assumption was just wrong (confirmed on a real
+     device: excluding them made the ship face backwards, and made the plane
+     flip mid-nitro since the boost keyframe below hardcodes scaleX(-1)
+     regardless). All six rides share this one flip rule now, no exceptions. */
   transform: translateY(-50%) scaleX(-1);
   font-size: 2rem;
   transition: left 0.5s cubic-bezier(.34,1.2,.64,1);
   will-change: left;
   z-index: 2;
 }
-.car svg { display: block; width: 42px; height: 29px; }
 
 /* Little smoke puff behind the car when it moves */
 .smoke {
