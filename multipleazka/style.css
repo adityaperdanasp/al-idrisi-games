@@ -412,18 +412,24 @@ h1, h2 { margin: 0 0 8px; }
 .car {
   position: absolute;
   left: 24px; top: 50%;
-  /* scaleX(-1) flips the emoji to FACE the finish line (drives right). Ship
-     and plane used to be excluded from this (their emoji supposedly already
-     leaned rightward) -- that assumption was just wrong (confirmed on a real
-     device: excluding them made the ship face backwards, and made the plane
-     flip mid-nitro since the boost keyframe below hardcodes scaleX(-1)
-     regardless). All six rides share this one flip rule now, no exceptions. */
-  transform: translateY(-50%) scaleX(-1);
+  /* --car-flip drives BOTH the resting transform below and the nitro
+     keyframe further down, from one place -- so boost can never disagree
+     with the resting orientation again (that mismatch was the actual
+     "pesawat kebalik pas nitro" bug: the old keyframe hardcoded scaleX(-1)
+     no matter what). Default -1 flips the emoji to FACE the finish line
+     (drives right); plane's emoji already leans rightward on its own, so
+     it overrides to 1 (no flip) right below. Ship used to have the same
+     kind of override, but real-device testing showed that assumption was
+     wrong for ship specifically -- it needs the default flip like
+     car/bus/truck/train, so it has no override now. */
+  --car-flip: -1;
+  transform: translateY(-50%) scaleX(var(--car-flip));
   font-size: 2rem;
   transition: left 0.5s cubic-bezier(.34,1.2,.64,1);
   will-change: left;
   z-index: 2;
 }
+.car[data-vehicle="plane"] { --car-flip: 1; }
 
 /* Little smoke puff behind the car when it moves */
 .smoke {
@@ -444,9 +450,9 @@ h1, h2 { margin: 0 0 8px; }
 /* Nitro boost — brief glow + scale pulse on the car (every 3rd streak) */
 .car.nitro-boost { animation: nitroCarPulse .65s ease; }
 @keyframes nitroCarPulse {
-  0%   { filter: drop-shadow(0 0 0 transparent); transform: translateY(-50%) scaleX(-1) scale(1); }
-  40%  { filter: drop-shadow(0 0 14px #ff6f5e); transform: translateY(-50%) scaleX(-1) scale(1.35); }
-  100% { filter: drop-shadow(0 0 0 transparent); transform: translateY(-50%) scaleX(-1) scale(1); }
+  0%   { filter: drop-shadow(0 0 0 transparent); transform: translateY(-50%) scaleX(var(--car-flip)) scale(1); }
+  40%  { filter: drop-shadow(0 0 14px #ff6f5e); transform: translateY(-50%) scaleX(var(--car-flip)) scale(1.35); }
+  100% { filter: drop-shadow(0 0 0 transparent); transform: translateY(-50%) scaleX(var(--car-flip)) scale(1); }
 }
 
 /* Question panel — ALWAYS clean white (unchanged by the theme).
