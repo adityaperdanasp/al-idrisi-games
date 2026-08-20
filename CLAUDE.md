@@ -98,7 +98,7 @@ DinoRace awalnya 3 sistem yang bener-bener terpisah dari hub: GitHub repo sendir
 - **`leaderboard.js`** — semua fungsi guard `player.role === "parent"` terpusat. Juga expose `AIGLeaderboard.getTopicStats(gameId, topicKey)` (baca `{correct, wrong, streak}`) — dipakai AI Tutor buat personalisasi hint (lihat bawah).
 - **MathVille multiplayer** (keputusan eksplisit): numpang Firebase project hub di path baru `mathvilleGames/{code}`, BUKAN project Firebase terpisah kayak game lain.
 - **MathVille progress**: `saveChapterProgress()` di `mathville/script.js` wajib panggil `AIGLeaderboard.setProgress("mathville", {chapters, xpTotal})` — kalau cuma localStorage, dashboard gak bakal lihat progressnya.
-- **Firebase RTDB security rules** (project hub) sekarang eksplisit per-path (`.read`/`.write: true` masing-masing): `leaderboard`, `players`, `insights`, `mathvilleGames`, `testerAccounts`, `pushTokens`. **Path baru HARUS ditambahin eksplisit ke rules** — gak ada wildcard fallback, default-nya deny semua yang gak terdaftar (ini pernah bikin `/pushTokens` gagal baca/tulis total sampe ketauan).
+- **Firebase RTDB security rules** (project hub) sekarang eksplisit per-path (`.read`/`.write: true` masing-masing): `leaderboard`, `players`, `insights`, `mathvilleGames`, `testerAccounts`, `pushTokens`, `sessions`. **Path baru HARUS ditambahin eksplisit ke rules** — gak ada wildcard fallback, default-nya deny semua yang gak terdaftar (ini pernah bikin `/pushTokens` gagal baca/tulis total sampe ketauan).
 - **Gotcha overlay di dalam `.screen`**: overlay (difficulty-picker, dll) yang markup-nya nempel DI DALAM salah satu `<section class="screen">` bakal ikut `display:none` selama section itu bukan yang `.active` — walau overlay-nya sendiri udah di-unhide (class `hidden` dihapus), tetep gak keliatan karena ancestor-nya nyembunyiin semua isinya. Ini pernah bikin Drive Mode di MathVille gagal muncul total (dari tombol map MAUPUN dari hub deep-link `?drive=1`) — fixnya panggil `showScreen(idScreenTerkait)` DULU sebelum unhide overlay yang nempel di situ. Kalau bikin overlay baru yang harus muncul SEBELUM masuk ke screen tujuannya, taruh di luar semua `.screen` (sibling langsung di `#app`), atau pastiin urutan `showScreen()` dipanggil duluan.
 
 Skema Firebase RTDB (project hub):
@@ -107,13 +107,30 @@ leaderboard/{gameId}/{playerId}/{name, timesPlayed, lastPlayed}
 players/{playerId}/badges/{gameId}/{...progress spesifik tiap game}
 players/{playerId}/topicStats/{gameId}/{topicKey}/{correct, wrong, lastWrongAt, streak}
 players/{playerId}/assignedTopics/[...]  // array "math:place-value"/"lang:3"/"sci:star-lifecycle", ditulis Parent Portal (/parents), dibaca MathVille's Focus Round picker
+players/{playerId}/sessionsByDay/{YYYY-MM-DD}/{gameId}/{count}  // COUNT doang, bukan durasi -- lihat "sessions" di bawah buat durasi asli
 players/{childId}/parentSessions/{YYYY-MM-DD}/{parentName, lastGamePlayed, at}
 insights/{studentId}/{draft, status: pending|approved, approvedAt, sentAt, sentTo}
 mathvilleGames/{code}/{...multiplayer round state}
 pushTokens/{sanitizedTokenKey}/{token, playerId, updatedAt}
+sessions/{playerId}/{sessionId}/{gameId, startTime, endTime}  // durasi main asli, lihat bagian "Session duration tracking" di bawah
 ```
 
 Dashboard (`dashboard/dashboard.js`, `dashboard/index.html`): nambahin game baru harus wire tiap tempat game-id di-branch (`GAMES`, `prettifyTopic`, `CHART_COLORS`, `GAME_ICONS`, `xpTotalFor`, `xpRowHtml`, `buildTemplateDraft`, `buildInsightFacts`, heatmap toggle button).
+
+### Session duration tracking (`sessions/{playerId}/...`), 2026-08-20
+
+**Kenapa ada**: user punya agent Telegram terpisah ("bell") yang nyusun report harian per murid, dan pengen nambahin "berapa lama tiap anak main" ke report itu. Ternyata gak bisa — `sessionsByDay` (dari `recordPlay()`, lihat skema di atas) cuma COUNT ("main hari ini, ya/tidak"), sama sekali bukan durasi. Gak ada `startTime`/`endTime` yang kesimpen di mana pun sebelum ini.
+
+**Implementasi — `AIGLeaderboard.startSession(gameId)` di `leaderboard.js`** (shared, dipakai 4 game: mathrace/language-arts/solarquest/mathville — bukan dinorace, itu easter-egg tanpa sistem identitas `testerAccounts`):
+- Dipanggil SEKALI per page load, tepat pas identitas player udah diketahui (di deket `CHILD_NAME`/`CHILD_ID` masing-masing game, ATAU di dalem `DOMContentLoaded` buat azkacraft yang polanya beda) — **BUKAN** di dalem `recordPlay()`, karena itu kepanggil di banyak titik tersebar / berkali-kali selama satu round, bukan sekali doang pas mulai.
+- Tulis node baru (`push()`) ke `sessions/{playerId}/{sessionId}` dengan `{gameId, startTime, endTime}` — `startTime`/`endTime` pake `firebase.database.ServerValue.TIMESTAMP` (jam server, bukan jam device, biar gak ngaco kalau device salah setting). `endTime` awalnya SAMA PERSIS dengan `startTime` (durasi 0 default) — jadi sesi yang gak sempet ke-update sama sekali (misal tab langsung ke-kill) tetep kebaca sebagai "durasi 0", bukan data kosong/null yang bikin bingung pas dihitung.
+- `endTime` didorong maju terus selama tab kebuka, 3 cara sekaligus (biar akurat dari berbagai skenario "keluar"):
+  1. **Heartbeat tiap 20 detik** (`setInterval`) — nyegah sesi yang lagi diem aja (network masih nyambung) keliatan "cuma sebentar".
+  2. **`visibilitychange`** (tab di-background/pindah tab) — checkpoint langsung, gak nunggu heartbeat berikutnya yang bisa telat sampe 20 detik.
+  3. **`onDisconnect()`** — safety net buat penutupan MENDADAK (tab ditutup, HP dikunci, koneksi putus): Firebase SERVER sendiri yang nerapin update ini begitu socket-nya keputus, jauh lebih reliable dibanding `beforeunload` yang sering di-skip browser mobile.
+- **Path `sessions` HARUS ada di RTDB rules eksplisit** (sama kayak semua path lain, gak ada wildcard fallback) — bentuknya `{".read": true, "$playerId": {".write": true}}`, PERSIS pola yang sama kayak `leaderboard`/`players` (baca bebas dari root buat 1x query semua player, tulis dibatasi ke node milik sendiri). Ditambahin via one-off admin endpoint (`api/admin-update-db-rules.js`, di-deploy → dipanggil sekali → dihapus lagi — gak ada gunanya nempel permanen).
+- **Data mulai kecatat DARI TANGGAL DEPLOY INI KE DEPAN** — sesi main sebelum 2026-08-20 gak ada entri durasinya sama sekali (persis kayak `sessionsByDay` yang juga cuma ngitung dari kapan fitur itu ditambahin, bukan retroaktif).
+- Diverifikasi end-to-end: tulis+baca beneran ke Firebase produksi (curl langsung ke RTDB REST, bukan cuma baca kode), rules dicek match pola `leaderboard`/`players`, data test dihapus lagi abis kepastian jalan.
 
 ### AI Tutor (hint pas anak salah jawab)
 
