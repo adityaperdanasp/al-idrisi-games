@@ -28,14 +28,14 @@ module.exports = async (req, res) => {
     }
     const rules = JSON.parse(rulesText);
 
-    if (rules.rules && rules.rules.sessions) {
-      res.status(200).json({ ok: true, alreadyPresent: true, rules });
-      return;
-    }
-
+    // Same shape as the existing "leaderboard"/"players" rules: readable
+    // at the root (so a report tool can pull every player's sessions in
+    // one query, not one fetch per known id), write restricted to each
+    // player's own subtree.
     rules.rules = rules.rules || {};
     rules.rules.sessions = {
-      "$playerId": { ".read": true, ".write": true }
+      ".read": true,
+      "$playerId": { ".write": true }
     };
 
     const putRes = await fetch(`${dbUrl}/.settings/rules.json?auth=${dbSecret}`, {
@@ -49,7 +49,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    res.status(200).json({ ok: true, alreadyPresent: false, rules });
+    res.status(200).json({ ok: true, rules });
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }
