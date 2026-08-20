@@ -69,6 +69,8 @@ const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlay
 const TOPIC_STATS_ID = (window.AIGPlayer && AIGPlayer.getPlayer()
   && (AIGPlayer.getPlayer().childId || AIGPlayer.getPlayer().id)) || CHILD_ID;
 
+if (window.AIGLeaderboard) AIGLeaderboard.startSession("mathrace");
+
 // /api/* only exists on the hub project (playalidrisi.fun) -- the standalone
 // domain (multipleazka.fun) needs to call across origin to reach it (same
 // pattern as azkacraft/azkauniverse; api/*.js already allow this origin

@@ -37,6 +37,7 @@ let multiplayer = null;     // { role, code, unsubscribe }
 /* ---------------------------- Boot ---------------------------- */
 
 document.addEventListener("DOMContentLoaded", async () => {
+  if (window.AIGLeaderboard) AIGLeaderboard.startSession("language-arts");
   initTheme();
   wireNavigation();
   wireMultiplayerSetup();

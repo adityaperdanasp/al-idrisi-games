@@ -22,6 +22,7 @@
    ================================================================= */
 const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().name) || "Explorer";
 const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().id) || "guest";
+if (window.AIGLeaderboard) AIGLeaderboard.startSession("mathville");
 
 // Town-stop flavor per chapter — order matches MATHVILLE_BANK (= PDF order).
 // mapX/mapY are the exact node positions from the validated Claude Design

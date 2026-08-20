@@ -62,6 +62,54 @@
       .then(result => result.committed ? result.snapshot.val() : null);
   }
 
+  // ---- Session duration, so reports can show how LONG someone played,
+  // not just that they played (recordPlay's sessionsByDay only counts
+  // occurrences). Stored at /sessions/{playerId}/{sessionId}/{gameId,
+  // startTime, endTime} -- both Firebase server timestamps, so clocks
+  // never drift between devices. endTime starts equal to startTime (a
+  // 0-duration default) and gets pushed forward as the session
+  // continues, so a session that never got a single update (tab killed
+  // instantly) reads as "0 duration", not missing/null data.
+  //
+  // Call once per page load, right after the player's identity is known
+  // -- NOT inside recordPlay, since that fires at scattered points
+  // during a round (or multiple times), not just once at the start.
+  // A "parent" identity never gets a session (matches every other
+  // per-player stat here).
+  //
+  // Kept alive for as long as the tab does:
+  //   - a heartbeat nudges endTime forward every 20s, so a session just
+  //     sitting idle (network still up) doesn't look like it ended the
+  //     instant it started
+  //   - visibilitychange (tab backgrounded) checkpoints endTime too,
+  //     since a heartbeat alone could be up to 20s stale right when the
+  //     kid actually walks away
+  //   - onDisconnect() is the real safety net for the CLOSE time: if the
+  //     tab is killed outright (closed, phone locked, network drops),
+  //     Firebase's own server applies this update the moment it notices
+  //     the socket is gone -- far more reliable than beforeunload, which
+  //     mobile browsers routinely skip entirely.
+  function startSession(gameId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+
+    const ref = aigDb.ref(`sessions/${player.id}`).push();
+    const now = () => firebase.database.ServerValue.TIMESTAMP;
+    ref.set({ gameId, startTime: now(), endTime: now() });
+    ref.onDisconnect().update({ endTime: now() });
+
+    const heartbeat = setInterval(() => ref.update({ endTime: now() }), 20000);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) ref.update({ endTime: now() });
+    });
+    window.addEventListener("pagehide", () => {
+      ref.update({ endTime: now() });
+      clearInterval(heartbeat);
+    }, { once: true });
+
+    return ref.key;
+  }
+
   // Read the full leaderboard for one game, callback gets a plain object
   // { playerId: { name, timesPlayed, lastPlayed }, ... } (or {} if empty).
   // Returns an unsubscribe function — call it before watching a different
@@ -128,5 +176,5 @@
     return snap.exists() ? snap.val() : null;
   }
 
-  window.AIGLeaderboard = { recordPlay, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats, db: aigDb };
+  window.AIGLeaderboard = { recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats, db: aigDb };
 })();

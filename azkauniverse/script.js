@@ -26,6 +26,7 @@
    ================================================================= */
 const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().name) || "Azka";
 const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().id) || "azka";
+if (window.AIGLeaderboard) AIGLeaderboard.startSession("solarquest");
 
 // This standalone domain (azkasolar.quest) has no api/ folder or
 // ANTHROPIC_API_KEY of its own -- AI calls go to the hub's endpoint
