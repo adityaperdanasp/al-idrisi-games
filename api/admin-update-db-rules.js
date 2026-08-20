@@ -1,13 +1,12 @@
-// ONE-OFF admin endpoint -- adds the "sessions" path to the hub's Firebase
-// RTDB security rules (needed for the new session-duration tracking in
-// leaderboard.js's startSession()). Same pattern as the rest of api/
-// (plain fetch, no deps), auth'd the same way api/send-push-reminder.js
-// is (CRON_SECRET as a bearer token, reused here rather than adding a new
-// env var just for this). Safe to delete once run -- it's not needed
-// again unless another top-level RTDB path gets added later.
+// TEMPORARY, ONE-OFF admin endpoint -- adds the "sessions" path to the
+// hub's Firebase RTDB security rules (needed for the new session-duration
+// tracking in leaderboard.js's startSession()). Guarded by its own
+// throwaway ADMIN_ONE_OFF_SECRET env var (not CRON_SECRET -- that one's
+// only known server-side, so it can't be supplied from here to trigger a
+// manual run). Delete this file + the env var once it's been run once.
 module.exports = async (req, res) => {
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && req.headers["authorization"] !== `Bearer ${cronSecret}`) {
+  const adminSecret = process.env.ADMIN_ONE_OFF_SECRET;
+  if (!adminSecret || req.headers["authorization"] !== `Bearer ${adminSecret}`) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
