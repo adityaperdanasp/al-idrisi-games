@@ -183,6 +183,2096 @@
             "entries"
           ],
           "answer": "We will consider everyone's entries"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"I stayed inside becuz it was raining.\" What is the correct word?",
+          "answer": "because"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"My shoes are a diffrent color than yours.\" What is the correct word?",
+          "answer": "different"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We are having a big famly dinner tonight.\" What is the correct word?",
+          "answer": "family"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"My best frend is coming over to play.\" What is the correct word?",
+          "answer": "friend"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"So many peeple came to the school fair.\" What is the correct word?",
+          "answer": "people"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"I cud hear the music from my room.\" What is the correct word?",
+          "answer": "could"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"She wud like to join the team.\" What is the correct word?",
+          "answer": "would"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"You shud finish your homework first.\" What is the correct word?",
+          "answer": "should"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The ball rolled thru the tunnel.\" What is the correct word?",
+          "answer": "through"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"I thawt the movie was really funny.\" What is the correct word?",
+          "answer": "thought"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We didn't have enuf time to finish the game.\" What is the correct word?",
+          "answer": "enough"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"That noise from the attic sounded wierd.\" What is the correct word?",
+          "answer": "weird"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Our naybor waved to us from her garden.\" What is the correct word?",
+          "answer": "neighbor"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Did you recieve my letter yet?\" What is the correct word?",
+          "answer": "receive"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"She worked hard to acheive her goal.\" What is the correct word?",
+          "answer": "achieve"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The cows were grazing in the feild.\" What is the correct word?",
+          "answer": "field"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Can I have another peice of cake?\" What is the correct word?",
+          "answer": "piece"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"My favorite class this year is sience.\" What is the correct word?",
+          "answer": "science"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Please hand me the sisors on the table.\" What is the correct word?",
+          "answer": "scissors"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Today is a speshal day for our class.\" What is the correct word?",
+          "answer": "special"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The offishal rules are posted on the wall.\" What is the correct word?",
+          "answer": "official"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We watched the waves roll onto the oshun.\" What is the correct word?",
+          "answer": "ocean"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The hikers climbed to the top of the mountin.\" What is the correct word?",
+          "answer": "mountain"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Our team captin gave a great speech.\" What is the correct word?",
+          "answer": "captain"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The kids splashed water from the fountin.\" What is the correct word?",
+          "answer": "fountain"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"It is possable to finish this by Friday.\" What is the correct word?",
+          "answer": "possible"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"That was a terrable storm last night.\" What is the correct word?",
+          "answer": "terrible"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The smell in the fridge was horrable.\" What is the correct word?",
+          "answer": "horrible"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"This chair is very comftable to sit in.\" What is the correct word?",
+          "answer": "comfortable"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Carrots are my favorite vegtable.\" What is the correct word?",
+          "answer": "vegetable"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"She baked a choclate cake for the party.\" What is the correct word?",
+          "answer": "chocolate"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We ate dinner at a new restarant downtown.\" What is the correct word?",
+          "answer": "restaurant"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"I borrowed three books from the libary.\" What is the correct word?",
+          "answer": "library"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Mark the meeting on your calender.\" What is the correct word?",
+          "answer": "calendar"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Please seperate the paper from the plastic.\" What is the correct word?",
+          "answer": "separate"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"I will definately come to your birthday party.\" What is the correct word?",
+          "answer": "definitely"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"It will probly rain again tomorrow.\" What is the correct word?",
+          "answer": "probably"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"I actully finished my project early.\" What is the correct word?",
+          "answer": "actually"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We finaly reached the top of the hill.\" What is the correct word?",
+          "answer": "finally"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"That was a realy exciting game.\" What is the correct word?",
+          "answer": "really"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We waited untill the bus arrived.\" What is the correct word?",
+          "answer": "until"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The story starts at the begining of the book.\" What is the correct word?",
+          "answer": "beginning"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The dog was runing across the yard.\" What is the correct word?",
+          "answer": "running"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The car stoped at the red light.\" What is the correct word?",
+          "answer": "stopped"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We are planing a trip to the zoo.\" What is the correct word?",
+          "answer": "planning"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"They went swiming at the lake.\" What is the correct word?",
+          "answer": "swimming"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"My mom is shoping for groceries.\" What is the correct word?",
+          "answer": "shopping"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"He is writting a letter to his cousin.\" What is the correct word?",
+          "answer": "writing"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Are you comming to the party tonight?\" What is the correct word?",
+          "answer": "coming"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"She is makeing a card for her teacher.\" What is the correct word?",
+          "answer": "making"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"I am hopeing for sunny weather this weekend.\" What is the correct word?",
+          "answer": "hoping"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We are useing new pencils for the test.\" What is the correct word?",
+          "answer": "using"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"They are haveing a picnic in the park.\" What is the correct word?",
+          "answer": "having"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Please be carefull crossing the street.\" What is the correct word?",
+          "answer": "careful"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We had a wonderfull time at the fair.\" What is the correct word?",
+          "answer": "wonderful"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"My sister is always so helpfull to me.\" What is the correct word?",
+          "answer": "helpful"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The garden was full of colorfull flowers.\" What is the correct word?",
+          "answer": "colorful"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The weather has been awfull all week.\" What is the correct word?",
+          "answer": "awful"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Winning the race filled her with happyness.\" What is the correct word?",
+          "answer": "happiness"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"My uncle runs a small buisness downtown.\" What is the correct word?",
+          "answer": "business"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"There was a suddin knock at the door.\" What is the correct word?",
+          "answer": "sudden"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Mom is cooking dinner in the kichen.\" What is the correct word?",
+          "answer": "kitchen"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The childeren played on the swings.\" What is the correct word?",
+          "answer": "children"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We had chickin soup for lunch.\" What is the correct word?",
+          "answer": "chicken"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The goalie cawt the ball just in time.\" What is the correct word?",
+          "answer": "caught"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Our teacher tawt us a new song today.\" What is the correct word?",
+          "answer": "taught"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Their dawter just started third grade.\" What is the correct word?",
+          "answer": "daughter"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Draw a strait line across the page.\" What is the correct word?",
+          "answer": "straight"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"There are ate players on the team.\" What is the correct word?",
+          "answer": "eight"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The package's wate was printed on the box.\" What is the correct word?",
+          "answer": "weight"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"They measured his hight against the wall.\" What is the correct word?",
+          "answer": "height"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The stars were very brite last night.\" What is the correct word?",
+          "answer": "bright"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We stayed up late last nite.\" What is the correct word?",
+          "answer": "night"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Please turn off the lite when you leave.\" What is the correct word?",
+          "answer": "light"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The view from the tower was a great site.\" What is the correct word?",
+          "answer": "sight"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"He scraped his nee falling off his bike.\" What is the correct word?",
+          "answer": "knee"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Be careful with that sharp nife.\" What is the correct word?",
+          "answer": "knife"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The nite rode into the castle.\" What is the correct word?",
+          "answer": "knight"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"I no the answer to that question!\" What is the correct word?",
+          "answer": "know"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Reading books gives you a lot of nowledge.\" What is the correct word?",
+          "answer": "knowledge"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The player had to neel to tie his shoe.\" What is the correct word?",
+          "answer": "kneel"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"She hurt her rist playing tennis.\" What is the correct word?",
+          "answer": "wrist"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"I got the rong answer on the quiz.\" What is the correct word?",
+          "answer": "wrong"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Please rite your name at the top of the page.\" What is the correct word?",
+          "answer": "write"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Can you help me rap this present?\" What is the correct word?",
+          "answer": "wrap"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The shirt had a big rinkle in it.\" What is the correct word?",
+          "answer": "wrinkle"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The old car was a total reck.\" What is the correct word?",
+          "answer": "wreck"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Please be onnest about what happened.\" What is the correct word?",
+          "answer": "honest"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The movie starts in one our.\" What is the correct word?",
+          "answer": "hour"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"It was an onor to win the award.\" What is the correct word?",
+          "answer": "honor"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The pirates buried the treasure on a small iland.\" What is the correct word?",
+          "answer": "island"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Please lisen carefully to the instructions.\" What is the correct word?",
+          "answer": "listen"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The knights lived in a huge cassel.\" What is the correct word?",
+          "answer": "castle"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The referee blew her wissle.\" What is the correct word?",
+          "answer": "whistle"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The dog was trained to gard the house.\" What is the correct word?",
+          "answer": "guard"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Can you gess what's in the box?\" What is the correct word?",
+          "answer": "guess"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Our gide showed us around the museum.\" What is the correct word?",
+          "answer": "guide"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"He learned to play the gitar last summer.\" What is the correct word?",
+          "answer": "guitar"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"We have a special gest coming for dinner.\" What is the correct word?",
+          "answer": "guest"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Our team plays in the local leeg.\" What is the correct word?",
+          "answer": "league"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The dog's tung hung out of its mouth.\" What is the correct word?",
+          "answer": "tongue"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Clap along to the rithm of the song.\" What is the correct word?",
+          "answer": "rhythm"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Can you think of a word that rimes with cat?\" What is the correct word?",
+          "answer": "rhyme"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Add up all the numbers in this collumn.\" What is the correct word?",
+          "answer": "column"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The leaves change color in autum.\" What is the correct word?",
+          "answer": "autumn"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"Lifting weights helps build mussel.\" What is the correct word?",
+          "answer": "muscle"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"The flowers had a sweet sent.\" What is the correct word?",
+          "answer": "scent"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"That was my favorite seen in the movie.\" What is the correct word?",
+          "answer": "scene"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"She wants to study sychology in college.\" What is the correct word?",
+          "answer": "psychology"
+        },
+        {
+          "type": "fill",
+          "prompt": "Fix the spelling mistake: \"There was a little garden nome by the fence.\" What is the correct word?",
+          "answer": "gnome"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"because\"?",
+          "options": [
+            "because",
+            "bcause",
+            "becuz",
+            "beacause"
+          ],
+          "answer": "because"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"different\"?",
+          "options": [
+            "diferent",
+            "differant",
+            "different",
+            "diffrent"
+          ],
+          "answer": "different"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"family\"?",
+          "options": [
+            "familly",
+            "famly",
+            "family",
+            "famaly"
+          ],
+          "answer": "family"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"friend\"?",
+          "options": [
+            "friend",
+            "friand",
+            "frend",
+            "freind"
+          ],
+          "answer": "friend"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"people\"?",
+          "options": [
+            "pepole",
+            "peeple",
+            "poeple",
+            "people"
+          ],
+          "answer": "people"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"could\"?",
+          "options": [
+            "colud",
+            "could",
+            "cud",
+            "coud"
+          ],
+          "answer": "could"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"would\"?",
+          "options": [
+            "whould",
+            "would",
+            "woud",
+            "wud"
+          ],
+          "answer": "would"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"should\"?",
+          "options": [
+            "should",
+            "shud",
+            "shuold",
+            "shoud"
+          ],
+          "answer": "should"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"through\"?",
+          "options": [
+            "throught",
+            "throu",
+            "thru",
+            "through"
+          ],
+          "answer": "through"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"thought\"?",
+          "options": [
+            "thourght",
+            "thought",
+            "thowt",
+            "thawt"
+          ],
+          "answer": "thought"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"enough\"?",
+          "options": [
+            "enough",
+            "enuf",
+            "enouhg",
+            "enugh"
+          ],
+          "answer": "enough"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"weird\"?",
+          "options": [
+            "weird",
+            "wiered",
+            "weard",
+            "wierd"
+          ],
+          "answer": "weird"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"neighbor\"?",
+          "options": [
+            "neighbor",
+            "naighbor",
+            "naybor",
+            "neighbour"
+          ],
+          "answer": "neighbor"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"receive\"?",
+          "options": [
+            "receeve",
+            "receive",
+            "recieve",
+            "receve"
+          ],
+          "answer": "receive"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"achieve\"?",
+          "options": [
+            "achive",
+            "achieve",
+            "achivee",
+            "acheive"
+          ],
+          "answer": "achieve"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"field\"?",
+          "options": [
+            "feild",
+            "feeld",
+            "fielled",
+            "field"
+          ],
+          "answer": "field"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"piece\"?",
+          "options": [
+            "peice",
+            "piece",
+            "peace",
+            "peacee"
+          ],
+          "answer": "piece"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"science\"?",
+          "options": [
+            "science",
+            "sience",
+            "scince",
+            "cience"
+          ],
+          "answer": "science"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"scissors\"?",
+          "options": [
+            "scissors",
+            "sisors",
+            "scisors",
+            "sissors"
+          ],
+          "answer": "scissors"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"special\"?",
+          "options": [
+            "special",
+            "spesial",
+            "speceal",
+            "speshal"
+          ],
+          "answer": "special"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"official\"?",
+          "options": [
+            "offishal",
+            "offitial",
+            "oficial",
+            "official"
+          ],
+          "answer": "official"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"ocean\"?",
+          "options": [
+            "oceon",
+            "oshun",
+            "ocean",
+            "oshean"
+          ],
+          "answer": "ocean"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"mountain\"?",
+          "options": [
+            "mountain",
+            "mowntain",
+            "mountaine",
+            "mountin"
+          ],
+          "answer": "mountain"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"captain\"?",
+          "options": [
+            "kaptain",
+            "captin",
+            "captain",
+            "captian"
+          ],
+          "answer": "captain"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"fountain\"?",
+          "options": [
+            "fountaine",
+            "fountin",
+            "fowntain",
+            "fountain"
+          ],
+          "answer": "fountain"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"possible\"?",
+          "options": [
+            "possible",
+            "possibul",
+            "possibel",
+            "possable"
+          ],
+          "answer": "possible"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"terrible\"?",
+          "options": [
+            "terrable",
+            "terribul",
+            "terrible",
+            "terible"
+          ],
+          "answer": "terrible"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"horrible\"?",
+          "options": [
+            "horrable",
+            "horribul",
+            "horible",
+            "horrible"
+          ],
+          "answer": "horrible"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"comfortable\"?",
+          "options": [
+            "comfterble",
+            "comfortabul",
+            "comfortable",
+            "comftable"
+          ],
+          "answer": "comfortable"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"vegetable\"?",
+          "options": [
+            "vegetabul",
+            "vegtable",
+            "vegtabel",
+            "vegetable"
+          ],
+          "answer": "vegetable"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"chocolate\"?",
+          "options": [
+            "chocolate",
+            "choclat",
+            "chocalate",
+            "choclate"
+          ],
+          "answer": "chocolate"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"restaurant\"?",
+          "options": [
+            "restarant",
+            "restrant",
+            "resteraunt",
+            "restaurant"
+          ],
+          "answer": "restaurant"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"library\"?",
+          "options": [
+            "library",
+            "librery",
+            "libary",
+            "liberry"
+          ],
+          "answer": "library"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"calendar\"?",
+          "options": [
+            "calander",
+            "calendar",
+            "calender",
+            "calendur"
+          ],
+          "answer": "calendar"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"separate\"?",
+          "options": [
+            "seperete",
+            "separete",
+            "seperate",
+            "separate"
+          ],
+          "answer": "separate"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"definitely\"?",
+          "options": [
+            "definitly",
+            "definitely",
+            "definately",
+            "definatly"
+          ],
+          "answer": "definitely"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"probably\"?",
+          "options": [
+            "probly",
+            "probobly",
+            "probaly",
+            "probably"
+          ],
+          "answer": "probably"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"actually\"?",
+          "options": [
+            "actualley",
+            "actualy",
+            "actually",
+            "actully"
+          ],
+          "answer": "actually"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"finally\"?",
+          "options": [
+            "finaly",
+            "finnaly",
+            "finaley",
+            "finally"
+          ],
+          "answer": "finally"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of \"really\"?",
+          "options": [
+            "realy",
+            "reely",
+            "really",
+            "realley"
+          ],
+          "answer": "really"
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "reck",
+              "right": "wreck"
+            },
+            {
+              "left": "wierd",
+              "right": "weird"
+            },
+            {
+              "left": "recieve",
+              "right": "receive"
+            },
+            {
+              "left": "telavision",
+              "right": "television"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "ruff",
+              "right": "rough"
+            },
+            {
+              "left": "Thersday",
+              "right": "Thursday"
+            },
+            {
+              "left": "damige",
+              "right": "damage"
+            },
+            {
+              "left": "coff",
+              "right": "cough"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "speshal",
+              "right": "special"
+            },
+            {
+              "left": "sisors",
+              "right": "scissors"
+            },
+            {
+              "left": "nowledge",
+              "right": "knowledge"
+            },
+            {
+              "left": "Novembur",
+              "right": "November"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "rong",
+              "right": "wrong"
+            },
+            {
+              "left": "diffrent",
+              "right": "different"
+            },
+            {
+              "left": "sine",
+              "right": "sign"
+            },
+            {
+              "left": "buisness",
+              "right": "business"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "hight",
+              "right": "height"
+            },
+            {
+              "left": "mezhure",
+              "right": "measure"
+            },
+            {
+              "left": "quesshun",
+              "right": "question"
+            },
+            {
+              "left": "wud",
+              "right": "would"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "nite",
+              "right": "night"
+            },
+            {
+              "left": "moeshun",
+              "right": "motion"
+            },
+            {
+              "left": "masheen",
+              "right": "machine"
+            },
+            {
+              "left": "Febuary",
+              "right": "February"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "obvius",
+              "right": "obvious"
+            },
+            {
+              "left": "nayber",
+              "right": "neighbour"
+            },
+            {
+              "left": "frakshun",
+              "right": "fraction"
+            },
+            {
+              "left": "gest",
+              "right": "guest"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "frend",
+              "right": "friend"
+            },
+            {
+              "left": "mountin",
+              "right": "mountain"
+            },
+            {
+              "left": "feild",
+              "right": "field"
+            },
+            {
+              "left": "forin",
+              "right": "foreign"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "ate",
+              "right": "eight"
+            },
+            {
+              "left": "Decembur",
+              "right": "December"
+            },
+            {
+              "left": "rain",
+              "right": "reign"
+            },
+            {
+              "left": "salm",
+              "right": "psalm"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "advantige",
+              "right": "advantage"
+            },
+            {
+              "left": "Afrika",
+              "right": "Africa"
+            },
+            {
+              "left": "rithm",
+              "right": "rhythm"
+            },
+            {
+              "left": "avenu",
+              "right": "avenue"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "probly",
+              "right": "probably"
+            },
+            {
+              "left": "champain",
+              "right": "champagne"
+            },
+            {
+              "left": "thurow",
+              "right": "thorough"
+            },
+            {
+              "left": "useing",
+              "right": "using"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "campain",
+              "right": "campaign"
+            },
+            {
+              "left": "thru",
+              "right": "through"
+            },
+            {
+              "left": "cottige",
+              "right": "cottage"
+            },
+            {
+              "left": "shud",
+              "right": "should"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "kapture",
+              "right": "capture"
+            },
+            {
+              "left": "rinoceros",
+              "right": "rhinoceros"
+            },
+            {
+              "left": "carefull",
+              "right": "careful"
+            },
+            {
+              "left": "helpfull",
+              "right": "helpful"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "planing",
+              "right": "planning"
+            },
+            {
+              "left": "haveing",
+              "right": "having"
+            },
+            {
+              "left": "rist",
+              "right": "wrist"
+            },
+            {
+              "left": "childeren",
+              "right": "children"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "resku",
+              "right": "rescue"
+            },
+            {
+              "left": "autum",
+              "right": "autumn"
+            },
+            {
+              "left": "nervus",
+              "right": "nervous"
+            },
+            {
+              "left": "mussel",
+              "right": "muscle"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "actully",
+              "right": "actually"
+            },
+            {
+              "left": "writting",
+              "right": "writing"
+            },
+            {
+              "left": "terrable",
+              "right": "terrible"
+            },
+            {
+              "left": "oshun",
+              "right": "ocean"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "strait",
+              "right": "straight"
+            },
+            {
+              "left": "brite",
+              "right": "bright"
+            },
+            {
+              "left": "shoping",
+              "right": "shopping"
+            },
+            {
+              "left": "trezhure",
+              "right": "treasure"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "nife",
+              "right": "knife"
+            },
+            {
+              "left": "Satirday",
+              "right": "Saturday"
+            },
+            {
+              "left": "garbige",
+              "right": "garbage"
+            },
+            {
+              "left": "direkshun",
+              "right": "direction"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "happyness",
+              "right": "happiness"
+            },
+            {
+              "left": "corageous",
+              "right": "courageous"
+            },
+            {
+              "left": "untill",
+              "right": "until"
+            },
+            {
+              "left": "lisen",
+              "right": "listen"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "Amerika",
+              "right": "America"
+            },
+            {
+              "left": "Antartica",
+              "right": "Antarctica"
+            },
+            {
+              "left": "litrature",
+              "right": "literature"
+            },
+            {
+              "left": "leeg",
+              "right": "league"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "thawt",
+              "right": "thought"
+            },
+            {
+              "left": "agrikulture",
+              "right": "agriculture"
+            },
+            {
+              "left": "neel",
+              "right": "kneel"
+            },
+            {
+              "left": "wonderfull",
+              "right": "wonderful"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "begining",
+              "right": "beginning"
+            },
+            {
+              "left": "lite",
+              "right": "light"
+            },
+            {
+              "left": "plezhure",
+              "right": "pleasure"
+            },
+            {
+              "left": "sizor",
+              "right": "scissor"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "awfull",
+              "right": "awful"
+            },
+            {
+              "left": "Wensday",
+              "right": "Wednesday"
+            },
+            {
+              "left": "argu",
+              "right": "argue"
+            },
+            {
+              "left": "bandige",
+              "right": "bandage"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "solem",
+              "right": "solemn"
+            },
+            {
+              "left": "suddin",
+              "right": "sudden"
+            },
+            {
+              "left": "seen",
+              "right": "scene"
+            },
+            {
+              "left": "preshus",
+              "right": "precious"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "delishus",
+              "right": "delicious"
+            },
+            {
+              "left": "gorjus",
+              "right": "gorgeous"
+            },
+            {
+              "left": "comming",
+              "right": "coming"
+            },
+            {
+              "left": "vegtable",
+              "right": "vegetable"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "captin",
+              "right": "captain"
+            },
+            {
+              "left": "resine",
+              "right": "resign"
+            },
+            {
+              "left": "curius",
+              "right": "curious"
+            },
+            {
+              "left": "gitar",
+              "right": "guitar"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "site",
+              "right": "sight"
+            },
+            {
+              "left": "dangerus",
+              "right": "dangerous"
+            },
+            {
+              "left": "serius",
+              "right": "serious"
+            },
+            {
+              "left": "realy",
+              "right": "really"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "Yurop",
+              "right": "Europe"
+            },
+            {
+              "left": "ressle",
+              "right": "wrestle"
+            },
+            {
+              "left": "dawter",
+              "right": "daughter"
+            },
+            {
+              "left": "tawt",
+              "right": "taught"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "condishun",
+              "right": "condition"
+            },
+            {
+              "left": "thissle",
+              "right": "thistle"
+            },
+            {
+              "left": "medisin",
+              "right": "medicine"
+            },
+            {
+              "left": "Tuseday",
+              "right": "Tuesday"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "baggige",
+              "right": "baggage"
+            },
+            {
+              "left": "chickin",
+              "right": "chicken"
+            },
+            {
+              "left": "libary",
+              "right": "library"
+            },
+            {
+              "left": "vaig",
+              "right": "vague"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "rinkle",
+              "right": "wrinkle"
+            },
+            {
+              "left": "enuf",
+              "right": "enough"
+            },
+            {
+              "left": "rime",
+              "right": "rhyme"
+            },
+            {
+              "left": "no",
+              "right": "know"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "luggige",
+              "right": "luggage"
+            },
+            {
+              "left": "laff",
+              "right": "laugh"
+            },
+            {
+              "left": "statchu",
+              "right": "statue"
+            },
+            {
+              "left": "pashun",
+              "right": "passion"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "villige",
+              "right": "village"
+            },
+            {
+              "left": "our",
+              "right": "hour"
+            },
+            {
+              "left": "makeing",
+              "right": "making"
+            },
+            {
+              "left": "peeple",
+              "right": "people"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "adishun",
+              "right": "addition"
+            },
+            {
+              "left": "Janury",
+              "right": "January"
+            },
+            {
+              "left": "messige",
+              "right": "message"
+            },
+            {
+              "left": "sugestion",
+              "right": "suggestion"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "atenshun",
+              "right": "attention"
+            },
+            {
+              "left": "calender",
+              "right": "calendar"
+            },
+            {
+              "left": "examin",
+              "right": "examine"
+            },
+            {
+              "left": "nee",
+              "right": "knee"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "creechure",
+              "right": "creature"
+            },
+            {
+              "left": "nome",
+              "right": "gnome"
+            },
+            {
+              "left": "sychology",
+              "right": "psychology"
+            },
+            {
+              "left": "packige",
+              "right": "package"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "comftable",
+              "right": "comfortable"
+            },
+            {
+              "left": "choclate",
+              "right": "chocolate"
+            },
+            {
+              "left": "newmonia",
+              "right": "pneumonia"
+            },
+            {
+              "left": "nayshun",
+              "right": "nation"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "rap",
+              "right": "wrap"
+            },
+            {
+              "left": "kichen",
+              "right": "kitchen"
+            },
+            {
+              "left": "famus",
+              "right": "famous"
+            },
+            {
+              "left": "cassel",
+              "right": "castle"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "manige",
+              "right": "manage"
+            },
+            {
+              "left": "sience",
+              "right": "science"
+            },
+            {
+              "left": "cud",
+              "right": "could"
+            },
+            {
+              "left": "onor",
+              "right": "honor"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "fountin",
+              "right": "fountain"
+            },
+            {
+              "left": "draft",
+              "right": "draught"
+            },
+            {
+              "left": "genuwine",
+              "right": "genuine"
+            },
+            {
+              "left": "Octobur",
+              "right": "October"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "becuz",
+              "right": "because"
+            },
+            {
+              "left": "furnichure",
+              "right": "furniture"
+            },
+            {
+              "left": "temperture",
+              "right": "temperature"
+            },
+            {
+              "left": "mishun",
+              "right": "mission"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "rite",
+              "right": "write"
+            },
+            {
+              "left": "horrable",
+              "right": "horrible"
+            },
+            {
+              "left": "finaly",
+              "right": "finally"
+            },
+            {
+              "left": "collumn",
+              "right": "column"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "hopeing",
+              "right": "hoping"
+            },
+            {
+              "left": "peice",
+              "right": "piece"
+            },
+            {
+              "left": "swiming",
+              "right": "swimming"
+            },
+            {
+              "left": "acheive",
+              "right": "achieve"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "pikture",
+              "right": "picture"
+            },
+            {
+              "left": "invenshun",
+              "right": "invention"
+            },
+            {
+              "left": "naw",
+              "right": "gnaw"
+            },
+            {
+              "left": "possable",
+              "right": "possible"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "jesture",
+              "right": "gesture"
+            },
+            {
+              "left": "gide",
+              "right": "guide"
+            },
+            {
+              "left": "gess",
+              "right": "guess"
+            },
+            {
+              "left": "gard",
+              "right": "guard"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "Augest",
+              "right": "August"
+            },
+            {
+              "left": "valu",
+              "right": "value"
+            },
+            {
+              "left": "sent",
+              "right": "scent"
+            },
+            {
+              "left": "naybor",
+              "right": "neighbor"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "preshure",
+              "right": "pressure"
+            },
+            {
+              "left": "divizhun",
+              "right": "division"
+            },
+            {
+              "left": "akshun",
+              "right": "action"
+            },
+            {
+              "left": "although",
+              "right": "although"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "naychure",
+              "right": "nature"
+            },
+            {
+              "left": "restarant",
+              "right": "restaurant"
+            },
+            {
+              "left": "nite",
+              "right": "knight"
+            },
+            {
+              "left": "Septembur",
+              "right": "September"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "stayshun",
+              "right": "station"
+            },
+            {
+              "left": "iland",
+              "right": "island"
+            },
+            {
+              "left": "tuff",
+              "right": "tough"
+            },
+            {
+              "left": "plaig",
+              "right": "plague"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each misspelled word to its correct spelling.",
+          "pairs": [
+            {
+              "left": "seperate",
+              "right": "separate"
+            },
+            {
+              "left": "beutiful",
+              "right": "beautiful"
+            },
+            {
+              "left": "wate",
+              "right": "weight"
+            },
+            {
+              "left": "cawt",
+              "right": "caught"
+            }
+          ]
         }
       ]
     },
