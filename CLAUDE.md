@@ -51,14 +51,15 @@ Hub berisi game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green M
 
 Tiap game = Vercel project sendiri, plus hub-nya sendiri juga Vercel project.
 - Hub: `playalidrisi.fun/` — path `/{game}/` di domain ini adalah file yang sama dari repo hub (bukan proxy)
-- Legacy standalone domains (harus identik kontennya): `multipleazka.fun`, `azkasocial.fun` (alias `azkacraft`), `azkasolar.quest` (alias `azkauniverse`), `dinorace.lol`
+- Legacy standalone domains (harus identik kontennya): `azkasocial.fun` (alias `azkacraft`), `azkasolar.quest` (alias `azkauniverse`), `dinorace.lol`
 - `mathville`: **cuma ada di hub**, gak punya standalone domain
+- **`multipleazka.fun` — DEPRECATED (2026-08-18), keputusan eksplisit user ("kita sekarang cuma pake playalidrisi.fun aja")**: cuma `playalidrisi.fun/multipleazka/` yang aktif dipakai/di-maintain sekarang. Repo standalone-nya (`~/Documents/games/multipleazka`) udah lama gak disentuh (terakhir commit 2026-07-20) dan ketauan drift parah dari hub pas nyoba sync fitur gems/coins — kekurangan file (`bgm.js`, `badges.js`, folder `scripts`), struktur `showVehicleSelectGrid` udah beda total, resync penuh dianggap terlalu berisiko buat dikerjain gak diminta. **JANGAN dual-deploy ke `multipleazka.fun` lagi kecuali user eksplisit minta ulang** — edit `mathrace`/`multipleazka` sekarang cukup 1 target aja (hub), sama kayak `mathville`.
 
-**Dua target deploy buat mathrace/azkacraft/azkauniverse/dinorace** tiap kali edit:
+**Dua target deploy buat azkacraft/azkauniverse/dinorace** tiap kali edit:
 1. `git push origin main` → update `playalidrisi.fun/{game}/` (hub auto-deploy)
 2. `cd {game} && vercel --prod --yes` → update domain standalone-nya (buat dinorace: `cd ~/Documents/games/dinorace && vercel --prod --yes`, project/repo terpisah dari hub, BUKAN folder `dinorace/` di dalam repo ini)
 
-`mathville/` cukup push #1 aja (gak ada standalone target).
+`mathville/` dan `mathrace`/`multipleazka` cukup push #1 aja (gak ada standalone target aktif buat keduanya sekarang).
 
 Verifikasi cepat: `diff <(curl -s https://playalidrisi.fun/{game}/somefile.js) <(curl -s https://{standalone-domain}/somefile.js)`.
 
@@ -365,6 +366,20 @@ Ide dari riset app edukasi Jepang (2026-08-05) — terinspirasi **算数忍者 (
 - **QA menyeluruh 2026-08-10** (setelah rombak obstacle-timing + enemy-shatter di atas): full playthrough 20 soal lewat fungsi asli (bukan reimplementasi) — obstacle dodge/bump di-drive lewat timing beneran (bukan cuma unit test terisolasi), boss checkpoint sampai kalah, kehabisan nyawa di tengah jalan (dites 2x), overlay finish (menang & kalah), review (ada salah & sempurna), flying-enemy dodge — semua lewat fungsi in-game asli, zero console error, nol request ke Firebase (aman, karena testing gak dalam kondisi login).
 
 Referensi app yang dipakai buat riset: Sansu Ninja (App Store JP, `id838086772`), Todo Math (App Store US, `id666465255`).
+
+## Gems & Coins wallet — LIVE di production (2026-08-18)
+
+Per permintaan eksplisit anak user ("gems and coins... bisa unlock mobil baru, kendaraan baru"). Didesain sebagai **1 dompet lintas-game** (bukan per-game terpisah) — MathVille dan Mathrace (Math Race) sama-sama motong/nambah saldo yang sama, dipakai buat unlock vehicle skin di kedua game itu.
+
+**Kenapa gampang dibikin cross-game**: setiap game udah manggil `AIGLeaderboard.recordTopicAttempt(gameId, topic, isCorrect)` (di `leaderboard.js`, shared module) tiap kali soal dijawab. Logic dapetin coin/gem ditaro DI DALAM fungsi itu — jadi nol perubahan dibutuhin di kode masing-masing game buat mulai "menghasilkan" currency.
+
+- **Earning** (`awardCurrency()` di `leaderboard.js`): +1 coin tiap jawaban BENAR (game manapun), +1 gem tiap 15 jawaban benar (`GEM_EVERY_N_CORRECT`, counter `correctSinceGem` yang reset abis dapet gem — bukan random, jadi predictable/bisa dihitung anak). Disimpen di `players/{id}/wallet` — nempel di bawah rule `players` yang udah eksplisit terbuka, gak perlu ubah RTDB rules (diverifikasi via REST write/read manual sebelum bikin).
+- **API baru di `leaderboard.js`**: `getWallet()`, `watchWallet(callback)` (live subscription, dipake buat HUD topbar), `getOwnedVehicles(gameId)`, `unlockVehicle(gameId, vehicleId, cost)` — `cost` selalu `{coins}` ATAU `{gems}`, gak pernah dua-duanya sekaligus per item.
+- ⚠️ **Bug Firebase transaction yang ketemu & difix**: `unlockVehicle()` awalnya pakai `.transaction()` buat motong saldo (pola textbook buat cegah double-spend). Ternyata di secondary named app instance ini (`aigApp`/`"aig"`), transaction yang update-function-nya BISA abort (`return undefined`) gak pernah retry ke nilai server asli kalau invocation pertamanya kebetulan dikasih `cur === null` (cache lokal belum ke-warm) — kebaca sebagai wallet kosong, nolak pembelian yang sebenernya mampu dibeli. Diverifikasi langsung: beli item 15 coin ditolak "insufficient-funds" padahal saldo 25 coin, bahkan udah dikasih `.get()` priming duluan pun tetap gagal (percobaan transaction TETEP cuma sekali, tetep dapet `null`). `awardCurrency()`'s transaction (yang gak pernah abort, cuma increment biasa) TIDAK kena bug ini — dites langsung, converge bener dari `null` guess yang sama. Fix: `unlockVehicle()` diganti ke pola `get()` → cek saldo di JS → `set()` manual (bukan transaction) — trade-off-nya cuma race kondisi sempit (2 pembelian di detik yang SAMA persis dari 1 device), diterima karena ini currency kosmetik doang, gak ada duit beneran.
+- **MathVille Drive Mode**: skin pertama tiap kategori (Blaze/Falcon) tetep gratis, 8 skin lain (`VEHICLE_SKINS` di `script.js`) dikasih field `cost` (`{coins:20-35}` atau `{gems:2}` buat yang "legendary"). `renderVehicleSkinGrid()` sekarang async, nampilin lock icon + harga di skin yang belum dimiliki, dan **migrasi otomatis**: skin yang UDAH kepilih di localStorage sebelum fitur ini ada (dari jaman semua-gratis) di-grant gratis sekali (`unlockVehicle(gameId, currentId, {})`) — biar gak ada yang "kehilangan" skin yang lagi dipake.
+- **Math Race**: 6 kendaraan yang ada (`#vehicle-grid` di `index.html`) dikasih `data-cost` attribute langsung di HTML, mobil balap gratis, 5 lainnya dikunci (kereta = gems, sisanya coins). Gak butuh migrasi kayak MathVille — pilihan kendaraan emang gak pernah persist lebih dari 1 chain "Play Again" (`state.vehicle` reset ke "car" tiap setup baru), jadi gak ada skin lama yang perlu di-grandfather. Alur beli nempel di tombol yang sama & timer 10 detik auto-pick yang udah ada, gak ganggu flow lobby multiplayer.
+- **HUD**: badge `🪙/💎` baru di topbar MathVille (live via `watchWallet`), sejajar sama `✨ XP` badge yang udah ada. Math Race nampilin saldo di dalem layar vehicle-picker-nya sendiri (gak ada topbar permanen di game itu).
+- **`multipleazka.fun` (standalone domain) TIDAK dapet fitur ini** — lihat bagian "Deploy" di atas soal keputusan deprecated-nya domain itu.
 
 ## Domain migration — DIBAHAS, BELUM DIEKSEKUSI
 
