@@ -757,6 +757,23 @@ h1, h2 { margin: 0 0 8px; }
   border-color: var(--brand);
   box-shadow: 0 4px 0 rgba(0,0,0,.06), 0 0 0 3px rgba(18,102,216,.15);
 }
+.vehicle-opt.locked { filter: grayscale(.55); opacity: .85; }
+.vehicle-lock { position: absolute; top: 4px; left: 7px; font-size: .9rem; }
+.vehicle-price {
+  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  font: 800 11px "Baloo 2", "Fredoka", sans-serif; color: #fff; background: var(--brand);
+  border-radius: 8px; padding: 1px 8px; white-space: nowrap;
+}
+.vehicle-opt.shake { animation: vehicleOptShake .4s ease; }
+@keyframes vehicleOptShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.wallet-hud {
+  display: flex; justify-content: center; gap: 16px; font: 800 14px "Baloo 2", "Fredoka", sans-serif;
+  color: var(--text); margin: 6px 0 10px;
+}
 .vehicle-opt.active::after {
   content: "✓";
   position: absolute;

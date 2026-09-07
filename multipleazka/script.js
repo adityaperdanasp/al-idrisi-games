@@ -539,14 +539,62 @@ function showVehicleSelect(onDone) {
   showGetReady(() => showVehicleSelectGrid(onDone));
 }
 
-function showVehicleSelectGrid(onDone) {
+// Locked rides use the shared cross-game wallet (leaderboard.js) — same
+// currency MathVille's vehicle picker spends. Ownership check is async
+// (one Firebase read) but the 10s pick timer starts immediately regardless
+// (real players are waiting on this lobby screen), so there's a brief
+// instant where lock icons/prices haven't painted yet. Never persisted
+// locally: state.vehicle already resets to "car" every fresh setup, so
+// there's no earlier "everyone could freely pick anything" choice to
+// grandfather in the way MathVille's remembered skin needed migrating.
+async function showVehicleSelectGrid(onDone) {
   if (raceIsActive()) return;
   showScreen("screen-vehicle");
 
+  const noLeaderboard = !window.AIGLeaderboard;
+  const [owned, wallet] = noLeaderboard
+    ? [{}, { coins: 0, gems: 0 }]
+    : await Promise.all([AIGLeaderboard.getOwnedVehicles("mathrace"), AIGLeaderboard.getWallet()]);
+
+  $("vehicle-wallet-coins").textContent = wallet.coins || 0;
+  $("vehicle-wallet-gems").textContent = wallet.gems || 0;
+
   document.querySelectorAll(".vehicle-opt").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.vehicle === state.vehicle);
-    btn.onclick = () => {
-      state.vehicle = btn.dataset.vehicle;
+    const vehicle = btn.dataset.vehicle;
+    const costAttr = btn.dataset.cost; // "coins:20" | "gems:2" | undefined
+    const cost = costAttr ? { [costAttr.split(":")[0]]: Number(costAttr.split(":")[1]) } : null;
+    const isOwned = !cost || owned[vehicle];
+
+    btn.classList.toggle("active", vehicle === state.vehicle);
+    btn.classList.toggle("locked", !isOwned);
+    btn.querySelector(".vehicle-lock")?.remove();
+    btn.querySelector(".vehicle-price")?.remove();
+    if (!isOwned) {
+      const price = document.createElement("span");
+      price.className = "vehicle-price";
+      price.textContent = cost.coins ? `🪙${cost.coins}` : `💎${cost.gems}`;
+      btn.appendChild(price);
+      const lock = document.createElement("span");
+      lock.className = "vehicle-lock";
+      lock.textContent = "🔒";
+      btn.appendChild(lock);
+    }
+
+    btn.onclick = async () => {
+      if (!isOwned) {
+        if (noLeaderboard) return;
+        const result = await AIGLeaderboard.unlockVehicle("mathrace", vehicle, cost);
+        if (!result.ok) {
+          btn.classList.add("shake");
+          setTimeout(() => btn.classList.remove("shake"), 400);
+          return;
+        }
+        // Bought it — reflect instantly without waiting for a full re-render.
+        btn.classList.remove("locked");
+        btn.querySelector(".vehicle-lock")?.remove();
+        btn.querySelector(".vehicle-price")?.remove();
+      }
+      state.vehicle = vehicle;
       // Show the tap immediately — matters most for joiners in a 3-player
       // game, who can sit on this screen a while waiting for the last
       // seat to fill before onDone() actually navigates away.

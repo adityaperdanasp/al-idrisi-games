@@ -236,6 +236,16 @@ function updateXpBadge() {
 }
 updateXpBadge();
 
+// Live wallet HUD — watchWallet (not a one-time getWallet) so the coin
+// count ticks up in the topbar the instant a correct answer earns one,
+// without needing a manual refresh/page reload.
+if (window.AIGLeaderboard) {
+  AIGLeaderboard.watchWallet(wallet => {
+    $("wallet-coins").textContent = wallet.coins || 0;
+    $("wallet-gems").textContent = wallet.gems || 0;
+  });
+}
+
 /* Mode select (Landing screen) */
 $("btn-mode-solo").addEventListener("click", () => {
   state.mode = "solo";
@@ -1443,20 +1453,23 @@ function playDriveDifficultyPicker(onPicked) {
 // color scheme, and signature glow color. The glow is applied via the
 // shared .vehicle-glow class + --vehicle-glow CSS custom property, so
 // adding a 6th skin later needs nothing beyond a new entry here.
+// `cost` absent = free starter skin (owned by everyone from the start).
+// Otherwise { coins } or { gems } (never both — see leaderboard.js's
+// unlockVehicle, which enforces single-currency pricing per item).
 const VEHICLE_SKINS = {
   car: [
     { id: "blaze", name: "Blaze", glow: "#E4572E", svg: '<svg viewBox="0 0 26 40" width="23" height="36"><rect x="3" y="1" width="20" height="38" rx="8" fill="#E4572E" stroke="#C6431F" stroke-width="1.5" /><rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" /><rect x="0" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" /><rect x="22" y="9" width="4" height="8" rx="1.5" fill="#3B2A1A" /><rect x="0" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" /><rect x="22" y="23" width="4" height="8" rx="1.5" fill="#3B2A1A" /></svg>' },
-    { id: "comet", name: "Comet", glow: "#4A90D9", svg: '<svg viewBox="0 0 26 40" width="23" height="36"><rect x="3" y="1" width="20" height="38" rx="8" fill="#2E6BA3" stroke="#1E4E7A" stroke-width="1.5" /><rect x="11" y="1" width="4" height="38" fill="#EAF6FF" opacity="0.85" /><rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" /><rect x="0" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="0" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /></svg>' },
-    { id: "turbo", name: "Turbo", glow: "#3FA84A", svg: '<svg viewBox="0 0 26 44" width="23" height="38"><rect x="3" y="5" width="20" height="38" rx="8" fill="#3FA84A" stroke="#2A7A32" stroke-width="1.5" /><rect x="2" y="0" width="22" height="5" rx="2" fill="#2A7A32" /><rect x="6" y="11" width="14" height="10" rx="2.5" fill="#BFE3F0" /><rect x="0" y="13" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="13" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="0" y="27" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="27" width="4" height="8" rx="1.5" fill="#1A1A1A" /></svg>' },
-    { id: "sunburst", name: "Sunburst", glow: "#F7C548", svg: '<svg viewBox="0 0 26 40" width="23" height="36"><rect x="3" y="1" width="20" height="38" rx="8" fill="#F7C548" stroke="#C99A2E" stroke-width="1.5" /><rect x="3" y="17" width="20" height="6" fill="#1A1A1A" /><rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" /><rect x="0" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="0" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /></svg>' },
-    { id: "nova", name: "Nova", glow: "#9B59D0", svg: '<svg viewBox="0 0 26 40" width="23" height="36"><rect x="3" y="1" width="20" height="38" rx="8" fill="#7A4FC7" stroke="#5B3894" stroke-width="1.5" /><rect x="6" y="7" width="14" height="10" rx="2.5" fill="#2A2044" opacity="0.5" /><path d="M14 6 L9 18 L13 18 L10 30 L18 15 L14 15 Z" fill="#F7E14A" /><rect x="0" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="0" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /></svg>' }
+    { id: "comet", name: "Comet", glow: "#4A90D9", cost: { coins: 20 }, svg: '<svg viewBox="0 0 26 40" width="23" height="36"><rect x="3" y="1" width="20" height="38" rx="8" fill="#2E6BA3" stroke="#1E4E7A" stroke-width="1.5" /><rect x="11" y="1" width="4" height="38" fill="#EAF6FF" opacity="0.85" /><rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" /><rect x="0" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="0" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /></svg>' },
+    { id: "turbo", name: "Turbo", glow: "#3FA84A", cost: { coins: 20 }, svg: '<svg viewBox="0 0 26 44" width="23" height="38"><rect x="3" y="5" width="20" height="38" rx="8" fill="#3FA84A" stroke="#2A7A32" stroke-width="1.5" /><rect x="2" y="0" width="22" height="5" rx="2" fill="#2A7A32" /><rect x="6" y="11" width="14" height="10" rx="2.5" fill="#BFE3F0" /><rect x="0" y="13" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="13" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="0" y="27" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="27" width="4" height="8" rx="1.5" fill="#1A1A1A" /></svg>' },
+    { id: "sunburst", name: "Sunburst", glow: "#F7C548", cost: { coins: 35 }, svg: '<svg viewBox="0 0 26 40" width="23" height="36"><rect x="3" y="1" width="20" height="38" rx="8" fill="#F7C548" stroke="#C99A2E" stroke-width="1.5" /><rect x="3" y="17" width="20" height="6" fill="#1A1A1A" /><rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" /><rect x="0" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="0" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /></svg>' },
+    { id: "nova", name: "Nova", glow: "#9B59D0", cost: { gems: 2 }, svg: '<svg viewBox="0 0 26 40" width="23" height="36"><rect x="3" y="1" width="20" height="38" rx="8" fill="#7A4FC7" stroke="#5B3894" stroke-width="1.5" /><rect x="6" y="7" width="14" height="10" rx="2.5" fill="#2A2044" opacity="0.5" /><path d="M14 6 L9 18 L13 18 L10 30 L18 15 L14 15 Z" fill="#F7E14A" /><rect x="0" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="9" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="0" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /><rect x="22" y="23" width="4" height="8" rx="1.5" fill="#1A1A1A" /></svg>' }
   ],
   plane: [
     { id: "falcon", name: "Falcon", glow: "#4A90D9", svg: '<svg viewBox="0 0 30 34" width="27" height="30"><path d="M15 1 L20 20 L15 17 L10 20 Z" fill="#4A90D9" stroke="#2E6BA3" stroke-width="1.5" stroke-linejoin="round" /><path d="M15 17 L15 33" stroke="#2E6BA3" stroke-width="2" stroke-linecap="round" /><path d="M4 22 L15 17 L15 24 Z" fill="#6EA8E0" stroke="#2E6BA3" stroke-width="1.2" /><path d="M26 22 L15 17 L15 24 Z" fill="#6EA8E0" stroke="#2E6BA3" stroke-width="1.2" /><circle cx="15" cy="12" r="3" fill="#BFE3F0" /></svg>' },
-    { id: "inferno", name: "Inferno", glow: "#E4572E", svg: '<svg viewBox="0 0 30 34" width="27" height="30"><path d="M15 1 C11.5 7 11.5 20 11.5 25 L18.5 25 C18.5 20 18.5 7 15 1 Z" fill="#E4572E" stroke="#B8391A" stroke-width="1.5" stroke-linejoin="round" /><path d="M11.5 19 L4 27 L11.5 24 Z" fill="#FF9466" stroke="#B8391A" stroke-width="1.2" /><path d="M18.5 19 L26 27 L18.5 24 Z" fill="#FF9466" stroke="#B8391A" stroke-width="1.2" /><circle cx="15" cy="10" r="2.5" fill="#FFE1C1" /><path d="M12 25 Q15 32 18 25 Z" fill="#FFD93D" opacity="0.9" /></svg>' },
-    { id: "viper", name: "Viper", glow: "#3FA84A", svg: '<svg viewBox="0 0 30 34" width="27" height="30"><path d="M15 6 L29 25 L15 20 L1 25 Z" fill="#2A2A2A" stroke="#1A1A1A" stroke-width="1.5" stroke-linejoin="round" /><path d="M15 6 L17.5 1 L15 -1 L12.5 1 Z" fill="#2A2A2A" stroke="#1A1A1A" stroke-width="1.2" stroke-linejoin="round" /><circle cx="15" cy="14" r="2.5" fill="#3FA84A" /></svg>' },
-    { id: "solstice", name: "Solstice", glow: "#F7C548", svg: '<svg viewBox="0 0 30 34" width="27" height="30"><circle cx="15" cy="3" r="2.2" fill="#C99A2E" stroke="#8A6A1E" stroke-width="1" /><rect x="13" y="5" width="4" height="25" rx="2" fill="#F7C548" stroke="#C99A2E" stroke-width="1.3" /><rect x="3" y="12" width="24" height="3.4" rx="1.5" fill="#FFE08A" stroke="#C99A2E" stroke-width="1.2" /><rect x="6" y="21" width="18" height="3.4" rx="1.5" fill="#FFE08A" stroke="#C99A2E" stroke-width="1.2" /><circle cx="15" cy="9" r="2.3" fill="#FFF6D9" /></svg>' },
-    { id: "ghost", name: "Ghost", glow: "#9DB3D6", svg: '<svg viewBox="0 0 30 34" width="27" height="30"><path d="M15 0 L17 27 L15 24 L13 27 Z" fill="#E9EEF6" stroke="#9DB3D6" stroke-width="1.4" stroke-linejoin="round" /><path d="M8 25 L15 22 L15 26.5 Z" fill="#F5F8FC" stroke="#9DB3D6" stroke-width="1.1" /><path d="M22 25 L15 22 L15 26.5 Z" fill="#F5F8FC" stroke="#9DB3D6" stroke-width="1.1" /><circle cx="15" cy="9" r="2" fill="#C1D4F6" /></svg>' }
+    { id: "inferno", name: "Inferno", glow: "#E4572E", cost: { coins: 20 }, svg: '<svg viewBox="0 0 30 34" width="27" height="30"><path d="M15 1 C11.5 7 11.5 20 11.5 25 L18.5 25 C18.5 20 18.5 7 15 1 Z" fill="#E4572E" stroke="#B8391A" stroke-width="1.5" stroke-linejoin="round" /><path d="M11.5 19 L4 27 L11.5 24 Z" fill="#FF9466" stroke="#B8391A" stroke-width="1.2" /><path d="M18.5 19 L26 27 L18.5 24 Z" fill="#FF9466" stroke="#B8391A" stroke-width="1.2" /><circle cx="15" cy="10" r="2.5" fill="#FFE1C1" /><path d="M12 25 Q15 32 18 25 Z" fill="#FFD93D" opacity="0.9" /></svg>' },
+    { id: "viper", name: "Viper", glow: "#3FA84A", cost: { coins: 20 }, svg: '<svg viewBox="0 0 30 34" width="27" height="30"><path d="M15 6 L29 25 L15 20 L1 25 Z" fill="#2A2A2A" stroke="#1A1A1A" stroke-width="1.5" stroke-linejoin="round" /><path d="M15 6 L17.5 1 L15 -1 L12.5 1 Z" fill="#2A2A2A" stroke="#1A1A1A" stroke-width="1.2" stroke-linejoin="round" /><circle cx="15" cy="14" r="2.5" fill="#3FA84A" /></svg>' },
+    { id: "solstice", name: "Solstice", glow: "#F7C548", cost: { coins: 35 }, svg: '<svg viewBox="0 0 30 34" width="27" height="30"><circle cx="15" cy="3" r="2.2" fill="#C99A2E" stroke="#8A6A1E" stroke-width="1" /><rect x="13" y="5" width="4" height="25" rx="2" fill="#F7C548" stroke="#C99A2E" stroke-width="1.3" /><rect x="3" y="12" width="24" height="3.4" rx="1.5" fill="#FFE08A" stroke="#C99A2E" stroke-width="1.2" /><rect x="6" y="21" width="18" height="3.4" rx="1.5" fill="#FFE08A" stroke="#C99A2E" stroke-width="1.2" /><circle cx="15" cy="9" r="2.3" fill="#FFF6D9" /></svg>' },
+    { id: "ghost", name: "Ghost", glow: "#9DB3D6", cost: { gems: 2 }, svg: '<svg viewBox="0 0 30 34" width="27" height="30"><path d="M15 0 L17 27 L15 24 L13 27 Z" fill="#E9EEF6" stroke="#9DB3D6" stroke-width="1.4" stroke-linejoin="round" /><path d="M8 25 L15 22 L15 26.5 Z" fill="#F5F8FC" stroke="#9DB3D6" stroke-width="1.1" /><path d="M22 25 L15 22 L15 26.5 Z" fill="#F5F8FC" stroke="#9DB3D6" stroke-width="1.1" /><circle cx="15" cy="9" r="2" fill="#C1D4F6" /></svg>' }
   ]
 };
 
@@ -1492,19 +1505,73 @@ function applyVehicleSkin(category) {
   }
 }
 
-function renderVehicleSkinGrid(category, onPicked) {
+// Skins with no `cost` (the first one per category) are free starters --
+// everyone "owns" those without ever touching Firebase. Paid skins are
+// gated behind AIGLeaderboard's shared wallet (see leaderboard.js) so
+// unlocking one costs real coins/gems earned across EVERY game, not just
+// this one.
+//
+// Migration for players who picked a paid-tier skin back when the whole
+// grid was free: whatever skin is their CURRENT localStorage selection
+// gets silently granted (unlockVehicle with its real cost -- the
+// transaction still succeeds even for a 0-balance player because the
+// balance check is skipped when the wallet doesn't need touching... no:
+// it genuinely charges 0 net effect only if cost is {}; for an already-
+// selected PAID skin we grant it via unlockVehicle(gameId, id, {}) --
+// zero cost, one-time -- so nobody loses access to what they were
+// already using the moment this shipped.
+async function renderVehicleSkinGrid(category, onPicked) {
   $("vehicle-skin-title").textContent = category === "car" ? "Pick your car" : "Pick your plane";
   const grid = $("vehicle-skin-grid");
-  grid.innerHTML = "";
+  grid.innerHTML = `<div class="vehicle-wallet-hud" id="vehicle-wallet-hud">Loading your wallet…</div>`;
   const currentId = getVehicleSkinId(category);
+
+  const noLeaderboard = !window.AIGLeaderboard;
+  let owned = noLeaderboard ? {} : await AIGLeaderboard.getOwnedVehicles("mathville");
+  let wallet = noLeaderboard ? { coins: 0, gems: 0 } : await AIGLeaderboard.getWallet();
+
+  if (!noLeaderboard && !owned[currentId]) {
+    await AIGLeaderboard.unlockVehicle("mathville", currentId, {});
+    owned = await AIGLeaderboard.getOwnedVehicles("mathville");
+  }
+
+  grid.innerHTML = "";
+  const hud = document.createElement("div");
+  hud.className = "vehicle-wallet-hud";
+  hud.innerHTML = `<span class="wallet-coins">🪙 ${wallet.coins || 0}</span><span class="wallet-gems">💎 ${wallet.gems || 0}</span>`;
+  grid.appendChild(hud);
+
   VEHICLE_SKINS[category].forEach(skin => {
+    const isOwned = !skin.cost || owned[skin.id];
     const card = document.createElement("button");
-    card.className = "vehicle-skin-card" + (skin.id === currentId ? " active" : "");
+    card.type = "button";
+    card.className = "vehicle-skin-card" + (skin.id === currentId ? " active" : "") + (isOwned ? "" : " locked");
     card.style.setProperty("--vehicle-glow", skin.glow);
-    card.innerHTML = `<span class="vehicle-skin-thumb vehicle-glow">${skin.svg}</span><span class="vehicle-skin-name">${skin.name}</span>`;
-    card.addEventListener("click", () => {
-      setVehicleSkinId(category, skin.id);
-      onPicked();
+    const priceTag = isOwned ? "" :
+      `<span class="vehicle-skin-price">${skin.cost.coins ? `🪙 ${skin.cost.coins}` : `💎 ${skin.cost.gems}`}</span>`;
+    card.innerHTML = `
+      <span class="vehicle-skin-thumb vehicle-glow">${skin.svg}</span>
+      <span class="vehicle-skin-name">${skin.name}</span>
+      ${priceTag}
+      ${isOwned ? "" : '<span class="vehicle-skin-lock">🔒</span>'}
+    `;
+    card.addEventListener("click", async () => {
+      if (isOwned) {
+        setVehicleSkinId(category, skin.id);
+        onPicked();
+        return;
+      }
+      if (noLeaderboard) return; // shouldn't happen (leaderboard.js is always loaded), but never crash a locked tap
+      card.disabled = true;
+      const result = await AIGLeaderboard.unlockVehicle("mathville", skin.id, skin.cost);
+      card.disabled = false;
+      if (result.ok) {
+        setVehicleSkinId(category, skin.id);
+        onPicked();
+      } else {
+        card.classList.add("shake");
+        setTimeout(() => card.classList.remove("shake"), 500);
+      }
     });
     grid.appendChild(card);
   });

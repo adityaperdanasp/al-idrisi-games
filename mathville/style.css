@@ -64,6 +64,8 @@ button { font-family: inherit; }
   font-weight: 700; font-size: 13px; color: var(--ink-soft);
   background: var(--cream); padding: 6px 12px; border-radius: 20px;
 }
+.wallet-badge { gap: 4px; margin-right: 8px; }
+.wallet-badge span:nth-child(3) { margin-left: 6px; }
 
 /* ---------- Screens ---------- */
 .screen { display: none; padding: 20px; position: relative; }
@@ -668,6 +670,26 @@ button { font-family: inherit; }
 .vehicle-skin-thumb { display: flex; align-items: center; justify-content: center; height: 40px; }
 .vehicle-skin-thumb svg { width: auto; height: 36px; }
 .vehicle-skin-name { font: 700 11px "Fredoka", sans-serif; color: var(--ink); }
+.vehicle-skin-card.locked { position: relative; opacity: .82; }
+.vehicle-skin-card.locked .vehicle-skin-thumb svg { filter: grayscale(.65); }
+.vehicle-skin-lock { position: absolute; top: 4px; right: 6px; font-size: 12px; }
+.vehicle-skin-price {
+  font: 800 10px "Fredoka", sans-serif; color: #fff; background: var(--wood);
+  border-radius: 8px; padding: 1px 7px;
+}
+.vehicle-skin-card.shake { animation: vehicleShinShake .4s ease; }
+@keyframes vehicleShinShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.vehicle-wallet-hud {
+  grid-column: 1 / -1; display: flex; justify-content: center; gap: 14px;
+  font: 800 13px "Fredoka", sans-serif; color: var(--ink); margin-bottom: 4px;
+}
+.vehicle-wallet-hud .wallet-coins, .vehicle-wallet-hud .wallet-gems {
+  background: var(--cream); border-radius: 10px; padding: 3px 10px; box-shadow: 0 2px 0 rgba(59,42,26,.1);
+}
 
 /* Signature glow, shared by both the picker thumbnails and the actual
    in-game sprite -- --vehicle-glow is set per-skin in JS (applyVehicleSkin/

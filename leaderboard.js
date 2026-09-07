@@ -162,6 +162,118 @@
     // Any wrong answer resets it, so mastery has to be shown recently, not
     // just once a long time ago.
     ref.child("streak").transaction(cur => isCorrect ? (cur || 0) + 1 : 0);
+    if (isCorrect) awardCurrency();
+  }
+
+  // =====================================================================
+  // WALLET (gems & coins) — cross-game currency, spent on vehicle skins in
+  // MathVille Drive Mode + Math Race's vehicle picker. Deliberately hooked
+  // into recordTopicAttempt (above) rather than each game's own answer
+  // handler — every game already calls that on every question, so earning
+  // currency needed zero changes to any individual game's question code.
+  // Stored at players/{id}/wallet — nested under the ALREADY explicit
+  // `players` RTDB rule, so no security-rules change was needed either.
+  // =====================================================================
+  const GEM_EVERY_N_CORRECT = 15; // coins are frequent/small, gems rare/deliberate
+
+  // +1 coin per correct answer, no matter which game. Every ~15th correct
+  // answer (tracked via a running streak that only this counts, separate
+  // from recordTopicAttempt's per-topic mastery streak) also converts into
+  // +1 gem — a small, guaranteed trickle rather than a random drop, so a
+  // kid grinding it out can actually predict/count toward the next gem.
+  function awardCurrency() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + 1;
+      wallet.correctSinceGem = (wallet.correctSinceGem || 0) + 1;
+      if (wallet.correctSinceGem >= GEM_EVERY_N_CORRECT) {
+        wallet.gems = (wallet.gems || 0) + 1;
+        wallet.correctSinceGem = 0;
+      }
+      return wallet;
+    });
+  }
+
+  // One-time read (e.g. rendering a shop screen on open).
+  async function getWallet() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { coins: 0, gems: 0 };
+    const snap = await aigDb.ref(`players/${player.id}/wallet`).get();
+    return snap.exists() ? snap.val() : { coins: 0, gems: 0 };
+  }
+
+  // Live subscription (e.g. a HUD badge that updates the instant a coin is
+  // earned elsewhere in the same session). Returns an unsubscribe function,
+  // same convention as watchGame() above.
+  function watchWallet(callback) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") { callback({ coins: 0, gems: 0 }); return () => {}; }
+    const ref = aigDb.ref(`players/${player.id}/wallet`);
+    const handler = snap => callback(snap.val() || { coins: 0, gems: 0 });
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }
+
+  // Which vehicle skins this player has already unlocked, keyed per game
+  // (mathville's and mathrace's vehicle ids are totally separate id spaces,
+  // so gameId keeps them from colliding). { skinId: true, ... } shape.
+  async function getOwnedVehicles(gameId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return {};
+    const snap = await aigDb.ref(`players/${player.id}/ownedVehicles/${gameId}`).get();
+    return snap.exists() ? snap.val() : {};
+  }
+
+  // Attempts to buy one vehicle skin. cost is { coins } or { gems } (never
+  // both — every skin in the shop is priced in exactly one currency).
+  //
+  // NOT built on .transaction() for the funds check, despite that being
+  // the textbook way to guard a balance -- confirmed live (both here and
+  // via a standalone repro) that on this secondary named app instance, a
+  // transaction whose update function ABORTS (returns undefined) on its
+  // very first invocation never retries with the real server value, even
+  // immediately after an explicit .get() on the same ref returned the
+  // correct data. The update function's first call reliably received
+  // `cur === null` regardless, read as an empty wallet, and wrongly
+  // rejected a 15-coin purchase against a real 25-coin balance every
+  // time. (A non-aborting transaction, like awardCurrency's plain
+  // increment below, converges fine from that same null guess -- the bug
+  // is specific to a transaction that can abort.)
+  //
+  // So: a plain get()-then-check-then-write instead. This accepts a
+  // narrow theoretical race (two purchases from the same kid landing at
+  // the exact same instant could both pass the check before either write
+  // lands) that a transaction would have closed -- an acceptable trade
+  // for a cosmetic in-game currency with no real money involved. The
+  // floor at 0 below means the worst case is a slightly-early "sold out"
+  // feeling, never a negative balance.
+  async function unlockVehicle(gameId, vehicleId, cost) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false, reason: "no-player" };
+
+    const ownedRef = aigDb.ref(`players/${player.id}/ownedVehicles/${gameId}/${vehicleId}`);
+    const alreadySnap = await ownedRef.get();
+    if (alreadySnap.exists() && alreadySnap.val()) return { ok: true, alreadyOwned: true };
+
+    const coinsCost = cost.coins || 0;
+    const gemsCost = cost.gems || 0;
+    const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+    const walletSnap = await walletRef.get();
+    const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    if ((wallet.coins || 0) < coinsCost || (wallet.gems || 0) < gemsCost) {
+      return { ok: false, reason: "insufficient-funds" };
+    }
+
+    const newWallet = {
+      ...wallet,
+      coins: Math.max(0, (wallet.coins || 0) - coinsCost),
+      gems: Math.max(0, (wallet.gems || 0) - gemsCost)
+    };
+    await walletRef.set(newWallet);
+    await ownedRef.set(true);
+    return { ok: true, wallet: newWallet };
   }
 
   // Reads back one topic's {correct, wrong, streak} so the AI Tutor hint
@@ -176,5 +288,9 @@
     return snap.exists() ? snap.val() : null;
   }
 
-  window.AIGLeaderboard = { recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats, db: aigDb };
+  window.AIGLeaderboard = {
+    recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
+    getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
+    db: aigDb
+  };
 })();
