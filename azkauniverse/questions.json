@@ -348,6 +348,157 @@
           "type": "flashcard",
           "front": "True or false: fusion still happens inside a neutron star.",
           "back": "False! Fusion does not occur once a star has collapsed into a neutron star -- that stage is long over."
+        },
+        {
+          "type": "mc",
+          "question": "What is the star at the center of our solar system called?",
+          "options": [
+            "The Sun",
+            "Sirius",
+            "Polaris",
+            "Betelgeuse"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What force pulls the gas and dust in a nebula together to form a star?",
+          "options": [
+            "Gravity",
+            "Magnetism",
+            "Wind",
+            "Heat"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What color are the hottest stars?",
+          "options": [
+            "Blue",
+            "Red",
+            "Yellow",
+            "Green"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What happens to a very massive star at the end of its life?",
+          "options": [
+            "It explodes in a supernova",
+            "It turns into a planet",
+            "It becomes a comet",
+            "It disappears instantly"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is left behind after a massive star explodes as a supernova?",
+          "options": [
+            "A neutron star or black hole",
+            "A new nebula only",
+            "A comet",
+            "A moon"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What do stars use as fuel to shine?",
+          "options": [
+            "Hydrogen",
+            "Water",
+            "Rock",
+            "Oxygen"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is a white dwarf?",
+          "options": [
+            "The small, hot leftover core of a star like the Sun",
+            "A brand new star",
+            "A type of planet",
+            "A cloud of dust"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "fill",
+          "question": "A star's life begins inside a cloud of gas and dust called a _____.",
+          "answer": "nebula",
+          "acceptable": [
+            "nebula"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "A young star that hasn't started fusion yet is called a _____.",
+          "answer": "protostar",
+          "acceptable": [
+            "protostar"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "When our Sun runs out of fuel, it will expand into a red _____.",
+          "answer": "giant",
+          "acceptable": [
+            "giant",
+            "red giant"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "The explosive death of a massive star is called a _____.",
+          "answer": "supernova",
+          "acceptable": [
+            "supernova"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "An extremely dense object with gravity so strong not even light escapes is a _____.",
+          "answer": "black hole",
+          "acceptable": [
+            "black hole",
+            "blackhole"
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each star stage to what happens there.",
+          "pairs": [
+            {
+              "term": "Nebula",
+              "match": "A cloud of gas and dust collapsing under gravity"
+            },
+            {
+              "term": "Main sequence",
+              "match": "The star steadily fuses hydrogen into helium"
+            },
+            {
+              "term": "Red giant",
+              "match": "The star expands after running low on hydrogen"
+            },
+            {
+              "term": "Supernova",
+              "match": "A massive star explodes at the end of its life"
+            }
+          ]
+        },
+        {
+          "type": "flashcard",
+          "front": "Why do bigger stars burn out faster than smaller stars?",
+          "back": "Bigger stars burn their fuel much faster because they shine so much brighter — so despite having more fuel, they run out sooner!"
+        },
+        {
+          "type": "flashcard",
+          "front": "What determines the color of a star?",
+          "back": "Its temperature! Blue stars are the hottest, red stars are the coolest, with white and yellow in between."
         }
       ],
       "funFacts": [
@@ -732,6 +883,136 @@
             "The nucleus"
           ],
           "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What charge does a proton have?",
+          "options": [
+            "Positive",
+            "Negative",
+            "No charge",
+            "Both positive and negative"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What charge does an electron have?",
+          "options": [
+            "Negative",
+            "Positive",
+            "No charge",
+            "Both positive and negative"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What charge does a neutron have?",
+          "options": [
+            "No charge (neutral)",
+            "Positive",
+            "Negative",
+            "It changes"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Where do electrons orbit around an atom?",
+          "options": [
+            "In shells around the nucleus",
+            "Inside the nucleus",
+            "Nowhere near the atom",
+            "Only in liquids"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What do we call two or more atoms joined together?",
+          "options": [
+            "A molecule",
+            "A proton",
+            "A cell",
+            "A neutron"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What determines what element an atom is?",
+          "options": [
+            "The number of protons",
+            "The number of electrons only",
+            "Its color",
+            "Its size"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Which two particles have almost the same mass, much heavier than an electron?",
+          "options": [
+            "Protons and neutrons",
+            "Protons and electrons",
+            "Neutrons and electrons",
+            "None of them"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "fill",
+          "question": "The positively charged particles in an atom are called _____.",
+          "answer": "protons",
+          "acceptable": [
+            "protons",
+            "proton"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "The negatively charged particles that orbit the nucleus are called _____.",
+          "answer": "electrons",
+          "acceptable": [
+            "electrons",
+            "electron"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "Particles with no electric charge found in the nucleus are called _____.",
+          "answer": "neutrons",
+          "acceptable": [
+            "neutrons",
+            "neutron"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "The smallest unit of an element that still has that element's properties is a(n) _____.",
+          "answer": "atom",
+          "acceptable": [
+            "atom"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "When atoms join together, they form a _____.",
+          "answer": "molecule",
+          "acceptable": [
+            "molecule"
+          ]
+        },
+        {
+          "type": "flashcard",
+          "front": "How small is an atom?",
+          "back": "Atoms are so tiny that millions of them could fit on the head of a pin!"
+        },
+        {
+          "type": "flashcard",
+          "front": "Why don't electrons fall into the nucleus?",
+          "back": "Electrons move so fast around the nucleus that they stay in their orbits, similar to how the Moon orbits Earth instead of falling into it."
         }
       ],
       "funFacts": [
@@ -1116,6 +1397,138 @@
             "Neither"
           ],
           "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is it called when Earth travels all the way around the Sun?",
+          "options": [
+            "Revolution (orbit)",
+            "Rotation",
+            "Eclipse",
+            "Tilt"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How long does it take Earth to complete one full revolution around the Sun?",
+          "options": [
+            "365.25 days",
+            "24 hours",
+            "30 days",
+            "7 days"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What causes the seasons on Earth?",
+          "options": [
+            "Earth's tilt as it orbits the Sun",
+            "Earth spinning faster in summer",
+            "The Moon blocking the Sun",
+            "Earth moving closer to the Sun in summer"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Which direction does Earth rotate on its axis?",
+          "options": [
+            "West to east",
+            "East to west",
+            "North to south",
+            "It doesn't rotate"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is an extra day added to February called, and how often does it happen?",
+          "options": [
+            "A leap day, about every 4 years",
+            "A solstice day, every year",
+            "An equinox day, every 2 years",
+            "A rotation day, every 10 years"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is it called when day and night are almost equal length everywhere on Earth?",
+          "options": [
+            "An equinox",
+            "A solstice",
+            "An eclipse",
+            "A rotation"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "fill",
+          "question": "Earth's yearly trip around the Sun is called its _____.",
+          "answer": "revolution",
+          "acceptable": [
+            "revolution",
+            "orbit"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "Earth is tilted on its _____, which causes the seasons.",
+          "answer": "axis",
+          "acceptable": [
+            "axis"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "The longest day of the year in summer is called the summer _____.",
+          "answer": "solstice",
+          "acceptable": [
+            "solstice",
+            "summer solstice"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "A day with equal hours of daylight and darkness is called an _____.",
+          "answer": "equinox",
+          "acceptable": [
+            "equinox"
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each term to what it means.",
+          "pairs": [
+            {
+              "term": "Rotation",
+              "match": "Earth spinning on its axis, causing day and night"
+            },
+            {
+              "term": "Revolution",
+              "match": "Earth orbiting the Sun once a year"
+            },
+            {
+              "term": "Axis",
+              "match": "The imaginary line Earth spins around"
+            },
+            {
+              "term": "Equinox",
+              "match": "A day with equal daylight and darkness"
+            }
+          ]
+        },
+        {
+          "type": "flashcard",
+          "front": "Why does the Southern Hemisphere have summer when the Northern Hemisphere has winter?",
+          "back": "Because Earth is tilted — when the Northern Hemisphere leans away from the Sun (winter there), the Southern Hemisphere leans toward it (summer there)!"
+        },
+        {
+          "type": "flashcard",
+          "front": "If Earth didn't rotate at all, what would happen?",
+          "back": "One side of Earth would always face the Sun (endless scorching day) and the other side would always face away (endless freezing night)!"
         }
       ],
       "funFacts": [
@@ -1633,6 +2046,148 @@
             "Southwest"
           ],
           "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "What do we call the imaginary line at 0 degrees longitude?",
+          "options": [
+            "The Prime Meridian",
+            "The Equator",
+            "The Tropic of Cancer",
+            "The International Date Line"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What are lines running north-south, from pole to pole, called?",
+          "options": [
+            "Lines of longitude",
+            "Lines of latitude",
+            "The equator",
+            "Contour lines"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What tool shows directions like North, South, East, and West on a map?",
+          "options": [
+            "A compass rose",
+            "A scale bar",
+            "A legend",
+            "A grid"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What does a map's legend (or key) show?",
+          "options": [
+            "What the symbols on the map mean",
+            "The distance between cities",
+            "The compass directions",
+            "The map's title"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is a 3D model of Earth called?",
+          "options": [
+            "A globe",
+            "An atlas",
+            "A compass",
+            "A legend"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Which continent does the Equator NOT pass through?",
+          "options": [
+            "Antarctica",
+            "Africa",
+            "South America",
+            "Asia"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What do we call a collection of maps put together in a book?",
+          "options": [
+            "An atlas",
+            "A globe",
+            "A legend",
+            "A compass"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "fill",
+          "question": "The line at 0 degrees latitude that circles the middle of Earth is the _____.",
+          "answer": "equator",
+          "acceptable": [
+            "equator"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "A map symbol that shows what map symbols mean is called the map's _____.",
+          "answer": "legend",
+          "acceptable": [
+            "legend",
+            "key"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "Lines of _____ measure how far east or west a place is from the Prime Meridian.",
+          "answer": "longitude",
+          "acceptable": [
+            "longitude"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "A round model that shows the whole Earth's surface is called a _____.",
+          "answer": "globe",
+          "acceptable": [
+            "globe"
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each map tool to what it does.",
+          "pairs": [
+            {
+              "term": "Compass rose",
+              "match": "Shows direction (N, S, E, W)"
+            },
+            {
+              "term": "Legend",
+              "match": "Explains what symbols mean"
+            },
+            {
+              "term": "Scale bar",
+              "match": "Shows real-world distance"
+            },
+            {
+              "term": "Grid lines",
+              "match": "Help locate exact places"
+            }
+          ]
+        },
+        {
+          "type": "flashcard",
+          "front": "Why do we need both latitude AND longitude to find an exact location?",
+          "back": "Latitude alone only tells you how far north or south you are, and longitude alone only tells you how far east or west — together, like a grid, they pinpoint one exact spot!"
+        },
+        {
+          "type": "flashcard",
+          "front": "Why is a globe more accurate than a flat map?",
+          "back": "Earth is round, so a flat map has to stretch or distort some areas to show a round surface on paper — a globe keeps shapes and sizes true to life."
         }
       ],
       "funFacts": [
@@ -2099,6 +2654,150 @@
               "match": "11:10"
             }
           ]
+        },
+        {
+          "type": "mc",
+          "question": "How many hours are in a full day?",
+          "options": [
+            "24",
+            "12",
+            "60",
+            "365"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many minutes are in an hour?",
+          "options": [
+            "60",
+            "24",
+            "100",
+            "12"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What does 'a.m.' stand for?",
+          "options": [
+            "Before noon (ante meridiem)",
+            "After noon",
+            "Morning only, no Latin meaning",
+            "All minutes"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What does 'p.m.' stand for?",
+          "options": [
+            "After noon (post meridiem)",
+            "Before noon",
+            "Past minutes",
+            "Night only"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "In 24-hour time, what does 00:00 represent?",
+          "options": [
+            "Midnight",
+            "Noon",
+            "1 a.m.",
+            "11 p.m."
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What time is 3:45 p.m. in 24-hour time?",
+          "options": [
+            "15:45",
+            "03:45",
+            "13:45",
+            "17:45"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What time is 09:15 in 12-hour time?",
+          "options": [
+            "9:15 a.m.",
+            "9:15 p.m.",
+            "10:15 a.m.",
+            "8:15 a.m."
+          ],
+          "answer": 0
+        },
+        {
+          "type": "fill",
+          "question": "Midnight in 24-hour time is written as _____.",
+          "answer": "00:00",
+          "acceptable": [
+            "00:00",
+            "0:00",
+            "0000"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "Noon in 24-hour time is written as _____.",
+          "answer": "12:00",
+          "acceptable": [
+            "12:00",
+            "1200"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "To change a p.m. time to 24-hour time (except 12 p.m.), you _____ 12 to the hour.",
+          "answer": "add",
+          "acceptable": [
+            "add"
+          ]
+        },
+        {
+          "type": "fill",
+          "question": "There are 7 days in a _____.",
+          "answer": "week",
+          "acceptable": [
+            "week"
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each 12-hour time to its 24-hour equivalent.",
+          "pairs": [
+            {
+              "term": "6:00 a.m.",
+              "match": "06:00"
+            },
+            {
+              "term": "12:00 p.m. (noon)",
+              "match": "12:00"
+            },
+            {
+              "term": "6:00 p.m.",
+              "match": "18:00"
+            },
+            {
+              "term": "12:00 a.m. (midnight)",
+              "match": "00:00"
+            }
+          ]
+        },
+        {
+          "type": "flashcard",
+          "front": "Why do pilots and the military often use 24-hour time?",
+          "back": "Because it avoids confusion between a.m. and p.m. — every hour of the day has its own unique number, from 00:00 to 23:59!"
+        },
+        {
+          "type": "flashcard",
+          "front": "Is 12:00 p.m. morning or afternoon?",
+          "back": "Neither exactly — 12:00 p.m. is noon, the exact middle of the day! 12:00 a.m. is midnight, the exact start of a new day."
         }
       ],
       "funFacts": [
