@@ -2468,6 +2468,557 @@
             "tame"
           ],
           "answer": "The lion is wild but the cat is tame"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The soup tasted whisper yesterday, but today it tastes ___.\"",
+          "answer": "shout"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"My brother is lend, but my sister is ___.\"",
+          "answer": "borrow"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"This box is sick, but that one is ___.\"",
+          "answer": "healthy"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The car was sharp, but the bike was ___.\"",
+          "answer": "dull"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"My brother is push, but my sister is ___.\"",
+          "answer": "pull"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"This box is reject, but that one is ___.\"",
+          "answer": "accept"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"My brother is shrink, but my sister is ___.\"",
+          "answer": "expand"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"Our old house felt end, but the new one feels ___.\"",
+          "answer": "begin"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"Our old house felt rich, but the new one feels ___.\"",
+          "answer": "poor"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"This box is defend, but that one is ___.\"",
+          "answer": "attack"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The car was exterior, but the bike was ___.\"",
+          "answer": "interior"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"This box is tight, but that one is ___.\"",
+          "answer": "loose"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"In the morning it felt exterior, but by night it turned ___.\"",
+          "answer": "interior"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The first path was down, while the second one was ___.\"",
+          "answer": "up"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"My brother is hot, but my sister is ___.\"",
+          "answer": "cold"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"Our old house felt false, but the new one feels ___.\"",
+          "answer": "true"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"In the morning it felt cold, but by night it turned ___.\"",
+          "answer": "hot"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The car was false, but the bike was ___.\"",
+          "answer": "true"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"Grandma's story was tidy, but the ending was ___.\"",
+          "answer": "messy"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"My brother is happy, but my sister is ___.\"",
+          "answer": "sad"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The first path was expensive, while the second one was ___.\"",
+          "answer": "cheap"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"My brother is wet, but my sister is ___.\"",
+          "answer": "dry"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"In the morning it felt sick, but by night it turned ___.\"",
+          "answer": "healthy"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The first path was light, while the second one was ___.\"",
+          "answer": "dark"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"My brother is rough, but my sister is ___.\"",
+          "answer": "gentle"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The first path was never, while the second one was ___.\"",
+          "answer": "always"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"Our old house felt loud, but the new one feels ___.\"",
+          "answer": "quiet"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"My brother is dangerous, but my sister is ___.\"",
+          "answer": "safe"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The first path was rude, while the second one was ___.\"",
+          "answer": "polite"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"Grandma's story was patient, but the ending was ___.\"",
+          "answer": "impatient"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The first path was happy, while the second one was ___.\"",
+          "answer": "sad"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The soup tasted minor yesterday, but today it tastes ___.\"",
+          "answer": "major"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"Our old house felt first, but the new one feels ___.\"",
+          "answer": "last"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"Our old house felt exterior, but the new one feels ___.\"",
+          "answer": "interior"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The soup tasted wild yesterday, but today it tastes ___.\"",
+          "answer": "tame"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The soup tasted decrease yesterday, but today it tastes ___.\"",
+          "answer": "increase"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The first path was stingy, while the second one was ___.\"",
+          "answer": "generous"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The car was always, but the bike was ___.\"",
+          "answer": "never"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The soup tasted scatter yesterday, but today it tastes ___.\"",
+          "answer": "gather"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The soup tasted ancient yesterday, but today it tastes ___.\"",
+          "answer": "modern"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"The soup tasted expand yesterday, but today it tastes ___.\"",
+          "answer": "shrink"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"This box is near, but that one is ___.\"",
+          "answer": "far"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"My brother is always, but my sister is ___.\"",
+          "answer": "never"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"This box is decrease, but that one is ___.\"",
+          "answer": "increase"
+        },
+        {
+          "type": "fill",
+          "prompt": "Complete with an antonym: \"Grandma's story was late, but the ending was ___.\"",
+          "answer": "early"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"Their new puppy is very playful.\" What is the antonym of 'playful'?",
+          "options": [
+            "lazy",
+            "heavy",
+            "quiet"
+          ],
+          "answer": "lazy"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The lost puppy looked helpless on the street.\" What is the antonym of 'helpless'?",
+          "options": [
+            "muddy",
+            "capable",
+            "curious"
+          ],
+          "answer": "capable"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The lecture felt boring to everyone in the room.\" What is the antonym of 'boring'?",
+          "options": [
+            "short",
+            "exciting",
+            "loud"
+          ],
+          "answer": "exciting"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The knight's armor looked incredibly heavy.\" What is the antonym of 'heavy'?",
+          "options": [
+            "light",
+            "old",
+            "shiny"
+          ],
+          "answer": "light"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The chef's kitchen was spotlessly clean.\" What is the antonym of 'clean'?",
+          "options": [
+            "modern",
+            "dirty",
+            "large"
+          ],
+          "answer": "dirty"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"Her handwriting is always so neat.\" What is the antonym of 'neat'?",
+          "options": [
+            "loud",
+            "messy",
+            "quick"
+          ],
+          "answer": "messy"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"Everyone thought the puzzle was difficult.\" What is the antonym of 'difficult'?",
+          "options": [
+            "colorful",
+            "easy",
+            "small"
+          ],
+          "answer": "easy"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The soup smelled delicious from the kitchen.\" What is the antonym of 'delicious'?",
+          "options": [
+            "heavy",
+            "awful",
+            "cold"
+          ],
+          "answer": "awful"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"Her new shoes were comfortable for the hike.\" What is the antonym of 'comfortable'?",
+          "options": [
+            "cheap",
+            "uncomfortable",
+            "colorful"
+          ],
+          "answer": "uncomfortable"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The market was crowded on Saturday morning.\" What is the antonym of 'crowded'?",
+          "options": [
+            "closed",
+            "empty",
+            "quiet"
+          ],
+          "answer": "empty"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The library was silent during exam week.\" What is the antonym of 'silent'?",
+          "options": [
+            "noisy",
+            "warm",
+            "colorful"
+          ],
+          "answer": "noisy"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The mountain trail was steep to climb.\" What is the antonym of 'steep'?",
+          "options": [
+            "flat",
+            "sunny",
+            "short"
+          ],
+          "answer": "flat"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The old bridge looked damaged after the storm.\" What is the antonym of 'damaged'?",
+          "options": [
+            "painted",
+            "crowded",
+            "repaired"
+          ],
+          "answer": "repaired"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The kitten looked frightened when it saw the dog.\" What is the antonym of 'frightened'?",
+          "options": [
+            "sleepy",
+            "curious",
+            "calm"
+          ],
+          "answer": "calm"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"He gave a clever answer to the teacher.\" What is the antonym of 'clever'?",
+          "options": [
+            "long",
+            "foolish",
+            "loud"
+          ],
+          "answer": "foolish"
+        },
+        {
+          "type": "match",
+          "prompt": "Match each word to its antonym (opposite).",
+          "pairs": [
+            {
+              "left": "safe",
+              "right": "dangerous"
+            },
+            {
+              "left": "strong",
+              "right": "weak"
+            },
+            {
+              "left": "rich",
+              "right": "poor"
+            },
+            {
+              "left": "tight",
+              "right": "loose"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each word to its antonym (opposite).",
+          "pairs": [
+            {
+              "left": "honest",
+              "right": "dishonest"
+            },
+            {
+              "left": "smooth",
+              "right": "rough"
+            },
+            {
+              "left": "wet",
+              "right": "dry"
+            },
+            {
+              "left": "loud",
+              "right": "quiet"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each word to its antonym (opposite).",
+          "pairs": [
+            {
+              "left": "gather",
+              "right": "scatter"
+            },
+            {
+              "left": "push",
+              "right": "pull"
+            },
+            {
+              "left": "always",
+              "right": "never"
+            },
+            {
+              "left": "increase",
+              "right": "decrease"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each word to its antonym (opposite).",
+          "pairs": [
+            {
+              "left": "calm",
+              "right": "nervous"
+            },
+            {
+              "left": "heavy",
+              "right": "light"
+            },
+            {
+              "left": "awake",
+              "right": "asleep"
+            },
+            {
+              "left": "interior",
+              "right": "exterior"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each word to its antonym (opposite).",
+          "pairs": [
+            {
+              "left": "give",
+              "right": "take"
+            },
+            {
+              "left": "cheap",
+              "right": "expensive"
+            },
+            {
+              "left": "borrow",
+              "right": "lend"
+            },
+            {
+              "left": "healthy",
+              "right": "sick"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each word to its antonym (opposite).",
+          "pairs": [
+            {
+              "left": "include",
+              "right": "exclude"
+            },
+            {
+              "left": "happy",
+              "right": "sad"
+            },
+            {
+              "left": "clean",
+              "right": "dirty"
+            },
+            {
+              "left": "wild",
+              "right": "tame"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each word to its antonym (opposite).",
+          "pairs": [
+            {
+              "left": "expand",
+              "right": "shrink"
+            },
+            {
+              "left": "ancient",
+              "right": "modern"
+            },
+            {
+              "left": "begin",
+              "right": "end"
+            },
+            {
+              "left": "brave",
+              "right": "scared"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each word to its antonym (opposite).",
+          "pairs": [
+            {
+              "left": "true",
+              "right": "false"
+            },
+            {
+              "left": "generous",
+              "right": "stingy"
+            },
+            {
+              "left": "accept",
+              "right": "reject"
+            },
+            {
+              "left": "tidy",
+              "right": "messy"
+            }
+          ]
         }
       ]
     },
@@ -2734,6 +3285,589 @@
               "right": "full of"
             }
           ]
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-ish' means...",
+          "options": [
+            "many",
+            "somewhat like",
+            "in a direction",
+            "writing or recording"
+          ],
+          "answer": "somewhat like"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'multi-' means...",
+          "options": [
+            "the state of being",
+            "not / opposite of",
+            "many",
+            "too little"
+          ],
+          "answer": "many"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'mono-' means...",
+          "options": [
+            "small",
+            "half",
+            "one",
+            "two"
+          ],
+          "answer": "one"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-ment' means...",
+          "options": [
+            "tending to do something",
+            "above / beyond",
+            "one",
+            "the result of an action"
+          ],
+          "answer": "the result of an action"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'tri-' means...",
+          "options": [
+            "three",
+            "one who does something",
+            "the state of being",
+            "full of"
+          ],
+          "answer": "three"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'trans-' means...",
+          "options": [
+            "to remove / reverse",
+            "across",
+            "the state of being",
+            "full of"
+          ],
+          "answer": "across"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'super-' means...",
+          "options": [
+            "middle",
+            "to do again",
+            "above / beyond",
+            "half"
+          ],
+          "answer": "above / beyond"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'anti-' means...",
+          "options": [
+            "one who does something",
+            "against",
+            "writing or recording",
+            "between"
+          ],
+          "answer": "against"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'micro-' means...",
+          "options": [
+            "tending to do something",
+            "between",
+            "small",
+            "together"
+          ],
+          "answer": "small"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-al' means...",
+          "options": [
+            "in a certain manner",
+            "full of",
+            "relating to",
+            "tending to do something"
+          ],
+          "answer": "relating to"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-tion' means...",
+          "options": [
+            "small",
+            "full of",
+            "above / beyond",
+            "the act of doing something"
+          ],
+          "answer": "the act of doing something"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'inter-' means...",
+          "options": [
+            "before",
+            "between",
+            "full of",
+            "wrongly"
+          ],
+          "answer": "between"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'post-' means...",
+          "options": [
+            "too much",
+            "after",
+            "the state of being",
+            "many"
+          ],
+          "answer": "after"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-ive' means...",
+          "options": [
+            "one",
+            "wrongly",
+            "tending to do something",
+            "together"
+          ],
+          "answer": "tending to do something"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-hood' means...",
+          "options": [
+            "between",
+            "across",
+            "not",
+            "the state of being"
+          ],
+          "answer": "the state of being"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'sub-' means...",
+          "options": [
+            "not",
+            "above / beyond",
+            "without",
+            "under"
+          ],
+          "answer": "under"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'over-' means...",
+          "options": [
+            "middle",
+            "one",
+            "too much",
+            "many"
+          ],
+          "answer": "too much"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'semi-' means...",
+          "options": [
+            "against",
+            "three",
+            "half",
+            "self"
+          ],
+          "answer": "half"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'uni-' means...",
+          "options": [
+            "half",
+            "before",
+            "one",
+            "to make or become"
+          ],
+          "answer": "one"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-able' means...",
+          "options": [
+            "capable of",
+            "without",
+            "writing or recording",
+            "not / opposite of"
+          ],
+          "answer": "capable of"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-ist' means...",
+          "options": [
+            "relating to",
+            "one who does or believes in something",
+            "without",
+            "capable of"
+          ],
+          "answer": "one who does or believes in something"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-ness' means...",
+          "options": [
+            "too much",
+            "small",
+            "the state of being",
+            "to make or become"
+          ],
+          "answer": "the state of being"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-en' means...",
+          "options": [
+            "to make or become",
+            "in a certain manner",
+            "middle",
+            "somewhat like"
+          ],
+          "answer": "to make or become"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'under-' means...",
+          "options": [
+            "between",
+            "too little",
+            "somewhat like",
+            "two"
+          ],
+          "answer": "too little"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'mid-' means...",
+          "options": [
+            "full of",
+            "wrongly",
+            "one who does something",
+            "middle"
+          ],
+          "answer": "middle"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'de-' means...",
+          "options": [
+            "under",
+            "to remove / reverse",
+            "one who does or believes in something",
+            "relating to"
+          ],
+          "answer": "to remove / reverse"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-ous' means...",
+          "options": [
+            "full of",
+            "relating to",
+            "across",
+            "too much"
+          ],
+          "answer": "full of"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'non-' means...",
+          "options": [
+            "the state of being",
+            "not",
+            "three",
+            "too much"
+          ],
+          "answer": "not"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-phobia' means...",
+          "options": [
+            "a fear of",
+            "three",
+            "too much",
+            "too little"
+          ],
+          "answer": "a fear of"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-ly' means...",
+          "options": [
+            "in a certain manner",
+            "somewhat like",
+            "under",
+            "in a direction"
+          ],
+          "answer": "in a certain manner"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'mis-' means...",
+          "options": [
+            "one",
+            "not",
+            "wrongly",
+            "too little"
+          ],
+          "answer": "wrongly"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-graphy' means...",
+          "options": [
+            "three",
+            "writing or recording",
+            "too little",
+            "the state of being"
+          ],
+          "answer": "writing or recording"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'dis-' means...",
+          "options": [
+            "to make or become",
+            "self",
+            "the state of being",
+            "not / opposite of"
+          ],
+          "answer": "not / opposite of"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'auto-' means...",
+          "options": [
+            "to do again",
+            "relating to",
+            "one who does or believes in something",
+            "self"
+          ],
+          "answer": "self"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-logy' means...",
+          "options": [
+            "self",
+            "writing or recording",
+            "between",
+            "the study of"
+          ],
+          "answer": "the study of"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-ward' means...",
+          "options": [
+            "between",
+            "in a direction",
+            "in a certain manner",
+            "one who does or believes in something"
+          ],
+          "answer": "in a direction"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'co-' means...",
+          "options": [
+            "the study of",
+            "together",
+            "not",
+            "wrongly"
+          ],
+          "answer": "together"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-er' means...",
+          "options": [
+            "one who does something",
+            "too much",
+            "the study of",
+            "relating to"
+          ],
+          "answer": "one who does something"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'autograph' mean, based on its prefix 'auto-'?",
+          "options": [
+            "a hidden signature",
+            "a group signature",
+            "a self-written signature",
+            "a printed signature"
+          ],
+          "answer": "a self-written signature"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'misspell' mean, based on its prefix 'mis-'?",
+          "options": [
+            "spell quickly",
+            "spell correctly",
+            "spell again",
+            "spell wrongly"
+          ],
+          "answer": "spell wrongly"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'colorful' mean, based on its suffix '-ful'?",
+          "options": [
+            "one color",
+            "the study of color",
+            "full of color",
+            "without color"
+          ],
+          "answer": "full of color"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'rewrite' mean, based on its prefix 're-'?",
+          "options": [
+            "write again",
+            "write badly",
+            "not write",
+            "write for the first time"
+          ],
+          "answer": "write again"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'teacher' mean, based on its suffix '-er'?",
+          "options": [
+            "without teaching",
+            "one who teaches",
+            "before teaching",
+            "the act of teaching"
+          ],
+          "answer": "one who teaches"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'disagree' mean, based on its prefix 'dis-'?",
+          "options": [
+            "not agree",
+            "agree strongly",
+            "agree first",
+            "agree again"
+          ],
+          "answer": "not agree"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'nonstop' mean, based on its prefix 'non-'?",
+          "options": [
+            "stopping slowly",
+            "stopping once",
+            "stopping often",
+            "not stopping"
+          ],
+          "answer": "not stopping"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'bicycle' mean, based on its prefix 'bi-'?",
+          "options": [
+            "having two wheels",
+            "having three wheels",
+            "having no wheels",
+            "having one wheel"
+          ],
+          "answer": "having two wheels"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'unhappy' mean, based on its prefix 'un-'?",
+          "options": [
+            "not happy",
+            "extremely happy",
+            "happy again",
+            "very happy"
+          ],
+          "answer": "not happy"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'readable' mean, based on its suffix '-able'?",
+          "options": [
+            "reading again",
+            "not able to be read",
+            "already read",
+            "capable of being read"
+          ],
+          "answer": "capable of being read"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'submarine' mean, based on its prefix 'sub-'?",
+          "options": [
+            "above the sea",
+            "under the sea",
+            "beside the sea",
+            "far from the sea"
+          ],
+          "answer": "under the sea"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'careless' mean, based on its suffix '-less'?",
+          "options": [
+            "full of care",
+            "showing care",
+            "taking care",
+            "without care"
+          ],
+          "answer": "without care"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'preview' mean, based on its prefix 'pre-'?",
+          "options": [
+            "to view before",
+            "to never view",
+            "to view after",
+            "to view again"
+          ],
+          "answer": "to view before"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'triangle' mean, based on its prefix 'tri-'?",
+          "options": [
+            "having one angle",
+            "having three angles",
+            "having two angles",
+            "having four angles"
+          ],
+          "answer": "having three angles"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'kindness' mean, based on its suffix '-ness'?",
+          "options": [
+            "not kind",
+            "the state of being kind",
+            "acting kind",
+            "before kindness"
+          ],
+          "answer": "the state of being kind"
         }
       ]
     },
@@ -2892,6 +4026,478 @@
             "coat"
           ],
           "answer": "I didn't wear my coat"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"who's\" is short for...",
+          "answer": "who is"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"you've\" is short for...",
+          "answer": "you have"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"need not\"?",
+          "answer": "needn't"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"there is\"?",
+          "answer": "there's"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"what's\" is short for...",
+          "answer": "what is"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"that will\"?",
+          "answer": "that'll"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"who will\"?",
+          "answer": "who'll"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"he'd\" is short for...",
+          "answer": "he would"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"that's\" is short for...",
+          "answer": "that is"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"here is\"?",
+          "answer": "here's"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"let us\"?",
+          "answer": "let's"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"who'll\" is short for...",
+          "answer": "who will"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"mustn't\" is short for...",
+          "answer": "must not"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"doesn't\" is short for...",
+          "answer": "does not"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"it's\" is short for...",
+          "answer": "it is"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"he will\"?",
+          "answer": "he'll"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"they'll\" is short for...",
+          "answer": "they will"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"I am\"?",
+          "answer": "I'm"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"was not\"?",
+          "answer": "wasn't"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"he would\"?",
+          "answer": "he'd"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"they'd\" is short for...",
+          "answer": "they would"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"let's\" is short for...",
+          "answer": "let us"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"you have\"?",
+          "answer": "you've"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"we have\"?",
+          "answer": "we've"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"who is\"?",
+          "answer": "who's"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"you'll\" is short for...",
+          "answer": "you will"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"needn't\" is short for...",
+          "answer": "need not"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"it is\"?",
+          "answer": "it's"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"we've\" is short for...",
+          "answer": "we have"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"we will\"?",
+          "answer": "we'll"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"that'll\" is short for...",
+          "answer": "that will"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"were not\"?",
+          "answer": "weren't"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"won't\" is short for...",
+          "answer": "will not"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"we're\" is short for...",
+          "answer": "we are"
+        },
+        {
+          "type": "fill",
+          "prompt": "What is the contraction for \"we are\"?",
+          "answer": "we're"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"you are\"?",
+          "options": [
+            "ruoye",
+            "you're",
+            "youre",
+            "youre'"
+          ],
+          "answer": "you're"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"must not\"?",
+          "options": [
+            "mustnt",
+            "mustn't",
+            "smnutt",
+            "mustnt'"
+          ],
+          "answer": "mustn't"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"do not\"?",
+          "options": [
+            "don't",
+            "dont",
+            "dont'",
+            "tond"
+          ],
+          "answer": "don't"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"will not\"?",
+          "options": [
+            "town",
+            "won't",
+            "wont'",
+            "wont"
+          ],
+          "answer": "won't"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"that will\"?",
+          "options": [
+            "ltlhat",
+            "thatll'",
+            "that'll",
+            "thatll"
+          ],
+          "answer": "that'll"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"you have\"?",
+          "options": [
+            "youve",
+            "you've",
+            "yeuov",
+            "youve'"
+          ],
+          "answer": "you've"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"who is\"?",
+          "options": [
+            "oshw",
+            "who's",
+            "whos'",
+            "whos"
+          ],
+          "answer": "who's"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"there is\"?",
+          "options": [
+            "hsreet",
+            "theres",
+            "there's",
+            "theres'"
+          ],
+          "answer": "there's"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"what is\"?",
+          "options": [
+            "whats'",
+            "whats",
+            "whtas",
+            "what's"
+          ],
+          "answer": "what's"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"we are\"?",
+          "options": [
+            "were",
+            "we're",
+            "were'",
+            "eewr"
+          ],
+          "answer": "we're"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"they have\"?",
+          "options": [
+            "theyve",
+            "etehyv",
+            "theyve'",
+            "they've"
+          ],
+          "answer": "they've"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"cannot\"?",
+          "options": [
+            "ctan",
+            "can't",
+            "cant",
+            "cant'"
+          ],
+          "answer": "can't"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"they would\"?",
+          "options": [
+            "theyd",
+            "teydh",
+            "they'd",
+            "theyd'"
+          ],
+          "answer": "they'd"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"I will\"?",
+          "options": [
+            "Ill'",
+            "Ill",
+            "lIl",
+            "I'll"
+          ],
+          "answer": "I'll"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"I would\"?",
+          "options": [
+            "Id",
+            "I'd",
+            "dI",
+            "Id'"
+          ],
+          "answer": "I'd"
+        },
+        {
+          "type": "match",
+          "prompt": "Match each contraction to its full form.",
+          "pairs": [
+            {
+              "left": "needn't",
+              "right": "need not"
+            },
+            {
+              "left": "she'll",
+              "right": "she will"
+            },
+            {
+              "left": "we're",
+              "right": "we are"
+            },
+            {
+              "left": "they'll",
+              "right": "they will"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each contraction to its full form.",
+          "pairs": [
+            {
+              "left": "you'll",
+              "right": "you will"
+            },
+            {
+              "left": "it's",
+              "right": "it is"
+            },
+            {
+              "left": "you're",
+              "right": "you are"
+            },
+            {
+              "left": "wasn't",
+              "right": "was not"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each contraction to its full form.",
+          "pairs": [
+            {
+              "left": "mustn't",
+              "right": "must not"
+            },
+            {
+              "left": "I'll",
+              "right": "I will"
+            },
+            {
+              "left": "he'll",
+              "right": "he will"
+            },
+            {
+              "left": "weren't",
+              "right": "were not"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each contraction to its full form.",
+          "pairs": [
+            {
+              "left": "can't",
+              "right": "cannot"
+            },
+            {
+              "left": "that'll",
+              "right": "that will"
+            },
+            {
+              "left": "what's",
+              "right": "what is"
+            },
+            {
+              "left": "we'll",
+              "right": "we will"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each contraction to its full form.",
+          "pairs": [
+            {
+              "left": "isn't",
+              "right": "is not"
+            },
+            {
+              "left": "here's",
+              "right": "here is"
+            },
+            {
+              "left": "I'd",
+              "right": "I would"
+            },
+            {
+              "left": "we've",
+              "right": "we have"
+            }
+          ]
+        },
+        {
+          "type": "match",
+          "prompt": "Match each contraction to its full form.",
+          "pairs": [
+            {
+              "left": "aren't",
+              "right": "are not"
+            },
+            {
+              "left": "who's",
+              "right": "who is"
+            },
+            {
+              "left": "they've",
+              "right": "they have"
+            },
+            {
+              "left": "let's",
+              "right": "let us"
+            }
+          ]
         }
       ]
     },
@@ -3022,6 +4628,345 @@
             "queen"
           ],
           "answer": "Bow down to the king and queen"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"sora likes to read books on friday\"",
+          "answer": "Sora likes to read books on Friday."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"kenji visited australia last saturday\"",
+          "answer": "Kenji visited Australia last Saturday."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"akira has a pet rabbit named biscuit\"",
+          "answer": "Akira has a pet rabbit named Biscuit."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"olivia and yuki are best friends\"",
+          "answer": "Olivia and Yuki are best friends."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"yuna has a pet rabbit named biscuit\"",
+          "answer": "Yuna has a pet rabbit named Biscuit."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"why is noah moving to australia\"",
+          "answer": "Why is Noah moving to Australia?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"why is emma moving to london\"",
+          "answer": "Why is Emma moving to London?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"what time does haruto arrive on tuesday\"",
+          "answer": "What time does Haruto arrive on Tuesday?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"hina said the trip to new york was amazing\"",
+          "answer": "Hina said the trip to New York was amazing."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"why is haruto moving to mount fuji\"",
+          "answer": "Why is Haruto moving to Mount Fuji?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"what time does chloe arrive on friday\"",
+          "answer": "What time does Chloe arrive on Friday?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"hina cannot believe school starts on tuesday\"",
+          "answer": "Hina cannot believe school starts on Tuesday."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"hina has a pet rabbit named biscuit\"",
+          "answer": "Hina has a pet rabbit named Biscuit."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"chloe and hina played in the garden\"",
+          "answer": "Chloe and Hina played in the garden."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"aiko and sakura are visiting the pacific ocean this summer\"",
+          "answer": "Aiko and Sakura are visiting the Pacific Ocean this summer."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"ethan and kaito played in the garden\"",
+          "answer": "Ethan and Kaito played in the garden."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"sakura visited japan last friday\"",
+          "answer": "Sakura visited Japan last Friday."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"hina said the trip to mount fuji was amazing\"",
+          "answer": "Hina said the trip to Mount Fuji was amazing."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"haruto likes to read books on tuesday\"",
+          "answer": "Haruto likes to read books on Tuesday."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"what time does aiko arrive on monday\"",
+          "answer": "What time does Aiko arrive on Monday?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"chloe visited florida last monday\"",
+          "answer": "Chloe visited Florida last Monday."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"emma and hina played in the garden\"",
+          "answer": "Emma and Hina played in the garden."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"what time does aiko arrive on friday\"",
+          "answer": "What time does Aiko arrive on Friday?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"yuna and emma are visiting mount fuji this summer\"",
+          "answer": "Yuna and Emma are visiting Mount Fuji this summer."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"why is sora moving to the pacific ocean\"",
+          "answer": "Why is Sora moving to the Pacific Ocean?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"akira and emma played in the garden\"",
+          "answer": "Akira and Emma played in the garden."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"olivia and mei are best friends\"",
+          "answer": "Olivia and Mei are best friends."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"mei and hina played in the garden\"",
+          "answer": "Mei and Hina played in the garden."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"mason said the trip to tokyo was amazing\"",
+          "answer": "Mason said the trip to Tokyo was amazing."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"yuki and noah are visiting japan this summer\"",
+          "answer": "Yuki and Noah are visiting Japan this summer."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"sakura and hina are best friends\"",
+          "answer": "Sakura and Hina are best friends."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"why is lucas moving to mount fuji\"",
+          "answer": "Why is Lucas moving to Mount Fuji?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"chloe likes to read books on monday\"",
+          "answer": "Chloe likes to read books on Monday."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"kaito and chloe played in the garden\"",
+          "answer": "Kaito and Chloe played in the garden."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"olivia cannot believe school starts on saturday\"",
+          "answer": "Olivia cannot believe school starts on Saturday."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "why is sakura moving to tokyo?",
+            "Why is Sakura Moving to Tokyo?",
+            "Why is Sakura moving to Tokyo",
+            "Why is Sakura moving to Tokyo?"
+          ],
+          "answer": "Why is Sakura moving to Tokyo?"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "why is sakura moving to paris?",
+            "Why is Sakura moving to Paris?",
+            "Why is Sakura Moving to Paris?",
+            "Why is Sakura moving to Paris"
+          ],
+          "answer": "Why is Sakura moving to Paris?"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "Olivia visited The Pacific Ocean last Sunday.",
+            "Olivia visited the Pacific Ocean last Sunday.",
+            "Olivia visited the Pacific Ocean last Sunday",
+            "olivia visited the pacific ocean last sunday."
+          ],
+          "answer": "Olivia visited the Pacific Ocean last Sunday."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "Lucas and Yuki are best friends.",
+            "Lucas and Yuki are Best friends.",
+            "lucas and yuki are best friends.",
+            "Lucas and Yuki are best friends"
+          ],
+          "answer": "Lucas and Yuki are best friends."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "Noah and Aria are visiting Florida this summer.",
+            "Noah and Aria are visiting Florida this summer",
+            "noah and aria are visiting florida this summer."
+          ],
+          "answer": "Noah and Aria are visiting Florida this summer."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "Lucas visited Australia last Monday.",
+            "Lucas visited Australia Last Monday.",
+            "lucas visited australia last monday.",
+            "Lucas visited Australia last Monday"
+          ],
+          "answer": "Lucas visited Australia last Monday."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "Why is Chloe Moving to Tokyo?",
+            "Why is Chloe moving to Tokyo",
+            "why is chloe moving to tokyo?",
+            "Why is Chloe moving to Tokyo?"
+          ],
+          "answer": "Why is Chloe moving to Tokyo?"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "mei said the trip to london was amazing.",
+            "Mei said the trip to London was amazing.",
+            "Mei said the Trip to London was amazing.",
+            "Mei said the trip to London was amazing"
+          ],
+          "answer": "Mei said the trip to London was amazing."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "Yuki likes to read Books on Friday.",
+            "Yuki likes to read books on Friday",
+            "Yuki likes to read books on Friday.",
+            "yuki likes to read books on friday."
+          ],
+          "answer": "Yuki likes to read books on Friday."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "Yuki and Sakura played in the garden",
+            "Yuki and Sakura played in the garden.",
+            "yuki and sakura played in the garden.",
+            "Yuki And Sakura played in the garden."
+          ],
+          "answer": "Yuki and Sakura played in the garden."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "Haruto said the trip to Paris was amazing",
+            "Haruto said the trip To Paris was amazing.",
+            "Haruto said the trip to Paris was amazing.",
+            "haruto said the trip to paris was amazing."
+          ],
+          "answer": "Haruto said the trip to Paris was amazing."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "Ren and Emma are visiting Tokyo this summer.",
+            "ren and emma are visiting tokyo this summer.",
+            "Ren and Emma are visiting Tokyo this summer",
+            "Ren and Emma are Visiting Tokyo this summer."
+          ],
+          "answer": "Ren and Emma are visiting Tokyo this summer."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "What time does Aiko arrive on Sunday?",
+            "What time does Aiko arrive on Sunday",
+            "What Time does Aiko arrive on Sunday?",
+            "what time does aiko arrive on sunday?"
+          ],
+          "answer": "What time does Aiko arrive on Sunday?"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "why is akira moving to tokyo?",
+            "Why is Akira moving to Tokyo",
+            "Why is Akira moving to Tokyo?",
+            "Why is Akira moving To Tokyo?"
+          ],
+          "answer": "Why is Akira moving to Tokyo?"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "lucas cannot believe school starts on sunday.",
+            "Lucas cannot believe school starts on Sunday",
+            "Lucas cannot believe school starts on Sunday.",
+            "Lucas Cannot believe school starts on Sunday."
+          ],
+          "answer": "Lucas cannot believe school starts on Sunday."
         }
       ]
     },
