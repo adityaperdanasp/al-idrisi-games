@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Kids' Quiz — BrainBox</title>
+<meta name="theme-color" content="#fdf6ea">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #fdf6ea; font-family: "Nunito", sans-serif; color: #3d2e22; }
+  .kq-page { max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 40px; }
+  .kq-topbar { display: flex; align-items: center; gap: 10px; padding: 18px 16px 10px; }
+  .kq-back { width: 36px; height: 36px; border-radius: 50%; background: #fff; color: #8c2f6b; font-size: 1.1rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); text-decoration: none; flex: none; }
+  .kq-topbar h1 { font-family: "Baloo 2", sans-serif; font-size: 1.2rem; margin: 0; flex: 1; text-align: center; margin-right: 36px; }
+
+  .kq-tabs { display: flex; gap: 8px; margin: 0 16px 16px; }
+  .kq-tab { flex: 1; border: none; background: #f1ede6; color: #8a7a6a; font-family: "Baloo 2", sans-serif; font-weight: 700; font-size: .85rem; padding: 10px; border-radius: 100px; cursor: pointer; }
+  .kq-tab.active { background: #3d2e22; color: #fff; }
+
+  .kq-panel { padding: 0 16px; }
+  .kq-panel[hidden] { display: none; }
+
+  .kq-card { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 3px 0 rgba(0,0,0,.05); margin-bottom: 16px; }
+  .kq-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 14px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .kq-btn-primary { background: #E4572E; color: #fff; }
+  .kq-btn-secondary { background: #f1ede6; color: #3d2e22; margin-top: 10px; }
+  .kq-empty { text-align: center; color: #8a7a6a; font-weight: 700; padding: 20px 0; }
+
+  .kq-qnum { font-weight: 700; font-size: .8rem; color: #8a7a6a; margin-bottom: 8px; }
+  .kq-prompt { font-family: "Baloo 2", sans-serif; font-weight: 700; font-size: 1.05rem; margin-bottom: 16px; }
+  .kq-option { display: block; width: 100%; text-align: left; border: 2px solid #f1ede6; background: #fff; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; font-family: "Nunito", sans-serif; font-weight: 700; font-size: .9rem; cursor: pointer; }
+  .kq-option.correct { border-color: #3F8F5F; background: #eaf7ee; }
+  .kq-option.wrong { border-color: #D64545; background: #fdeaea; }
+  .kq-option:disabled { cursor: default; }
+
+  .kq-result-emoji { text-align: center; font-size: 48px; }
+  .kq-result-title { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin: 8px 0; }
+  .kq-author { font-size: .72rem; color: #8a7a6a; margin-top: -10px; margin-bottom: 14px; }
+
+  .kq-field { margin-bottom: 12px; }
+  .kq-field label { display: block; font-weight: 700; font-size: .8rem; color: #8a7a6a; margin-bottom: 5px; }
+  .kq-field input[type=text] { width: 100%; padding: 11px 12px; border-radius: 12px; border: 2px solid #f1ede6; font-family: "Nunito", sans-serif; font-size: .9rem; }
+  .kq-option-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .kq-option-row input[type=text] { flex: 1; }
+
+  .kq-mylist { display: flex; flex-direction: column; gap: 10px; }
+  .kq-myitem { background: #fff; border-radius: 14px; padding: 12px 14px; box-shadow: 0 2px 0 rgba(0,0,0,.04); }
+  .kq-myitem-prompt { font-weight: 700; font-size: .88rem; margin-bottom: 4px; }
+  .kq-status { font-size: .72rem; font-weight: 800; padding: 2px 8px; border-radius: 100px; display: inline-block; }
+  .kq-status-pending { background: #fdf1cf; color: #8a6a1e; }
+  .kq-status-approved { background: #e2f3e5; color: #2f6b3a; }
+  .kq-status-rejected { background: #fbe3e3; color: #a13a3a; }
+</style>
+</head>
+<body>
+
+<div class="kq-page">
+  <div class="kq-topbar">
+    <a href="../" class="kq-back">←</a>
+    <h1>🎨 Kids' Quiz</h1>
+  </div>
+
+  <div class="kq-tabs">
+    <button class="kq-tab active" id="kq-tab-play" type="button">🎲 Play</button>
+    <button class="kq-tab" id="kq-tab-mine" type="button">✏️ My Questions</button>
+  </div>
+
+  <!-- PLAY -->
+  <div class="kq-panel" id="kq-panel-play">
+    <div class="kq-card" id="kq-play-intro">
+      <div class="kq-empty">Answer quiz questions written by other kids at your school! Approved questions only.</div>
+      <button class="kq-btn kq-btn-primary" id="kq-start-btn">Start Quiz</button>
+    </div>
+    <div class="kq-card" id="kq-play-question" hidden>
+      <div class="kq-qnum" id="kq-qnum"></div>
+      <div class="kq-author" id="kq-author"></div>
+      <div class="kq-prompt" id="kq-prompt"></div>
+      <div id="kq-options"></div>
+    </div>
+    <div class="kq-card" id="kq-play-result" hidden>
+      <div class="kq-result-emoji">🏁</div>
+      <div class="kq-result-title" id="kq-result-title"></div>
+      <button class="kq-btn kq-btn-primary" id="kq-play-again-btn">Play Again</button>
+    </div>
+  </div>
+
+  <!-- MY QUESTIONS -->
+  <div class="kq-panel" id="kq-panel-mine" hidden>
+    <div class="kq-card">
+      <div class="kq-field">
+        <label>Your question</label>
+        <input type="text" id="kq-new-prompt" placeholder="e.g. What is 7 x 8?" maxlength="120">
+      </div>
+      <div class="kq-field">
+        <label>4 answer choices (tap the circle next to the correct one)</label>
+        <div id="kq-new-options"></div>
+      </div>
+      <button class="kq-btn kq-btn-primary" id="kq-submit-btn">Submit for Approval</button>
+      <div class="kq-empty" id="kq-submit-msg" style="display:none;"></div>
+    </div>
+    <div class="kq-mylist" id="kq-mylist"></div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script>
+  const player = window.AIGPlayer && AIGPlayer.getPlayer();
+  if (!player || player.role === "parent") {
+    document.querySelector(".kq-page").innerHTML =
+      '<div class="kq-topbar"><a href="../" class="kq-back">←</a><h1>🎨 Kids\' Quiz</h1></div>' +
+      '<div class="kq-panel"><div class="kq-card"><div class="kq-empty">Please sign in from the hub first.</div></div></div>';
+  } else {
+    initKidsQuiz();
+  }
+
+  function initKidsQuiz() {
+    // ---- Tabs ----
+    document.getElementById("kq-tab-play").addEventListener("click", () => switchTab("play"));
+    document.getElementById("kq-tab-mine").addEventListener("click", () => switchTab("mine"));
+    function switchTab(tab) {
+      document.getElementById("kq-tab-play").classList.toggle("active", tab === "play");
+      document.getElementById("kq-tab-mine").classList.toggle("active", tab === "mine");
+      document.getElementById("kq-panel-play").hidden = tab !== "play";
+      document.getElementById("kq-panel-mine").hidden = tab !== "mine";
+      if (tab === "mine") renderMyQuestions();
+    }
+
+    // ---- Play ----
+    let quizQueue = [];
+    let quizIndex = 0;
+    let quizScore = 0;
+
+    document.getElementById("kq-start-btn").addEventListener("click", startQuiz);
+    document.getElementById("kq-play-again-btn").addEventListener("click", startQuiz);
+
+    async function startQuiz() {
+      document.getElementById("kq-play-intro").hidden = true;
+      document.getElementById("kq-play-result").hidden = true;
+      document.getElementById("kq-start-btn").disabled = true;
+      const pool = await AIGLeaderboard.getApprovedCustomQuestionPool();
+      document.getElementById("kq-start-btn").disabled = false;
+      if (!pool.length) {
+        document.getElementById("kq-play-intro").hidden = false;
+        document.getElementById("kq-play-intro").querySelector(".kq-empty").textContent =
+          "No approved questions yet -- write one in \"My Questions\" and ask a parent to approve it!";
+        return;
+      }
+      quizQueue = shuffle(pool).slice(0, Math.min(10, pool.length));
+      quizIndex = 0;
+      quizScore = 0;
+      renderQuizStep();
+    }
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function renderQuizStep() {
+      const q = quizQueue[quizIndex];
+      document.getElementById("kq-play-question").hidden = false;
+      document.getElementById("kq-qnum").textContent = `Question ${quizIndex + 1} of ${quizQueue.length}`;
+      document.getElementById("kq-author").textContent = `Written by ${q.authorName || "a classmate"}`;
+      document.getElementById("kq-prompt").textContent = q.prompt;
+      const wrap = document.getElementById("kq-options");
+      wrap.innerHTML = "";
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement("button");
+        btn.className = "kq-option";
+        btn.textContent = opt;
+        btn.addEventListener("click", () => {
+          const isCorrect = i === q.correctIndex;
+          if (isCorrect) quizScore++;
+          wrap.querySelectorAll(".kq-option").forEach((b, bi) => {
+            b.disabled = true;
+            if (bi === q.correctIndex) b.classList.add("correct");
+            else if (bi === i) b.classList.add("wrong");
+          });
+          setTimeout(() => {
+            quizIndex++;
+            if (quizIndex < quizQueue.length) renderQuizStep();
+            else finishQuiz();
+          }, 900);
+        });
+        wrap.appendChild(btn);
+      });
+    }
+
+    function finishQuiz() {
+      document.getElementById("kq-play-question").hidden = true;
+      document.getElementById("kq-play-result").hidden = false;
+      document.getElementById("kq-result-title").textContent = `You got ${quizScore}/${quizQueue.length}!`;
+    }
+
+    // ---- My Questions ----
+    const OPTION_COUNT = 4;
+    let correctChoice = 0;
+    function renderNewOptionInputs() {
+      const wrap = document.getElementById("kq-new-options");
+      wrap.innerHTML = "";
+      for (let i = 0; i < OPTION_COUNT; i++) {
+        const row = document.createElement("div");
+        row.className = "kq-option-row";
+        row.innerHTML = `
+          <input type="radio" name="kq-correct" value="${i}" ${i === 0 ? "checked" : ""}>
+          <input type="text" placeholder="Choice ${i + 1}" maxlength="60" data-opt-input="${i}">
+        `;
+        wrap.appendChild(row);
+      }
+      wrap.querySelectorAll('input[name="kq-correct"]').forEach(r => {
+        r.addEventListener("change", () => { correctChoice = Number(r.value); });
+      });
+    }
+    renderNewOptionInputs();
+
+    document.getElementById("kq-submit-btn").addEventListener("click", async () => {
+      const prompt = document.getElementById("kq-new-prompt").value.trim();
+      const options = Array.from(document.querySelectorAll("[data-opt-input]")).map(i => i.value.trim());
+      const msg = document.getElementById("kq-submit-msg");
+      msg.style.display = "block";
+      if (!prompt || options.some(o => !o)) {
+        msg.textContent = "Please fill in the question and all 4 choices.";
+        return;
+      }
+      document.getElementById("kq-submit-btn").disabled = true;
+      AIGLeaderboard.submitCustomQuestion(prompt, options, correctChoice);
+      document.getElementById("kq-submit-btn").disabled = false;
+      msg.textContent = "Submitted! A parent needs to approve it before others can play it.";
+      document.getElementById("kq-new-prompt").value = "";
+      document.querySelectorAll("[data-opt-input]").forEach(i => i.value = "");
+      correctChoice = 0;
+      renderNewOptionInputs();
+      renderMyQuestions();
+    });
+
+    async function renderMyQuestions() {
+      const mine = await AIGLeaderboard.getMyCustomQuestions();
+      const list = document.getElementById("kq-mylist");
+      mine.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      list.innerHTML = mine.map(q => `
+        <div class="kq-myitem">
+          <div class="kq-myitem-prompt">${escapeHtml(q.prompt)}</div>
+          <span class="kq-status kq-status-${q.status}">${q.status}</span>
+        </div>`).join("") || '<div class="kq-empty">You haven\'t written any questions yet.</div>';
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    renderMyQuestions();
+  }
+</script>
+
+</body>
+</html>

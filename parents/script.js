@@ -162,6 +162,9 @@
     });
     renderPicked();
 
+    // ---- Review kid-written quiz questions ----
+    renderQuizReview(player.customQuestions || {});
+
     // ---- Needs Practice ----
     let weak = [];
     GAMES.forEach(g => weak = weak.concat(weakTopicsFor(g.id, topicStats[g.id])));
@@ -197,6 +200,52 @@
           </div>
         </div>`;
     }).join("");
+  }
+
+  function renderQuizReview(customQuestions) {
+    const wrap = document.getElementById("p-quiz-list");
+    const entries = Object.entries(customQuestions);
+    if (!entries.length) {
+      wrap.innerHTML = `<p class="p-empty-note">Nothing submitted yet.</p>`;
+      return;
+    }
+    // Pending first (needs action), then approved/rejected as a small log.
+    entries.sort((a, b) => {
+      const rank = s => s === "pending" ? 0 : 1;
+      return rank(a[1].status) - rank(b[1].status) || (b[1].createdAt || 0) - (a[1].createdAt || 0);
+    });
+    wrap.innerHTML = entries.map(([qId, q]) => {
+      const optionsHtml = q.options.map((opt, i) =>
+        i === q.correctIndex ? `<span class="p-quiz-correct">${escapeHtml(opt)} ✓</span>` : escapeHtml(opt)
+      ).join(" · ");
+      const actions = q.status === "pending"
+        ? `<div class="p-quiz-actions">
+             <button class="p-quiz-btn p-quiz-approve" data-quiz-approve="${qId}">✓ Approve</button>
+             <button class="p-quiz-btn p-quiz-reject" data-quiz-reject="${qId}">✕ Reject</button>
+           </div>`
+        : `<span class="p-quiz-status p-quiz-status-${q.status}">${q.status}</span>`;
+      return `
+        <div class="p-quiz-card">
+          <div class="p-quiz-prompt">${escapeHtml(q.prompt)}</div>
+          <div class="p-quiz-options">${optionsHtml}</div>
+          ${actions}
+        </div>`;
+    }).join("");
+
+    wrap.querySelectorAll("[data-quiz-approve]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        btn.closest(".p-quiz-actions").style.opacity = "0.5";
+        await aigDb.ref(`players/${childId}/customQuestions/${btn.dataset.quizApprove}/status`).set("approved");
+        loadPortal();
+      });
+    });
+    wrap.querySelectorAll("[data-quiz-reject]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        btn.closest(".p-quiz-actions").style.opacity = "0.5";
+        await aigDb.ref(`players/${childId}/customQuestions/${btn.dataset.quizReject}/status`).set("rejected");
+        loadPortal();
+      });
+    });
   }
 
   // ---- Assign picker interactivity (same recipe as MathVille's Focus

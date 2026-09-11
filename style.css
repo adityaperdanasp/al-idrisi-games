@@ -390,12 +390,27 @@ body {
   font-weight: 700;
 }
 
+.sc-player-chip-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
 .sc-player-name {
   font-family: "Baloo 2", sans-serif;
   font-weight: 600;
   font-size: 0.875rem;
   color: #3d2e22;
 }
+
+.sc-player-title {
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.65rem;
+  color: #8c2f6b;
+}
+.sc-player-title[hidden] { display: none; }
 
 .sc-hero {
   margin: 22px 24px 0;
@@ -707,6 +722,42 @@ body {
   font-weight: 700;
   font-size: 0.75rem;
   color: #8a7a6a;
+}
+
+/* ---------- Hidden easter egg (tap Bo 10x) ---------- */
+.sc-egg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(61, 46, 34, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: sc-egg-fade-in 0.25s ease;
+}
+@keyframes sc-egg-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.sc-egg-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 28px 24px;
+  max-width: 300px;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  animation: sc-egg-bounce 0.6s ease;
+}
+@keyframes sc-egg-bounce {
+  0% { transform: scale(0.5) rotate(-8deg); opacity: 0; }
+  60% { transform: scale(1.08) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
+}
+.sc-egg-emoji { font-size: 2.5rem; margin-bottom: 10px; }
+.sc-egg-text {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #3d2e22;
+  line-height: 1.4;
 }
 
 /* ---------- New-card toast ---------- */
@@ -1188,6 +1239,7 @@ body {
 .sc-game-card.town { background: #f0dcc4; transform: rotate(-0.6deg); }
 .sc-game-card.focus { background: #e6d4f7; transform: rotate(0.6deg); }
 .sc-game-card.ninja { background: #dbe4fb; transform: rotate(-0.6deg); padding-bottom: 30px; overflow: hidden; }
+.sc-game-card.quiz { background: #fbe9d6; transform: rotate(0.6deg); }
 
 /* ---------- Ninja Runner card: decorative side-view ninja jog loop ---------- */
 .sc-card-runner { position: absolute; left: 0; right: 0; bottom: 6px; height: 22px; overflow: hidden; pointer-events: none; }
@@ -1245,6 +1297,8 @@ body {
 .sc-game-card.focus .sc-game-sub { color: #8f6db8; }
 .sc-game-card.ninja .sc-game-title { color: #4a4f7a; }
 .sc-game-card.ninja .sc-game-sub { color: #6f74a0; }
+.sc-game-card.quiz .sc-game-title { color: #a85a1f; }
+.sc-game-card.quiz .sc-game-sub { color: #c07f43; }
 
 /* ---------- "Who's actually playing?" step (student vs their parent) ---------- */
 .sc-whois-overlay {

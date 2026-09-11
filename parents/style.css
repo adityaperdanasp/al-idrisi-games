@@ -94,6 +94,23 @@
 }
 .p-save-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.08); }
 
+/* ---- Kid-written quiz question review cards ---- */
+.p-quiz-card { background: #fbf6ec; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+.p-quiz-card:last-child { margin-bottom: 0; }
+.p-quiz-prompt { font: 700 0.85rem "Nunito", sans-serif; color: #3d2e22; margin-bottom: 6px; }
+.p-quiz-options { font: 600 0.72rem "Nunito", sans-serif; color: #8a7a6a; margin-bottom: 8px; }
+.p-quiz-correct { color: #2f6b3a; font-weight: 800; }
+.p-quiz-actions { display: flex; gap: 8px; }
+.p-quiz-btn {
+  flex: 1; border: none; cursor: pointer; font: 800 0.75rem "Baloo 2", sans-serif;
+  padding: 8px 0; border-radius: 100px;
+}
+.p-quiz-approve { background: #cdeed4; color: #2f6b3a; }
+.p-quiz-reject { background: #fbdada; color: #a13a3a; }
+.p-quiz-status { font: 800 0.7rem "Baloo 2", sans-serif; padding: 3px 10px; border-radius: 100px; display: inline-block; }
+.p-quiz-status-approved { background: #e2f3e5; color: #2f6b3a; }
+.p-quiz-status-rejected { background: #fbe3e3; color: #a13a3a; }
+
 /* ---- Weak-topic cards ---- */
 .p-weak-card { margin-bottom: 12px; }
 .p-weak-card:last-child { margin-bottom: 0; }

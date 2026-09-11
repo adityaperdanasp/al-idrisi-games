@@ -162,7 +162,7 @@
     // Any wrong answer resets it, so mastery has to be shown recently, not
     // just once a long time ago.
     ref.child("streak").transaction(cur => isCorrect ? (cur || 0) + 1 : 0);
-    if (isCorrect) { awardCurrency(); touchSeasonProgress(); touchWeeklyStats(); }
+    if (isCorrect) { awardCurrency(); touchSeasonProgress(); touchWeeklyStats(); touchTotalCorrect(); }
     touchDailyStats(gameId, isCorrect);
   }
 
@@ -842,6 +842,96 @@
     };
   }
 
+  // =====================================================================
+  // TITLES / RANK — a lifetime "how far along are you" badge, derived
+  // purely from a running total of correct answers (cross-game, never
+  // resets, unlike daily/weekly/season counters above). Nothing to claim
+  // or buy -- it just IS whatever tier the count currently qualifies for.
+  // =====================================================================
+  const TITLE_TIERS = [
+    { min: 0, name: "Pemula", emoji: "🌱" },
+    { min: 20, name: "Rajin Belajar", emoji: "📘" },
+    { min: 50, name: "Jagoan Matematika", emoji: "⚡" },
+    { min: 100, name: "Bintang Kelas", emoji: "⭐" },
+    { min: 200, name: "Master BrainBox", emoji: "🏅" },
+    { min: 400, name: "Grandmaster", emoji: "👑" },
+    { min: 800, name: "Legenda BrainBox", emoji: "🌟" }
+  ];
+
+  function titleForCount(count) {
+    let result = TITLE_TIERS[0];
+    for (const t of TITLE_TIERS) if (count >= t.min) result = t;
+    return result;
+  }
+
+  function touchTotalCorrect() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    aigDb.ref(`players/${player.id}/totalCorrect`).transaction(cur => (cur || 0) + 1);
+  }
+
+  async function getTitle() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`players/${player.id}/totalCorrect`).get();
+    const count = snap.exists() ? snap.val() : 0;
+    const tier = titleForCount(count);
+    const next = TITLE_TIERS.find(t => t.min > count) || null;
+    return { count, name: tier.name, emoji: tier.emoji, next };
+  }
+
+  // =====================================================================
+  // CUSTOM QUIZ QUESTIONS — a kid writes a multiple-choice question, a
+  // parent approves it (via Parent Portal), then it joins a shared pool
+  // other kids can play. Stored at players/{authorId}/customQuestions/{id}
+  // -- nested under the already-explicit `players` rule like everything
+  // else above, so no new top-level RTDB path/rules change is needed.
+  // Cross-player discovery (getApprovedCustomQuestionPool) reads the whole
+  // players/ tree once, same technique as getWeeklyLeaderboard.
+  // =====================================================================
+  function submitCustomQuestion(prompt, options, correctIndex) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const ref = aigDb.ref(`players/${player.id}/customQuestions`).push();
+    ref.set({
+      authorName: player.name,
+      prompt,
+      options,
+      correctIndex,
+      status: "pending",
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    return ref.key;
+  }
+
+  async function getMyCustomQuestions() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return [];
+    const snap = await aigDb.ref(`players/${player.id}/customQuestions`).get();
+    if (!snap.exists()) return [];
+    const data = snap.val();
+    return Object.entries(data).map(([id, q]) => ({ id, ...q }));
+  }
+
+  // Pulls every OTHER player's approved questions into one pool -- a kid
+  // plays questions their friends wrote, not their own. Excludes the
+  // current player's own authored questions from the returned pool.
+  async function getApprovedCustomQuestionPool() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return [];
+    const all = snap.val();
+    const pool = [];
+    Object.entries(all).forEach(([playerId, data]) => {
+      if (player && playerId === player.id) return;
+      if (!data.customQuestions) return;
+      Object.entries(data.customQuestions).forEach(([qId, q]) => {
+        if (q.status === "approved") pool.push({ id: qId, authorId: playerId, ...q });
+      });
+    });
+    return pool;
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -851,6 +941,8 @@
     getCollection,
     getCosmetics, unlockCosmetic, equipCosmetic,
     getWeeklyLeaderboard, getWeeklyRecap, getBonusHourInfo,
+    getTitle,
+    submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
     db: aigDb
   };
 })();

@@ -237,7 +237,10 @@
         </div>
         <button class="sc-player-chip" id="sc-player-chip">
           <span class="sc-player-avatar" id="sc-player-avatar"></span>
-          <span class="sc-player-name" id="sc-player-name"></span>
+          <span class="sc-player-chip-text">
+            <span class="sc-player-name" id="sc-player-name"></span>
+            <span class="sc-player-title" id="sc-player-title" hidden></span>
+          </span>
         </button>
       </div>
 
@@ -426,6 +429,26 @@
               <div class="sc-cn-torso"></div><div class="sc-cn-head"></div><div class="sc-cn-band"></div>
             </div>
           </div>
+        </a>
+        <!-- Own card + own standalone page (kids-quiz/), same footing as
+             Focus Round/Ninja above -- but unlike those, this one does
+             NOT redirect into MathVille's engine, since its questions are
+             always simple MC (prompt + 4 options), simple enough that a
+             small self-contained page is less work than shoehorning
+             community-submitted questions into buildRound's per-chapter
+             shape. -->
+        <a class="sc-game-card quiz" href="kids-quiz/">
+          <span class="sc-game-icon">
+            <svg viewBox="0 0 36 36" width="36" height="36">
+              <rect x="6" y="6" width="24" height="24" rx="6" fill="#F6DDC1" stroke="#E4A85F" stroke-width="2"/>
+              <path d="M14 15c0-2.2 1.8-4 4-4s4 1.8 4 4c0 1.8-1.2 2.6-2.2 3.3-.8.6-1.3 1-1.3 2" stroke="#A85A1F" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+              <circle cx="18" cy="24.5" r="1.4" fill="#A85A1F"/>
+            </svg>
+          </span>
+          <span class="sc-game-txt">
+            <span class="sc-game-title">Kids' Quiz</span>
+            <span class="sc-game-sub">Write &amp; play questions from friends</span>
+          </span>
         </a>
       </div>
 
@@ -685,6 +708,12 @@
       AIGLeaderboard.getCosmetics().then(cos => { if (cos) applyEquippedFrame(cos.equippedFrame); });
       const bonus = AIGLeaderboard.getBonusHourInfo();
       document.getElementById("sc-bonus-hour-banner").hidden = !bonus.active;
+      AIGLeaderboard.getTitle().then(title => {
+        if (!title) return;
+        const el = document.getElementById("sc-player-title");
+        el.textContent = `${title.emoji} ${title.name}`;
+        el.hidden = false;
+      });
     }
   }
 
@@ -1157,7 +1186,41 @@
   const heroIcon = document.getElementById("sc-hero-icon");
   if (heroIcon) {
     const openChat = () => document.getElementById("sc-greeting").click();
-    heroIcon.addEventListener("click", openChat);
+    // Hidden easter egg -- tap Bo 10 times within 2s of each other. The
+    // counter resets if the gap between taps is too long, so it has to be
+    // a real rapid-tap burst, not just "clicked Bo a lot over the day".
+    let eggTapCount = 0;
+    let eggTapTimer = null;
+    const EASTER_EGG_LINES = [
+      "Why was 6 afraid of 7? Because 7 8 9! 🍽️",
+      "Bo is doing a happy dance right now! 💃",
+      "You found my secret tapping spot! No free gems though, sorry 😄",
+      "Bo says: you're persistent! I like that in a mathematician.",
+      "Knock knock! Who's there? Bo. Bo who? Bo-ring joke, but I tried!"
+    ];
+    function showEasterEgg() {
+      const overlay = document.createElement("div");
+      overlay.className = "sc-egg-overlay";
+      overlay.innerHTML = `
+        <div class="sc-egg-card">
+          <div class="sc-egg-emoji">🎉</div>
+          <div class="sc-egg-text">${EASTER_EGG_LINES[Math.floor(Math.random() * EASTER_EGG_LINES.length)]}</div>
+        </div>`;
+      overlay.addEventListener("click", () => overlay.remove());
+      document.body.appendChild(overlay);
+      setTimeout(() => overlay.remove(), 4000);
+    }
+    heroIcon.addEventListener("click", () => {
+      eggTapCount++;
+      clearTimeout(eggTapTimer);
+      eggTapTimer = setTimeout(() => { eggTapCount = 0; }, 2000);
+      if (eggTapCount >= 10) {
+        eggTapCount = 0;
+        showEasterEgg();
+        return; // skip opening chat this time -- the egg is the whole point of tap #10
+      }
+      openChat();
+    });
     heroIcon.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openChat(); }
     });
