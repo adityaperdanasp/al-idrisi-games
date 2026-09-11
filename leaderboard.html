@@ -21,6 +21,7 @@
   <div class="lb-scope-toggle" id="lb-scope-toggle">
     <button class="lb-scope-btn active" id="lb-scope-alltime" type="button">All-Time</button>
     <button class="lb-scope-btn" id="lb-scope-weekly" type="button">This Week 🔥</button>
+    <button class="lb-scope-btn" id="lb-scope-speedround" type="button">⚡ Speed Round</button>
   </div>
 
   <div class="lb-tabs" id="lb-tabs"></div>
@@ -151,9 +152,10 @@
     unwatch = AIGLeaderboard.watchGame(gameId, render);
   }
 
-  // "This Week" -- cross-game, resets every Monday. A one-time read (see
-  // getWeeklyLeaderboard's own reasoning), not a live subscription, so
-  // switching to it first tears down any live watchGame() listener.
+  // "This Week" and "Speed Round" are both one-time reads (see
+  // getWeeklyLeaderboard/getSpeedRoundLeaderboard's own reasoning), not a
+  // live subscription, so switching to either first tears down any live
+  // watchGame() listener.
   async function loadWeekly() {
     if (unwatch) { unwatch(); unwatch = null; }
     document.getElementById("lb-podium").innerHTML = "";
@@ -164,20 +166,30 @@
     render(data, "correct", "correct");
   }
 
-  document.getElementById("lb-scope-alltime").addEventListener("click", () => {
-    document.getElementById("lb-scope-alltime").classList.add("active");
-    document.getElementById("lb-scope-weekly").classList.remove("active");
-    document.getElementById("lb-tabs").hidden = false;
-    document.getElementById("lb-metric-label").innerHTML = "Ranked by <b>🎮 times played</b>";
-    loadGame(activeGame);
-  });
-  document.getElementById("lb-scope-weekly").addEventListener("click", () => {
-    document.getElementById("lb-scope-weekly").classList.add("active");
-    document.getElementById("lb-scope-alltime").classList.remove("active");
-    document.getElementById("lb-tabs").hidden = true;
-    document.getElementById("lb-metric-label").innerHTML = "Ranked by <b>🎯 correct answers this week</b>";
-    loadWeekly();
-  });
+  async function loadSpeedRound() {
+    if (unwatch) { unwatch(); unwatch = null; }
+    document.getElementById("lb-podium").innerHTML = "";
+    document.getElementById("lb-list").innerHTML = "";
+    const ranking = await AIGLeaderboard.getSpeedRoundLeaderboard();
+    const data = {};
+    ranking.forEach(r => { data[r.id] = r; });
+    render(data, "best", "best score");
+  }
+
+  const SCOPES = {
+    alltime: { label: "Ranked by <b>🎮 times played</b>", showTabs: true, load: () => loadGame(activeGame) },
+    weekly: { label: "Ranked by <b>🎯 correct answers this week</b>", showTabs: false, load: loadWeekly },
+    speedround: { label: "Ranked by <b>⚡ Speed Round best score</b>", showTabs: false, load: loadSpeedRound }
+  };
+  function switchScope(scope) {
+    Object.keys(SCOPES).forEach(s => document.getElementById(`lb-scope-${s}`).classList.toggle("active", s === scope));
+    document.getElementById("lb-tabs").hidden = !SCOPES[scope].showTabs;
+    document.getElementById("lb-metric-label").innerHTML = SCOPES[scope].label;
+    SCOPES[scope].load();
+  }
+  document.getElementById("lb-scope-alltime").addEventListener("click", () => switchScope("alltime"));
+  document.getElementById("lb-scope-weekly").addEventListener("click", () => switchScope("weekly"));
+  document.getElementById("lb-scope-speedround").addEventListener("click", () => switchScope("speedround"));
 
   renderTabs();
   loadGame(activeGame);

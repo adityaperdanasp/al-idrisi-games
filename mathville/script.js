@@ -195,7 +195,8 @@ function showScreen(id) {
   // Challenge flow's own screens -- only a safe place to launch a NEW
   // challenge from, not somewhere that should interrupt one in progress.
   const midRound = id === "screen-question" && (state.isChallenge || state.isBoss);
-  $("btn-challenge").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || midRound);
+  $("btn-challenge").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
+  $("btn-speedround").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
   // Screens that already have their own Bo (Drive Mode's car, the reward
   // screen's AI Tutor card) or where it'd just be clutter (landing, pair
   // setup, Plane Mode, Ninja Runner has its own review-with-Bo overlay)
@@ -214,6 +215,15 @@ function showScreen(id) {
     driveCountdownToken++;             // cancel any in-flight countdown timeout
     $("drive-countdown").classList.add("hidden");
   }
+  // Navigating away mid-round (topbar Home/Map/Drive tapped while the
+  // clock is still running) must stop the interval -- otherwise it keeps
+  // ticking in the background and eventually calls finishSpeedRound()
+  // while the player is looking at a completely different screen.
+  if (id !== "screen-speedround" && speedRoundTimerInterval) {
+    clearInterval(speedRoundTimerInterval);
+    speedRoundTimerInterval = null;
+    if (speedRoundState) speedRoundState.active = false;
+  }
 }
 
 $("btn-home").addEventListener("click", () => { window.location.href = "../"; });
@@ -229,6 +239,9 @@ $("btn-challenge-again").addEventListener("click", launchChallengeMode);
 $("btn-challenge-back").addEventListener("click", goToMap);
 $("btn-powerup-fifty").addEventListener("click", useFiftyFiftyPowerup);
 $("btn-powerup-skip").addEventListener("click", useSkipPowerup);
+$("btn-speedround").addEventListener("click", launchSpeedRound);
+$("btn-speedround-again").addEventListener("click", launchSpeedRound);
+$("btn-speedround-back").addEventListener("click", goToMap);
 
 function loadProgress() {
   try {
@@ -4768,6 +4781,90 @@ function showChallengeResults() {
       <span class="challenge-score-value">${r.correct}/${r.total}</span>
     </div>`).join("");
   showScreen("screen-challenge-result");
+}
+
+/* =================================================================
+   SPEED ROUND — 60 seconds, answer as many quick multiple-choice
+   questions as possible. Reuses rollDriveQuestion()/buildQuickMc() (the
+   same quick-quiz generator Drive Mode's obstacle pop-quiz and Ninja
+   Runner's math cards already use) -- no new question bank. Endless
+   question stream (unlike a normal round's fixed 6-step array), so this
+   doesn't touch state.steps/stepIndex/renderStep/submitAnswer/
+   goToNextStep at all -- a fully separate tiny loop.
+   ================================================================= */
+const SPEEDROUND_DURATION_S = 60;
+const SPEEDROUND_URGENT_S = 10; // last N seconds -- timer turns red/pulses
+let speedRoundState = null; // { score, timeLeft, active, current }
+let speedRoundTimerInterval = null;
+
+function launchSpeedRound() {
+  speedRoundState = { score: 0, timeLeft: SPEEDROUND_DURATION_S, active: true, current: null };
+  $("speedround-score").textContent = "0";
+  $("speedround-timer").textContent = String(SPEEDROUND_DURATION_S);
+  $("speedround-timer").classList.remove("urgent");
+  showScreen("screen-speedround");
+  renderSpeedRoundQuestion();
+  clearInterval(speedRoundTimerInterval);
+  speedRoundTimerInterval = setInterval(tickSpeedRound, 1000);
+}
+
+function tickSpeedRound() {
+  if (!speedRoundState || !speedRoundState.active) return;
+  speedRoundState.timeLeft--;
+  $("speedround-timer").textContent = String(Math.max(0, speedRoundState.timeLeft));
+  $("speedround-timer").classList.toggle("urgent", speedRoundState.timeLeft <= SPEEDROUND_URGENT_S);
+  if (speedRoundState.timeLeft <= 0) {
+    clearInterval(speedRoundTimerInterval);
+    speedRoundTimerInterval = null;
+    finishSpeedRound();
+  }
+}
+
+function renderSpeedRoundQuestion() {
+  if (!speedRoundState || !speedRoundState.active) return;
+  const mc = buildQuickMc(rollDriveQuestion("hard"));
+  speedRoundState.current = mc;
+  $("speedround-prompt").textContent = mc.prompt;
+  const grid = $("speedround-options");
+  grid.innerHTML = "";
+  mc.options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "mc-btn";
+    btn.textContent = opt;
+    btn.addEventListener("click", () => answerSpeedRound(opt, btn));
+    grid.appendChild(btn);
+  });
+}
+
+function answerSpeedRound(opt, btn) {
+  if (!speedRoundState || !speedRoundState.active) return;
+  const isCorrect = labelsEqual(opt, speedRoundState.current.correctLabel);
+  if (isCorrect) {
+    speedRoundState.score++;
+    $("speedround-score").textContent = String(speedRoundState.score);
+  }
+  try {
+    if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "speed-round", isCorrect);
+  } catch (e) { /* never let analytics block the round */ }
+  document.querySelectorAll("#speedround-options .mc-btn").forEach(b => { b.disabled = true; });
+  btn.classList.add(isCorrect ? "correct" : "wrong");
+  setTimeout(renderSpeedRoundQuestion, 250); // deliberately snappier than a normal round's 700/1600ms -- the whole point is speed
+}
+
+async function finishSpeedRound() {
+  if (!speedRoundState) return;
+  speedRoundState.active = false;
+  const finalScore = speedRoundState.score;
+  showScreen("screen-speedround-result");
+  $("speedround-result-title").textContent = `Time's up! Score: ${finalScore}`;
+  $("speedround-result-sub").textContent = "";
+  if (!window.AIGLeaderboard) return;
+  try {
+    const result = await AIGLeaderboard.submitSpeedRoundScore(finalScore);
+    $("speedround-result-sub").textContent = result.newBest
+      ? "🎉 New personal best!"
+      : `Personal best: ${result.best}`;
+  } catch (e) { /* leaderboard best is a nice-to-have, never block the result screen */ }
 }
 
 function showWaitingForOthers() {

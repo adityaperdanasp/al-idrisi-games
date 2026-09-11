@@ -998,6 +998,41 @@
     return { ok: true, remaining: count - 1 };
   }
 
+  // =====================================================================
+  // SPEED ROUND — a personal best score, plus its own cross-player
+  // leaderboard (separate from the per-game all-time and weekly ones in
+  // leaderboard.html). Stored at players/{id}/speedRoundBest = {score,
+  // name} -- name stored alongside the score (same trick as
+  // players/{id}/weekly/{weekKey}) so the leaderboard read below doesn't
+  // need a second lookup per player just to show a name.
+  // =====================================================================
+  async function submitSpeedRoundScore(score) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/speedRoundBest`);
+    const snap = await ref.get();
+    const best = snap.exists() ? snap.val().score : 0;
+    if (score > best) {
+      await ref.set({ score, name: player.name });
+      return { ok: true, newBest: true, best: score };
+    }
+    return { ok: true, newBest: false, best };
+  }
+
+  // Same one-time whole-tree read as getWeeklyLeaderboard above --
+  // acceptable for a small class roster, opened rarely (a leaderboard tab
+  // flip), not on every hub load.
+  async function getSpeedRoundLeaderboard() {
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return [];
+    const all = snap.val();
+    return Object.entries(all)
+      .filter(([, data]) => data.speedRoundBest && data.speedRoundBest.score > 0)
+      .map(([id, data]) => ({ id, name: data.speedRoundBest.name || id, best: data.speedRoundBest.score }))
+      .sort((a, b) => b.best - a.best)
+      .slice(0, 20);
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -1010,6 +1045,7 @@
     getTitle,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
     getPowerupDefs, getPowerups, buyPowerup, usePowerup,
+    submitSpeedRoundScore, getSpeedRoundLeaderboard,
     db: aigDb
   };
 })();

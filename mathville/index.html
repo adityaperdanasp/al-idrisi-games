@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=78" />
+<link rel="stylesheet" href="style.css?v=79" />
 </head>
 <body>
 
@@ -41,6 +41,7 @@
   <div id="btn-map" class="icon-btn hidden" aria-label="Map" title="Map">🗺️</div>
   <div id="btn-drive" class="icon-btn hidden" aria-label="Drive Mode" title="Drive Mode">🚗</div>
   <div id="btn-challenge" class="icon-btn hidden" aria-label="Family Challenge" title="Family Challenge">🤝</div>
+  <div id="btn-speedround" class="icon-btn hidden" aria-label="Speed Round" title="Speed Round">⚡</div>
   <div class="topbar-spacer"></div>
   <div id="wallet-badge" class="xp-badge wallet-badge"><span>🪙</span><span id="wallet-coins">0</span><span>💎</span><span id="wallet-gems">0</span></div>
   <div id="xp-badge" class="xp-badge"><span>✨</span><span id="xp-total">0</span> XP</div>
@@ -772,6 +773,32 @@
   </section>
 
   <!-- ===============================================================
+       SPEED ROUND — 60 seconds, answer as many quick MC questions as
+       possible. Reuses the SAME question source as Drive Mode's quick
+       quiz / Ninja Runner (rollDriveQuestion + buildQuickMc) -- no new
+       question bank. Own tiny render loop, doesn't touch renderStep/
+       submitAnswer/goToNextStep at all (unlike Boss/Family Challenge,
+       there's no fixed step array here -- questions generate one at a
+       time, endlessly, until the clock runs out).
+       =============================================================== -->
+  <section id="screen-speedround" class="screen">
+    <div class="speedround-hud">
+      <div class="speedround-timer" id="speedround-timer">60</div>
+      <div class="speedround-score">Score: <span id="speedround-score">0</span></div>
+    </div>
+    <div class="q-prompt" id="speedround-prompt"></div>
+    <div class="mc-grid" id="speedround-options"></div>
+  </section>
+
+  <section id="screen-speedround-result" class="screen">
+    <div class="challenge-emoji">⚡</div>
+    <div class="challenge-title" id="speedround-result-title"></div>
+    <div class="challenge-sub" id="speedround-result-sub"></div>
+    <button class="btn boss-challenge-btn" id="btn-speedround-again">⚡ Go Again</button>
+    <button class="btn btn-primary btn-cta" id="btn-speedround-back">Back to Map</button>
+  </section>
+
+  <!-- ===============================================================
        NINJA RUNNER — cross-subject runner mode (Sansu Ninja-inspired).
        Character auto-runs; player picks one of 3 subject cards (Math/
        Language & Arts/Science, each independently randomized Easy/
@@ -866,6 +893,6 @@
 <script src="questions.js?v=5"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=103"></script>
+<script src="script.js?v=104"></script>
 </body>
 </html>
