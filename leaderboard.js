@@ -1033,6 +1033,102 @@
       .slice(0, 20);
   }
 
+  // =====================================================================
+  // MASTERY + SMART PRACTICE — purely informational, built entirely from
+  // topicStats already tracked by recordTopicAttempt above. NEVER gates
+  // access to anything (MathVille chapters stay unlocked, always -- see
+  // CLAUDE.md). A topic is "mastered" once it's been answered reliably;
+  // Smart Practice picks the single most useful topic to revisit next by
+  // combining "weak" (low accuracy) and "stale" (got it wrong and never
+  // came back to fix it) into one signal.
+  // =====================================================================
+  const MASTERY_STREAK = 5;         // 5 correct in a row at any point -> mastered
+  const MASTERY_MIN_ATTEMPTS = 5;
+  const MASTERY_ACCURACY = 0.85;
+  const WEAK_MIN_ATTEMPTS = 3;
+  const WEAK_ACCURACY = 0.7;        // same threshold as dashboard.js/parents/script.js's own weakTopicsFor
+
+  function isTopicMastered(data) {
+    if (!data) return false;
+    if ((data.streak || 0) >= MASTERY_STREAK) return true;
+    const total = (data.correct || 0) + (data.wrong || 0);
+    return total >= MASTERY_MIN_ATTEMPTS && (data.correct || 0) / total >= MASTERY_ACCURACY;
+  }
+
+  // {topicKey: true/false} for every topic this player has attempted in
+  // ONE game -- e.g. MathVille's Town Map uses this to show a mastery
+  // star on top of its existing "played at least once" checkmark.
+  async function getMasteryMap(gameId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return {};
+    const snap = await aigDb.ref(`players/${player.id}/topicStats/${gameId}`).get();
+    if (!snap.exists()) return {};
+    const result = {};
+    Object.entries(snap.val()).forEach(([topic, data]) => { result[topic] = isTopicMastered(data); });
+    return result;
+  }
+
+  // Only mathville/solarquest topics are eligible for a "Practice Now"
+  // deep link -- their topicStats key IS the Focus Round topic id
+  // directly (e.g. "place-value", "star-lifecycle"). language-arts is
+  // deliberately excluded: azkacraft/questions.json's 3 grammar chapters
+  // (Prefixes & Suffixes / Contractions / Capitalization) all share the
+  // SAME topicStats key ("Grammar", from questions.json's `topic` field)
+  // for tracking-simplicity reasons unrelated to this feature -- so a
+  // "Grammar" weak-spot can't be resolved back to one specific Focus
+  // Round chapter (3, 4, or 5) to deep-link into. Math Race's times-N/
+  // divby-N topics never had a Focus Round entry to begin with.
+  const SMART_PRACTICE_PREFIX = { mathville: "math", solarquest: "sci" };
+
+  async function getSmartPractice() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`players/${player.id}/topicStats`).get();
+    if (!snap.exists()) return null;
+    const allStats = snap.val();
+    const candidates = [];
+    Object.entries(allStats).forEach(([gameId, topics]) => {
+      const prefix = SMART_PRACTICE_PREFIX[gameId];
+      if (!prefix) return;
+      Object.entries(topics).forEach(([topic, data]) => {
+        const correct = data.correct || 0, wrong = data.wrong || 0, total = correct + wrong;
+        if (total < WEAK_MIN_ATTEMPTS) return;
+        const accuracy = correct / total;
+        const isWeak = accuracy < WEAK_ACCURACY;
+        const isStale = (data.streak || 0) === 0 && !!data.lastWrongAt; // got it wrong at some point and hasn't fixed it since
+        if (!isWeak && !isStale) return;
+        candidates.push({ gameId, topic, topicKey: `${prefix}:${topic}`, accuracy, total, lastWrongAt: data.lastWrongAt || 0 });
+      });
+    });
+    if (!candidates.length) return null;
+    // Lowest accuracy first; ties broken by whichever mistake is OLDER
+    // (been wrong the longest without being revisited).
+    candidates.sort((a, b) => a.accuracy - b.accuracy || a.lastWrongAt - b.lastWrongAt);
+    return candidates[0];
+  }
+
+  // =====================================================================
+  // DIAGNOSTIC QUIZ — a one-time (repeatable) 10-question mixed-difficulty
+  // check-in, purely advisory (never gates anything). Stored at
+  // players/{id}/diagnostic so the hub knows whether to still offer it.
+  // =====================================================================
+  async function submitDiagnosticResult(result) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    await aigDb.ref(`players/${player.id}/diagnostic`).set({
+      ...result,
+      completedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    return { ok: true };
+  }
+
+  async function getDiagnosticResult() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`players/${player.id}/diagnostic`).get();
+    return snap.exists() ? snap.val() : null;
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -1046,6 +1142,8 @@
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
     getPowerupDefs, getPowerups, buyPowerup, usePowerup,
     submitSpeedRoundScore, getSpeedRoundLeaderboard,
+    getMasteryMap, getSmartPractice,
+    submitDiagnosticResult, getDiagnosticResult,
     db: aigDb
   };
 })();

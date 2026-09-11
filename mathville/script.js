@@ -242,6 +242,7 @@ $("btn-powerup-skip").addEventListener("click", useSkipPowerup);
 $("btn-speedround").addEventListener("click", launchSpeedRound);
 $("btn-speedround-again").addEventListener("click", launchSpeedRound);
 $("btn-speedround-back").addEventListener("click", goToMap);
+$("btn-diagnostic-done").addEventListener("click", goToMap);
 
 function loadProgress() {
   try {
@@ -369,6 +370,32 @@ function renderTownMap() {
 
   mvPlaceTraveler(chapters, nextIdx === -1 ? chapters.length - 1 : nextIdx);
   mvFitMapScale();
+  applyMasteryBadges();
+}
+
+// Purely decorative -- patches in a small star badge on top of an
+// already-rendered map node once mastery data loads, fire-and-forget so
+// it never delays the map itself from appearing. Never touches whether a
+// chapter is clickable (nothing is ever locked, see the comment at the
+// top of this function). Solo Town Map only -- multiplayer's map has its
+// own separate render function, left untouched.
+async function applyMasteryBadges() {
+  if (!window.AIGLeaderboard) return;
+  try {
+    const mastery = await AIGLeaderboard.getMasteryMap("mathville");
+    const stops = document.querySelectorAll("#town-map-inner .map-stop");
+    MATHVILLE_BANK.chapters.forEach((ch, i) => {
+      if (!mastery[ch.id]) return;
+      const node = stops[i] && stops[i].querySelector(".map-stop-node");
+      if (node && !node.querySelector(".map-stop-mastery")) {
+        const badge = document.createElement("span");
+        badge.className = "map-stop-mastery";
+        badge.textContent = "🌟";
+        badge.title = "Mastered!";
+        node.appendChild(badge);
+      }
+    });
+  } catch (e) { /* advisory only -- a failed fetch just means no stars show yet */ }
 }
 
 // The map's road/stops are laid out in a fixed 440px-wide coordinate space
@@ -2801,6 +2828,21 @@ async function buildFocusRoundSteps(selected) {
   }
 
   window.openFocusRoundPicker = () => { overlay.classList.remove("hidden"); applyAssignedTopics(); };
+
+  // One-click "Practice Now" from the hub's Smart Practice recommendation
+  // (see leaderboard.js's getSmartPractice) -- pre-checks exactly ONE
+  // topic and immediately starts, skipping the picker UI entirely. Never
+  // touches players/{id}/assignedTopics (that's the parent's own list,
+  // untouched by this ad-hoc single-topic launch).
+  window.launchQuickPractice = (topicKey) => {
+    assignedApplied = true; // suppress applyAssignedTopics() stomping this choice if the picker is reopened later
+    overlay.classList.remove("hidden");
+    list.querySelectorAll(".focus-round-item").forEach(item => {
+      item.querySelector("input").checked = item.dataset.topic === topicKey;
+    });
+    render();
+    if (list.querySelectorAll(".focus-round-item input:checked").length) startBtn.click();
+  };
   cancelBtn.addEventListener("click", () => overlay.classList.add("hidden"));
   startBtn.addEventListener("click", async () => {
     const checked = Array.from(list.querySelectorAll(".focus-round-item input:checked"));
@@ -3766,7 +3808,12 @@ if (new URLSearchParams(location.search).get("drive") === "1") {
 // .screen (same as the vehicle picker), so it's safe to show regardless
 // of whatever screen is behind it, same as the ?drive=1 case above.
 if (new URLSearchParams(location.search).get("focus") === "1") {
-  window.openFocusRoundPicker();
+  const quicktopic = new URLSearchParams(location.search).get("quicktopic");
+  if (quicktopic && window.launchQuickPractice) window.launchQuickPractice(quicktopic);
+  else window.openFocusRoundPicker();
+}
+if (new URLSearchParams(location.search).get("diagnostic") === "1") {
+  launchDiagnosticQuiz();
 }
 
 // Analog joystick: drag anywhere inside (pointer capture lets the finger
@@ -4865,6 +4912,74 @@ async function finishSpeedRound() {
       ? "🎉 New personal best!"
       : `Personal best: ${result.best}`;
   } catch (e) { /* leaderboard best is a nice-to-have, never block the result screen */ }
+}
+
+/* =================================================================
+   DIAGNOSTIC QUIZ — see the HTML comment above #screen-diagnostic.
+   ================================================================= */
+const DIAGNOSTIC_DIFFICULTY_CURVE = ["easy", "easy", "easy", "medium", "medium", "medium", "medium", "hard", "hard", "hard"];
+let diagnosticState = null; // { qIndex, questions, correctByTier: {easy,medium,hard} }
+
+function launchDiagnosticQuiz() {
+  const questions = DIAGNOSTIC_DIFFICULTY_CURVE.map(tier => ({ tier, mc: buildQuickMc(rollDriveQuestion(tier)) }));
+  diagnosticState = { qIndex: 0, questions, correctByTier: { easy: 0, medium: 0, hard: 0 }, attemptedByTier: { easy: 0, medium: 0, hard: 0 } };
+  showScreen("screen-diagnostic");
+  renderDiagnosticQuestion();
+}
+
+function renderDiagnosticQuestion() {
+  const { qIndex, questions } = diagnosticState;
+  const current = questions[qIndex];
+  $("diagnostic-qnum").textContent = `Question ${qIndex + 1} of ${questions.length}`;
+  $("diagnostic-prompt").textContent = current.mc.prompt;
+  const grid = $("diagnostic-options");
+  grid.innerHTML = "";
+  current.mc.options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "mc-btn";
+    btn.textContent = opt;
+    btn.addEventListener("click", () => answerDiagnosticQuestion(opt, btn));
+    grid.appendChild(btn);
+  });
+}
+
+function answerDiagnosticQuestion(opt, btn) {
+  const { qIndex, questions, correctByTier, attemptedByTier } = diagnosticState;
+  const current = questions[qIndex];
+  const isCorrect = labelsEqual(opt, current.mc.correctLabel);
+  attemptedByTier[current.tier]++;
+  if (isCorrect) correctByTier[current.tier]++;
+  document.querySelectorAll("#diagnostic-options .mc-btn").forEach(b => {
+    b.disabled = true;
+    if (labelsEqual(b.textContent, current.mc.correctLabel)) b.classList.add("correct");
+    else if (b === btn) b.classList.add("wrong");
+  });
+  setTimeout(() => {
+    diagnosticState.qIndex++;
+    if (diagnosticState.qIndex < questions.length) renderDiagnosticQuestion();
+    else finishDiagnosticQuiz();
+  }, 700);
+}
+
+async function finishDiagnosticQuiz() {
+  const { correctByTier, attemptedByTier } = diagnosticState;
+  const totalCorrect = correctByTier.easy + correctByTier.medium + correctByTier.hard;
+  // Suggest a starting tier: hard if the kid handled hard questions well,
+  // down through medium, defaulting to easy -- same spirit as the
+  // adaptive-difficulty tiers already used mid-round.
+  let suggestedTier = "easy";
+  if (attemptedByTier.hard > 0 && correctByTier.hard / attemptedByTier.hard >= 0.6) suggestedTier = "hard";
+  else if (attemptedByTier.medium > 0 && correctByTier.medium / attemptedByTier.medium >= 0.6) suggestedTier = "medium";
+
+  showScreen("screen-diagnostic-result");
+  $("diagnostic-result-title").textContent = `You got ${totalCorrect}/10!`;
+  const tierLabel = { easy: "Easy", medium: "Medium", hard: "Hard" }[suggestedTier];
+  $("diagnostic-result-sub").textContent = `Looks like a great starting point is ${tierLabel}-level questions. Don't worry — every chapter is always open, and the game keeps adjusting as you play!`;
+
+  if (window.AIGLeaderboard) {
+    try { await AIGLeaderboard.submitDiagnosticResult({ score: totalCorrect, suggestedTier }); }
+    catch (e) { /* advisory only -- never block the result screen */ }
+  }
 }
 
 function showWaitingForOthers() {

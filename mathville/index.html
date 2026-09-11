@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=79" />
+<link rel="stylesheet" href="style.css?v=80" />
 </head>
 <body>
 
@@ -799,6 +799,31 @@
   </section>
 
   <!-- ===============================================================
+       DIAGNOSTIC QUIZ — one-time (repeatable) 10-question mixed-
+       difficulty check-in, deep-linked from the hub (?diagnostic=1).
+       Purely advisory: never locks or unlocks anything, just tells the
+       kid roughly where they're starting from. Untimed, unlike Speed
+       Round -- reuses the same rollDriveQuestion/buildQuickMc source but
+       its own tiny render loop (not Speed Round's, since this needs a
+       fixed 10-question sequence with a difficulty curve, not an
+       endless stream).
+       =============================================================== -->
+  <section id="screen-diagnostic" class="screen">
+    <div class="speedround-hud">
+      <div class="q-label" id="diagnostic-qnum">Question 1 of 10</div>
+    </div>
+    <div class="q-prompt" id="diagnostic-prompt"></div>
+    <div class="mc-grid" id="diagnostic-options"></div>
+  </section>
+
+  <section id="screen-diagnostic-result" class="screen">
+    <div class="challenge-emoji">🩺</div>
+    <div class="challenge-title" id="diagnostic-result-title"></div>
+    <div class="challenge-sub" id="diagnostic-result-sub"></div>
+    <button class="btn btn-primary btn-cta" id="btn-diagnostic-done">Let's Go!</button>
+  </section>
+
+  <!-- ===============================================================
        NINJA RUNNER — cross-subject runner mode (Sansu Ninja-inspired).
        Character auto-runs; player picks one of 3 subject cards (Math/
        Language & Arts/Science, each independently randomized Easy/
@@ -893,6 +918,6 @@
 <script src="questions.js?v=6"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=104"></script>
+<script src="script.js?v=105"></script>
 </body>
 </html>

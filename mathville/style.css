@@ -206,6 +206,10 @@ button { font-family: inherit; }
   background: #fff; border: 2px solid var(--wood); display: flex; align-items: center; justify-content: center;
   color: var(--wood); font-size: 12px; font-weight: 800;
 }
+.map-stop-mastery {
+  position: absolute; bottom: -6px; left: -6px; font-size: 16px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.3));
+}
 @keyframes mapStopPulse {
   0%, 100% { box-shadow: 0 0 0 4px rgba(var(--pulse-color), .22); }
   50% { box-shadow: 0 0 0 10px rgba(var(--pulse-color), .35); }

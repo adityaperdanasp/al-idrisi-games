@@ -322,6 +322,16 @@
 
       <div class="sc-bonus-hour-banner" id="sc-bonus-hour-banner" hidden>⚡ Bonus Hour! Double coins right now!</div>
 
+      <div class="sc-smart-card" id="sc-diagnostic-card" hidden>
+        <span class="sc-smart-text">🩺 New here? Take a 2-minute Quick Check to see where you're starting!</span>
+        <button class="sc-quest-claim-btn" id="sc-diagnostic-btn">Start</button>
+      </div>
+
+      <div class="sc-smart-card" id="sc-smart-practice-card" hidden>
+        <span class="sc-smart-text">🎯 Recommended for you: <b id="sc-smart-practice-topic"></b></span>
+        <button class="sc-quest-claim-btn" id="sc-smart-practice-btn">Practice Now</button>
+      </div>
+
       <div class="sc-daily-panel" id="sc-daily-panel" hidden>
         <div class="sc-streak-badge">
           <span class="sc-streak-flame">🔥</span>
@@ -716,8 +726,42 @@
         el.textContent = `${title.emoji} ${title.name}`;
         el.hidden = false;
       });
+      renderSmartPracticeAndDiagnostic();
     }
   }
+
+  const SC_MATHVILLE_CHAPTER_TITLES = {
+    "place-value": "Place Value", "addition-subtraction": "Addition & Subtraction",
+    "prime-numbers": "Prime Numbers", "gcf-lcm": "GCF & LCM", "multiplication": "Multiplication",
+    "division": "Division", "mixed-operation": "Mixed Operation", "measurement": "Measurement",
+    "rounding": "Rounding", "word-problems": "Word Problems"
+  };
+  function scPrettifyTopic(topicKey) {
+    const [source, id] = topicKey.split(":");
+    if (source === "math") return SC_MATHVILLE_CHAPTER_TITLES[id] || id;
+    if (source === "sci") return id.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    return id;
+  }
+
+  // Diagnostic (one-time-ish "Quick Check") + Smart Practice recommendation
+  // -- both purely advisory (see leaderboard.js), shown as small cards
+  // between the hero and the Daily Quest panel.
+  async function renderSmartPracticeAndDiagnostic() {
+    const diagnostic = await AIGLeaderboard.getDiagnosticResult();
+    document.getElementById("sc-diagnostic-card").hidden = !!diagnostic;
+
+    const rec = await AIGLeaderboard.getSmartPractice();
+    const practiceCard = document.getElementById("sc-smart-practice-card");
+    if (!rec) { practiceCard.hidden = true; return; }
+    practiceCard.hidden = false;
+    document.getElementById("sc-smart-practice-topic").textContent = scPrettifyTopic(rec.topicKey);
+    document.getElementById("sc-smart-practice-btn").onclick = () => {
+      window.location.href = `mathville/index.html?focus=1&quicktopic=${encodeURIComponent(rec.topicKey)}`;
+    };
+  }
+  document.getElementById("sc-diagnostic-btn").addEventListener("click", () => {
+    window.location.href = "mathville/index.html?diagnostic=1";
+  });
 
   // Daily Quest + Streak panel -- shown right under the hero, above the
   // game list. Re-rendered every time the landing screen shows (fresh

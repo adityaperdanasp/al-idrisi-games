@@ -688,6 +688,26 @@ body {
    elsewhere in this codebase as ".xxx.hidden { display:none }" pairs. */
 .sc-bp-tiers[hidden] { display: none; }
 
+.sc-smart-card {
+  margin: 12px 24px 0;
+  padding: 14px 16px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.sc-smart-text {
+  flex: 1;
+  min-width: 180px;
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #3d2e22;
+}
+
 .sc-bonus-hour-banner {
   margin: 14px 24px 0;
   padding: 10px 16px;
