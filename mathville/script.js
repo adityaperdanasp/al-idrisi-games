@@ -167,6 +167,8 @@ const state = {
   isBoss: false,        // true only inside a Boss Challenge round -- see submitAnswer/goToNextStep
   bossTimerToken: 0,
   bossTimerTimeout: null,
+  isChallenge: false,   // true only inside a Family Challenge turn -- see submitAnswer/goToNextStep
+  challenge: null,       // { steps, turn, currentName, results: [{name, correct, total}] }
   mp: {
     code: null, seatKey: null, maxPlayers: 2,
     listeningCode: null, game: null,
@@ -186,6 +188,11 @@ function showScreen(id) {
   // only back to picking a vehicle or leaving to the hub.
   $("btn-map").classList.toggle("hidden", hideNav || id === "screen-plane");
   $("btn-drive").classList.toggle("hidden", hideNav);
+  // Never shown mid-round (Boss/Challenge or otherwise) or on the
+  // Challenge flow's own screens -- only a safe place to launch a NEW
+  // challenge from, not somewhere that should interrupt one in progress.
+  const midRound = id === "screen-question" && (state.isChallenge || state.isBoss);
+  $("btn-challenge").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || midRound);
   // Screens that already have their own Bo (Drive Mode's car, the reward
   // screen's AI Tutor card) or where it'd just be clutter (landing, pair
   // setup, Plane Mode, Ninja Runner has its own review-with-Bo overlay)
@@ -208,6 +215,15 @@ function showScreen(id) {
 
 $("btn-home").addEventListener("click", () => { window.location.href = "../"; });
 $("btn-map").addEventListener("click", goToMap);
+$("btn-challenge").addEventListener("click", launchChallengeMode);
+$("btn-challenge-start").addEventListener("click", () => startChallengeRound(1, state.challenge.player1Name));
+$("btn-challenge-cancel").addEventListener("click", goToMap);
+$("btn-challenge-continue").addEventListener("click", () => {
+  const name = $("challenge-p2-name").value.trim() || "Player 2";
+  startChallengeRound(2, name);
+});
+$("btn-challenge-again").addEventListener("click", launchChallengeMode);
+$("btn-challenge-back").addEventListener("click", goToMap);
 
 function loadProgress() {
   try {
@@ -623,7 +639,8 @@ function goToIntro(chapterId, isMp) {
     state.stepIndex = 0;
     state.mistakes = 0;
     state.lastWrong = null;
-    state.isBoss = false; // defensive -- a normal round entry always clears any leftover boss flag
+    state.isBoss = false; // defensive -- a normal round entry always clears any leftover boss/challenge flag
+    state.isChallenge = false;
     state.steps = isMp ? state.mp.game.roundQuestions : buildRound(chapterId);
     renderStep();
   };
@@ -4119,7 +4136,8 @@ function renderStep() {
   $("boss-banner").classList.toggle("hidden", !state.isBoss);
   $("boss-timer-track").classList.toggle("hidden", !state.isBoss);
   if (state.isBoss) $("boss-progress").textContent = `${state.stepIndex + 1}/${state.steps.length}`;
-  $("q-label").textContent = step.uiType === "match" ? "" : `Question ${state.stepIndex + 1} of ${state.steps.length}`;
+  const turnLabel = state.isChallenge ? ` — ${state.challenge.currentName}'s turn` : "";
+  $("q-label").textContent = step.uiType === "match" ? "" : `Question ${state.stepIndex + 1} of ${state.steps.length}${turnLabel}`;
 
   if (step.uiType === "typein") renderTypeinStep(step);
   else if (step.uiType === "mc") renderMcStep(step);
@@ -4134,6 +4152,8 @@ function goToNextStep() {
     if (state.isBoss) startBossTimer();
   } else if (state.isBoss) {
     finishBossRound(true);
+  } else if (state.isChallenge) {
+    finishChallengeTurn();
   } else {
     finishRound();
   }
@@ -4150,9 +4170,16 @@ function goToNextStep() {
 // question forever, with no error visible to the player. Advancing to the
 // next question must never depend on analytics succeeding.
 function submitAnswer(isCorrect, prompt, answerForHint) {
-  try {
-    if (window.AIGLeaderboard && state.chapterId) AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, isCorrect);
-  } catch (e) { /* never let analytics block the round */ }
+  // Family Challenge answers never touch Firebase stats -- a guest
+  // player (turn 2) has no account to attribute them to, and the same 6
+  // questions get answered twice across both turns, so even turn 1's
+  // "real" answers would double-count against the logged-in kid's own
+  // topicStats/currency/streak if this weren't skipped.
+  if (!state.isChallenge) {
+    try {
+      if (window.AIGLeaderboard && state.chapterId) AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, isCorrect);
+    } catch (e) { /* never let analytics block the round */ }
+  }
   if (!isCorrect) {
     state.mistakes++;
     state.lastWrong = { prompt, answer: answerForHint };
@@ -4504,6 +4531,75 @@ async function finishBossRound(won) {
     $("boss-result-title").textContent = "Boss Defeated!";
     $("boss-result-sub").textContent = "";
   }
+}
+
+/* =================================================================
+   FAMILY CHALLENGE — same-device, take-turns head-to-head. See the HTML
+   comment above #screen-challenge-setup for the full design rationale.
+   Reuses renderStep/submitAnswer/goToNextStep via state.isChallenge, same
+   pattern as Boss Challenge's state.isBoss -- fully additive branches,
+   inert whenever the flag is false.
+   ================================================================= */
+function launchChallengeMode() {
+  const chapterIds = MATHVILLE_BANK.chapters.map(c => c.id).filter(id => CHAPTER_META[id]);
+  const randomChapter = chapterIds[Math.floor(Math.random() * chapterIds.length)];
+  const steps = buildRound(randomChapter);
+  const player = window.AIGPlayer && AIGPlayer.getPlayer();
+  state.challenge = {
+    steps,
+    turn: 0,
+    currentName: "",
+    results: [],
+    player1Name: (player && player.name) || "Player 1"
+  };
+  $("challenge-p1-name").textContent = state.challenge.player1Name;
+  showScreen("screen-challenge-setup");
+}
+
+function startChallengeRound(turnNum, name) {
+  state.isChallenge = true;
+  state.chapterId = null;
+  state.challenge.turn = turnNum;
+  state.challenge.currentName = name;
+  state.steps = state.challenge.steps;
+  state.stepIndex = 0;
+  state.mistakes = 0;
+  state.lastWrong = null;
+  renderStep();
+}
+
+function finishChallengeTurn() {
+  const total = state.steps.length;
+  const correct = total - state.mistakes;
+  state.challenge.results.push({ name: state.challenge.currentName, correct, total });
+  state.isChallenge = false;
+  if (state.challenge.turn === 1) {
+    $("challenge-handoff-title").textContent = `${state.challenge.results[0].name} got ${correct}/${total}!`;
+    $("challenge-p2-name").value = "";
+    showScreen("screen-challenge-handoff");
+  } else {
+    showChallengeResults();
+  }
+}
+
+function showChallengeResults() {
+  const [r1, r2] = state.challenge.results;
+  const emoji = $("challenge-result-emoji");
+  const title = $("challenge-result-title");
+  if (r1.correct === r2.correct) {
+    emoji.textContent = "🤝";
+    title.textContent = "It's a tie!";
+  } else {
+    const winner = r1.correct > r2.correct ? r1 : r2;
+    emoji.textContent = "🏆";
+    title.textContent = `${winner.name} wins!`;
+  }
+  $("challenge-scoreboard").innerHTML = [r1, r2].map(r => `
+    <div class="challenge-score-row${r.correct === Math.max(r1.correct, r2.correct) && r1.correct !== r2.correct ? " winner" : ""}">
+      <span class="challenge-score-name">${escapeHtml(r.name)}</span>
+      <span class="challenge-score-value">${r.correct}/${r.total}</span>
+    </div>`).join("");
+  showScreen("screen-challenge-result");
 }
 
 function showWaitingForOthers() {

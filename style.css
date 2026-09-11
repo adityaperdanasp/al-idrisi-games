@@ -673,6 +673,42 @@ body {
    elsewhere in this codebase as ".xxx.hidden { display:none }" pairs. */
 .sc-bp-tiers[hidden] { display: none; }
 
+.sc-bonus-hour-banner {
+  margin: 14px 24px 0;
+  padding: 10px 16px;
+  text-align: center;
+  background: linear-gradient(90deg, #f6e3b4, #f6c1e0);
+  border-radius: 100px;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #3d2e22;
+  animation: sc-flame-pulse 1.6s ease-in-out infinite;
+}
+
+.sc-recap-card { max-width: 320px; text-align: center; }
+.sc-recap-body { display: flex; flex-direction: column; gap: 14px; margin: 16px 0; }
+.sc-recap-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #3d2e22;
+  text-align: left;
+}
+.sc-recap-emoji { font-size: 1.3rem; }
+.sc-recap-hint {
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #8a7a6a;
+}
+
 /* ---------- New-card toast ---------- */
 .sc-card-toast {
   position: fixed;

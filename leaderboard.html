@@ -18,9 +18,14 @@
     <h1>Leaderboard</h1>
   </div>
 
+  <div class="lb-scope-toggle" id="lb-scope-toggle">
+    <button class="lb-scope-btn active" id="lb-scope-alltime" type="button">All-Time</button>
+    <button class="lb-scope-btn" id="lb-scope-weekly" type="button">This Week 🔥</button>
+  </div>
+
   <div class="lb-tabs" id="lb-tabs"></div>
 
-  <div class="lb-metric-label">Ranked by <b>🎮 times played</b></div>
+  <div class="lb-metric-label" id="lb-metric-label">Ranked by <b>🎮 times played</b></div>
 
   <div class="lb-podium" id="lb-podium"></div>
   <div class="lb-you hidden" id="lb-you"></div>
@@ -66,10 +71,12 @@
     });
   }
 
-  function render(data) {
+  function render(data, scoreKey, scoreLabel) {
+    scoreKey = scoreKey || "timesPlayed";
+    scoreLabel = scoreLabel || "plays";
     const me = window.AIGPlayer && AIGPlayer.getPlayer();
     const entries = Object.keys(data).map(id => ({ id, ...data[id] }));
-    entries.sort((a, b) => (b.timesPlayed || 0) - (a.timesPlayed || 0));
+    entries.sort((a, b) => (b[scoreKey] || 0) - (a[scoreKey] || 0));
 
     const podiumEl = document.getElementById("lb-podium");
     const youEl = document.getElementById("lb-you");
@@ -106,7 +113,7 @@
       slot.innerHTML =
         `<div class="lb-p-avatar" style="background:${colorFor(e.id)};">${initials(e.name)}</div>` +
         `<div class="lb-p-name">${e.name}</div>` +
-        `<div class="lb-p-score">${e.timesPlayed || 0} plays</div>` +
+        `<div class="lb-p-score">${e[scoreKey] || 0} ${scoreLabel}</div>` +
         `<div class="lb-p-bar">${medal[slotIdx]}</div>`;
       podiumEl.appendChild(slot);
     });
@@ -121,7 +128,7 @@
         `<div class="rank">#${myIdx + 1}</div>` +
         `<div class="avatar">${initials(e.name)}</div>` +
         `<div class="info"><div class="label">Your position</div><div class="name">${e.name}</div></div>` +
-        `<div class="score">${e.timesPlayed || 0} plays</div>`;
+        `<div class="score">${e[scoreKey] || 0} ${scoreLabel}</div>`;
     } else {
       youEl.classList.add("hidden");
     }
@@ -133,7 +140,7 @@
         `<div class="rank">${i + 4}</div>` +
         `<div class="avatar" style="background:${colorFor(e.id)};">${initials(e.name)}</div>` +
         `<div class="name">${e.name}</div>` +
-        `<div class="score">${e.timesPlayed || 0} plays</div>`;
+        `<div class="score">${e[scoreKey] || 0} ${scoreLabel}</div>`;
       listEl.appendChild(row);
     });
   }
@@ -143,6 +150,34 @@
     if (unwatch) unwatch();
     unwatch = AIGLeaderboard.watchGame(gameId, render);
   }
+
+  // "This Week" -- cross-game, resets every Monday. A one-time read (see
+  // getWeeklyLeaderboard's own reasoning), not a live subscription, so
+  // switching to it first tears down any live watchGame() listener.
+  async function loadWeekly() {
+    if (unwatch) { unwatch(); unwatch = null; }
+    document.getElementById("lb-podium").innerHTML = "";
+    document.getElementById("lb-list").innerHTML = "";
+    const { ranking } = await AIGLeaderboard.getWeeklyLeaderboard();
+    const data = {};
+    ranking.forEach(r => { data[r.id] = r; });
+    render(data, "correct", "correct");
+  }
+
+  document.getElementById("lb-scope-alltime").addEventListener("click", () => {
+    document.getElementById("lb-scope-alltime").classList.add("active");
+    document.getElementById("lb-scope-weekly").classList.remove("active");
+    document.getElementById("lb-tabs").hidden = false;
+    document.getElementById("lb-metric-label").innerHTML = "Ranked by <b>🎮 times played</b>";
+    loadGame(activeGame);
+  });
+  document.getElementById("lb-scope-weekly").addEventListener("click", () => {
+    document.getElementById("lb-scope-weekly").classList.add("active");
+    document.getElementById("lb-scope-alltime").classList.remove("active");
+    document.getElementById("lb-tabs").hidden = true;
+    document.getElementById("lb-metric-label").innerHTML = "Ranked by <b>🎯 correct answers this week</b>";
+    loadWeekly();
+  });
 
   renderTabs();
   loadGame(activeGame);

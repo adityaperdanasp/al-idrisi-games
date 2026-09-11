@@ -47,6 +47,25 @@ body {
   margin-right: 36px;
 }
 
+.lb-scope-toggle {
+  display: flex;
+  gap: 8px;
+  margin: 0 16px 14px;
+}
+.lb-scope-btn {
+  flex: 1;
+  border: none;
+  background: rgba(255, 255, 255, 0.7);
+  color: #22314a;
+  font-family: "Fredoka", sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 10px 8px;
+  border-radius: 100px;
+  cursor: pointer;
+}
+.lb-scope-btn.active { background: #1266d8; color: #fff; }
+
 .lb-tabs {
   display: flex;
   align-items: center;
@@ -64,6 +83,7 @@ body {
   scrollbar-width: none;
 }
 .lb-tabs::-webkit-scrollbar { display: none; }
+.lb-tabs[hidden] { display: none; }
 
 .lb-tab {
   flex: 0 0 auto;

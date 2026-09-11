@@ -233,6 +233,7 @@
           <a href="leaderboard.html" class="sc-trophy" title="Leaderboard">🏆</a>
           <button class="sc-trophy" id="sc-collection-btn" title="Collection" type="button">📚</button>
           <button class="sc-trophy" id="sc-customize-btn" title="Customize" type="button">🎨</button>
+          <button class="sc-trophy" id="sc-recap-btn" title="Weekly Recap" type="button">📜</button>
         </div>
         <button class="sc-player-chip" id="sc-player-chip">
           <span class="sc-player-avatar" id="sc-player-avatar"></span>
@@ -315,6 +316,8 @@
         </div>
         <div class="sc-hero-tagline">Pick a quest, have fun, and level up! 🎉</div>
       </div>
+
+      <div class="sc-bonus-hour-banner" id="sc-bonus-hour-banner" hidden>⚡ Bonus Hour! Double coins right now!</div>
 
       <div class="sc-daily-panel" id="sc-daily-panel" hidden>
         <div class="sc-streak-badge">
@@ -514,6 +517,19 @@
       <div class="sc-cosmetic-list" id="sc-sound-list" hidden></div>
     </div>
   </div>
+
+  <!-- Weekly Recap -- a shareable "your week" summary card, meant to be
+       screenshotted and shown to a parent. -->
+  <div id="sc-recap-overlay" class="sc-modal-overlay" hidden>
+    <div class="sc-modal-card sc-recap-card">
+      <div class="sc-modal-header">
+        <span class="sc-modal-title">📜 Weekly Recap</span>
+        <button class="sc-modal-close" id="sc-recap-close" type="button">✕</button>
+      </div>
+      <div class="sc-recap-body" id="sc-recap-body"></div>
+      <div class="sc-recap-hint">📸 Screenshot me to show your family!</div>
+    </div>
+  </div>
 </main>
 
 <script src="player.js"></script>
@@ -667,6 +683,8 @@
     renderBattlePass(current);
     if (current.role !== "parent" && window.AIGLeaderboard) {
       AIGLeaderboard.getCosmetics().then(cos => { if (cos) applyEquippedFrame(cos.equippedFrame); });
+      const bonus = AIGLeaderboard.getBonusHourInfo();
+      document.getElementById("sc-bonus-hour-banner").hidden = !bonus.active;
     }
   }
 
@@ -832,6 +850,26 @@
   });
   document.getElementById("sc-collection-close").addEventListener("click", () => {
     document.getElementById("sc-collection-overlay").hidden = true;
+  });
+
+  // Weekly Recap ------------------------------------------------------------
+  async function renderRecap() {
+    const recap = await AIGLeaderboard.getWeeklyRecap();
+    const body = document.getElementById("sc-recap-body");
+    if (!recap) { body.innerHTML = ""; return; }
+    body.innerHTML = `
+      <div class="sc-recap-row"><span class="sc-recap-emoji">🎯</span><span>${recap.weeklyCorrect} correct answers this week</span></div>
+      <div class="sc-recap-row"><span class="sc-recap-emoji">🔥</span><span>${recap.streak} day streak</span></div>
+      <div class="sc-recap-row"><span class="sc-recap-emoji">🪙</span><span>${recap.coins} coins · 💎 ${recap.gems} gems</span></div>
+      <div class="sc-recap-row"><span class="sc-recap-emoji">📚</span><span>${recap.cardsOwned}/${recap.cardsTotal} cards collected</span></div>
+    `;
+  }
+  document.getElementById("sc-recap-btn").addEventListener("click", () => {
+    document.getElementById("sc-recap-overlay").hidden = false;
+    renderRecap();
+  });
+  document.getElementById("sc-recap-close").addEventListener("click", () => {
+    document.getElementById("sc-recap-overlay").hidden = true;
   });
 
   // Customize (avatar frames + sound packs) --------------------------------

@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=75" />
+<link rel="stylesheet" href="style.css?v=76" />
 </head>
 <body>
 
@@ -40,6 +40,7 @@
   <button id="btn-home" class="icon-btn" aria-label="Home" title="Home">🏠</button>
   <div id="btn-map" class="icon-btn hidden" aria-label="Map" title="Map">🗺️</div>
   <div id="btn-drive" class="icon-btn hidden" aria-label="Drive Mode" title="Drive Mode">🚗</div>
+  <div id="btn-challenge" class="icon-btn hidden" aria-label="Family Challenge" title="Family Challenge">🤝</div>
   <div class="topbar-spacer"></div>
   <div id="wallet-badge" class="xp-badge wallet-badge"><span>🪙</span><span id="wallet-coins">0</span><span>💎</span><span id="wallet-gems">0</span></div>
   <div id="xp-badge" class="xp-badge"><span>✨</span><span id="xp-total">0</span> XP</div>
@@ -729,6 +730,42 @@
   </section>
 
   <!-- ===============================================================
+       FAMILY CHALLENGE — same-device, take-turns head-to-head: Player 1
+       (the logged-in kid) answers 6 questions from a random chapter, then
+       hands the device to Player 2 (parent/sibling, no account needed) who
+       answers the SAME 6 questions, then a result screen compares scores.
+       Reuses the normal question-rendering engine (renderStep/submitAnswer)
+       via state.isChallenge, same pattern as Boss Challenge's state.isBoss
+       -- neither turn touches Firebase stats (recordTopicAttempt is
+       skipped in challenge mode), since a guest player answering has no
+       account to attribute it to and a real kid's own stats shouldn't be
+       double-counted for questions asked twice in this mode.
+       =============================================================== -->
+  <section id="screen-challenge-setup" class="screen">
+    <div class="challenge-emoji">🤝</div>
+    <div class="challenge-title">Family Challenge</div>
+    <div class="challenge-sub">Take turns! <span id="challenge-p1-name">Player 1</span> goes first, then pass the device to someone else — same 6 questions, whoever gets more right wins.</div>
+    <button class="btn btn-primary btn-cta" id="btn-challenge-start">Start!</button>
+    <button class="btn boss-challenge-btn" id="btn-challenge-cancel">Back to Map</button>
+  </section>
+
+  <section id="screen-challenge-handoff" class="screen">
+    <div class="challenge-emoji">🔄</div>
+    <div class="challenge-title" id="challenge-handoff-title"></div>
+    <div class="challenge-sub">Pass the device to the next player!</div>
+    <input class="challenge-name-input" id="challenge-p2-name" placeholder="Player 2's name" maxlength="20" autocomplete="off" />
+    <button class="btn btn-primary btn-cta" id="btn-challenge-continue">Go!</button>
+  </section>
+
+  <section id="screen-challenge-result" class="screen">
+    <div class="challenge-emoji" id="challenge-result-emoji">🏆</div>
+    <div class="challenge-title" id="challenge-result-title"></div>
+    <div class="challenge-scoreboard" id="challenge-scoreboard"></div>
+    <button class="btn boss-challenge-btn" id="btn-challenge-again">🤝 Challenge Again</button>
+    <button class="btn btn-primary btn-cta" id="btn-challenge-back">Back to Map</button>
+  </section>
+
+  <!-- ===============================================================
        NINJA RUNNER — cross-subject runner mode (Sansu Ninja-inspired).
        Character auto-runs; player picks one of 3 subject cards (Math/
        Language & Arts/Science, each independently randomized Easy/
@@ -823,6 +860,6 @@
 <script src="questions.js?v=5"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=100"></script>
+<script src="script.js?v=101"></script>
 </body>
 </html>

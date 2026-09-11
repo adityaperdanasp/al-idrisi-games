@@ -162,7 +162,7 @@
     // Any wrong answer resets it, so mastery has to be shown recently, not
     // just once a long time ago.
     ref.child("streak").transaction(cur => isCorrect ? (cur || 0) + 1 : 0);
-    if (isCorrect) { awardCurrency(); touchSeasonProgress(); }
+    if (isCorrect) { awardCurrency(); touchSeasonProgress(); touchWeeklyStats(); }
     touchDailyStats(gameId, isCorrect);
   }
 
@@ -177,17 +177,40 @@
   // =====================================================================
   const GEM_EVERY_N_CORRECT = 15; // coins are frequent/small, gems rare/deliberate
 
-  // +1 coin per correct answer, no matter which game. Every ~15th correct
-  // answer (tracked via a running streak that only this counts, separate
-  // from recordTopicAttempt's per-topic mastery streak) also converts into
-  // +1 gem — a small, guaranteed trickle rather than a random drop, so a
-  // kid grinding it out can actually predict/count toward the next gem.
+  // ---- Bonus Hour -- a "random event": one hour out of each day is a
+  // secret 2x-coins window, picked deterministically from a hash of
+  // today's date (so it's the SAME hour for every player -- a shared
+  // server event, not a per-player roll) but unpredictable day to day
+  // since the hash changes every date. No extra Firebase read needed --
+  // computed purely from the local clock, same as the daily/season keys
+  // above.
+  function isBonusHourNow() {
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    const bonusHour = seedFrom(dateStr) % 24;
+    return now.getUTCHours() === bonusHour;
+  }
+
+  function getBonusHourInfo() {
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    return { active: isBonusHourNow(), hour: seedFrom(dateStr) % 24 };
+  }
+
+  // +1 coin per correct answer (x2 during Bonus Hour), no matter which
+  // game. Every ~15th correct answer (tracked via a running streak that
+  // only this counts, separate from recordTopicAttempt's per-topic mastery
+  // streak) also converts into +1 gem — a small, guaranteed trickle rather
+  // than a random drop, so a kid grinding it out can actually predict/count
+  // toward the next gem. Bonus Hour doesn't double the gem trickle, only
+  // coins -- gems stay a deliberate, non-inflatable rare currency.
   function awardCurrency() {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return;
+    const coinGain = isBonusHourNow() ? 2 : 1;
     aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
       const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
-      wallet.coins = (wallet.coins || 0) + 1;
+      wallet.coins = (wallet.coins || 0) + coinGain;
       wallet.correctSinceGem = (wallet.correctSinceGem || 0) + 1;
       if (wallet.correctSinceGem >= GEM_EVERY_N_CORRECT) {
         wallet.gems = (wallet.gems || 0) + 1;
@@ -342,6 +365,58 @@
     const newCount = data.lastPlayDate === yesterday ? (data.count || 0) + 1 : 1;
     const newBest = Math.max(data.bestStreak || 0, newCount);
     await ref.set({ count: newCount, lastPlayDate: today, bestStreak: newBest });
+  }
+
+  // Monday (UTC) of the current week, as YYYY-MM-DD -- the key both the
+  // weekly leaderboard and the Weekly Recap read from. Resets naturally
+  // every Monday since it's derived from the clock, not stored anywhere.
+  function weekKey() {
+    const now = new Date();
+    const day = now.getUTCDay(); // 0=Sun..6=Sat
+    const diffToMonday = (day === 0 ? -6 : 1) - day;
+    const monday = new Date(now);
+    monday.setUTCDate(now.getUTCDate() + diffToMonday);
+    return monday.toISOString().slice(0, 10);
+  }
+
+  // players/{id}/weekly/{weekKey} = {correct, name} -- a cross-game count
+  // of correct answers this week, same trigger as coins/season points.
+  // Stores `name` alongside so the weekly leaderboard (which has to read
+  // the whole players/ tree once, see getWeeklyLeaderboard below) doesn't
+  // need a second lookup per player just to show a name.
+  function touchWeeklyStats() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    aigDb.ref(`players/${player.id}/weekly/${weekKey()}`).transaction(cur => {
+      const d = cur || { correct: 0, name: player.name };
+      d.correct = (d.correct || 0) + 1;
+      d.name = player.name;
+      return d;
+    });
+  }
+
+  // A weekly, self-resetting ranking -- unlike the per-game all-time
+  // leaderboard (leaderboard.html's default view, ranked by lifetime
+  // timesPlayed), this ranks CROSS-game correct answers for the CURRENT
+  // week only, so a kid who's behind on lifetime totals gets a fresh shot
+  // every Monday. Reads the whole players/ tree once (already publicly
+  // readable, same as every other players/* read above) rather than a
+  // live subscription -- acceptable for a small class roster, and this
+  // view is opened rarely (a tab flip), not on every hub load.
+  async function getWeeklyLeaderboard() {
+    const wk = weekKey();
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return { weekKey: wk, ranking: [] };
+    const all = snap.val();
+    const ranking = Object.entries(all)
+      .map(([id, data]) => {
+        const w = data.weekly && data.weekly[wk];
+        return { id, name: (w && w.name) || id, correct: (w && w.correct) || 0 };
+      })
+      .filter(r => r.correct > 0)
+      .sort((a, b) => b.correct - a.correct)
+      .slice(0, 20);
+    return { weekKey: wk, ranking };
   }
 
   async function getStreak() {
@@ -738,6 +813,35 @@
     return { ok: true };
   }
 
+  // Weekly Recap -- a shareable "your week in review" summary (players are
+  // explicitly meant to screenshot this to show a parent). Deliberately
+  // mixes a true weekly delta (correct answers this week, from the same
+  // counter getWeeklyLeaderboard uses) with a couple of all-time snapshots
+  // (streak, wallet, collection size) rather than adding yet more
+  // week-scoped counters for every single stat -- simpler, and still reads
+  // as a meaningful "here's where you're at" card.
+  async function getWeeklyRecap() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const wk = weekKey();
+    const [weeklySnap, streak, wallet, collection] = await Promise.all([
+      aigDb.ref(`players/${player.id}/weekly/${wk}`).get(),
+      getStreak(),
+      getWallet(),
+      getCollection()
+    ]);
+    const weeklyCorrect = (weeklySnap.exists() && weeklySnap.val().correct) || 0;
+    return {
+      weekKey: wk,
+      weeklyCorrect,
+      streak: streak.count || 0,
+      coins: wallet.coins || 0,
+      gems: wallet.gems || 0,
+      cardsOwned: Object.keys(collection.owned).length,
+      cardsTotal: collection.pool.length
+    };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -746,6 +850,7 @@
     getBattlePass, claimBattlePassTier,
     getCollection,
     getCosmetics, unlockCosmetic, equipCosmetic,
+    getWeeklyLeaderboard, getWeeklyRecap, getBonusHourInfo,
     db: aigDb
   };
 })();
