@@ -159,6 +159,9 @@ const state = {
   mistakes: 0,
   lastWrong: null,     // {prompt, answer} of the most recent miss — feeds the AI Tutor hint
   starsEarned: 0,
+  isBoss: false,        // true only inside a Boss Challenge round -- see submitAnswer/goToNextStep
+  bossTimerToken: 0,
+  bossTimerTimeout: null,
   mp: {
     code: null, seatKey: null, maxPlayers: 2,
     listeningCode: null, game: null,
@@ -613,6 +616,7 @@ function goToIntro(chapterId, isMp) {
     state.stepIndex = 0;
     state.mistakes = 0;
     state.lastWrong = null;
+    state.isBoss = false; // defensive -- a normal round entry always clears any leftover boss flag
     state.steps = isMp ? state.mp.game.roundQuestions : buildRound(chapterId);
     renderStep();
   };
@@ -4105,6 +4109,9 @@ function renderStep() {
   showScreen("screen-question");
   ["ui-typein", "ui-mc", "ui-tap", "ui-match"].forEach(id => $(id).classList.add("hidden"));
   const step = state.steps[state.stepIndex];
+  $("boss-banner").classList.toggle("hidden", !state.isBoss);
+  $("boss-timer-track").classList.toggle("hidden", !state.isBoss);
+  if (state.isBoss) $("boss-progress").textContent = `${state.stepIndex + 1}/${state.steps.length}`;
   $("q-label").textContent = step.uiType === "match" ? "" : `Question ${state.stepIndex + 1} of ${state.steps.length}`;
 
   if (step.uiType === "typein") renderTypeinStep(step);
@@ -4115,8 +4122,14 @@ function renderStep() {
 
 function goToNextStep() {
   state.stepIndex++;
-  if (state.stepIndex < state.steps.length) renderStep();
-  else finishRound();
+  if (state.stepIndex < state.steps.length) {
+    renderStep();
+    if (state.isBoss) startBossTimer();
+  } else if (state.isBoss) {
+    finishBossRound(true);
+  } else {
+    finishRound();
+  }
 }
 
 // Shared "record + advance" used by typein/mc/tap. `answerForHint` is the
@@ -4136,6 +4149,10 @@ function submitAnswer(isCorrect, prompt, answerForHint) {
   if (!isCorrect) {
     state.mistakes++;
     state.lastWrong = { prompt, answer: answerForHint };
+  }
+  if (state.isBoss) {
+    clearBossTimer();
+    if (!isCorrect) { setTimeout(() => finishBossRound(false), 900); return; }
   }
   setTimeout(goToNextStep, isCorrect ? 700 : 1600);
 }
@@ -4383,6 +4400,8 @@ function showReward(stars) {
   $("reward-xp").textContent = `+${xp} XP`;
   $("mp-results").classList.add("hidden");
   $("btn-reward-continue").classList.remove("hidden");
+  $("btn-reward-boss").classList.remove("hidden");
+  $("btn-reward-boss").onclick = () => launchBossChallenge(state.chapterId);
   saveChapterProgress(state.chapterId, stars, xp);
   updateXpBadge();
   showScreen("screen-reward");
@@ -4394,6 +4413,89 @@ function showReward(stars) {
     if (state.driveReturnPending) { state.driveReturnPending = false; goToDrive(true); }
     else goToMap();
   };
+}
+
+/* =================================================================
+   BOSS CHALLENGE — an optional bonus round offered on the reward screen
+   (solo mode only) after clearing a chapter: 5 timed questions pulled
+   from that SAME chapter's own generator (buildRound), one miss or one
+   timeout ends it immediately. Fully separate screen/state flag from the
+   normal round flow -- submitAnswer/goToNextStep above only branch into
+   this when state.isBoss is true, so a bug here can't touch a normal
+   round, multiplayer, or Focus Round.
+   ================================================================= */
+const BOSS_QUESTION_COUNT = 5;
+const BOSS_TIME_MS = 10000;
+const BOSS_REWARD = { coins: 15, gems: 1 };
+
+function launchBossChallenge(chapterId) {
+  const pool = buildRound(chapterId); // same generator every normal round already uses
+  if (!pool.length) return; // defensive -- no chapter should ever produce zero questions
+  state.isBoss = true;
+  state.chapterId = chapterId;
+  state.steps = shuffle(pool).slice(0, Math.min(BOSS_QUESTION_COUNT, pool.length));
+  state.stepIndex = 0;
+  state.mistakes = 0;
+  state.lastWrong = null;
+  renderStep();
+  startBossTimer();
+}
+
+function startBossTimer() {
+  clearBossTimer();
+  const token = ++state.bossTimerToken;
+  const fill = $("boss-timer-fill");
+  fill.style.transition = "none";
+  fill.style.width = "100%";
+  void fill.offsetWidth; // force reflow so the reset above can't get batched with the shrink transition below
+  fill.style.transition = `width ${BOSS_TIME_MS}ms linear`;
+  fill.style.width = "0%";
+  state.bossTimerTimeout = setTimeout(() => {
+    if (state.bossTimerToken !== token) return; // a real answer already advanced past this question
+    finishBossRound(false);
+  }, BOSS_TIME_MS);
+}
+
+function clearBossTimer() {
+  state.bossTimerToken++; // invalidates any in-flight timeout from the previous question
+  if (state.bossTimerTimeout) { clearTimeout(state.bossTimerTimeout); state.bossTimerTimeout = null; }
+}
+
+async function finishBossRound(won) {
+  clearBossTimer();
+  state.isBoss = false;
+  const chapterId = state.chapterId;
+  showScreen("screen-boss-result");
+  $("btn-boss-retry").classList.remove("hidden");
+  $("btn-boss-retry").onclick = () => launchBossChallenge(chapterId);
+  $("btn-boss-back").onclick = () => goToMap();
+
+  if (!won) {
+    $("boss-result-emoji").textContent = "💥";
+    $("boss-result-title").textContent = "The boss got away!";
+    $("boss-result-sub").textContent = "One miss (or too slow) and it's over — try again!";
+    return;
+  }
+
+  $("boss-result-emoji").textContent = "🏆";
+  if (!window.AIGLeaderboard) {
+    $("boss-result-title").textContent = "Boss Defeated!";
+    $("boss-result-sub").textContent = "";
+    return;
+  }
+  try {
+    const result = await AIGLeaderboard.claimBossWin("mathville", chapterId, BOSS_REWARD);
+    if (result.alreadyWon) {
+      $("boss-result-title").textContent = "Boss Defeated (again)!";
+      $("boss-result-sub").textContent = "Nice practice run — you already claimed this boss's reward.";
+    } else {
+      $("boss-result-title").textContent = "Boss Defeated!";
+      $("boss-result-sub").textContent = `+${BOSS_REWARD.coins} 🪙  +${BOSS_REWARD.gems} 💎`;
+    }
+  } catch (e) {
+    $("boss-result-title").textContent = "Boss Defeated!";
+    $("boss-result-sub").textContent = "";
+  }
 }
 
 function showWaitingForOthers() {
@@ -4821,6 +4923,7 @@ function mvRenderReward(game) {
   $("reward-stars").textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
   $("reward-xp").textContent = `+${stars * 10} XP`;
   $("btn-reward-continue").classList.remove("hidden");
+  $("btn-reward-boss").classList.add("hidden"); // Boss Challenge is solo-only, never shown on the MP results screen
 
   const wrap = $("mp-results");
   wrap.classList.remove("hidden");

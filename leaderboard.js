@@ -162,7 +162,7 @@
     // Any wrong answer resets it, so mastery has to be shown recently, not
     // just once a long time ago.
     ref.child("streak").transaction(cur => isCorrect ? (cur || 0) + 1 : 0);
-    if (isCorrect) awardCurrency();
+    if (isCorrect) { awardCurrency(); touchSeasonProgress(); }
     touchDailyStats(gameId, isCorrect);
   }
 
@@ -470,10 +470,126 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // BOSS CHALLENGE — one-time reward per {gameId, chapterId} boss fight
+  // cleared. Stored at players/{id}/bossWins/{gameId}:{chapterId} (a
+  // colon-joined key, since RTDB keys can't contain "/"). Same
+  // get-check-set pattern as unlockVehicle above (no transaction) --
+  // replaying an already-won boss for fun is explicitly supported by the
+  // caller checking `alreadyWon` and just skipping the reward, not by
+  // this function rejecting the call.
+  // =====================================================================
+  async function claimBossWin(gameId, chapterId, reward) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const key = `${gameId}:${chapterId}`;
+    const winRef = aigDb.ref(`players/${player.id}/bossWins/${key}`);
+    const winSnap = await winRef.get();
+    if (winSnap.exists() && winSnap.val()) return { ok: true, alreadyWon: true };
+    await winRef.set(true);
+
+    const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+    const walletSnap = await walletRef.get();
+    const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    await walletRef.set({
+      ...wallet,
+      coins: (wallet.coins || 0) + (reward.coins || 0),
+      gems: (wallet.gems || 0) + (reward.gems || 0)
+    });
+    return { ok: true, alreadyWon: false };
+  }
+
+  // =====================================================================
+  // SEASON PASS (Battle Pass) — a monthly cumulative track, separate from
+  // the daily quests above. Earns 1 "season point" (SP) per correct
+  // answer, same trigger as coins (parallel counter, doesn't touch/consume
+  // the wallet's own coins). 15 tiers with increasing cumulative
+  // thresholds, each claimable once for a coin/gem reward. Resets every
+  // calendar month (season key "YYYY-MM") -- there's deliberately no
+  // migration/carry-over of unclaimed SP into the next season, same as a
+  // real battle pass.
+  // =====================================================================
+  function seasonKey() {
+    return new Date().toISOString().slice(0, 7); // YYYY-MM
+  }
+
+  function touchSeasonProgress() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    aigDb.ref(`players/${player.id}/season/${seasonKey()}/sp`).transaction(cur => (cur || 0) + 1);
+  }
+
+  const BATTLEPASS_TIER_COUNT = 15;
+
+  // Cumulative SP required to COMPLETE tier n (1-indexed) -- gaps widen by
+  // +5 each tier (15, 35, 60, 90, 125...750 total for all 15), so early
+  // tiers come fast and later ones take real sustained play across the
+  // month.
+  function battlePassThreshold(tier) {
+    return 15 * tier + (5 * tier * (tier - 1)) / 2;
+  }
+
+  // Every 5th tier is a milestone (bigger, gem reward); the rest are
+  // steady small coin drips that grow slightly tier over tier.
+  function battlePassReward(tier) {
+    if (tier % 5 === 0) return { gems: { 5: 2, 10: 3, 15: 5 }[tier] || 2 };
+    return { coins: 6 + tier };
+  }
+
+  async function getBattlePass() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const season = seasonKey();
+    const snap = await aigDb.ref(`players/${player.id}/season/${season}`).get();
+    const data = snap.exists() ? snap.val() : { sp: 0, claimedTiers: {} };
+    const sp = data.sp || 0;
+    const claimedTiers = data.claimedTiers || {};
+
+    const tiers = [];
+    for (let t = 1; t <= BATTLEPASS_TIER_COUNT; t++) {
+      const threshold = battlePassThreshold(t);
+      tiers.push({
+        tier: t,
+        threshold,
+        reward: battlePassReward(t),
+        reached: sp >= threshold,
+        claimed: !!claimedTiers[t]
+      });
+    }
+    const nextTier = tiers.find(t => !t.reached) || null;
+    return { season, sp, tiers, nextTier };
+  }
+
+  // Same get-check-set pattern as claimDailyQuest/unlockVehicle above --
+  // no transaction, narrow accepted race, no real money involved.
+  async function claimBattlePassTier(tier) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const season = seasonKey();
+    const state = await getBattlePass();
+    if (!state) return { ok: false };
+    const t = state.tiers.find(x => x.tier === tier);
+    if (!t || !t.reached || t.claimed) return { ok: false };
+
+    await aigDb.ref(`players/${player.id}/season/${season}/claimedTiers/${tier}`).set(true);
+
+    const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+    const walletSnap = await walletRef.get();
+    const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    await walletRef.set({
+      ...wallet,
+      coins: (wallet.coins || 0) + (t.reward.coins || 0),
+      gems: (wallet.gems || 0) + (t.reward.gems || 0)
+    });
+    return { ok: true };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
     getStreak, getDailyQuests, claimDailyQuest, getQuestLabel,
+    claimBossWin,
+    getBattlePass, claimBattlePassTier,
     db: aigDb
   };
 })();

@@ -322,6 +322,16 @@
         <div class="sc-daily-bonus-note" id="sc-daily-bonus-note" hidden>🎉 Daily Bonus claimed — +2 💎!</div>
       </div>
 
+      <div class="sc-bp-panel" id="sc-bp-panel" hidden>
+        <div class="sc-bp-header">
+          <span class="sc-bp-title">🎖️ Season Pass</span>
+          <span class="sc-bp-sub" id="sc-bp-sub">Tier 0/15</span>
+        </div>
+        <div class="sc-bp-next" id="sc-bp-next"></div>
+        <button class="sc-bp-toggle" id="sc-bp-toggle" type="button">View all tiers ▾</button>
+        <div class="sc-bp-tiers" id="sc-bp-tiers" hidden></div>
+      </div>
+
       <div class="sc-game-list">
         <div class="sc-emoji" style="top:2px;right:2px;font-size:16px;transform:rotate(10deg);z-index:0;">⭐</div>
         <div class="sc-emoji" style="top:100px;left:-4px;font-size:14px;transform:rotate(-8deg);z-index:0;">✨</div>
@@ -620,6 +630,7 @@
 
     checkParentMessage(current.id);
     renderDailyPanel(current);
+    renderBattlePass(current);
   }
 
   // Daily Quest + Streak panel -- shown right under the hero, above the
@@ -670,6 +681,83 @@
       };
     });
   }
+
+  // Season Pass (Battle Pass) panel -- collapsed by default to just the
+  // next unclaimed tier (a full 15-row list on the landing page every
+  // time would be a lot to scroll past for a kid who just wants to pick
+  // a game), with a toggle to expand the full track.
+  let scBpTiersExpanded = false;
+
+  function bpRewardText(reward) {
+    return reward.gems ? `💎${reward.gems}` : `🪙${reward.coins}`;
+  }
+
+  async function renderBattlePass(player) {
+    const panel = document.getElementById("sc-bp-panel");
+    if (!player || player.role === "parent" || !window.AIGLeaderboard) {
+      panel.hidden = true;
+      return;
+    }
+    panel.hidden = false;
+
+    const bp = await AIGLeaderboard.getBattlePass();
+    if (!bp) { panel.hidden = true; return; }
+
+    const tiersDone = bp.tiers.filter(t => t.reached).length;
+    document.getElementById("sc-bp-sub").textContent = `Tier ${tiersDone}/${bp.tiers.length}`;
+
+    const nextEl = document.getElementById("sc-bp-next");
+    const nextUnclaimed = bp.tiers.find(t => t.reached && !t.claimed);
+    if (nextUnclaimed) {
+      nextEl.innerHTML = `
+        <div class="sc-bp-tier-row">
+          <span class="sc-bp-tier-label">Tier ${nextUnclaimed.tier} ready — ${bpRewardText(nextUnclaimed.reward)}</span>
+          <button class="sc-quest-claim-btn" id="sc-bp-claim-next">Claim</button>
+        </div>`;
+      document.getElementById("sc-bp-claim-next").onclick = async (e) => {
+        e.target.disabled = true;
+        const result = await AIGLeaderboard.claimBattlePassTier(nextUnclaimed.tier);
+        if (result.ok) renderBattlePass(player);
+        else e.target.disabled = false;
+      };
+    } else if (bp.nextTier) {
+      const pct = Math.min(100, Math.round((bp.sp / bp.nextTier.threshold) * 100));
+      nextEl.innerHTML = `
+        <div class="sc-bp-progress-label">Next: Tier ${bp.nextTier.tier} — ${bpRewardText(bp.nextTier.reward)} (${bp.sp}/${bp.nextTier.threshold} SP)</div>
+        <div class="sc-quest-bar-track"><div class="sc-quest-bar-fill" style="width:${pct}%"></div></div>`;
+    } else {
+      nextEl.innerHTML = `<div class="sc-bp-progress-label">🎉 Season Pass complete! New season next month.</div>`;
+    }
+
+    const list = document.getElementById("sc-bp-tiers");
+    list.innerHTML = bp.tiers.map(t => {
+      const action = t.claimed
+        ? `<span class="sc-quest-done-check">✓</span>`
+        : t.reached
+          ? `<button class="sc-quest-claim-btn" data-bp-tier="${t.tier}">Claim</button>`
+          : `<span class="sc-quest-progress-num">${t.threshold} SP</span>`;
+      return `
+        <div class="sc-quest-item${t.claimed ? " claimed" : ""}">
+          <div class="sc-quest-info"><span class="sc-quest-text">Tier ${t.tier} — ${bpRewardText(t.reward)}</span></div>
+          ${action}
+        </div>`;
+    }).join("");
+    list.querySelectorAll("[data-bp-tier]").forEach(btn => {
+      btn.onclick = async () => {
+        btn.disabled = true;
+        const result = await AIGLeaderboard.claimBattlePassTier(Number(btn.dataset.bpTier));
+        if (result.ok) renderBattlePass(player);
+        else btn.disabled = false;
+      };
+    });
+    list.hidden = !scBpTiersExpanded;
+  }
+
+  document.getElementById("sc-bp-toggle").addEventListener("click", () => {
+    scBpTiersExpanded = !scBpTiersExpanded;
+    document.getElementById("sc-bp-tiers").hidden = !scBpTiersExpanded;
+    document.getElementById("sc-bp-toggle").textContent = scBpTiersExpanded ? "Hide tiers ▴" : "View all tiers ▾";
+  });
 
   // One-way (parent -> child) message set from /parents
   // (players/{id}/parentMessage: {text, sentAt, read}) -- shows once per
