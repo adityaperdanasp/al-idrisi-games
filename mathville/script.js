@@ -32,17 +32,22 @@ if (window.AIGLeaderboard) AIGLeaderboard.startSession("mathville");
 // 3-line wrapped title (e.g. "Prime Number (Multiples and Factoring)")
 // before sweeping toward the next stop — same smooth curve, just more
 // room, instead of kinking the path around the text.
+// Each chapter carries a one-line `story` blurb -- a light narrative frame
+// tying its chapter's math topic to an ongoing "get Blockville ready for
+// the harvest festival" arc. Purely cosmetic text shown above the normal
+// intro copy (goToIntro) -- no gameplay/logic ties to it at all, so it can
+// never affect scoring, progress, or the round flow.
 const CHAPTER_META = {
-  "place-value": { location: "Town Hall", icon: "🏛️", mapX: 80, mapY: 70 },
-  "addition-subtraction": { location: "Bakery", icon: "🥐", mapX: 340, mapY: 240 },
-  "prime-numbers": { location: "Factor Grove", icon: "🌳", mapX: 80, mapY: 410 },
-  "gcf-lcm": { location: "Twin Bridges", icon: "🌉", mapX: 340, mapY: 580 },
-  "multiplication": { location: "Windmill", icon: "🎡", mapX: 80, mapY: 750 },
-  "division": { location: "Water Tower", icon: "🚰", mapX: 340, mapY: 920 },
-  "mixed-operation": { location: "Crossroads Plaza", icon: "🚦", mapX: 80, mapY: 1090 },
-  "measurement": { location: "General Store", icon: "🏪", mapX: 340, mapY: 1260 },
-  "rounding": { location: "Clock Tower", icon: "🕰️", mapX: 80, mapY: 1430 },
-  "word-problems": { location: "The Library", icon: "📖", mapX: 340, mapY: 1600 },
+  "place-value": { location: "Town Hall", icon: "🏛️", mapX: 80, mapY: 70, story: "The mayor's chest of festival coins toppled over! Help sort them by place value before the gates open." },
+  "addition-subtraction": { location: "Bakery", icon: "🥐", mapX: 340, mapY: 240, story: "The baker's order slips got mixed up -- add and subtract the batches so nobody goes hungry at the festival." },
+  "prime-numbers": { location: "Factor Grove", icon: "🌳", mapX: 80, mapY: 410, story: "The grove keeper says only prime-numbered trees may be tapped for syrup this festival season." },
+  "gcf-lcm": { location: "Twin Bridges", icon: "🌉", mapX: 340, mapY: 580, story: "Two work crews need to meet on the bridge at the same time -- find when their schedules line up." },
+  "multiplication": { location: "Windmill", icon: "🎡", mapX: 80, mapY: 750, story: "The windmill grinds grain in batches for festival bread -- figure out how much flour each batch makes." },
+  "division": { location: "Water Tower", icon: "🚰", mapX: 340, mapY: 920, story: "The water tower needs to share its supply fairly across every street before the festival crowds arrive." },
+  "mixed-operation": { location: "Crossroads Plaza", icon: "🚦", mapX: 80, mapY: 1090, story: "Festival stalls are going up at the crossroads -- juggle all kinds of math to get them ready in time." },
+  "measurement": { location: "General Store", icon: "🏪", mapX: 340, mapY: 1260, story: "The shopkeeper needs help measuring out festival supplies exactly right." },
+  "rounding": { location: "Clock Tower", icon: "🕰️", mapX: 80, mapY: 1430, story: "The clock tower keeper likes things tidy -- round the numbers before ringing the festival bell." },
+  "word-problems": { location: "The Library", icon: "📖", mapX: 340, mapY: 1600, story: "The town librarian collected everyone's trickiest story problems from the whole festival -- one last challenge!" },
   // Synthetic chapterId (never in MATHVILLE_BANK.chapters, same pattern as
   // Plane Mode's "plane-mode") so showReward()'s CHAPTER_META lookup and
   // saveChapterProgress() work unmodified for a Focus Round. Town-map
@@ -577,6 +582,8 @@ function goToIntro(chapterId, isMp) {
   $("intro-title").textContent = chapterData.title;
   $("intro-location").textContent = meta.location;
   $("intro-text").textContent = chapterData.intro;
+  $("intro-story").classList.toggle("hidden", !meta.story);
+  if (meta.story) $("intro-story").textContent = meta.story;
 
   const demo = INTRO_DEMOS[chapterId];
   $("intro-demo").classList.toggle("hidden", !demo);
@@ -4490,7 +4497,8 @@ async function finishBossRound(won) {
       $("boss-result-sub").textContent = "Nice practice run — you already claimed this boss's reward.";
     } else {
       $("boss-result-title").textContent = "Boss Defeated!";
-      $("boss-result-sub").textContent = `+${BOSS_REWARD.coins} 🪙  +${BOSS_REWARD.gems} 💎`;
+      const cardNote = result.newCard ? " — plus a new collectible card! 📚" : "";
+      $("boss-result-sub").textContent = `+${BOSS_REWARD.coins} 🪙  +${BOSS_REWARD.gems} 💎${cardNote}`;
     }
   } catch (e) {
     $("boss-result-title").textContent = "Boss Defeated!";

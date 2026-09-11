@@ -467,7 +467,8 @@
       bonus = true;
     }
 
-    return { ok: true, bonus };
+    const newCard = bonus ? await awardRandomCard("common") : null;
+    return { ok: true, bonus, newCard };
   }
 
   // =====================================================================
@@ -496,7 +497,8 @@
       coins: (wallet.coins || 0) + (reward.coins || 0),
       gems: (wallet.gems || 0) + (reward.gems || 0)
     });
-    return { ok: true, alreadyWon: false };
+    const newCard = await awardRandomCard("legendary");
+    return { ok: true, alreadyWon: false, newCard };
   }
 
   // =====================================================================
@@ -581,6 +583,158 @@
       coins: (wallet.coins || 0) + (t.reward.coins || 0),
       gems: (wallet.gems || 0) + (t.reward.gems || 0)
     });
+    const newCard = (tier % 5 === 0) ? await awardRandomCard("rare") : null;
+    return { ok: true, newCard };
+  }
+
+  // =====================================================================
+  // COLLECTIBLE CARDS — a lightweight "collection" layer, awarded (never
+  // bought) as a bonus on top of milestones the reward systems above
+  // already pay out: a full Daily Quest clear, a Battle Pass milestone
+  // tier (every 5th), and a first-time Boss Challenge win. Deliberately
+  // NOT a new hook into any individual game -- every award happens from
+  // inside a claim* function above that's already being called. Stored at
+  // players/{id}/collection/{cardId}: true (plain ownership, no counts).
+  // =====================================================================
+  const CARD_POOL = [
+    { id: "c1", emoji: "🐶", name: "Puppy", rarity: "common" },
+    { id: "c2", emoji: "🐱", name: "Kitten", rarity: "common" },
+    { id: "c3", emoji: "🐰", name: "Bunny", rarity: "common" },
+    { id: "c4", emoji: "🐻", name: "Bear", rarity: "common" },
+    { id: "c5", emoji: "🐼", name: "Panda", rarity: "common" },
+    { id: "c6", emoji: "🦊", name: "Fox", rarity: "common" },
+    { id: "c7", emoji: "🐸", name: "Frog", rarity: "common" },
+    { id: "c8", emoji: "🐵", name: "Monkey", rarity: "common" },
+    { id: "c9", emoji: "🐷", name: "Piglet", rarity: "common" },
+    { id: "c10", emoji: "🐨", name: "Koala", rarity: "common" },
+    { id: "c11", emoji: "🦁", name: "Lion", rarity: "common" },
+    { id: "c12", emoji: "🐮", name: "Cow", rarity: "common" },
+    { id: "r1", emoji: "🦄", name: "Unicorn", rarity: "rare" },
+    { id: "r2", emoji: "🐉", name: "Dragon", rarity: "rare" },
+    { id: "r3", emoji: "🦋", name: "Butterfly", rarity: "rare" },
+    { id: "r4", emoji: "🦉", name: "Owl", rarity: "rare" },
+    { id: "r5", emoji: "🐢", name: "Turtle", rarity: "rare" },
+    { id: "r6", emoji: "🦅", name: "Eagle", rarity: "rare" },
+    { id: "r7", emoji: "🦈", name: "Shark", rarity: "rare" },
+    { id: "r8", emoji: "🐙", name: "Octopus", rarity: "rare" },
+    { id: "l1", emoji: "🌟", name: "Shooting Star", rarity: "legendary" },
+    { id: "l2", emoji: "🔥", name: "Phoenix Flame", rarity: "legendary" },
+    { id: "l3", emoji: "🌈", name: "Rainbow", rarity: "legendary" },
+    { id: "l4", emoji: "👑", name: "Golden Crown", rarity: "legendary" }
+  ];
+
+  // `bias` skews which rarity tier gets rolled -- a Daily Quest bonus is
+  // mostly-common with a small legendary chance, a Boss win is the
+  // opposite (mostly rare/legendary), a Battle Pass milestone sits between.
+  const CARD_RARITY_WEIGHTS = {
+    common: { common: 70, rare: 25, legendary: 5 },
+    rare: { common: 20, rare: 60, legendary: 20 },
+    legendary: { common: 10, rare: 40, legendary: 50 }
+  };
+
+  function pickCardId(owned, bias) {
+    const weights = CARD_RARITY_WEIGHTS[bias] || CARD_RARITY_WEIGHTS.common;
+    const notOwned = CARD_POOL.filter(c => !owned[c.id]);
+    const source = notOwned.length ? notOwned : CARD_POOL; // fully collected -- re-roll anyway, the write below is a harmless no-op
+
+    const roll = Math.random() * 100;
+    let rarity = "common";
+    if (roll < weights.legendary) rarity = "legendary";
+    else if (roll < weights.legendary + weights.rare) rarity = "rare";
+
+    let candidates = source.filter(c => c.rarity === rarity);
+    if (!candidates.length) candidates = source; // that tier is fully owned already -- fall back to whatever's left
+    return candidates[Math.floor(Math.random() * candidates.length)].id;
+  }
+
+  async function awardRandomCard(bias) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const collRef = aigDb.ref(`players/${player.id}/collection`);
+    const snap = await collRef.get();
+    const owned = snap.exists() ? snap.val() : {};
+    const cardId = pickCardId(owned, bias);
+    await collRef.child(cardId).set(true);
+    return cardId;
+  }
+
+  async function getCollection() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { owned: {}, pool: CARD_POOL };
+    const snap = await aigDb.ref(`players/${player.id}/collection`).get();
+    return { owned: snap.exists() ? snap.val() : {}, pool: CARD_POOL };
+  }
+
+  // =====================================================================
+  // COSMETICS — Avatar Frames + Sound Packs, bought with the same
+  // coins/gems wallet as vehicle skins. Two independent "slots" (frame /
+  // sound), each with its own owned-set and one equipped choice. Sound
+  // packs are just note sequences (frequency+duration pairs) -- actual
+  // playback uses the Web Audio API in the UI layer, since that needs a
+  // real AudioContext the module here has no reason to own.
+  // =====================================================================
+  const AVATAR_FRAMES = [
+    { id: "none", name: "Default", cost: null },
+    { id: "bronze", name: "Bronze Ring", cost: { coins: 10 } },
+    { id: "silver", name: "Silver Ring", cost: { coins: 20 } },
+    { id: "gold", name: "Gold Ring", cost: { coins: 35 } },
+    { id: "rainbow", name: "Rainbow Ring", cost: { gems: 2 } },
+    { id: "fire", name: "Fire Ring", cost: { gems: 3 } }
+  ];
+
+  const SOUND_PACKS = [
+    { id: "classic", name: "Classic Chime", cost: null, notes: [{ f: 523, d: 120 }, { f: 659, d: 120 }, { f: 784, d: 200 }] },
+    { id: "arcade", name: "Arcade Blip", cost: { coins: 15 }, notes: [{ f: 440, d: 80 }, { f: 660, d: 80 }, { f: 880, d: 80 }, { f: 1320, d: 160 }] },
+    { id: "fanfare", name: "Royal Fanfare", cost: { coins: 25 }, notes: [{ f: 392, d: 100 }, { f: 523, d: 100 }, { f: 659, d: 100 }, { f: 784, d: 260 }] },
+    { id: "magic", name: "Magic Sparkle", cost: { gems: 2 }, notes: [{ f: 988, d: 70 }, { f: 1175, d: 70 }, { f: 1568, d: 70 }, { f: 1976, d: 180 }] }
+  ];
+
+  async function getCosmetics() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const [ownedSnap, equippedSnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/ownedCosmetics`).get(),
+      aigDb.ref(`players/${player.id}/equipped`).get()
+    ]);
+    const owned = ownedSnap.exists() ? ownedSnap.val() : {};
+    const equipped = equippedSnap.exists() ? equippedSnap.val() : {};
+    return {
+      frames: AVATAR_FRAMES.map(f => ({ ...f, owned: !f.cost || !!(owned.frame && owned.frame[f.id]) })),
+      sounds: SOUND_PACKS.map(s => ({ ...s, owned: !s.cost || !!(owned.sound && owned.sound[s.id]) })),
+      equippedFrame: equipped.frame || "none",
+      equippedSound: equipped.sound || "classic"
+    };
+  }
+
+  // Same get-check-set pattern as unlockVehicle/claimDailyQuest above.
+  async function unlockCosmetic(type, id, cost) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const ownRef = aigDb.ref(`players/${player.id}/ownedCosmetics/${type}/${id}`);
+    const snap = await ownRef.get();
+    if (snap.exists() && snap.val()) return { ok: true, alreadyOwned: true };
+
+    const coinsCost = cost.coins || 0;
+    const gemsCost = cost.gems || 0;
+    const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+    const walletSnap = await walletRef.get();
+    const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    if ((wallet.coins || 0) < coinsCost || (wallet.gems || 0) < gemsCost) {
+      return { ok: false, reason: "insufficient-funds" };
+    }
+    await walletRef.set({
+      ...wallet,
+      coins: Math.max(0, (wallet.coins || 0) - coinsCost),
+      gems: Math.max(0, (wallet.gems || 0) - gemsCost)
+    });
+    await ownRef.set(true);
+    return { ok: true, alreadyOwned: false };
+  }
+
+  async function equipCosmetic(type, id) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    await aigDb.ref(`players/${player.id}/equipped/${type}`).set(id);
     return { ok: true };
   }
 
@@ -590,6 +744,8 @@
     getStreak, getDailyQuests, claimDailyQuest, getQuestLabel,
     claimBossWin,
     getBattlePass, claimBattlePassTier,
+    getCollection,
+    getCosmetics, unlockCosmetic, equipCosmetic,
     db: aigDb
   };
 })();

@@ -332,9 +332,16 @@ body {
   z-index: 1;
 }
 
+.sc-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .sc-trophy {
   width: 42px;
   height: 42px;
+  border: none;
   border-radius: 12px;
   background: #f6e3b4;
   display: flex;
@@ -343,6 +350,7 @@ body {
   font-size: 1.25rem;
   transform: rotate(-4deg);
   text-decoration: none;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.15s ease;
 }
@@ -664,6 +672,167 @@ body {
    default [hidden]{display:none} rule -- same class of bug documented
    elsewhere in this codebase as ".xxx.hidden { display:none }" pairs. */
 .sc-bp-tiers[hidden] { display: none; }
+
+/* ---------- New-card toast ---------- */
+.sc-card-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  background: #3d2e22;
+  color: #fff;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 10px 18px;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  animation: sc-toast-in-out 3s ease forwards;
+}
+.sc-card-toast-emoji { font-size: 1.1rem; }
+@keyframes sc-toast-in-out {
+  0% { opacity: 0; transform: translate(-50%, 12px); }
+  10%, 85% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 12px); }
+}
+
+/* ---------- Avatar frames (equipped cosmetic ring) ---------- */
+.sc-player-avatar.frame-bronze, .sc-player-avatar-preview.frame-bronze { box-shadow: 0 0 0 3px #C1793E; }
+.sc-player-avatar.frame-silver, .sc-player-avatar-preview.frame-silver { box-shadow: 0 0 0 3px #C7CDD6; }
+.sc-player-avatar.frame-gold, .sc-player-avatar-preview.frame-gold { box-shadow: 0 0 0 3px #F7C548; }
+.sc-player-avatar.frame-rainbow, .sc-player-avatar-preview.frame-rainbow {
+  box-shadow: 0 0 0 3px transparent;
+  background-image: conic-gradient(#f6c1e0, #c1d4f6, #c1e1c1, #f6e3b4, #d9c1f6, #f6c1e0);
+  background-origin: border-box;
+  border: 3px solid transparent;
+}
+.sc-player-avatar.frame-fire, .sc-player-avatar-preview.frame-fire { box-shadow: 0 0 0 3px #E4572E, 0 0 10px 2px rgba(228,87,46,.6); }
+
+/* ---------- Modal overlays (Collection / Customize) ---------- */
+.sc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(61, 46, 34, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.sc-modal-overlay[hidden] { display: none; }
+.sc-modal-card {
+  background: #fdf6ea;
+  border-radius: 20px;
+  padding: 20px;
+  width: 100%;
+  max-width: 380px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+}
+.sc-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.sc-modal-title {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #3d2e22;
+}
+.sc-modal-close {
+  border: none;
+  background: none;
+  font-size: 1.1rem;
+  color: #8a7a6a;
+  cursor: pointer;
+  padding: 4px;
+}
+.sc-modal-sub {
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #8a7a6a;
+  margin-bottom: 14px;
+}
+
+.sc-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.sc-card-tile {
+  aspect-ratio: 1;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #fff;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.05);
+}
+.sc-card-tile.locked { opacity: 0.45; }
+.sc-card-tile.owned.rarity-rare { background: #eef3ff; }
+.sc-card-tile.owned.rarity-legendary { background: linear-gradient(135deg, #fdf6e5, #f6e3b4); }
+.sc-card-emoji { font-size: 1.6rem; }
+.sc-card-name {
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.6rem;
+  color: #7a5a2e;
+  text-align: center;
+}
+
+.sc-modal-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.sc-modal-tab {
+  flex: 1;
+  border: none;
+  background: #f1ede6;
+  color: #8a7a6a;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 9px 6px;
+  border-radius: 100px;
+  cursor: pointer;
+}
+.sc-modal-tab.active { background: #3d2e22; color: #fff; }
+
+.sc-cosmetic-list { display: flex; flex-direction: column; gap: 10px; }
+.sc-cosmetic-list[hidden] { display: none; }
+.sc-cosmetic-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sc-cosmetic-preview {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e8e0d4;
+  flex-shrink: 0;
+  border: none;
+  font-size: 0.9rem;
+}
+.sc-cosmetic-play { cursor: pointer; color: #3d2e22; }
+.sc-cosmetic-name {
+  flex: 1;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #3d2e22;
+}
 
 .sc-game-list {
   padding: 30px 24px 22px;

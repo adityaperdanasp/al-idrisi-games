@@ -229,7 +229,11 @@
       <div class="sc-dot" style="top:97%;left:110px;width:9px;height:9px;background:#C1E1C1;z-index:0;"></div>
 
       <div class="sc-header">
-        <a href="leaderboard.html" class="sc-trophy" title="Leaderboard">🏆</a>
+        <div class="sc-header-left">
+          <a href="leaderboard.html" class="sc-trophy" title="Leaderboard">🏆</a>
+          <button class="sc-trophy" id="sc-collection-btn" title="Collection" type="button">📚</button>
+          <button class="sc-trophy" id="sc-customize-btn" title="Customize" type="button">🎨</button>
+        </div>
         <button class="sc-player-chip" id="sc-player-chip">
           <span class="sc-player-avatar" id="sc-player-avatar"></span>
           <span class="sc-player-name" id="sc-player-name"></span>
@@ -480,6 +484,36 @@
       <button class="sc-whois-btn" id="sc-whois-parent">🧑 My parent is playing with/for me</button>
     </div>
   </div>
+
+  <!-- Collection viewer -- locked/unlocked grid of collectible cards
+       earned as bonus drops from Daily Quests / Season Pass / Boss wins. -->
+  <div id="sc-collection-overlay" class="sc-modal-overlay" hidden>
+    <div class="sc-modal-card">
+      <div class="sc-modal-header">
+        <span class="sc-modal-title">📚 Collection</span>
+        <button class="sc-modal-close" id="sc-collection-close" type="button">✕</button>
+      </div>
+      <div class="sc-modal-sub" id="sc-collection-count"></div>
+      <div class="sc-card-grid" id="sc-card-grid"></div>
+    </div>
+  </div>
+
+  <!-- Customize -- avatar frames + sound packs, bought with the same
+       coins/gems wallet as vehicle skins. -->
+  <div id="sc-customize-overlay" class="sc-modal-overlay" hidden>
+    <div class="sc-modal-card">
+      <div class="sc-modal-header">
+        <span class="sc-modal-title">🎨 Customize</span>
+        <button class="sc-modal-close" id="sc-customize-close" type="button">✕</button>
+      </div>
+      <div class="sc-modal-tabs">
+        <button class="sc-modal-tab active" id="sc-tab-frames" type="button">Avatar Frames</button>
+        <button class="sc-modal-tab" id="sc-tab-sounds" type="button">Sound Packs</button>
+      </div>
+      <div class="sc-cosmetic-list" id="sc-frame-list"></div>
+      <div class="sc-cosmetic-list" id="sc-sound-list" hidden></div>
+    </div>
+  </div>
 </main>
 
 <script src="player.js"></script>
@@ -631,6 +665,9 @@
     checkParentMessage(current.id);
     renderDailyPanel(current);
     renderBattlePass(current);
+    if (current.role !== "parent" && window.AIGLeaderboard) {
+      AIGLeaderboard.getCosmetics().then(cos => { if (cos) applyEquippedFrame(cos.equippedFrame); });
+    }
   }
 
   // Daily Quest + Streak panel -- shown right under the hero, above the
@@ -676,7 +713,7 @@
       btn.onclick = async () => {
         btn.disabled = true;
         const result = await AIGLeaderboard.claimDailyQuest(Number(btn.dataset.questIndex));
-        if (result.ok) renderDailyPanel(player);
+        if (result.ok) { renderDailyPanel(player); showNewCardToast(result.newCard); }
         else btn.disabled = false;
       };
     });
@@ -717,7 +754,7 @@
       document.getElementById("sc-bp-claim-next").onclick = async (e) => {
         e.target.disabled = true;
         const result = await AIGLeaderboard.claimBattlePassTier(nextUnclaimed.tier);
-        if (result.ok) renderBattlePass(player);
+        if (result.ok) { renderBattlePass(player); showNewCardToast(result.newCard); }
         else e.target.disabled = false;
       };
     } else if (bp.nextTier) {
@@ -746,7 +783,7 @@
       btn.onclick = async () => {
         btn.disabled = true;
         const result = await AIGLeaderboard.claimBattlePassTier(Number(btn.dataset.bpTier));
-        if (result.ok) renderBattlePass(player);
+        if (result.ok) { renderBattlePass(player); showNewCardToast(result.newCard); }
         else btn.disabled = false;
       };
     });
@@ -757,6 +794,160 @@
     scBpTiersExpanded = !scBpTiersExpanded;
     document.getElementById("sc-bp-tiers").hidden = !scBpTiersExpanded;
     document.getElementById("sc-bp-toggle").textContent = scBpTiersExpanded ? "Hide tiers ▴" : "View all tiers ▾";
+  });
+
+  // Small bottom toast for a surprise collectible card drop (Daily Quest
+  // bonus / Season Pass milestone / Boss win) -- fire-and-forget, never
+  // blocks the claim flow that triggered it.
+  async function showNewCardToast(cardId) {
+    if (!cardId || !window.AIGLeaderboard) return;
+    const coll = await AIGLeaderboard.getCollection();
+    const card = coll.pool.find(c => c.id === cardId);
+    if (!card) return;
+    const toast = document.createElement("div");
+    toast.className = "sc-card-toast";
+    toast.innerHTML = `<span class="sc-card-toast-emoji">${card.emoji}</span><span>New card: ${card.name}!</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  // Collection viewer -----------------------------------------------------
+  async function renderCollection() {
+    const coll = await AIGLeaderboard.getCollection();
+    const ownedCount = Object.keys(coll.owned).length;
+    document.getElementById("sc-collection-count").textContent = `${ownedCount}/${coll.pool.length} collected`;
+    document.getElementById("sc-card-grid").innerHTML = coll.pool.map(c => {
+      const owned = !!coll.owned[c.id];
+      return `
+        <div class="sc-card-tile ${owned ? "owned rarity-" + c.rarity : "locked"}" title="${owned ? c.name : "???"}">
+          <span class="sc-card-emoji">${owned ? c.emoji : "❓"}</span>
+          ${owned ? `<span class="sc-card-name">${c.name}</span>` : ""}
+        </div>`;
+    }).join("");
+  }
+
+  document.getElementById("sc-collection-btn").addEventListener("click", () => {
+    document.getElementById("sc-collection-overlay").hidden = false;
+    renderCollection();
+  });
+  document.getElementById("sc-collection-close").addEventListener("click", () => {
+    document.getElementById("sc-collection-overlay").hidden = true;
+  });
+
+  // Customize (avatar frames + sound packs) --------------------------------
+  function playSoundPack(notes) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      let t = ctx.currentTime;
+      notes.forEach(n => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = n.f;
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + n.d / 1000);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + n.d / 1000);
+        t += n.d / 1000;
+      });
+    } catch (e) { /* Web Audio unavailable -- preview is a nice-to-have, never block the UI */ }
+  }
+
+  function applyEquippedFrame(frameId) {
+    const avatar = document.getElementById("sc-player-avatar");
+    avatar.className = "sc-player-avatar" + (frameId && frameId !== "none" ? ` frame-${frameId}` : "");
+  }
+
+  async function renderCustomize() {
+    const cos = await AIGLeaderboard.getCosmetics();
+    if (!cos) return;
+
+    document.getElementById("sc-frame-list").innerHTML = cos.frames.map(f => {
+      const isEquipped = cos.equippedFrame === f.id;
+      const action = !f.owned
+        ? `<button class="sc-quest-claim-btn" data-frame-buy="${f.id}">${f.cost.coins ? `🪙${f.cost.coins}` : `💎${f.cost.gems}`}</button>`
+        : isEquipped
+          ? `<span class="sc-quest-done-check">✓</span>`
+          : `<button class="sc-quest-claim-btn" data-frame-equip="${f.id}">Equip</button>`;
+      return `
+        <div class="sc-cosmetic-item">
+          <span class="sc-cosmetic-preview sc-player-avatar-preview ${f.id !== "none" ? "frame-" + f.id : ""}"></span>
+          <span class="sc-cosmetic-name">${f.name}</span>
+          ${action}
+        </div>`;
+    }).join("");
+
+    document.getElementById("sc-sound-list").innerHTML = cos.sounds.map(s => {
+      const isEquipped = cos.equippedSound === s.id;
+      const action = !s.owned
+        ? `<button class="sc-quest-claim-btn" data-sound-buy="${s.id}">${s.cost.coins ? `🪙${s.cost.coins}` : `💎${s.cost.gems}`}</button>`
+        : isEquipped
+          ? `<span class="sc-quest-done-check">✓</span>`
+          : `<button class="sc-quest-claim-btn" data-sound-equip="${s.id}">Equip</button>`;
+      return `
+        <div class="sc-cosmetic-item">
+          <button class="sc-cosmetic-preview sc-cosmetic-play" data-sound-preview="${s.id}" type="button">▶</button>
+          <span class="sc-cosmetic-name">${s.name}</span>
+          ${action}
+        </div>`;
+    }).join("");
+
+    document.querySelectorAll("[data-frame-buy]").forEach(btn => {
+      btn.onclick = async () => {
+        const f = cos.frames.find(x => x.id === btn.dataset.frameBuy);
+        btn.disabled = true;
+        const result = await AIGLeaderboard.unlockCosmetic("frame", f.id, f.cost);
+        if (result.ok) { await AIGLeaderboard.equipCosmetic("frame", f.id); applyEquippedFrame(f.id); renderCustomize(); }
+        else btn.disabled = false;
+      };
+    });
+    document.querySelectorAll("[data-frame-equip]").forEach(btn => {
+      btn.onclick = async () => {
+        await AIGLeaderboard.equipCosmetic("frame", btn.dataset.frameEquip);
+        applyEquippedFrame(btn.dataset.frameEquip);
+        renderCustomize();
+      };
+    });
+    document.querySelectorAll("[data-sound-buy]").forEach(btn => {
+      btn.onclick = async () => {
+        const s = cos.sounds.find(x => x.id === btn.dataset.soundBuy);
+        btn.disabled = true;
+        const result = await AIGLeaderboard.unlockCosmetic("sound", s.id, s.cost);
+        if (result.ok) { await AIGLeaderboard.equipCosmetic("sound", s.id); renderCustomize(); }
+        else btn.disabled = false;
+      };
+    });
+    document.querySelectorAll("[data-sound-equip]").forEach(btn => {
+      btn.onclick = async () => {
+        await AIGLeaderboard.equipCosmetic("sound", btn.dataset.soundEquip);
+        renderCustomize();
+      };
+    });
+    document.querySelectorAll("[data-sound-preview]").forEach(btn => {
+      const s = cos.sounds.find(x => x.id === btn.dataset.soundPreview);
+      btn.onclick = () => playSoundPack(s.notes);
+    });
+  }
+
+  document.getElementById("sc-customize-btn").addEventListener("click", () => {
+    document.getElementById("sc-customize-overlay").hidden = false;
+    renderCustomize();
+  });
+  document.getElementById("sc-customize-close").addEventListener("click", () => {
+    document.getElementById("sc-customize-overlay").hidden = true;
+  });
+  document.getElementById("sc-tab-frames").addEventListener("click", () => {
+    document.getElementById("sc-tab-frames").classList.add("active");
+    document.getElementById("sc-tab-sounds").classList.remove("active");
+    document.getElementById("sc-frame-list").hidden = false;
+    document.getElementById("sc-sound-list").hidden = true;
+  });
+  document.getElementById("sc-tab-sounds").addEventListener("click", () => {
+    document.getElementById("sc-tab-sounds").classList.add("active");
+    document.getElementById("sc-tab-frames").classList.remove("active");
+    document.getElementById("sc-sound-list").hidden = false;
+    document.getElementById("sc-frame-list").hidden = true;
   });
 
   // One-way (parent -> child) message set from /parents
