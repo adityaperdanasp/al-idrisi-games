@@ -150,7 +150,12 @@
   // A "parent" identity's answers never count toward the CHILD's weak-spot
   // tracking — otherwise a parent helping out would make the dashboard
   // think the child understands a topic they actually still struggle with.
-  function recordTopicAttempt(gameId, topicKey, isCorrect) {
+  // `comboMultiplier` is optional (defaults to 1) -- a game that tracks its
+  // own in-round combo streak (see MathVille's state.combo) can pass a
+  // higher value to scale the coin reward for that one answer. Every
+  // existing call site across every other game omits it entirely and
+  // behaves exactly as before.
+  function recordTopicAttempt(gameId, topicKey, isCorrect, comboMultiplier) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return;
     const ref = aigDb.ref(`players/${player.id}/topicStats/${gameId}/${topicKey}`);
@@ -162,7 +167,7 @@
     // Any wrong answer resets it, so mastery has to be shown recently, not
     // just once a long time ago.
     ref.child("streak").transaction(cur => isCorrect ? (cur || 0) + 1 : 0);
-    if (isCorrect) { awardCurrency(); touchSeasonProgress(); touchWeeklyStats(); touchTotalCorrect(); }
+    if (isCorrect) { awardCurrency(comboMultiplier || 1); touchSeasonProgress(); touchWeeklyStats(); touchTotalCorrect(); }
     touchDailyStats(gameId, isCorrect);
   }
 
@@ -197,17 +202,20 @@
     return { active: isBonusHourNow(), hour: seedFrom(dateStr) % 24 };
   }
 
-  // +1 coin per correct answer (x2 during Bonus Hour), no matter which
-  // game. Every ~15th correct answer (tracked via a running streak that
-  // only this counts, separate from recordTopicAttempt's per-topic mastery
-  // streak) also converts into +1 gem — a small, guaranteed trickle rather
-  // than a random drop, so a kid grinding it out can actually predict/count
-  // toward the next gem. Bonus Hour doesn't double the gem trickle, only
-  // coins -- gems stay a deliberate, non-inflatable rare currency.
-  function awardCurrency() {
+  // +1 coin per correct answer (x2 during Bonus Hour, further scaled by an
+  // optional combo multiplier from the caller -- see recordTopicAttempt),
+  // no matter which game. Every ~15th correct answer (tracked via a
+  // running streak that only this counts, separate from
+  // recordTopicAttempt's per-topic mastery streak) also converts into +1
+  // gem — a small, guaranteed trickle rather than a random drop, so a kid
+  // grinding it out can actually predict/count toward the next gem. Bonus
+  // Hour and combo multipliers only scale coins, never the gem trickle --
+  // gems stay a deliberate, non-inflatable rare currency.
+  function awardCurrency(comboMultiplier) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return;
-    const coinGain = isBonusHourNow() ? 2 : 1;
+    const bonusMult = isBonusHourNow() ? 2 : 1;
+    const coinGain = Math.max(1, Math.round(1 * (comboMultiplier || 1) * bonusMult));
     aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
       const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
       wallet.coins = (wallet.coins || 0) + coinGain;
@@ -932,6 +940,64 @@
     return pool;
   }
 
+  // =====================================================================
+  // POWER-UPS — consumable single-use items bought with the same
+  // coins/gems wallet, spent inside a normal MathVille round (never Boss
+  // Challenge/Family Challenge, kept pure per those features' own design).
+  // Stored as a plain count at players/{id}/powerups/{type} -- nested
+  // under `players`, no rules change.
+  // =====================================================================
+  const POWERUP_DEFS = {
+    fiftyFifty: { name: "50:50", cost: { coins: 8 }, emoji: "➗" },
+    skip: { name: "Skip", cost: { coins: 12 }, emoji: "⏭️" }
+  };
+
+  function getPowerupDefs() { return POWERUP_DEFS; }
+
+  async function getPowerups() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { fiftyFifty: 0, skip: 0 };
+    const snap = await aigDb.ref(`players/${player.id}/powerups`).get();
+    const data = snap.exists() ? snap.val() : {};
+    return { fiftyFifty: data.fiftyFifty || 0, skip: data.skip || 0 };
+  }
+
+  // Same get-check-set pattern as unlockVehicle/unlockCosmetic above.
+  async function buyPowerup(type) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const def = POWERUP_DEFS[type];
+    if (!def) return { ok: false };
+    const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+    const walletSnap = await walletRef.get();
+    const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    const coinsCost = def.cost.coins || 0;
+    const gemsCost = def.cost.gems || 0;
+    if ((wallet.coins || 0) < coinsCost || (wallet.gems || 0) < gemsCost) {
+      return { ok: false, reason: "insufficient-funds" };
+    }
+    await walletRef.set({
+      ...wallet,
+      coins: Math.max(0, (wallet.coins || 0) - coinsCost),
+      gems: Math.max(0, (wallet.gems || 0) - gemsCost)
+    });
+    await aigDb.ref(`players/${player.id}/powerups/${type}`).transaction(cur => (cur || 0) + 1);
+    return { ok: true };
+  }
+
+  // Plain get-then-set (not a transaction) -- same narrow accepted race as
+  // the wallet functions above, fine for a consumable with no real money.
+  async function usePowerup(type) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/powerups/${type}`);
+    const snap = await ref.get();
+    const count = snap.exists() ? snap.val() : 0;
+    if (count <= 0) return { ok: false };
+    await ref.set(count - 1);
+    return { ok: true, remaining: count - 1 };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -943,6 +1009,7 @@
     getWeeklyLeaderboard, getWeeklyRecap, getBonusHourInfo,
     getTitle,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
+    getPowerupDefs, getPowerups, buyPowerup, usePowerup,
     db: aigDb
   };
 })();

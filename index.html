@@ -533,11 +533,13 @@
         <button class="sc-modal-close" id="sc-customize-close" type="button">✕</button>
       </div>
       <div class="sc-modal-tabs">
-        <button class="sc-modal-tab active" id="sc-tab-frames" type="button">Avatar Frames</button>
-        <button class="sc-modal-tab" id="sc-tab-sounds" type="button">Sound Packs</button>
+        <button class="sc-modal-tab active" id="sc-tab-frames" type="button">Frames</button>
+        <button class="sc-modal-tab" id="sc-tab-sounds" type="button">Sounds</button>
+        <button class="sc-modal-tab" id="sc-tab-powerups" type="button">⚡ Power-ups</button>
       </div>
       <div class="sc-cosmetic-list" id="sc-frame-list"></div>
       <div class="sc-cosmetic-list" id="sc-sound-list" hidden></div>
+      <div class="sc-cosmetic-list" id="sc-powerup-list" hidden></div>
     </div>
   </div>
 
@@ -926,9 +928,31 @@
     avatar.className = "sc-player-avatar" + (frameId && frameId !== "none" ? ` frame-${frameId}` : "");
   }
 
+  async function renderPowerupShop() {
+    const [powerups, defs] = await Promise.all([
+      AIGLeaderboard.getPowerups(),
+      Promise.resolve(AIGLeaderboard.getPowerupDefs())
+    ]);
+    document.getElementById("sc-powerup-list").innerHTML = Object.entries(defs).map(([type, def]) => `
+      <div class="sc-cosmetic-item">
+        <span class="sc-cosmetic-preview">${def.emoji}</span>
+        <span class="sc-cosmetic-name">${def.name} <span class="sc-powerup-owned">(have ${powerups[type] || 0})</span></span>
+        <button class="sc-quest-claim-btn" data-powerup-buy="${type}">${def.cost.coins ? `🪙${def.cost.coins}` : `💎${def.cost.gems}`}</button>
+      </div>`).join("");
+    document.querySelectorAll("[data-powerup-buy]").forEach(btn => {
+      btn.onclick = async () => {
+        btn.disabled = true;
+        const result = await AIGLeaderboard.buyPowerup(btn.dataset.powerupBuy);
+        if (result.ok) renderPowerupShop();
+        else btn.disabled = false;
+      };
+    });
+  }
+
   async function renderCustomize() {
     const cos = await AIGLeaderboard.getCosmetics();
     if (!cos) return;
+    renderPowerupShop();
 
     document.getElementById("sc-frame-list").innerHTML = cos.frames.map(f => {
       const isEquipped = cos.equippedFrame === f.id;
@@ -1004,18 +1028,16 @@
   document.getElementById("sc-customize-close").addEventListener("click", () => {
     document.getElementById("sc-customize-overlay").hidden = true;
   });
-  document.getElementById("sc-tab-frames").addEventListener("click", () => {
-    document.getElementById("sc-tab-frames").classList.add("active");
-    document.getElementById("sc-tab-sounds").classList.remove("active");
-    document.getElementById("sc-frame-list").hidden = false;
-    document.getElementById("sc-sound-list").hidden = true;
-  });
-  document.getElementById("sc-tab-sounds").addEventListener("click", () => {
-    document.getElementById("sc-tab-sounds").classList.add("active");
-    document.getElementById("sc-tab-frames").classList.remove("active");
-    document.getElementById("sc-sound-list").hidden = false;
-    document.getElementById("sc-frame-list").hidden = true;
-  });
+  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups"];
+  function switchCustomizeTab(tab) {
+    CUSTOMIZE_TABS.forEach(t => {
+      document.getElementById(`sc-tab-${t}`).classList.toggle("active", t === tab);
+      document.getElementById(`sc-${t === "frames" ? "frame" : t === "sounds" ? "sound" : "powerup"}-list`).hidden = t !== tab;
+    });
+  }
+  document.getElementById("sc-tab-frames").addEventListener("click", () => switchCustomizeTab("frames"));
+  document.getElementById("sc-tab-sounds").addEventListener("click", () => switchCustomizeTab("sounds"));
+  document.getElementById("sc-tab-powerups").addEventListener("click", () => switchCustomizeTab("powerups"));
 
   // One-way (parent -> child) message set from /parents
   // (players/{id}/parentMessage: {text, sentAt, read}) -- shows once per

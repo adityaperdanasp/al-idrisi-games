@@ -913,6 +913,7 @@ body {
   font-size: 0.9rem;
 }
 .sc-cosmetic-play { cursor: pointer; color: #3d2e22; }
+.sc-powerup-owned { font-family: "Nunito", sans-serif; font-weight: 700; font-size: 0.72rem; color: #8a7a6a; }
 .sc-cosmetic-name {
   flex: 1;
   font-family: "Baloo 2", sans-serif;

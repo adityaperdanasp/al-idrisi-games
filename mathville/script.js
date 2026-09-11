@@ -169,6 +169,7 @@ const state = {
   bossTimerTimeout: null,
   isChallenge: false,   // true only inside a Family Challenge turn -- see submitAnswer/goToNextStep
   challenge: null,       // { steps, turn, currentName, results: [{name, correct, total}] }
+  combo: 0,              // consecutive correct answers THIS round (normal rounds only, not Boss/Challenge)
   mp: {
     code: null, seatKey: null, maxPlayers: 2,
     listeningCode: null, game: null,
@@ -224,6 +225,8 @@ $("btn-challenge-continue").addEventListener("click", () => {
 });
 $("btn-challenge-again").addEventListener("click", launchChallengeMode);
 $("btn-challenge-back").addEventListener("click", goToMap);
+$("btn-powerup-fifty").addEventListener("click", useFiftyFiftyPowerup);
+$("btn-powerup-skip").addEventListener("click", useSkipPowerup);
 
 function loadProgress() {
   try {
@@ -641,7 +644,9 @@ function goToIntro(chapterId, isMp) {
     state.lastWrong = null;
     state.isBoss = false; // defensive -- a normal round entry always clears any leftover boss/challenge flag
     state.isChallenge = false;
+    state.combo = 0;
     state.steps = isMp ? state.mp.game.roundQuestions : buildRound(chapterId);
+    refreshPowerupCounts();
     renderStep();
   };
 }
@@ -4138,6 +4143,7 @@ function renderStep() {
   if (state.isBoss) $("boss-progress").textContent = `${state.stepIndex + 1}/${state.steps.length}`;
   const turnLabel = state.isChallenge ? ` — ${state.challenge.currentName}'s turn` : "";
   $("q-label").textContent = step.uiType === "match" ? "" : `Question ${state.stepIndex + 1} of ${state.steps.length}${turnLabel}`;
+  updatePowerupBar(step);
 
   if (step.uiType === "typein") renderTypeinStep(step);
   else if (step.uiType === "mc") renderMcStep(step);
@@ -4169,7 +4175,90 @@ function goToNextStep() {
 // would never get scheduled -- the round silently freezes on the current
 // question forever, with no error visible to the player. Advancing to the
 // next question must never depend on analytics succeeding.
+// Combo only tracked in normal solo rounds -- Boss Challenge and Family
+// Challenge each have their own separate scoring already, combo would
+// just muddy both.
+function comboMultiplierFor(combo) {
+  if (combo >= 10) return 3;
+  if (combo >= 5) return 2;
+  if (combo >= 3) return 1.5;
+  return 1;
+}
+
+// ---- Power-ups (50:50, Skip) -- consumable items, normal solo rounds
+// only (never Boss/Family Challenge, kept pure per those features' own
+// design). Counts cached locally, refreshed from Firebase on round start
+// and after every buy/use so the bar never needs to re-fetch mid-question.
+let powerupCounts = { fiftyFifty: 0, skip: 0 };
+async function refreshPowerupCounts() {
+  if (window.AIGLeaderboard) {
+    try { powerupCounts = await AIGLeaderboard.getPowerups(); }
+    catch (e) { /* keep last-known counts -- a stale bar is better than a broken one */ }
+  }
+  updatePowerupBar(state.steps[state.stepIndex]);
+}
+
+function updatePowerupBar(step) {
+  const bar = $("powerup-bar");
+  if (state.isBoss || state.isChallenge || !step) { bar.classList.add("hidden"); return; }
+  bar.classList.remove("hidden");
+  const fiftyBtn = $("btn-powerup-fifty");
+  const optionBased = step.uiType === "mc" || step.uiType === "tap";
+  fiftyBtn.disabled = !optionBased || powerupCounts.fiftyFifty <= 0;
+  fiftyBtn.textContent = `➗ 50:50 (${powerupCounts.fiftyFifty})`;
+  const skipBtn = $("btn-powerup-skip");
+  skipBtn.disabled = powerupCounts.skip <= 0;
+  skipBtn.textContent = `⏭️ Skip (${powerupCounts.skip})`;
+}
+
+async function useFiftyFiftyPowerup() {
+  const step = state.steps[state.stepIndex];
+  if (!step || (step.uiType !== "mc" && step.uiType !== "tap")) return;
+  const result = await AIGLeaderboard.usePowerup("fiftyFifty");
+  if (!result.ok) return;
+  powerupCounts.fiftyFifty = result.remaining;
+  updatePowerupBar(step);
+  const selector = step.uiType === "mc" ? "#mc-grid .mc-btn" : "#tap-markers .tap-marker";
+  const buttons = Array.from(document.querySelectorAll(selector));
+  const wrongButtons = shuffle(buttons.filter(b => !labelsEqual(b.textContent, step.correctLabel)));
+  wrongButtons.slice(0, 2).forEach(b => { b.disabled = true; b.classList.add("fifty-removed"); });
+}
+
+// Skips the current question entirely -- doesn't call submitAnswer, so it
+// never touches mistakes/combo/Firebase stats for this question. Simply
+// advances the round exactly like a normal correct/wrong answer would,
+// reusing goToNextStep as-is.
+async function useSkipPowerup() {
+  const result = await AIGLeaderboard.usePowerup("skip");
+  if (!result.ok) return;
+  powerupCounts.skip = result.remaining;
+  goToNextStep();
+}
+
+let comboBadgeTimeout = null;
+function showComboBadge(combo, multiplier) {
+  const el = $("combo-badge");
+  el.textContent = multiplier > 1 ? `🔥 ${combo}x Combo! (${multiplier}x coins)` : `🔥 ${combo}x Combo!`;
+  el.classList.remove("hidden");
+  el.classList.remove("pop");
+  void el.offsetWidth; // force reflow so re-triggering the animation on back-to-back combos actually restarts it
+  el.classList.add("pop");
+  clearTimeout(comboBadgeTimeout);
+  comboBadgeTimeout = setTimeout(() => el.classList.add("hidden"), 1500);
+}
+
 function submitAnswer(isCorrect, prompt, answerForHint) {
+  let comboMultiplier = 1;
+  const comboActive = !state.isBoss && !state.isChallenge;
+  if (comboActive) {
+    if (isCorrect) {
+      state.combo = (state.combo || 0) + 1;
+      comboMultiplier = comboMultiplierFor(state.combo);
+      if (state.combo >= 2) showComboBadge(state.combo, comboMultiplier);
+    } else {
+      state.combo = 0;
+    }
+  }
   // Family Challenge answers never touch Firebase stats -- a guest
   // player (turn 2) has no account to attribute them to, and the same 6
   // questions get answered twice across both turns, so even turn 1's
@@ -4177,7 +4266,7 @@ function submitAnswer(isCorrect, prompt, answerForHint) {
   // topicStats/currency/streak if this weren't skipped.
   if (!state.isChallenge) {
     try {
-      if (window.AIGLeaderboard && state.chapterId) AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, isCorrect);
+      if (window.AIGLeaderboard && state.chapterId) AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, isCorrect, comboMultiplier);
     } catch (e) { /* never let analytics block the round */ }
   }
   if (!isCorrect) {
