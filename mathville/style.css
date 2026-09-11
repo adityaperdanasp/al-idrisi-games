@@ -849,6 +849,9 @@ button { font-family: inherit; }
   height: 8px; border-radius: 100px; background: var(--taupe); overflow: hidden; margin-bottom: 14px;
 }
 .boss-timer-fill { height: 100%; background: var(--cherry); width: 100%; }
+.boss-timer-fill.phase2 { background: #E48A2E; }
+.boss-timer-fill.phase3 { background: #C6241F; animation: boss-phase3-pulse 0.5s ease-in-out infinite; }
+@keyframes boss-phase3-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
 /* ---------- Combo badge ---------- */
 .combo-badge {
@@ -860,6 +863,12 @@ button { font-family: inherit; }
   0% { transform: scale(0.7); opacity: 0; }
   60% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1); }
+}
+
+.adaptive-toast {
+  display: inline-block; font: 700 12px "Fredoka", sans-serif; color: var(--wood-dark);
+  background: var(--cream); border: 1px dashed var(--taupe); border-radius: 100px;
+  padding: 5px 12px; margin-bottom: 10px;
 }
 
 /* ---------- Power-up bar ---------- */

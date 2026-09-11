@@ -170,6 +170,8 @@ const state = {
   isChallenge: false,   // true only inside a Family Challenge turn -- see submitAnswer/goToNextStep
   challenge: null,       // { steps, turn, currentName, results: [{name, correct, total}] }
   combo: 0,              // consecutive correct answers THIS round (normal rounds only, not Boss/Challenge)
+  difficultyTier: "hard", // adaptive difficulty's current tier for the 5 supported chapters -- see comboMultiplierFor/adaptDifficulty
+  difficultyStreak: 0,    // positive = N correct in a row at current tier, negative = N wrong in a row
   mp: {
     code: null, seatKey: null, maxPlayers: 2,
     listeningCode: null, game: null,
@@ -645,6 +647,8 @@ function goToIntro(chapterId, isMp) {
     state.isBoss = false; // defensive -- a normal round entry always clears any leftover boss/challenge flag
     state.isChallenge = false;
     state.combo = 0;
+    state.difficultyTier = "hard";
+    state.difficultyStreak = 0;
     state.steps = isMp ? state.mp.game.roundQuestions : buildRound(chapterId);
     refreshPowerupCounts();
     renderStep();
@@ -4023,7 +4027,17 @@ function buildRoundingMcStep(q) {
 
 const GCF_LCM_SHORT_RE = /^Find the (Greatest Common Factor \(GCF\)|GCF|Least Common Multiple \(LCM\)|LCM) of/i;
 
-function buildRound(chapterId) {
+// `difficulty` is optional ("easy"|"medium"|"hard") and only affects the 5
+// chapters whose questions come from generators.js's parametrized
+// generators (addition-subtraction/multiplication/division/measurement/
+// rounding) -- see ADAPTIVE_DIFFICULTY_CHAPTERS below. Omitted (every
+// existing call site: normal round start, Boss Challenge, Focus Round,
+// multiplayer, Family Challenge) it's `undefined`, which every generator
+// already treats as "hard" -- so leaving it out is 100% identical to
+// before this param existed. place-value/prime-numbers/gcf-lcm/
+// mixed-operation/word-problems ignore it entirely (bespoke generator or
+// static bank, no difficulty tiers to speak of).
+function buildRound(chapterId, difficulty) {
   const chapterData = MATHVILLE_BANK.chapters.find(c => c.id === chapterId);
   const steps = [];
 
@@ -4035,7 +4049,7 @@ function buildRound(chapterId) {
     statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer }));
     for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
       const key = i % 2 === 0 ? "addition-subtraction-add" : "addition-subtraction-sub";
-      const q = MATHVILLE_GENERATORS[key]();
+      const q = MATHVILLE_GENERATORS[key](difficulty);
       steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer });
     }
 
@@ -4059,7 +4073,7 @@ function buildRound(chapterId) {
     const statics = pickN(chapterData.staticQuestions, 2);
     statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer, image: s.image }));
     for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
-      const q = MATHVILLE_GENERATORS.multiplication();
+      const q = MATHVILLE_GENERATORS.multiplication(difficulty);
       steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer });
     }
 
@@ -4067,7 +4081,7 @@ function buildRound(chapterId) {
     const statics = pickN(chapterData.staticQuestions.filter(q => !q.skipInRound), 2);
     statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer, image: s.image }));
     for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
-      const q = MATHVILLE_GENERATORS.division();
+      const q = MATHVILLE_GENERATORS.division(difficulty);
       steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer });
     }
 
@@ -4079,7 +4093,7 @@ function buildRound(chapterId) {
     const statics = pickN(chapterData.staticQuestions, 2);
     statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer, image: s.image }));
     for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
-      const q = MATHVILLE_GENERATORS.measurement();
+      const q = MATHVILLE_GENERATORS.measurement(difficulty);
       if (q.prompt.startsWith("Compare")) {
         steps.push({ uiType: "tap", prompt: q.prompt, options: ["<", "=", ">"], correctLabel: q.answer });
       } else {
@@ -4091,7 +4105,7 @@ function buildRound(chapterId) {
     const statics = pickN(chapterData.staticQuestions, 2);
     statics.forEach(s => steps.push(parseEmbeddedMC(s.prompt, s.answer) || { uiType: "typein", prompt: s.prompt, answer: s.answer }));
     for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
-      steps.push(buildRoundingMcStep(MATHVILLE_GENERATORS.rounding()));
+      steps.push(buildRoundingMcStep(MATHVILLE_GENERATORS.rounding(difficulty)));
     }
 
   } else if (chapterId === "word-problems") {
@@ -4140,7 +4154,10 @@ function renderStep() {
   const step = state.steps[state.stepIndex];
   $("boss-banner").classList.toggle("hidden", !state.isBoss);
   $("boss-timer-track").classList.toggle("hidden", !state.isBoss);
-  if (state.isBoss) $("boss-progress").textContent = `${state.stepIndex + 1}/${state.steps.length}`;
+  if (state.isBoss) {
+    $("boss-progress").textContent = `${state.stepIndex + 1}/${state.steps.length}`;
+    $("boss-phase-label").textContent = bossPhaseFor(state.stepIndex).label;
+  }
   const turnLabel = state.isChallenge ? ` — ${state.challenge.currentName}'s turn` : "";
   $("q-label").textContent = step.uiType === "match" ? "" : `Question ${state.stepIndex + 1} of ${state.steps.length}${turnLabel}`;
   updatePowerupBar(step);
@@ -4175,6 +4192,53 @@ function goToNextStep() {
 // would never get scheduled -- the round silently freezes on the current
 // question forever, with no error visible to the player. Advancing to the
 // next question must never depend on analytics succeeding.
+// Adaptive difficulty -- only the 5 chapters whose buildRound() branch
+// calls a generators.js function that actually accepts a difficulty tier
+// (see buildRound's own comment). place-value/prime-numbers/gcf-lcm/
+// mixed-operation/word-problems are excluded: bespoke generator or a
+// static hand-written bank, no tiers to move between.
+const ADAPTIVE_DIFFICULTY_CHAPTERS = ["addition-subtraction", "multiplication", "division", "measurement", "rounding"];
+const DIFFICULTY_ORDER = ["easy", "medium", "hard"];
+const ADAPTIVE_DOWN_THRESHOLD = -3; // 3 wrong in a row at the current tier
+const ADAPTIVE_UP_THRESHOLD = 5;    // 5 correct in a row at the current tier
+
+let adaptiveToastTimeout = null;
+function showAdaptiveToast(text) {
+  const el = $("adaptive-toast");
+  el.textContent = text;
+  el.classList.remove("hidden");
+  clearTimeout(adaptiveToastTimeout);
+  adaptiveToastTimeout = setTimeout(() => el.classList.add("hidden"), 2000);
+}
+
+// Called after combo/mistakes bookkeeping for THIS answer already
+// happened. Only ever touches state.steps AHEAD of the current index --
+// the question just answered, and the one on screen next, are never
+// rewritten -- so a tier change can't retroactively affect anything the
+// player already saw or is currently looking at.
+function adaptDifficulty(chapterId, isCorrect) {
+  if (!ADAPTIVE_DIFFICULTY_CHAPTERS.includes(chapterId)) return;
+  state.difficultyStreak = isCorrect
+    ? (state.difficultyStreak > 0 ? state.difficultyStreak + 1 : 1)
+    : (state.difficultyStreak < 0 ? state.difficultyStreak - 1 : -1);
+
+  const tierIdx = DIFFICULTY_ORDER.indexOf(state.difficultyTier);
+  let newTierIdx = tierIdx;
+  if (state.difficultyStreak <= ADAPTIVE_DOWN_THRESHOLD && tierIdx > 0) newTierIdx = tierIdx - 1;
+  else if (state.difficultyStreak >= ADAPTIVE_UP_THRESHOLD && tierIdx < DIFFICULTY_ORDER.length - 1) newTierIdx = tierIdx + 1;
+  if (newTierIdx === tierIdx) return;
+
+  state.difficultyStreak = 0;
+  state.difficultyTier = DIFFICULTY_ORDER[newTierIdx];
+  showAdaptiveToast(newTierIdx > tierIdx ? "⬆️ Questions are ramping up!" : "⬇️ Let's ease up a little.");
+
+  const remaining = state.steps.length - state.stepIndex - 1;
+  if (remaining > 0) {
+    const fresh = buildRound(chapterId, state.difficultyTier).slice(0, remaining);
+    state.steps = state.steps.slice(0, state.stepIndex + 1).concat(fresh);
+  }
+}
+
 // Combo only tracked in normal solo rounds -- Boss Challenge and Family
 // Challenge each have their own separate scoring already, combo would
 // just muddy both.
@@ -4258,6 +4322,7 @@ function submitAnswer(isCorrect, prompt, answerForHint) {
     } else {
       state.combo = 0;
     }
+    adaptDifficulty(state.chapterId, isCorrect);
   }
   // Family Challenge answers never touch Firebase stats -- a guest
   // player (turn 2) has no account to attribute them to, and the same 6
@@ -4548,8 +4613,20 @@ function showReward(stars) {
    round, multiplayer, or Focus Round.
    ================================================================= */
 const BOSS_QUESTION_COUNT = 5;
-const BOSS_TIME_MS = 10000;
 const BOSS_REWARD = { coins: 15, gems: 1 };
+
+// 3 phases across the 5 questions -- same win/lose rule throughout (one
+// miss or timeout still ends it, still exactly 5 questions), but the
+// clock gets tighter each phase so the fight itself feels like it's
+// escalating, not just a flat "5 questions in a row" every time.
+const BOSS_PHASES = [
+  { upTo: 2, ms: 10000, label: "Phase 1: Warm-up", cssClass: "" },
+  { upTo: 4, ms: 7000, label: "Phase 2: Heating Up!", cssClass: "phase2" },
+  { upTo: 5, ms: 5000, label: "Phase 3: Final Blow!", cssClass: "phase3" }
+];
+function bossPhaseFor(stepIndex) {
+  return BOSS_PHASES.find(p => stepIndex < p.upTo) || BOSS_PHASES[BOSS_PHASES.length - 1];
+}
 
 function launchBossChallenge(chapterId) {
   const pool = buildRound(chapterId); // same generator every normal round already uses
@@ -4567,16 +4644,18 @@ function launchBossChallenge(chapterId) {
 function startBossTimer() {
   clearBossTimer();
   const token = ++state.bossTimerToken;
+  const phase = bossPhaseFor(state.stepIndex);
   const fill = $("boss-timer-fill");
+  fill.className = "boss-timer-fill " + phase.cssClass;
   fill.style.transition = "none";
   fill.style.width = "100%";
   void fill.offsetWidth; // force reflow so the reset above can't get batched with the shrink transition below
-  fill.style.transition = `width ${BOSS_TIME_MS}ms linear`;
+  fill.style.transition = `width ${phase.ms}ms linear`;
   fill.style.width = "0%";
   state.bossTimerTimeout = setTimeout(() => {
     if (state.bossTimerToken !== token) return; // a real answer already advanced past this question
     finishBossRound(false);
-  }, BOSS_TIME_MS);
+  }, phase.ms);
 }
 
 function clearBossTimer() {
