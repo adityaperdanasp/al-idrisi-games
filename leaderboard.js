@@ -163,6 +163,7 @@
     // just once a long time ago.
     ref.child("streak").transaction(cur => isCorrect ? (cur || 0) + 1 : 0);
     if (isCorrect) awardCurrency();
+    touchDailyStats(gameId, isCorrect);
   }
 
   // =====================================================================
@@ -288,9 +289,191 @@
     return snap.exists() ? snap.val() : null;
   }
 
+  // =====================================================================
+  // DAILY QUESTS + STREAK — cross-game daily engagement layer. Hooked into
+  // recordTopicAttempt above (already called by every game on every
+  // answered question, correct or wrong) so per-day stats accumulate with
+  // zero changes needed in any individual game's own code — same
+  // integration trick as the wallet. Stored at:
+  //   players/{id}/dailyStats/{date}   -- {correct, wrong, games:{gameId:true}}
+  //   players/{id}/dailyQuests/{date}  -- {quests:[{type,target,claimed}], bonusClaimed}
+  //   players/{id}/streak              -- {count, lastPlayDate, bestStreak}
+  // All nested under the already-explicit `players` rule, same as wallet.
+  // =====================================================================
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10); // YYYY-MM-DD, matches recordPlay's convention
+  }
+
+  // In-memory guard so a whole round of questions (many calls to
+  // recordTopicAttempt in quick succession) only triggers ONE streak
+  // read+maybe-write per day per page load, not one per question. Set
+  // BEFORE the async read resolves (optimistic) so a burst of calls in the
+  // same tick can't all slip through before the first one finishes.
+  let streakCheckedDate = null;
+
+  function touchDailyStats(gameId, isCorrect) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    const today = todayKey();
+    aigDb.ref(`players/${player.id}/dailyStats/${today}`).transaction(cur => {
+      const d = cur || { correct: 0, wrong: 0, games: {} };
+      if (isCorrect) d.correct = (d.correct || 0) + 1; else d.wrong = (d.wrong || 0) + 1;
+      d.games = d.games || {};
+      d.games[gameId] = true;
+      return d;
+    });
+    if (streakCheckedDate !== today) {
+      streakCheckedDate = today;
+      touchStreak(today);
+    }
+  }
+
+  // Bumps the login/play streak at most once per calendar day. Consecutive
+  // days (lastPlayDate === yesterday) increments; a gap of 2+ days resets
+  // to 1; same day is a no-op (guarded above, but also safe to call twice).
+  async function touchStreak(today) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    const ref = aigDb.ref(`players/${player.id}/streak`);
+    const snap = await ref.get();
+    const data = snap.exists() ? snap.val() : { count: 0, lastPlayDate: null, bestStreak: 0 };
+    if (data.lastPlayDate === today) return;
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const newCount = data.lastPlayDate === yesterday ? (data.count || 0) + 1 : 1;
+    const newBest = Math.max(data.bestStreak || 0, newCount);
+    await ref.set({ count: newCount, lastPlayDate: today, bestStreak: newBest });
+  }
+
+  async function getStreak() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { count: 0, bestStreak: 0 };
+    const snap = await aigDb.ref(`players/${player.id}/streak`).get();
+    return snap.exists() ? snap.val() : { count: 0, bestStreak: 0 };
+  }
+
+  // 3 fixed quest TYPES (accuracy volume / breadth across games / raw
+  // volume), targets randomized per day so it doesn't feel identical every
+  // time. Picked deterministically from a hash of playerId+date so two
+  // tabs opened the same day converge on the same numbers instead of each
+  // trying to set its own random target.
+  const QUEST_TARGET_POOL = {
+    correct: [8, 10, 12, 15],
+    games: [1, 2],
+    attempts: [15, 20, 25]
+  };
+
+  function seedFrom(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+    return h;
+  }
+
+  function pickQuestTargets(seed) {
+    const pick = (arr, salt) => arr[(seed + salt) % arr.length];
+    return {
+      correct: pick(QUEST_TARGET_POOL.correct, 1),
+      games: pick(QUEST_TARGET_POOL.games, 2),
+      attempts: pick(QUEST_TARGET_POOL.attempts, 3)
+    };
+  }
+
+  function getQuestLabel(type, target) {
+    if (type === "correct") return `Jawab benar ${target}x hari ini`;
+    if (type === "games") return `Coba ${target} game berbeda hari ini`;
+    if (type === "attempts") return `Selesaikan ${target} soal hari ini`;
+    return "";
+  }
+
+  // Reads (and lazily creates, first time today) this player's 3 daily
+  // quests, plus computes live progress from dailyStats. Safe to call
+  // repeatedly — quest targets are only generated once per day per player
+  // and stored, so re-opening the hub later the same day shows the same
+  // quests with updated progress, never fresh/reset ones.
+  async function getDailyQuests() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const today = todayKey();
+    const questRef = aigDb.ref(`players/${player.id}/dailyQuests/${today}`);
+    const questSnap = await questRef.get();
+    let questData;
+    if (!questSnap.exists()) {
+      const targets = pickQuestTargets(seedFrom(player.id + today));
+      questData = {
+        quests: [
+          { type: "correct", target: targets.correct, claimed: false },
+          { type: "games", target: targets.games, claimed: false },
+          { type: "attempts", target: targets.attempts, claimed: false }
+        ],
+        bonusClaimed: false
+      };
+      await questRef.set(questData);
+    } else {
+      questData = questSnap.val();
+    }
+
+    const statsSnap = await aigDb.ref(`players/${player.id}/dailyStats/${today}`).get();
+    const stats = statsSnap.exists() ? statsSnap.val() : { correct: 0, wrong: 0, games: {} };
+    const gamesPlayed = Object.keys(stats.games || {}).length;
+    const attempts = (stats.correct || 0) + (stats.wrong || 0);
+
+    const progressFor = q => {
+      if (q.type === "correct") return stats.correct || 0;
+      if (q.type === "games") return gamesPlayed;
+      if (q.type === "attempts") return attempts;
+      return 0;
+    };
+
+    const quests = questData.quests.map((q, i) => ({
+      ...q,
+      index: i,
+      progress: Math.min(progressFor(q), q.target),
+      done: progressFor(q) >= q.target
+    }));
+
+    return { quests, bonusClaimed: questData.bonusClaimed };
+  }
+
+  // Claims one quest's reward (+1 gem). NOT built on .transaction() for the
+  // same reason unlockVehicle above isn't — a plain get-check-set instead,
+  // same accepted narrow race (two claims of the same quest in the exact
+  // same instant), fine for a cosmetic currency.
+  async function claimDailyQuest(index) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const today = todayKey();
+    const state = await getDailyQuests();
+    if (!state) return { ok: false };
+    const quest = state.quests[index];
+    if (!quest || !quest.done || quest.claimed) return { ok: false };
+
+    const questRef = aigDb.ref(`players/${player.id}/dailyQuests/${today}`);
+    await questRef.child(`quests/${index}/claimed`).set(true);
+
+    const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+    const walletSnap = await walletRef.get();
+    const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    await walletRef.set({ ...wallet, gems: (wallet.gems || 0) + 1 });
+
+    // Bonus gems once all 3 quests for the day have been claimed.
+    const freshSnap = await questRef.get();
+    const fresh = freshSnap.val();
+    const allClaimed = fresh.quests.every(q => q.claimed);
+    let bonus = false;
+    if (allClaimed && !fresh.bonusClaimed) {
+      await questRef.child("bonusClaimed").set(true);
+      const w2Snap = await walletRef.get();
+      const w2 = w2Snap.exists() ? w2Snap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+      await walletRef.set({ ...w2, gems: (w2.gems || 0) + 2 });
+      bonus = true;
+    }
+
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
+    getStreak, getDailyQuests, claimDailyQuest, getQuestLabel,
     db: aigDb
   };
 })();

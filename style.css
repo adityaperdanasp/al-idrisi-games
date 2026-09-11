@@ -440,6 +440,148 @@ body {
   font-weight: 600;
 }
 
+.sc-daily-panel {
+  margin: 18px 24px 0;
+  padding: 16px 18px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 1;
+}
+
+.sc-streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.sc-streak-flame {
+  font-size: 1.2rem;
+  animation: sc-flame-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes sc-flame-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.sc-streak-count {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #3d2e22;
+}
+
+.sc-streak-label {
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #8a7a6a;
+}
+
+.sc-quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sc-quest-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sc-quest-item.claimed { opacity: 0.55; }
+
+.sc-quest-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sc-quest-text {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #3d2e22;
+}
+
+.sc-quest-bar-track {
+  height: 8px;
+  border-radius: 100px;
+  background: #f1ede6;
+  overflow: hidden;
+}
+
+.sc-quest-bar-fill {
+  height: 100%;
+  border-radius: 100px;
+  background: linear-gradient(90deg, #f6c1e0, #c1d4f6);
+  transition: width 0.3s ease;
+}
+
+.sc-quest-progress-num {
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #8a7a6a;
+  flex-shrink: 0;
+}
+
+.sc-quest-claim-btn {
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  background: #f6e3b4;
+  color: #7a5a2e;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 0.78rem;
+  padding: 7px 12px;
+  border-radius: 100px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
+  animation: sc-claim-pulse 1.4s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sc-quest-claim-btn:active { transform: scale(0.94); animation: none; }
+.sc-quest-claim-btn:disabled { opacity: 0.6; animation: none; }
+
+@keyframes sc-claim-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.sc-quest-done-check {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #c1e1c1;
+  color: #2f6b3a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.sc-daily-bonus-note {
+  margin-top: 12px;
+  text-align: center;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #7a5a2e;
+  background: #fdf6e5;
+  border-radius: 100px;
+  padding: 6px 10px;
+}
+
 .sc-game-list {
   padding: 30px 24px 22px;
   display: flex;

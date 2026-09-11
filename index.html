@@ -312,6 +312,16 @@
         <div class="sc-hero-tagline">Pick a quest, have fun, and level up! 🎉</div>
       </div>
 
+      <div class="sc-daily-panel" id="sc-daily-panel" hidden>
+        <div class="sc-streak-badge">
+          <span class="sc-streak-flame">🔥</span>
+          <span class="sc-streak-count" id="sc-streak-count">0</span>
+          <span class="sc-streak-label">day streak</span>
+        </div>
+        <div class="sc-quest-list" id="sc-quest-list"></div>
+        <div class="sc-daily-bonus-note" id="sc-daily-bonus-note" hidden>🎉 Daily Bonus claimed — +2 💎!</div>
+      </div>
+
       <div class="sc-game-list">
         <div class="sc-emoji" style="top:2px;right:2px;font-size:16px;transform:rotate(10deg);z-index:0;">⭐</div>
         <div class="sc-emoji" style="top:100px;left:-4px;font-size:14px;transform:rotate(-8deg);z-index:0;">✨</div>
@@ -465,6 +475,7 @@
 <script src="player.js"></script>
 <script src="players.js"></script>
 <script src="firebase.js"></script>
+<script src="leaderboard.js"></script>
 <script src="hub-bgm.js"></script>
 <script>
   // Card background cycles through this palette (index-based, per the
@@ -608,6 +619,56 @@
     }
 
     checkParentMessage(current.id);
+    renderDailyPanel(current);
+  }
+
+  // Daily Quest + Streak panel -- shown right under the hero, above the
+  // game list. Re-rendered every time the landing screen shows (fresh
+  // login, or navigating back from a game via a full page load), so
+  // progress made in ANY game shows up here without a live subscription.
+  async function renderDailyPanel(player) {
+    const panel = document.getElementById("sc-daily-panel");
+    if (!player || player.role === "parent" || !window.AIGLeaderboard) {
+      panel.hidden = true;
+      return;
+    }
+    panel.hidden = false;
+
+    const streak = await AIGLeaderboard.getStreak();
+    document.getElementById("sc-streak-count").textContent = streak.count || 0;
+
+    const state = await AIGLeaderboard.getDailyQuests();
+    const list = document.getElementById("sc-quest-list");
+    if (!state) { list.innerHTML = ""; return; }
+
+    list.innerHTML = state.quests.map(q => {
+      const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
+      const label = AIGLeaderboard.getQuestLabel(q.type, q.target);
+      const action = q.claimed
+        ? `<span class="sc-quest-done-check">✓</span>`
+        : q.done
+          ? `<button class="sc-quest-claim-btn" data-quest-index="${q.index}">Claim 💎</button>`
+          : `<span class="sc-quest-progress-num">${q.progress}/${q.target}</span>`;
+      return `
+        <div class="sc-quest-item${q.claimed ? " claimed" : ""}">
+          <div class="sc-quest-info">
+            <span class="sc-quest-text">${label}</span>
+            <div class="sc-quest-bar-track"><div class="sc-quest-bar-fill" style="width:${pct}%"></div></div>
+          </div>
+          ${action}
+        </div>`;
+    }).join("");
+
+    document.getElementById("sc-daily-bonus-note").hidden = !state.bonusClaimed;
+
+    list.querySelectorAll(".sc-quest-claim-btn").forEach(btn => {
+      btn.onclick = async () => {
+        btn.disabled = true;
+        const result = await AIGLeaderboard.claimDailyQuest(Number(btn.dataset.questIndex));
+        if (result.ok) renderDailyPanel(player);
+        else btn.disabled = false;
+      };
+    });
   }
 
   // One-way (parent -> child) message set from /parents
