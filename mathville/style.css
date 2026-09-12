@@ -59,6 +59,7 @@ button { font-family: inherit; }
   padding: 4px 6px; border-radius: 10px; line-height: 1;
 }
 .icon-btn:hover { background: var(--cream); }
+.icon-btn.active { background: var(--gold); }
 .xp-badge {
   display: flex; align-items: center; gap: 6px;
   font-weight: 700; font-size: 13px; color: var(--ink-soft);
@@ -856,6 +857,12 @@ button { font-family: inherit; }
 .boss-timer-fill.phase2 { background: #E48A2E; }
 .boss-timer-fill.phase3 { background: #C6241F; animation: boss-phase3-pulse 0.5s ease-in-out infinite; }
 @keyframes boss-phase3-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+/* ---------- Pressure Timer (optional, normal rounds only) ---------- */
+.qtimer-track {
+  height: 8px; border-radius: 100px; background: var(--taupe); overflow: hidden; margin-bottom: 14px;
+}
+.qtimer-fill { height: 100%; background: var(--wood); width: 100%; }
 
 /* ---------- Speed Round ---------- */
 .speedround-hud {

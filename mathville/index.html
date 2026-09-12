@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=80" />
+<link rel="stylesheet" href="style.css?v=81" />
 </head>
 <body>
 
@@ -42,6 +42,7 @@
   <div id="btn-drive" class="icon-btn hidden" aria-label="Drive Mode" title="Drive Mode">🚗</div>
   <div id="btn-challenge" class="icon-btn hidden" aria-label="Family Challenge" title="Family Challenge">🤝</div>
   <div id="btn-speedround" class="icon-btn hidden" aria-label="Speed Round" title="Speed Round">⚡</div>
+  <button id="btn-timer-toggle" class="icon-btn hidden" aria-label="Timed Mode" title="Timed Mode: Off" type="button">⏱️</button>
   <div class="topbar-spacer"></div>
   <div id="wallet-badge" class="xp-badge wallet-badge"><span>🪙</span><span id="wallet-coins">0</span><span>💎</span><span id="wallet-gems">0</span></div>
   <div id="xp-badge" class="xp-badge"><span>✨</span><span id="xp-total">0</span> XP</div>
@@ -647,11 +648,13 @@
   <section id="screen-question" class="screen">
     <div class="boss-banner hidden" id="boss-banner">⚔️ <span id="boss-phase-label">Boss Challenge</span> — <span id="boss-progress">1/5</span></div>
     <div class="boss-timer-track hidden" id="boss-timer-track"><div class="boss-timer-fill" id="boss-timer-fill"></div></div>
+    <div class="qtimer-track hidden" id="qtimer-track"><div class="qtimer-fill" id="qtimer-fill"></div></div>
     <div class="combo-badge hidden" id="combo-badge"></div>
     <div class="adaptive-toast hidden" id="adaptive-toast"></div>
     <div class="powerup-bar hidden" id="powerup-bar">
       <button class="powerup-btn" id="btn-powerup-fifty" type="button">➗ 50:50 (0)</button>
       <button class="powerup-btn" id="btn-powerup-skip" type="button">⏭️ Skip (0)</button>
+      <button class="powerup-btn hidden" id="btn-powerup-extratime" type="button">⏳ +8s (0)</button>
     </div>
     <p class="q-label" id="q-label"></p>
 
@@ -918,6 +921,6 @@
 <script src="questions.js?v=8"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=105"></script>
+<script src="script.js?v=106"></script>
 </body>
 </html>

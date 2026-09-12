@@ -179,6 +179,17 @@ const state = {
   }
 };
 
+// Pressure Timer -- declared here (not down near the rest of the
+// timer logic in section 4) so the addEventListener block below, which
+// reads/sets this immediately at script-load time, never hits the
+// "access before initialization" temporal-dead-zone bug documented
+// elsewhere in this file for `let` bindings read before their textual
+// declaration runs.
+const PRESSURE_TIMER_MS = 15000;
+const EXTRA_TIME_MS = 8000;
+const PRESSURE_TIMER_STORAGE_KEY = "mv_pressure_timer_on";
+let pressureTimerEnabled = localStorage.getItem(PRESSURE_TIMER_STORAGE_KEY) === "1";
+
 /* =================================================================
    2. SCREEN NAVIGATION + PROGRESS PERSISTENCE
    ================================================================= */
@@ -197,6 +208,7 @@ function showScreen(id) {
   const midRound = id === "screen-question" && (state.isChallenge || state.isBoss);
   $("btn-challenge").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
   $("btn-speedround").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
+  $("btn-timer-toggle").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
   // Screens that already have their own Bo (Drive Mode's car, the reward
   // screen's AI Tutor card) or where it'd just be clutter (landing, pair
   // setup, Plane Mode, Ninja Runner has its own review-with-Bo overlay)
@@ -224,6 +236,11 @@ function showScreen(id) {
     speedRoundTimerInterval = null;
     if (speedRoundState) speedRoundState.active = false;
   }
+  // Same reasoning as Speed Round above -- leaving the question screen
+  // mid-timer (topbar Home/Map tapped) must not let a stale Pressure
+  // Timer fire timeoutCurrentQuestion() against whatever screen the
+  // player has already navigated to.
+  if (id !== "screen-question" && qTimerTimeout) clearQuestionTimer();
 }
 
 $("btn-home").addEventListener("click", () => { window.location.href = "../"; });
@@ -239,6 +256,9 @@ $("btn-challenge-again").addEventListener("click", launchChallengeMode);
 $("btn-challenge-back").addEventListener("click", goToMap);
 $("btn-powerup-fifty").addEventListener("click", useFiftyFiftyPowerup);
 $("btn-powerup-skip").addEventListener("click", useSkipPowerup);
+$("btn-powerup-extratime").addEventListener("click", useExtraTimePowerup);
+$("btn-timer-toggle").addEventListener("click", () => setPressureTimerEnabled(!pressureTimerEnabled));
+updateTimerToggleBtn();
 $("btn-speedround").addEventListener("click", launchSpeedRound);
 $("btn-speedround-again").addEventListener("click", launchSpeedRound);
 $("btn-speedround-back").addEventListener("click", goToMap);
@@ -4220,6 +4240,12 @@ function renderStep() {
   }
   const turnLabel = state.isChallenge ? ` — ${state.challenge.currentName}'s turn` : "";
   $("q-label").textContent = step.uiType === "match" ? "" : `Question ${state.stepIndex + 1} of ${state.steps.length}${turnLabel}`;
+  const pressureActive = pressureActiveFor(step);
+  $("qtimer-track").classList.toggle("hidden", !pressureActive);
+  if (pressureActive) startQuestionTimer(); else clearQuestionTimer();
+  // Must run AFTER the timer start/clear above -- it reads qTimerTimeout
+  // to decide whether the Extra Time button should be usable, so it
+  // needs the timer for THIS question to already be (or not be) running.
   updatePowerupBar(step);
 
   if (step.uiType === "typein") renderTypeinStep(step);
@@ -4309,11 +4335,12 @@ function comboMultiplierFor(combo) {
   return 1;
 }
 
-// ---- Power-ups (50:50, Skip) -- consumable items, normal solo rounds
-// only (never Boss/Family Challenge, kept pure per those features' own
-// design). Counts cached locally, refreshed from Firebase on round start
-// and after every buy/use so the bar never needs to re-fetch mid-question.
-let powerupCounts = { fiftyFifty: 0, skip: 0 };
+// ---- Power-ups (50:50, Skip, Extra Time) -- consumable items, normal
+// solo rounds only (never Boss/Family Challenge, kept pure per those
+// features' own design). Counts cached locally, refreshed from Firebase
+// on round start and after every buy/use so the bar never needs to
+// re-fetch mid-question.
+let powerupCounts = { fiftyFifty: 0, skip: 0, extraTime: 0 };
 async function refreshPowerupCounts() {
   if (window.AIGLeaderboard) {
     try { powerupCounts = await AIGLeaderboard.getPowerups(); }
@@ -4333,6 +4360,16 @@ function updatePowerupBar(step) {
   const skipBtn = $("btn-powerup-skip");
   skipBtn.disabled = powerupCounts.skip <= 0;
   skipBtn.textContent = `⏭️ Skip (${powerupCounts.skip})`;
+  // Only meaningful (and shown) while a question timer is ACTUALLY
+  // running right now (qTimerTimeout set) -- pressureActiveFor(step)
+  // alone would also be true in the brief window after a timeout, while
+  // submitAnswer's setTimeout is still counting down to the next
+  // question, when there's no live timer left to extend.
+  const extraBtn = $("btn-powerup-extratime");
+  const timerRunning = pressureActiveFor(step) && !!qTimerTimeout;
+  extraBtn.classList.toggle("hidden", !timerRunning);
+  extraBtn.disabled = !timerRunning || (powerupCounts.extraTime || 0) <= 0;
+  extraBtn.textContent = `⏳ +8s (${powerupCounts.extraTime || 0})`;
 }
 
 async function useFiftyFiftyPowerup() {
@@ -4359,6 +4396,134 @@ async function useSkipPowerup() {
   goToNextStep();
 }
 
+async function useExtraTimePowerup() {
+  const step = state.steps[state.stepIndex];
+  // qTimerTimeout check matters separately from pressureActiveFor: right
+  // after a timeout fires, pressureActiveFor(step) is still true (same
+  // question, same uiType) even though the timer itself has already
+  // been cleared -- without this, tapping Extra Time in that dead
+  // window would spend a real powerup for zero effect.
+  if (!pressureActiveFor(step) || !qTimerTimeout) return;
+  const result = await AIGLeaderboard.usePowerup("extraTime");
+  if (!result.ok) return;
+  powerupCounts.extraTime = result.remaining;
+  updatePowerupBar(step);
+  extendQuestionTimer(EXTRA_TIME_MS);
+}
+
+// ---- Pressure Timer -- optional per-device toggle (topbar ⏱️ icon),
+// off by default. Only ever runs during a normal round question (never
+// Boss/Family Challenge, which already have their own timers/pacing;
+// never a match step, which has no single "submit" moment to time
+// against -- same reasoning as 50:50 being option-based only).
+function setPressureTimerEnabled(on) {
+  pressureTimerEnabled = on;
+  try { localStorage.setItem(PRESSURE_TIMER_STORAGE_KEY, on ? "1" : "0"); } catch (e) { /* private-browsing storage denial -- setting just won't persist across reloads */ }
+  updateTimerToggleBtn();
+  // Toggling mid-round should take effect immediately, not just on the
+  // next question -- re-derive from the step actually on screen.
+  const step = state.steps[state.stepIndex];
+  if (step) {
+    const active = pressureActiveFor(step);
+    $("qtimer-track").classList.toggle("hidden", !active);
+    if (active) startQuestionTimer(); else clearQuestionTimer();
+    updatePowerupBar(step);
+  }
+}
+
+function updateTimerToggleBtn() {
+  const btn = $("btn-timer-toggle");
+  if (!btn) return;
+  btn.classList.toggle("active", pressureTimerEnabled);
+  btn.title = pressureTimerEnabled ? "Timed Mode: On" : "Timed Mode: Off";
+}
+
+function pressureActiveFor(step) {
+  return pressureTimerEnabled && !state.isBoss && !state.isChallenge && !!step && step.uiType !== "match";
+}
+
+let qTimerToken = 0;
+let qTimerTimeout = null;
+let qTimerDeadline = 0;
+
+function animateQuestionTimerFill(ms) {
+  const fill = $("qtimer-fill");
+  fill.style.transition = "none";
+  fill.style.width = "100%";
+  void fill.offsetWidth; // force reflow so the reset above can't get batched with the shrink transition below
+  fill.style.transition = `width ${ms}ms linear`;
+  fill.style.width = "0%";
+}
+
+function startQuestionTimer() {
+  clearQuestionTimer();
+  const token = ++qTimerToken;
+  qTimerDeadline = Date.now() + PRESSURE_TIMER_MS;
+  animateQuestionTimerFill(PRESSURE_TIMER_MS);
+  qTimerTimeout = setTimeout(() => {
+    if (qTimerToken !== token) return; // a real answer already advanced past this question
+    timeoutCurrentQuestion();
+  }, PRESSURE_TIMER_MS);
+}
+
+function clearQuestionTimer() {
+  qTimerToken++; // invalidates any in-flight timeout from the previous question
+  if (qTimerTimeout) { clearTimeout(qTimerTimeout); qTimerTimeout = null; }
+}
+
+// Pushes the CURRENT question's deadline back by extraMs -- reads the
+// remaining time off the wall clock (not the animated CSS width, which
+// would need a DOM measurement mid-transition) so it only ever adds
+// time, never gifts back time already spent. Keeps the same token: this
+// continues the current question's timer rather than starting a new one.
+function extendQuestionTimer(extraMs) {
+  if (!qTimerTimeout) return; // no active timer -- Pressure Timer off, or already answered
+  clearTimeout(qTimerTimeout);
+  const remainingMs = Math.max(0, qTimerDeadline - Date.now()) + extraMs;
+  qTimerDeadline = Date.now() + remainingMs;
+  animateQuestionTimerFill(remainingMs);
+  const token = qTimerToken;
+  qTimerTimeout = setTimeout(() => {
+    if (qTimerToken !== token) return;
+    timeoutCurrentQuestion();
+  }, remainingMs);
+}
+
+// Timed-out question is graded as a miss with no answer given -- mirrors
+// each render*Step's own click handler (disable inputs, reveal the
+// correct answer) before handing off to the normal submitAnswer path so
+// combo/mistakes/adaptive-difficulty/Firebase all behave exactly like a
+// real wrong answer would.
+function timeoutCurrentQuestion() {
+  const step = state.steps[state.stepIndex];
+  if (!step) return;
+  if (step.uiType === "typein") {
+    $("typein-keypad").querySelectorAll(".key").forEach(b => (b.disabled = true));
+    $("typein-submit").disabled = true;
+    $("typein-display").classList.add("wrong-flash");
+    $("typein-reveal").textContent = `⏰ Time's up! Answer: ${step.answer}`;
+    submitAnswer(false, step.prompt, step.answer);
+  } else if (step.uiType === "mc") {
+    $("mc-grid").querySelectorAll(".mc-btn").forEach(b => {
+      b.disabled = true;
+      if (labelsEqual(b.textContent, step.correctLabel)) b.classList.add("correct");
+    });
+    submitAnswer(false, step.prompt, step.correctLabel);
+  } else if (step.uiType === "tap") {
+    $("tap-markers").querySelectorAll(".tap-marker").forEach(b => {
+      b.disabled = true;
+      if (labelsEqual(b.textContent, step.correctLabel)) b.classList.add("correct");
+    });
+    submitAnswer(false, step.prompt, step.correctLabel);
+  }
+  // match steps never get a pressure timer (see pressureActiveFor) -- no branch needed
+  // submitAnswer() above already cleared qTimerTimeout -- refresh the bar
+  // so Extra Time visibly disables/hides during the brief delay before
+  // the round advances, instead of looking clickable with nothing left
+  // to extend.
+  updatePowerupBar(step);
+}
+
 let comboBadgeTimeout = null;
 function showComboBadge(combo, multiplier) {
   const el = $("combo-badge");
@@ -4372,6 +4537,7 @@ function showComboBadge(combo, multiplier) {
 }
 
 function submitAnswer(isCorrect, prompt, answerForHint) {
+  clearQuestionTimer(); // a real answer (or the timeout path itself) always cancels any in-flight question timer -- no-op if Pressure Timer was off
   let comboMultiplier = 1;
   const comboActive = !state.isBoss && !state.isChallenge;
   if (comboActive) {
