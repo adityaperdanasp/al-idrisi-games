@@ -879,6 +879,42 @@ button { font-family: inherit; }
 }
 .qtimer-fill { height: 100%; background: var(--wood); width: 100%; }
 
+/* ---------- Printable Worksheet + Certificate ---------- */
+.worksheet-toolbar { display: flex; gap: 10px; margin-bottom: 20px; }
+.worksheet-toolbar .btn { margin-top: 0; }
+.worksheet-page {
+  background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(59,42,26,.1); color: #222;
+}
+.worksheet-header { border-bottom: 2px solid #222; padding-bottom: 10px; margin-bottom: 16px; }
+.worksheet-title { font: 800 20px "Baloo 2", sans-serif; }
+.worksheet-meta { font: 600 13px "Fredoka", sans-serif; color: #555; margin-top: 4px; }
+.worksheet-questions { padding-left: 20px; }
+.worksheet-questions li { font: 600 15px "Fredoka", sans-serif; margin-bottom: 22px; }
+.worksheet-blank { border-bottom: 1px solid #999; height: 28px; margin-top: 4px; max-width: 220px; }
+.worksheet-answer-page .worksheet-questions li { margin-bottom: 8px; }
+
+.certificate-page { display: flex; justify-content: center; }
+.certificate-border {
+  border: 6px double #C1793E; border-radius: 16px; padding: 40px 30px; text-align: center;
+  background: #fffaf0; max-width: 380px; width: 100%;
+}
+.certificate-ribbon { font-size: 40px; }
+.certificate-heading { font: 800 22px "Baloo 2", sans-serif; color: #3B2A1A; margin-top: 8px; }
+.certificate-sub { font: 600 13px "Fredoka", sans-serif; color: #7A6A56; margin-top: 14px; }
+.certificate-name { font: 800 26px "Baloo 2", sans-serif; color: #C1793E; margin-top: 4px; }
+.certificate-chapter { font: 700 17px "Fredoka", sans-serif; color: #3B2A1A; margin-top: 4px; }
+.certificate-stars { font-size: 26px; color: var(--gold); margin-top: 10px; }
+.certificate-date { font: 600 12px "Fredoka", sans-serif; color: #9c8a76; margin-top: 18px; }
+.certificate-brand { font: 800 12px "Baloo 2", sans-serif; color: #C1793E; margin-top: 6px; letter-spacing: 1px; }
+
+@media print {
+  .topbar, .no-print { display: none !important; }
+  #screen-worksheet, #screen-certificate { padding: 0; }
+  .worksheet-page { box-shadow: none; page-break-after: always; }
+  .worksheet-answer-page { page-break-after: auto; }
+}
+
 /* ---------- Speed Round ---------- */
 .speedround-hud {
   display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;

@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=84" />
+<link rel="stylesheet" href="style.css?v=85" />
 </head>
 <body>
 
@@ -753,6 +753,7 @@
     <div id="mp-results" class="mp-results hidden"></div>
 
     <button class="btn boss-challenge-btn hidden" id="btn-reward-boss">⚔️ Boss Challenge</button>
+    <button class="btn boss-challenge-btn hidden" id="btn-reward-certificate">🖨️ Get Certificate</button>
     <button class="btn btn-primary btn-cta" id="btn-reward-continue">Continue</button>
   </section>
 
@@ -857,6 +858,63 @@
   </section>
 
   <!-- ===============================================================
+       PRINTABLE WORKSHEET — deep-linked from Parent Portal
+       (?worksheet=1&topic=X&for=Name). Generates a fixed set of
+       questions from that chapter's OWN generator (buildRound, same
+       source every normal round uses) and lays them out for printing --
+       questions on one "page" (via CSS page-break), answer key on the
+       next. Not interactive at all -- no submitAnswer, no Firebase
+       writes, purely a print view.
+       =============================================================== -->
+  <section id="screen-worksheet" class="screen">
+    <div class="worksheet-toolbar no-print">
+      <button class="btn btn-primary" id="btn-worksheet-print">🖨️ Print</button>
+      <button class="btn boss-challenge-btn" id="btn-worksheet-back">Back to Map</button>
+    </div>
+    <div class="worksheet-page">
+      <div class="worksheet-header">
+        <div class="worksheet-title">BrainBox Practice Sheet</div>
+        <div class="worksheet-meta">
+          <span id="worksheet-chapter-title"></span> · Name: <span id="worksheet-for-name">_______________</span> · Date: <span id="worksheet-date"></span>
+        </div>
+      </div>
+      <ol class="worksheet-questions" id="worksheet-questions"></ol>
+    </div>
+    <div class="worksheet-page worksheet-answer-page">
+      <div class="worksheet-header">
+        <div class="worksheet-title">Answer Key</div>
+        <div class="worksheet-meta"><span id="worksheet-chapter-title-2"></span></div>
+      </div>
+      <ol class="worksheet-questions" id="worksheet-answers"></ol>
+    </div>
+  </section>
+
+  <!-- ===============================================================
+       PRINTABLE CERTIFICATE — deep-linked from the reward screen's
+       "Get Certificate" button (only shown on a perfect 3-star clear).
+       Pure print view, same spirit as the worksheet above.
+       =============================================================== -->
+  <section id="screen-certificate" class="screen">
+    <div class="worksheet-toolbar no-print">
+      <button class="btn btn-primary" id="btn-certificate-print">🖨️ Print</button>
+      <button class="btn boss-challenge-btn" id="btn-certificate-back">Back to Map</button>
+    </div>
+    <div class="certificate-page">
+      <div class="certificate-border">
+        <div class="certificate-ribbon">🏆</div>
+        <div class="certificate-heading">Certificate of Achievement</div>
+        <div class="certificate-sub">This certifies that</div>
+        <div class="certificate-name" id="certificate-name"></div>
+        <div class="certificate-sub">has successfully mastered</div>
+        <div class="certificate-chapter" id="certificate-chapter"></div>
+        <div class="certificate-stars">★★★</div>
+        <div class="certificate-date" id="certificate-date"></div>
+        <div class="certificate-brand">BrainBox · MathVille</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===============================================================
        NINJA RUNNER — cross-subject runner mode (Sansu Ninja-inspired).
        Character auto-runs; player picks one of 3 subject cards (Math/
        Language & Arts/Science, each independently randomized Easy/
@@ -952,6 +1010,6 @@
 <script src="questions.js?v=8"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=110"></script>
+<script src="script.js?v=111"></script>
 </body>
 </html>
