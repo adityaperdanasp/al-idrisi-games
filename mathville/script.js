@@ -5915,6 +5915,7 @@ function ninjaComputeRank() {
 const NINJA_DIFFS = ["easy", "medium", "hard"];
 const NINJA_SUBJECTS = { math: "MATH", lang: "LANG & ARTS", sci: "SCIENCE" };
 let ninjaState = null;
+let ninjaGhost = null; // {score, checkpoints} of the player's best-ever run, fetched fresh each launch -- see launchNinjaRunner/ninjaAdvance
 
 function launchNinjaRunner() {
   ensurePlaneQuestionPools();
@@ -5924,16 +5925,25 @@ function launchNinjaRunner() {
   ninjaState = {
     qnum: 1, score: 0, streak: 0, hardCorrectCount: 0, wrongLog: [], ended: false, laneTimer: null,
     pendingBoss: false, inBoss: false, bossHp: 0, bossesDefeated: 0,
-    lives: NINJA_START_LIVES, totalAnswered: 0
+    lives: NINJA_START_LIVES, totalAnswered: 0, myCheckpoints: [], isNewHighScoreRun: false
   };
   $("ninja-streak").classList.add("hidden");
   $("ninja-boss-hp").classList.add("hidden");
+  $("ninja-ghost-delta").classList.add("hidden");
   $("ninja-finish-overlay").classList.add("hidden");
   $("ninja-review-overlay").classList.add("hidden");
   $("ninja-qnum").textContent = `Q 1/${NINJA_TOTAL_Q}`;
   $("ninja-score").textContent = "⭐ 0";
   updateNinjaBestHud();
   updateNinjaLivesHud();
+  // Fire-and-forget -- the ghost is a nice-to-have comparison, never
+  // worth blocking round start on. A run started before this resolves
+  // just won't show a ghost delta until it comes back (or at all, on a
+  // player's very first-ever run with nothing recorded yet).
+  ninjaGhost = null;
+  if (window.AIGLeaderboard) {
+    AIGLeaderboard.getNinjaGhost().then(g => { ninjaGhost = g; }).catch(() => {});
+  }
   // Brief head start before the very first obstacle -- see
   // NINJA_FIRST_OBSTACLE_DELAY_MS. Tracked on ninjaState.laneTimer like any
   // other lane timer so a relaunch during this window still cancels it.
@@ -5951,6 +5961,11 @@ function updateNinjaScore() {
     PROGRESS.ninjaHighScore = ninjaState.score;
     saveProgressToStorage();
     updateNinjaBestHud();
+    // Flagged (not saved yet) -- ninjaFinishCommon() checks this at the
+    // END of the run to decide whether to persist a new ghost. Checking
+    // PROGRESS.ninjaHighScore there directly wouldn't work: it's already
+    // been bumped to match ninjaState.score right here, mid-run.
+    ninjaState.isNewHighScoreRun = true;
   }
 }
 
@@ -6384,6 +6399,14 @@ function ninjaSliceQuestion(promptText, onDone) {
 }
 
 function ninjaAdvance() {
+  // Ghost pace pill -- record THIS question's cumulative score (0-based
+  // index = the question that just resolved, i.e. ninjaState.qnum before
+  // it increments below), then compare against the best run's score at
+  // the same point. A silent, always-updating HUD pill rather than a
+  // toast -- 20 toasts in one run would spam over more important ones
+  // (boss defeats, streak milestones).
+  ninjaState.myCheckpoints[ninjaState.qnum - 1] = ninjaState.score;
+  updateNinjaGhostHud();
   ninjaState.qnum++;
   if (ninjaState.qnum > NINJA_TOTAL_Q) { ninjaShowFinish(); return; }
   $("ninja-qnum").textContent = `Q ${ninjaState.qnum}/${NINJA_TOTAL_Q}`;
@@ -6391,6 +6414,20 @@ function ninjaAdvance() {
   // actually activated once the enemy "reaches" the runner (ninjaResolveEnemy).
   ninjaState.pendingBoss = (ninjaState.qnum - 1) % NINJA_BOSS_EVERY === 0;
   ninjaStartRunLane();
+}
+
+function updateNinjaGhostHud() {
+  const pill = $("ninja-ghost-delta");
+  const idx = ninjaState.qnum - 1;
+  if (!ninjaGhost || !ninjaGhost.checkpoints || ninjaGhost.checkpoints[idx] == null) {
+    pill.classList.add("hidden");
+    return;
+  }
+  const delta = ninjaState.score - ninjaGhost.checkpoints[idx];
+  pill.classList.remove("hidden", "ahead", "behind");
+  if (delta > 0) { pill.classList.add("ahead"); pill.textContent = `👻 +${delta}`; }
+  else if (delta < 0) { pill.classList.add("behind"); pill.textContent = `👻 ${delta}`; }
+  else { pill.textContent = "👻 tied"; }
 }
 
 const NINJA_WIN_XP = 20;
@@ -6424,6 +6461,11 @@ function ninjaFinishCommon() {
   $("ninja-finish-badge").innerHTML = `${rank.emoji} ${rank.label}`;
   $("ninja-finish-overlay").classList.remove("hidden");
   saveChapterProgress("ninja-runner", 3, NINJA_WIN_XP);
+  // A new personal best replaces the ghost future runs race against --
+  // fire-and-forget, same as every other Firebase write on this screen.
+  if (ninjaState.isNewHighScoreRun && window.AIGLeaderboard) {
+    AIGLeaderboard.saveNinjaGhost(ninjaState.score, ninjaState.myCheckpoints).catch(() => {});
+  }
 }
 
 // Short, varied English encouragement lines -- picked by review index so

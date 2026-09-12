@@ -1458,6 +1458,12 @@ button { font-family: inherit; }
 }
 .ninja-toast-good { background: #e4572e; }
 
+/* Ghost pace pill -- live comparison to the player's own best run's
+   score-at-this-question, see ninjaAdvance()/getNinjaGhost() */
+.ninja-ghost-pill { background: var(--taupe) !important; color: var(--ink) !important; }
+.ninja-ghost-pill.ahead { background: var(--good) !important; color: #fff !important; }
+.ninja-ghost-pill.behind { background: var(--bad) !important; color: #fff !important; }
+
 .ninja-jump-btn, .ninja-dodge-btn {
   position: absolute; bottom: 20px; z-index: 7;
   padding: 12px 18px; border: none; border-radius: 14px; cursor: pointer;

@@ -631,6 +631,29 @@
   }
 
   // =====================================================================
+  // NINJA RUNNER GHOST — the score trajectory (cumulative score after
+  // each of the 20 questions) of the player's own BEST run, replayed as
+  // a live pace comparison during a new run ("+12 ahead of your best
+  // run" / "-8 behind", see ninjaAdvance() in MathVille's script.js).
+  // Overwritten only when a run beats the stored best score, so it
+  // always reflects the current personal best -- same trigger as
+  // PROGRESS.ninjaHighScore. Stored at players/{id}/ninjaGhost, nested
+  // under the already-open `players` path, no rules change needed.
+  // =====================================================================
+  async function getNinjaGhost() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`players/${player.id}/ninjaGhost`).get();
+    return snap.exists() ? snap.val() : null; // {score, checkpoints: [cumulative score after each question]}
+  }
+
+  async function saveNinjaGhost(score, checkpoints) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    await aigDb.ref(`players/${player.id}/ninjaGhost`).set({ score, checkpoints });
+  }
+
+  // =====================================================================
   // SEASON PASS (Battle Pass) — a monthly cumulative track, separate from
   // the daily quests above. Earns 1 "season point" (SP) per correct
   // answer, same trigger as coins (parallel counter, doesn't touch/consume
@@ -1182,6 +1205,7 @@
     getStreak, getDailyQuests, claimDailyQuest, getQuestLabel,
     claimBossWin,
     getWeeklyBossRushStatus, claimWeeklyBossRush,
+    getNinjaGhost, saveNinjaGhost,
     getBattlePass, claimBattlePassTier,
     getCollection,
     getCosmetics, unlockCosmetic, equipCosmetic,
