@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=81" />
+<link rel="stylesheet" href="style.css?v=82" />
 </head>
 <body>
 
@@ -692,6 +692,19 @@
         <div id="match-col-right" class="match-col match-col-right"></div>
       </div>
     </div>
+
+    <!-- order: wildcard tap-to-sequence format, chapter-agnostic number
+         sense (occasionally swapped in for one question of a normal
+         solo round -- see maybeInjectWildcardOrderStep in script.js) -->
+    <div id="ui-order" class="ui-block hidden">
+      <div class="q-prompt" id="order-prompt"></div>
+      <div class="order-label">Tap in order:</div>
+      <div class="order-row" id="order-target"></div>
+      <div class="order-label">Available:</div>
+      <div class="order-row" id="order-source"></div>
+      <div id="order-reveal"></div>
+      <button class="btn btn-primary" id="order-submit">Check</button>
+    </div>
   </section>
 
   <!-- ===============================================================
@@ -922,6 +935,6 @@
 <script src="questions.js?v=8"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=107"></script>
+<script src="script.js?v=108"></script>
 </body>
 </html>

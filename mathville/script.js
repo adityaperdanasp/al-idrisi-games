@@ -713,6 +713,13 @@ function goToIntro(chapterId, isMp) {
     state.difficultyTier = "hard";
     state.difficultyStreak = 0;
     state.steps = isMp ? state.mp.game.roundQuestions : buildRound(chapterId);
+    // Wildcard "order" step -- confined to solo normal rounds only (not
+    // MP, which needs every seat to see the identical synced step array
+    // from Firebase). Boss Challenge/Weekly Boss Rush/Focus Round/Speed
+    // Round each call buildRound() through their OWN code paths, not
+    // this handler, so a timed fight never gets the slower drag/tap-
+    // order interaction mixed in unfairly.
+    if (!isMp) maybeInjectWildcardOrderStep(state.steps);
     refreshPowerupCounts();
     renderStep();
   };
@@ -4233,7 +4240,7 @@ function escapeHtml(s) {
    ================================================================= */
 function renderStep() {
   showScreen("screen-question");
-  ["ui-typein", "ui-mc", "ui-tap", "ui-match"].forEach(id => $(id).classList.add("hidden"));
+  ["ui-typein", "ui-mc", "ui-tap", "ui-match", "ui-order"].forEach(id => $(id).classList.add("hidden"));
   const step = state.steps[state.stepIndex];
   $("boss-banner").classList.toggle("hidden", !state.isBoss);
   $("boss-timer-track").classList.toggle("hidden", !state.isBoss);
@@ -4255,6 +4262,7 @@ function renderStep() {
   else if (step.uiType === "mc") renderMcStep(step);
   else if (step.uiType === "tap") renderTapStep(step);
   else if (step.uiType === "match") renderMatchStep(step);
+  else if (step.uiType === "order") renderOrderStep(step);
 }
 
 function goToNextStep() {
@@ -4442,7 +4450,11 @@ function updateTimerToggleBtn() {
 }
 
 function pressureActiveFor(step) {
-  return pressureTimerEnabled && !state.isBoss && !state.isChallenge && !!step && step.uiType !== "match";
+  // "match" (batch drag-matching, no single submit moment) and "order"
+  // (multi-tap wildcard sequencing, inherently slower than a one-tap MC
+  // answer) are both excluded -- same reasoning, a strict countdown
+  // wouldn't be a fair fit for either.
+  return pressureTimerEnabled && !state.isBoss && !state.isChallenge && !!step && step.uiType !== "match" && step.uiType !== "order";
 }
 
 let qTimerToken = 0;
@@ -4785,6 +4797,85 @@ function renderMatchStep(step) {
       document.addEventListener("pointerup", up);
     });
   });
+}
+
+/* =================================================================
+   WILDCARD -- "order" step type (5th interaction format alongside
+   typein/mc/tap/match). Chapter-agnostic number-sense task, not new
+   curriculum content: pure interaction-format variety, generated
+   on-the-fly the same way Speed Round/Diagnostic Quiz reuse an existing
+   generator instead of authoring a new question bank. Confined to solo
+   normal rounds -- see the one call site in the chapter-intro handler.
+   ================================================================= */
+const WILDCARD_ORDER_CHANCE = 0.35; // per normal round, not per question -- at most 1 of the 6 questions becomes a wildcard
+function maybeInjectWildcardOrderStep(steps) {
+  if (!steps.length || Math.random() > WILDCARD_ORDER_CHANCE) return;
+  const replaceable = steps.map((s, i) => i).filter(i => steps[i].uiType !== "match"); // never replace a match step -- gcf-lcm's batch-matching UI has no single per-step slot to swap
+  if (!replaceable.length) return;
+  const idx = replaceable[rand(0, replaceable.length - 1)];
+  const ascending = Math.random() < 0.5;
+  const nums = new Set();
+  while (nums.size < 4) nums.add(rand(10, 999));
+  const items = shuffle([...nums]);
+  const sorted = [...items].sort((a, b) => a - b);
+  const correctOrder = (ascending ? sorted : [...sorted].reverse()).map(String);
+  steps[idx] = {
+    uiType: "order",
+    prompt: `Arrange these numbers from ${ascending ? "smallest to largest" : "largest to smallest"}:`,
+    items: items.map(String),
+    correctOrder
+  };
+}
+
+/* ---- order (tap-to-sequence, wildcard format) ---- */
+function renderOrderStep(step) {
+  $("ui-order").classList.remove("hidden");
+  $("order-prompt").textContent = step.prompt;
+  $("order-reveal").textContent = "";
+  const source = $("order-source");
+  const target = $("order-target");
+  const submitBtn = $("order-submit");
+  const placed = []; // indices into step.items, in the order the player tapped them
+
+  function renderChips() {
+    source.innerHTML = "";
+    step.items.forEach((val, i) => {
+      if (placed.includes(i)) return;
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "order-chip";
+      chip.textContent = val;
+      chip.addEventListener("click", () => { placed.push(i); renderChips(); renderTarget(); });
+      source.appendChild(chip);
+    });
+    submitBtn.disabled = placed.length !== step.items.length;
+  }
+  function renderTarget() {
+    target.innerHTML = "";
+    placed.forEach((itemIdx, pos) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "order-chip placed";
+      chip.textContent = step.items[itemIdx];
+      // Tapping a placed chip un-places it -- lets a kid fix a mis-tap
+      // without needing a separate "clear" control.
+      chip.addEventListener("click", () => { placed.splice(pos, 1); renderChips(); renderTarget(); });
+      target.appendChild(chip);
+    });
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.onclick = () => {
+    const userOrder = placed.map(i => step.items[i]);
+    const isCorrect = JSON.stringify(userOrder) === JSON.stringify(step.correctOrder);
+    source.querySelectorAll(".order-chip").forEach(c => (c.disabled = true));
+    target.querySelectorAll(".order-chip").forEach(c => (c.disabled = true));
+    submitBtn.disabled = true;
+    $("order-reveal").textContent = isCorrect ? "" : `Correct order: ${step.correctOrder.join(", ")}`;
+    submitAnswer(isCorrect, step.prompt, step.correctOrder.join(", "));
+  };
+  renderChips();
+  renderTarget();
 }
 
 /* =================================================================
