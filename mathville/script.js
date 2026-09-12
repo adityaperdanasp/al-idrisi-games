@@ -243,6 +243,10 @@ $("btn-speedround").addEventListener("click", launchSpeedRound);
 $("btn-speedround-again").addEventListener("click", launchSpeedRound);
 $("btn-speedround-back").addEventListener("click", goToMap);
 $("btn-diagnostic-done").addEventListener("click", goToMap);
+$("btn-worksheet-print").addEventListener("click", () => window.print());
+$("btn-worksheet-back").addEventListener("click", goToMap);
+$("btn-certificate-print").addEventListener("click", () => window.print());
+$("btn-certificate-back").addEventListener("click", goToMap);
 
 function loadProgress() {
   try {
@@ -3815,6 +3819,10 @@ if (new URLSearchParams(location.search).get("focus") === "1") {
 if (new URLSearchParams(location.search).get("diagnostic") === "1") {
   launchDiagnosticQuiz();
 }
+if (new URLSearchParams(location.search).get("worksheet") === "1") {
+  const params = new URLSearchParams(location.search);
+  launchWorksheet(params.get("topic") || "mixed-operation", params.get("for") || "");
+}
 
 // Analog joystick: drag anywhere inside (pointer capture lets the finger
 // wander outside the circle without losing the drag), knob position is
@@ -4650,6 +4658,8 @@ function showReward(stars) {
   $("btn-reward-continue").classList.remove("hidden");
   $("btn-reward-boss").classList.remove("hidden");
   $("btn-reward-boss").onclick = () => launchBossChallenge(state.chapterId);
+  $("btn-reward-certificate").classList.toggle("hidden", stars < 3);
+  $("btn-reward-certificate").onclick = () => launchCertificate(state.chapterId, null);
   saveChapterProgress(state.chapterId, stars, xp);
   updateXpBadge();
   showScreen("screen-reward");
@@ -4980,6 +4990,55 @@ async function finishDiagnosticQuiz() {
     try { await AIGLeaderboard.submitDiagnosticResult({ score: totalCorrect, suggestedTier }); }
     catch (e) { /* advisory only -- never block the result screen */ }
   }
+}
+
+/* =================================================================
+   PRINTABLE WORKSHEET + CERTIFICATE — see the HTML comments above
+   #screen-worksheet / #screen-certificate. Pure print views: no
+   submitAnswer, no Firebase writes, nothing interactive.
+   ================================================================= */
+const WORKSHEET_QUESTION_COUNT = 12;
+
+// Pulls plain prompt+answer pairs from the SAME generator every normal
+// round uses (buildRound) -- skips "match" steps (pairs don't read as a
+// single fill-in-the-blank line on paper) and loops a few extra times to
+// still reach the target count for chapters (like gcf-lcm) where most of
+// a round is match pairs.
+function generateWorksheetQuestions(chapterId, count) {
+  const collected = [];
+  let guard = 0;
+  while (collected.length < count && guard < 12) {
+    guard++;
+    buildRound(chapterId).forEach(s => {
+      if (collected.length >= count || s.uiType === "match" || !s.prompt) return;
+      const answer = s.uiType === "typein" ? s.answer : s.correctLabel;
+      collected.push({ prompt: s.prompt, answer });
+    });
+  }
+  return collected;
+}
+
+function launchWorksheet(chapterId, forName) {
+  const chapterData = MATHVILLE_BANK.chapters.find(c => c.id === chapterId);
+  const title = chapterData ? chapterData.title : chapterId;
+  const questions = generateWorksheetQuestions(chapterId, WORKSHEET_QUESTION_COUNT);
+  $("worksheet-chapter-title").textContent = title;
+  $("worksheet-chapter-title-2").textContent = title;
+  $("worksheet-for-name").textContent = forName || "_______________";
+  $("worksheet-date").textContent = new Date().toLocaleDateString();
+  $("worksheet-questions").innerHTML = questions.map(q => `<li>${q.prompt}<div class="worksheet-blank"></div></li>`).join("");
+  $("worksheet-answers").innerHTML = questions.map(q => `<li>${q.answer}</li>`).join("");
+  showScreen("screen-worksheet");
+}
+
+function launchCertificate(chapterId, forName) {
+  const chapterData = MATHVILLE_BANK.chapters.find(c => c.id === chapterId);
+  const title = chapterData ? chapterData.title : (chapterId || "MathVille");
+  const player = window.AIGPlayer && AIGPlayer.getPlayer();
+  $("certificate-name").textContent = forName || (player && player.name) || "Student";
+  $("certificate-chapter").textContent = title;
+  $("certificate-date").textContent = new Date().toLocaleDateString();
+  showScreen("screen-certificate");
 }
 
 function showWaitingForOthers() {
@@ -5408,6 +5467,7 @@ function mvRenderReward(game) {
   $("reward-xp").textContent = `+${stars * 10} XP`;
   $("btn-reward-continue").classList.remove("hidden");
   $("btn-reward-boss").classList.add("hidden"); // Boss Challenge is solo-only, never shown on the MP results screen
+  $("btn-reward-certificate").classList.add("hidden"); // certificate deep-link assumes a single solo state.chapterId, same reasoning
 
   const wrap = $("mp-results");
   wrap.classList.remove("hidden");

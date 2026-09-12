@@ -176,11 +176,18 @@
       weakList.innerHTML = weak.slice(0, 6).map(t => {
         const game = GAMES.find(g => g.id === t.gameId);
         const pct = Math.round(t.accuracy * 100);
+        // Only MathVille topics can generate a worksheet -- its questions
+        // come from generators.js, reachable in-page there. The other
+        // games' question banks aren't set up for a standalone print view.
+        const printBtn = t.gameId === "mathville"
+          ? `<a class="p-weak-print-btn" href="../mathville/index.html?worksheet=1&topic=${encodeURIComponent(t.topic)}&for=${encodeURIComponent(childName)}" target="_blank" rel="noopener">🖨️ Print Worksheet</a>`
+          : "";
         return `
           <div class="p-weak-card">
             <div class="p-weak-topic">${escapeHtml(prettifyTopic(t.gameId, t.topic))} <span class="p-weak-game">${escapeHtml(game.label)}</span></div>
             <div class="p-weak-bar-track"><div class="p-weak-bar-fill" style="width:${pct}%"></div></div>
             <div class="p-weak-pct">${pct}% correct <span class="p-weak-tries">(${t.total} tries)</span></div>
+            ${printBtn}
           </div>`;
       }).join("");
     }

@@ -123,6 +123,11 @@
 .p-weak-bar-fill { height: 100%; background: #e2685f; border-radius: 100px; }
 .p-weak-pct { font-size: 0.72rem; color: #9c8a76; }
 .p-weak-tries { color: #c2ac91; }
+.p-weak-print-btn {
+  display: inline-block; margin-top: 8px; font: 700 0.72rem "Baloo 2", sans-serif;
+  color: #4a2d70; background: #ece0fa; padding: 6px 12px; border-radius: 100px;
+  text-decoration: none;
+}
 
 /* ---- Per-game XP rows ---- */
 .p-xp-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
