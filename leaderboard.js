@@ -585,6 +585,52 @@
   }
 
   // =====================================================================
+  // WEEKLY BOSS RUSH — one-time-per-calendar-week reward, same
+  // {gameId}:{chapterId}-style get-check-set pattern as claimBossWin
+  // above, keyed by weekKey() instead so it resets naturally every
+  // Monday. The 10-question gauntlet itself lives in MathVille's
+  // script.js (it needs buildRound(), which is MathVille-only) -- this
+  // side only supplies a per-player-per-week deterministic seed (so
+  // retrying mid-week always draws the SAME 10 questions, not an
+  // infinite reroll) and the claim/status check.
+  // =====================================================================
+  function weeklyBossRushSeed() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    const raw = `${(player && player.id) || "anon"}:${weekKey()}`;
+    let h = 0;
+    for (let i = 0; i < raw.length; i++) h = (h * 31 + raw.charCodeAt(i)) | 0;
+    return h;
+  }
+
+  async function getWeeklyBossRushStatus() {
+    const wk = weekKey();
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { alreadyWon: false, seed: weeklyBossRushSeed(), weekKey: wk };
+    const snap = await aigDb.ref(`players/${player.id}/weeklyBossRushWins/${wk}`).get();
+    return { alreadyWon: snap.exists() && snap.val() === true, seed: weeklyBossRushSeed(), weekKey: wk };
+  }
+
+  async function claimWeeklyBossRush(reward) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const winRef = aigDb.ref(`players/${player.id}/weeklyBossRushWins/${weekKey()}`);
+    const winSnap = await winRef.get();
+    if (winSnap.exists() && winSnap.val()) return { ok: true, alreadyWon: true };
+    await winRef.set(true);
+
+    const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+    const walletSnap = await walletRef.get();
+    const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    await walletRef.set({
+      ...wallet,
+      coins: (wallet.coins || 0) + (reward.coins || 0),
+      gems: (wallet.gems || 0) + (reward.gems || 0)
+    });
+    const newCard = await awardRandomCard("legendary");
+    return { ok: true, alreadyWon: false, newCard };
+  }
+
+  // =====================================================================
   // SEASON PASS (Battle Pass) — a monthly cumulative track, separate from
   // the daily quests above. Earns 1 "season point" (SP) per correct
   // answer, same trigger as coins (parallel counter, doesn't touch/consume
@@ -1135,6 +1181,7 @@
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
     getStreak, getDailyQuests, claimDailyQuest, getQuestLabel,
     claimBossWin,
+    getWeeklyBossRushStatus, claimWeeklyBossRush,
     getBattlePass, claimBattlePassTier,
     getCollection,
     getCosmetics, unlockCosmetic, equipCosmetic,

@@ -165,6 +165,7 @@ const state = {
   lastWrong: null,     // {prompt, answer} of the most recent miss — feeds the AI Tutor hint
   starsEarned: 0,
   isBoss: false,        // true only inside a Boss Challenge round -- see submitAnswer/goToNextStep
+  isWeeklyBossRush: false, // true only inside a Weekly Boss Rush -- always paired with isBoss:true (same engine), only used to pick the phase table + finish-screen branch, see launchWeeklyBossRush/finishBossRound
   bossTimerToken: 0,
   bossTimerTimeout: null,
   isChallenge: false,   // true only inside a Family Challenge turn -- see submitAnswer/goToNextStep
@@ -208,6 +209,7 @@ function showScreen(id) {
   const midRound = id === "screen-question" && (state.isChallenge || state.isBoss);
   $("btn-challenge").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
   $("btn-speedround").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
+  $("btn-weeklyboss").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
   $("btn-timer-toggle").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
   // Screens that already have their own Bo (Drive Mode's car, the reward
   // screen's AI Tutor card) or where it'd just be clutter (landing, pair
@@ -260,6 +262,7 @@ $("btn-powerup-extratime").addEventListener("click", useExtraTimePowerup);
 $("btn-timer-toggle").addEventListener("click", () => setPressureTimerEnabled(!pressureTimerEnabled));
 updateTimerToggleBtn();
 $("btn-speedround").addEventListener("click", launchSpeedRound);
+$("btn-weeklyboss").addEventListener("click", launchWeeklyBossRush);
 $("btn-speedround-again").addEventListener("click", launchSpeedRound);
 $("btn-speedround-back").addEventListener("click", goToMap);
 $("btn-diagnostic-done").addEventListener("click", goToMap);
@@ -4236,7 +4239,7 @@ function renderStep() {
   $("boss-timer-track").classList.toggle("hidden", !state.isBoss);
   if (state.isBoss) {
     $("boss-progress").textContent = `${state.stepIndex + 1}/${state.steps.length}`;
-    $("boss-phase-label").textContent = bossPhaseFor(state.stepIndex).label;
+    $("boss-phase-label").textContent = bossPhaseFor(state.stepIndex, state.isWeeklyBossRush ? WEEKLY_BOSS_RUSH_PHASES : BOSS_PHASES).label;
   }
   const turnLabel = state.isChallenge ? ` — ${state.challenge.currentName}'s turn` : "";
   $("q-label").textContent = step.uiType === "match" ? "" : `Question ${state.stepIndex + 1} of ${state.steps.length}${turnLabel}`;
@@ -4850,16 +4853,80 @@ const BOSS_PHASES = [
   { upTo: 4, ms: 7000, label: "Phase 2: Heating Up!", cssClass: "phase2" },
   { upTo: 5, ms: 5000, label: "Phase 3: Final Blow!", cssClass: "phase3" }
 ];
-function bossPhaseFor(stepIndex) {
-  return BOSS_PHASES.find(p => stepIndex < p.upTo) || BOSS_PHASES[BOSS_PHASES.length - 1];
+// `phases` defaults to the per-chapter Boss Challenge's own table -- the
+// Weekly Boss Rush below passes WEEKLY_BOSS_RUSH_PHASES instead, same
+// {upTo, ms, label, cssClass} shape, just recalibrated for 10 questions.
+function bossPhaseFor(stepIndex, phases) {
+  const table = phases || BOSS_PHASES;
+  return table.find(p => stepIndex < p.upTo) || table[table.length - 1];
 }
 
 function launchBossChallenge(chapterId) {
   const pool = buildRound(chapterId); // same generator every normal round already uses
   if (!pool.length) return; // defensive -- no chapter should ever produce zero questions
   state.isBoss = true;
+  state.isWeeklyBossRush = false;
   state.chapterId = chapterId;
   state.steps = shuffle(pool).slice(0, Math.min(BOSS_QUESTION_COUNT, pool.length));
+  state.stepIndex = 0;
+  state.mistakes = 0;
+  state.lastWrong = null;
+  renderStep();
+  startBossTimer();
+}
+
+// =====================================================================
+// WEEKLY BOSS RUSH -- one gauntlet question from EVERY MathVille chapter
+// (all 10, in Town Map order), reusing the exact same isBoss engine as
+// the per-chapter Boss Challenge above (timer, banner, submitAnswer's
+// one-miss-ends-it rule) via the isWeeklyBossRush flag, which only ever
+// picks which phase table / result-screen copy / reward-claim call to
+// use -- the round loop itself is completely untouched.
+//
+// The 10 questions are DETERMINISTIC per (player, calendar week): seeded
+// from AIGLeaderboard.getWeeklyBossRushStatus()'s seed (a hash of
+// playerId+weekKey, see leaderboard.js), so retrying mid-week always
+// fights the SAME gauntlet -- a genuine "beat this week's specific
+// challenge" rather than an infinite reroll-until-easy. A fresh seed
+// (and a fresh shot at the reward) arrives automatically next Monday.
+// =====================================================================
+const WEEKLY_BOSS_RUSH_REWARD = { coins: 40, gems: 3 };
+const WEEKLY_BOSS_RUSH_PHASES = [
+  { upTo: 4, ms: 10000, label: "Phase 1: Warm-up", cssClass: "" },
+  { upTo: 8, ms: 7000, label: "Phase 2: Heating Up!", cssClass: "phase2" },
+  { upTo: 10, ms: 5000, label: "Phase 3: Final Blow!", cssClass: "phase3" }
+];
+
+// Tiny seeded PRNG (mulberry32) -- only needs to be deterministic and
+// evenly distributed for picking 1-of-N from a small pool, not
+// cryptographic quality.
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+async function launchWeeklyBossRush() {
+  const status = window.AIGLeaderboard
+    ? await AIGLeaderboard.getWeeklyBossRushStatus()
+    : { seed: Date.now() % 2147483647, alreadyWon: false };
+  const rng = mulberry32(status.seed);
+  const steps = MATHVILLE_BANK.chapters
+    .map(ch => {
+      const pool = buildRound(ch.id); // same generator every normal round/Boss Challenge already uses
+      if (!pool.length) return null; // defensive -- no chapter should ever produce zero questions
+      return pool[Math.floor(rng() * pool.length)];
+    })
+    .filter(Boolean);
+  if (!steps.length) return;
+  state.isBoss = true;
+  state.isWeeklyBossRush = true;
+  state.chapterId = "weekly-boss-rush"; // single umbrella topic for recordTopicAttempt, same simplification Focus Round already uses for its own cross-chapter rounds
+  state.steps = steps;
   state.stepIndex = 0;
   state.mistakes = 0;
   state.lastWrong = null;
@@ -4870,7 +4937,7 @@ function launchBossChallenge(chapterId) {
 function startBossTimer() {
   clearBossTimer();
   const token = ++state.bossTimerToken;
-  const phase = bossPhaseFor(state.stepIndex);
+  const phase = bossPhaseFor(state.stepIndex, state.isWeeklyBossRush ? WEEKLY_BOSS_RUSH_PHASES : BOSS_PHASES);
   const fill = $("boss-timer-fill");
   fill.className = "boss-timer-fill " + phase.cssClass;
   fill.style.transition = "none";
@@ -4892,37 +4959,44 @@ function clearBossTimer() {
 async function finishBossRound(won) {
   clearBossTimer();
   state.isBoss = false;
+  const isWeekly = state.isWeeklyBossRush;
+  state.isWeeklyBossRush = false;
   const chapterId = state.chapterId;
   showScreen("screen-boss-result");
   $("btn-boss-retry").classList.remove("hidden");
-  $("btn-boss-retry").onclick = () => launchBossChallenge(chapterId);
+  $("btn-boss-retry").onclick = () => (isWeekly ? launchWeeklyBossRush() : launchBossChallenge(chapterId));
   $("btn-boss-back").onclick = () => goToMap();
 
   if (!won) {
     $("boss-result-emoji").textContent = "💥";
-    $("boss-result-title").textContent = "The boss got away!";
+    $("boss-result-title").textContent = isWeekly ? "The Weekly Boss got away!" : "The boss got away!";
     $("boss-result-sub").textContent = "One miss (or too slow) and it's over — try again!";
     return;
   }
 
   $("boss-result-emoji").textContent = "🏆";
   if (!window.AIGLeaderboard) {
-    $("boss-result-title").textContent = "Boss Defeated!";
+    $("boss-result-title").textContent = isWeekly ? "Weekly Boss Rush Cleared!" : "Boss Defeated!";
     $("boss-result-sub").textContent = "";
     return;
   }
   try {
-    const result = await AIGLeaderboard.claimBossWin("mathville", chapterId, BOSS_REWARD);
+    const result = isWeekly
+      ? await AIGLeaderboard.claimWeeklyBossRush(WEEKLY_BOSS_RUSH_REWARD)
+      : await AIGLeaderboard.claimBossWin("mathville", chapterId, BOSS_REWARD);
+    const reward = isWeekly ? WEEKLY_BOSS_RUSH_REWARD : BOSS_REWARD;
     if (result.alreadyWon) {
-      $("boss-result-title").textContent = "Boss Defeated (again)!";
-      $("boss-result-sub").textContent = "Nice practice run — you already claimed this boss's reward.";
+      $("boss-result-title").textContent = isWeekly ? "Weekly Boss Rush Cleared (again)!" : "Boss Defeated (again)!";
+      $("boss-result-sub").textContent = isWeekly
+        ? "Nice practice run — you already claimed this week's reward. A fresh challenge (and reward) arrives Monday."
+        : "Nice practice run — you already claimed this boss's reward.";
     } else {
-      $("boss-result-title").textContent = "Boss Defeated!";
+      $("boss-result-title").textContent = isWeekly ? "Weekly Boss Rush Cleared!" : "Boss Defeated!";
       const cardNote = result.newCard ? " — plus a new collectible card! 📚" : "";
-      $("boss-result-sub").textContent = `+${BOSS_REWARD.coins} 🪙  +${BOSS_REWARD.gems} 💎${cardNote}`;
+      $("boss-result-sub").textContent = `+${reward.coins} 🪙  +${reward.gems} 💎${cardNote}`;
     }
   } catch (e) {
-    $("boss-result-title").textContent = "Boss Defeated!";
+    $("boss-result-title").textContent = isWeekly ? "Weekly Boss Rush Cleared!" : "Boss Defeated!";
     $("boss-result-sub").textContent = "";
   }
 }
