@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=83" />
+<link rel="stylesheet" href="style.css?v=84" />
 </head>
 <body>
 
@@ -659,6 +659,22 @@
     </div>
     <p class="q-label" id="q-label"></p>
 
+    <!-- Relay Race live progress + Cheer reactions -- multiplayer rounds
+         only (state.mode === "multiplayer"), built on top of the
+         EXISTING mathvilleGames/{code} quiz-MP infrastructure (no new
+         WebRTC channel -- RTDB's ~150-400ms round-trip is completely
+         fine for "which question is my partner on", unlike Plane
+         Mode 2P's bullet-hell timing). See mvUpdateRelayProgress /
+         mvAttachCheerListener in script.js. -->
+    <div id="mp-relay-progress" class="mp-relay-progress hidden"></div>
+    <div id="mp-cheer-bar" class="mp-cheer-bar hidden">
+      <button class="mp-cheer-btn" type="button" data-cheer="👍">👍</button>
+      <button class="mp-cheer-btn" type="button" data-cheer="🔥">🔥</button>
+      <button class="mp-cheer-btn" type="button" data-cheer="😂">😂</button>
+      <button class="mp-cheer-btn" type="button" data-cheer="❤️">❤️</button>
+    </div>
+    <div id="mp-cheer-popup" class="mp-cheer-popup hidden"></div>
+
     <!-- typein: prompt + keypad -->
     <div id="ui-typein" class="ui-block hidden">
       <div class="q-image" id="typein-image"></div>
@@ -936,6 +952,6 @@
 <script src="questions.js?v=8"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=109"></script>
+<script src="script.js?v=110"></script>
 </body>
 </html>

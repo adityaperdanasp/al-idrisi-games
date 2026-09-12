@@ -263,6 +263,9 @@ $("btn-timer-toggle").addEventListener("click", () => setPressureTimerEnabled(!p
 updateTimerToggleBtn();
 $("btn-speedround").addEventListener("click", launchSpeedRound);
 $("btn-weeklyboss").addEventListener("click", launchWeeklyBossRush);
+document.querySelectorAll(".mp-cheer-btn").forEach(btn => {
+  btn.addEventListener("click", () => mvSendCheer(btn.dataset.cheer));
+});
 $("btn-speedround-again").addEventListener("click", launchSpeedRound);
 $("btn-speedround-back").addEventListener("click", goToMap);
 $("btn-diagnostic-done").addEventListener("click", goToMap);
@@ -4257,6 +4260,12 @@ function renderStep() {
   // to decide whether the Extra Time button should be usable, so it
   // needs the timer for THIS question to already be (or not be) running.
   updatePowerupBar(step);
+  // Relay Race UI -- cheer bar shows for the whole MP round; the progress
+  // bar itself is populated by mvRenderRelayProgress (driven by the
+  // game listener), this just makes sure a stale one from an earlier MP
+  // round doesn't linger into a later SOLO round.
+  $("mp-cheer-bar").classList.toggle("hidden", state.mode !== "multiplayer");
+  if (state.mode !== "multiplayer") $("mp-relay-progress").classList.add("hidden");
 
   if (step.uiType === "typein") renderTypeinStep(step);
   else if (step.uiType === "mc") renderMcStep(step);
@@ -4267,6 +4276,16 @@ function renderStep() {
 
 function goToNextStep() {
   state.stepIndex++;
+  // Relay Race live progress -- write-only here, read side is
+  // mvAttachListener's existing whole-game subscription (see
+  // mvRenderRelayProgress). Wrapped in try/catch for the same reason
+  // recordTopicAttempt's Firebase calls are: a synchronous throw here
+  // must never stop the round from advancing.
+  if (state.mode === "multiplayer" && state.mp.roundActive && state.mp.code) {
+    try {
+      aigDb.ref(`${MV_ROOT}/${state.mp.code}/players/${state.mp.seatKey}/stepIndex`).set(state.stepIndex);
+    } catch (e) {}
+  }
   if (state.stepIndex < state.steps.length) {
     renderStep();
     if (state.isBoss) startBossTimer();
@@ -5624,6 +5643,7 @@ function mvAttachListener(code) {
   if (state.mp.listeningCode === code) return;
   mvDetachListener();
   state.mp.listeningCode = code;
+  mvAttachCheerListener(code); // same lifecycle as the main listener above -- both live for as long as this page/game does, same existing pattern this codebase already uses (nothing explicitly detaches on "leave game" today)
 
   aigDb.ref(`${MV_ROOT}/${code}`).on("value", snap => {
     const game = snap.val();
@@ -5650,6 +5670,7 @@ function mvAttachListener(code) {
     }
 
     if (state.mp.roundActive) {
+      mvRenderRelayProgress(game); // live "partner's on Q3/6" bar -- see goToNextStep's write side
       const allFinished = Object.values(players).every(p => p.finished || p.disconnected);
       if (allFinished) {
         // Always re-render on every snapshot while finished — if an earlier
@@ -5665,7 +5686,81 @@ function mvAttachListener(code) {
   });
 }
 function mvDetachListener() {
-  if (state.mp.listeningCode) { aigDb.ref(`${MV_ROOT}/${state.mp.listeningCode}`).off(); state.mp.listeningCode = null; }
+  if (state.mp.listeningCode) {
+    aigDb.ref(`${MV_ROOT}/${state.mp.listeningCode}`).off();
+    mvDetachCheerListener(state.mp.listeningCode);
+    state.mp.listeningCode = null;
+  }
+}
+
+// Relay Race -- live "which question is everyone else on" bar, shown on
+// the question screen during a multiplayer round. Only ever touches its
+// own #mp-relay-progress div, which simply sits invisible (display:none
+// via the inactive-screen rule) whenever screen-question isn't active,
+// so calling this from the whole-game listener regardless of which
+// screen is currently showing is harmless.
+function mvRenderRelayProgress(game) {
+  const el = $("mp-relay-progress");
+  const total = (game.roundQuestions && game.roundQuestions.length) || state.steps.length || 1;
+  const others = Object.entries(game.players || {}).filter(([key]) => key !== state.mp.seatKey);
+  if (!others.length) { el.classList.add("hidden"); el.innerHTML = ""; return; }
+  el.classList.remove("hidden");
+  el.innerHTML = others.map(([, p]) => {
+    const done = p.finished ? total : Math.min(p.stepIndex || 0, total);
+    const pct = Math.round((done / total) * 100);
+    const label = p.disconnected ? "left" : p.finished ? "done!" : `${done}/${total}`;
+    return `<div class="mp-relay-row">
+      <span class="mp-relay-name">${escapeHtml(p.name || "Player")}</span>
+      <div class="mp-relay-track"><div class="mp-relay-fill" style="width:${pct}%"></div></div>
+      <span class="mp-relay-count">${label}</span>
+    </div>`;
+  }).join("");
+}
+
+// Cheer reactions -- lightweight emoji pings between MP players mid-
+// round, riding the SAME mathvilleGames/{code} object (a "cheers" push
+// list nested under it, still just `players`-adjacent data, no rules
+// change). Uses its OWN "child_added" listener (not the whole-game
+// "value" one) so it fires exactly once per new cheer rather than
+// needing to diff snapshots to find what's new.
+function mvCheerRef(code) {
+  return aigDb.ref(`${MV_ROOT}/${code}/cheers`);
+}
+
+function mvSendCheer(emoji) {
+  if (state.mode !== "multiplayer" || !state.mp.code) return;
+  try {
+    mvCheerRef(state.mp.code).push({ from: state.mp.seatKey, emoji, at: firebase.database.ServerValue.TIMESTAMP });
+  } catch (e) {}
+}
+
+let mvCheerAttachedAt = 0;
+function mvAttachCheerListener(code) {
+  mvCheerAttachedAt = Date.now();
+  mvCheerRef(code).on("child_added", snap => {
+    const cheer = snap.val();
+    if (!cheer || cheer.from === state.mp.seatKey) return; // never pop my own cheer back at myself
+    // "child_added" replays every EXISTING child immediately on attach,
+    // not just future ones -- without this guard, reconnecting mid-round
+    // (a dropped connection re-attaching) would replay a burst of every
+    // cheer sent earlier in the round all at once.
+    if (typeof cheer.at === "number" && cheer.at < mvCheerAttachedAt - 5000) return;
+    mvShowCheerPopup(cheer.emoji);
+  });
+}
+function mvDetachCheerListener(code) {
+  if (code) { try { mvCheerRef(code).off(); } catch (e) {} }
+}
+
+let cheerPopupTimeout = null;
+function mvShowCheerPopup(emoji) {
+  const el = $("mp-cheer-popup");
+  el.textContent = emoji;
+  el.classList.remove("hidden", "pop");
+  void el.offsetWidth; // force reflow so back-to-back cheers each restart the pop animation
+  el.classList.add("pop");
+  clearTimeout(cheerPopupTimeout);
+  cheerPopupTimeout = setTimeout(() => el.classList.add("hidden"), 1800);
 }
 
 function renderMpTownMap(game) {

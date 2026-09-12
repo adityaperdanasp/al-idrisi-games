@@ -919,6 +919,33 @@ button { font-family: inherit; }
 .powerup-btn:active:not(:disabled) { transform: scale(0.96); }
 .fifty-removed { opacity: 0.3; }
 
+/* ---------- Relay Race live progress + Cheer reactions ---------- */
+.mp-relay-progress { margin-bottom: 12px; }
+.mp-relay-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.mp-relay-row:last-child { margin-bottom: 0; }
+.mp-relay-name { font: 700 12px "Fredoka", sans-serif; color: var(--ink-soft); width: 64px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-relay-track { flex: 1; height: 8px; border-radius: 100px; background: var(--taupe); overflow: hidden; }
+.mp-relay-fill { height: 100%; background: var(--wood); border-radius: 100px; transition: width 0.3s ease; }
+.mp-relay-count { font: 700 11px "Fredoka", sans-serif; color: var(--ink-soft); width: 40px; flex: none; text-align: right; }
+
+.mp-cheer-bar { display: flex; gap: 8px; justify-content: center; margin-bottom: 12px; }
+.mp-cheer-btn {
+  border: none; border-radius: 100px; background: var(--card); font-size: 20px; padding: 6px 12px;
+  cursor: pointer; box-shadow: 0 1px 3px rgba(59,42,26,.08);
+}
+.mp-cheer-btn:active { transform: scale(0.9); }
+.mp-cheer-popup {
+  position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
+  font-size: 64px; z-index: 50; pointer-events: none;
+}
+.mp-cheer-popup.pop { animation: cheer-pop 1.8s ease; }
+@keyframes cheer-pop {
+  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+  20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+  35% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -60%) scale(1); opacity: 0; }
+}
+
 .boss-result-emoji { text-align: center; font-size: 64px; margin-top: 40px; }
 .boss-result-title { text-align: center; font: 800 24px "Baloo 2", sans-serif; margin-top: 12px; }
 .boss-result-sub { text-align: center; font: 700 14px "Fredoka", sans-serif; color: var(--ink-soft); margin-top: 8px; margin-bottom: 20px; }
