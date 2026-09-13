@@ -407,13 +407,12 @@ body {
 .sc-player-title {
   font-family: "Baloo 2", sans-serif;
   font-weight: 800;
-  font-size: 0.62rem;
+  font-size: 0.68rem;
   color: #6b3f9b;
   background: #f3e9fc;
-  padding: 2px 9px;
+  padding: 4px 12px;
   border-radius: 100px;
-  align-self: flex-start;
-  line-height: 1.6;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
 }
 .sc-player-title[hidden] { display: none; }
 
