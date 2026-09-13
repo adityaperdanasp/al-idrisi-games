@@ -405,12 +405,40 @@ body {
 }
 
 .sc-player-title {
-  font-family: "Nunito", sans-serif;
-  font-weight: 700;
-  font-size: 0.65rem;
-  color: #8c2f6b;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 0.62rem;
+  color: #6b3f9b;
+  background: #f3e9fc;
+  padding: 2px 9px;
+  border-radius: 100px;
+  align-self: flex-start;
+  line-height: 1.6;
 }
 .sc-player-title[hidden] { display: none; }
+
+.sc-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.sc-wallet-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  padding: 5px 12px;
+  border-radius: 100px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #3d2e22;
+}
+.sc-wallet-badge[hidden] { display: none; }
+.sc-wallet-badge span:nth-child(3) { margin-left: 4px; }
 
 .sc-hero {
   margin: 22px 24px 0;

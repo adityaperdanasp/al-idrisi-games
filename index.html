@@ -235,13 +235,19 @@
           <button class="sc-trophy" id="sc-customize-btn" title="Customize" type="button">🎨</button>
           <button class="sc-trophy" id="sc-recap-btn" title="Weekly Recap" type="button">📜</button>
         </div>
-        <button class="sc-player-chip" id="sc-player-chip">
-          <span class="sc-player-avatar" id="sc-player-avatar"></span>
-          <span class="sc-player-chip-text">
-            <span class="sc-player-name" id="sc-player-name"></span>
-            <span class="sc-player-title" id="sc-player-title" hidden></span>
-          </span>
-        </button>
+        <div class="sc-header-right">
+          <div class="sc-wallet-badge" id="sc-wallet-badge" hidden>
+            <span>🪙</span><span id="sc-wallet-coins">0</span>
+            <span>💎</span><span id="sc-wallet-gems">0</span>
+          </div>
+          <button class="sc-player-chip" id="sc-player-chip">
+            <span class="sc-player-avatar" id="sc-player-avatar"></span>
+            <span class="sc-player-chip-text">
+              <span class="sc-player-name" id="sc-player-name"></span>
+              <span class="sc-player-title" id="sc-player-title" hidden></span>
+            </span>
+          </button>
+        </div>
       </div>
 
       <div class="sc-hero">
@@ -720,6 +726,15 @@
       AIGLeaderboard.getCosmetics().then(cos => { if (cos) applyEquippedFrame(cos.equippedFrame); });
       const bonus = AIGLeaderboard.getBonusHourInfo();
       document.getElementById("sc-bonus-hour-banner").hidden = !bonus.active;
+      // Live so it updates the instant a coin/gem is earned elsewhere in
+      // the same session -- same watchWallet() MathVille's topbar badge
+      // already uses, just shown here too so kids see their balance
+      // right on the hub, not only once they're inside a game.
+      document.getElementById("sc-wallet-badge").hidden = false;
+      AIGLeaderboard.watchWallet(wallet => {
+        document.getElementById("sc-wallet-coins").textContent = wallet.coins || 0;
+        document.getElementById("sc-wallet-gems").textContent = wallet.gems || 0;
+      });
       AIGLeaderboard.getTitle().then(title => {
         if (!title) return;
         const el = document.getElementById("sc-player-title");
