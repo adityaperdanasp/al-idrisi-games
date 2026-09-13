@@ -139,21 +139,35 @@
     document.getElementById("kq-play-again-btn").addEventListener("click", startQuiz);
 
     async function startQuiz() {
-      document.getElementById("kq-play-intro").hidden = true;
       document.getElementById("kq-play-result").hidden = true;
-      document.getElementById("kq-start-btn").disabled = true;
-      const pool = await AIGLeaderboard.getApprovedCustomQuestionPool();
-      document.getElementById("kq-start-btn").disabled = false;
-      if (!pool.length) {
+      const startBtn = document.getElementById("kq-start-btn");
+      const emptyEl = document.getElementById("kq-play-intro").querySelector(".kq-empty");
+      startBtn.disabled = true;
+      startBtn.textContent = "Checking…"; // visible feedback that the tap registered, not just a near-instant no-op
+      try {
+        const pool = await AIGLeaderboard.getApprovedCustomQuestionPool();
+        if (!pool.length) {
+          document.getElementById("kq-play-intro").hidden = false;
+          emptyEl.textContent =
+            "No approved questions yet -- write one in \"My Questions\" and ask a parent to approve it!";
+          return;
+        }
+        document.getElementById("kq-play-intro").hidden = true;
+        quizQueue = shuffle(pool).slice(0, Math.min(10, pool.length));
+        quizIndex = 0;
+        quizScore = 0;
+        renderQuizStep();
+      } catch (e) {
+        // A thrown/rejected fetch (flaky connection) must never leave the
+        // button stuck disabled forever -- the finally block below always
+        // restores it, this just shows a distinct message so "couldn't
+        // check" doesn't look identical to "checked, nothing there".
         document.getElementById("kq-play-intro").hidden = false;
-        document.getElementById("kq-play-intro").querySelector(".kq-empty").textContent =
-          "No approved questions yet -- write one in \"My Questions\" and ask a parent to approve it!";
-        return;
+        emptyEl.textContent = "Couldn't check for questions -- check your connection and try again.";
+      } finally {
+        startBtn.disabled = false;
+        startBtn.textContent = "Start Quiz";
       }
-      quizQueue = shuffle(pool).slice(0, Math.min(10, pool.length));
-      quizIndex = 0;
-      quizScore = 0;
-      renderQuizStep();
     }
 
     function shuffle(arr) {
