@@ -28,11 +28,27 @@ function initBasketball() {
   const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
   const DIFFICULTY = "medium";
 
-  const GRAVITY = 0.42;      // %-of-court-height per frame^2
-  const VELOCITY_SCALE = 0.20; // converts a drag delta (as % of court size) into %/frame velocity
+  // ---- Shot physics --------------------------------------------------
+  // Deliberately NOT "power scales with how far you drag" -- that coupled
+  // vertical power and horizontal aim together (a raw angle-based vx/vy
+  // split), and because height is quadratically sensitive to vertical
+  // velocity, even a small angle change caused the ball to undershoot AND
+  // drift wildly off-course over the resulting longer, floppier flight.
+  // Verified numerically (see chat) before landing on this: vertical
+  // power is FIXED (any properly-upward drag gets the exact same arc,
+  // which reliably reaches the hoop's height on both the way up and the
+  // way down -- two scoring windows per shot), and only the HORIZONTAL
+  // drag component steers left/right independently. This makes the skill
+  // "aim your drag toward the hoop" (which matters since the ball spawns
+  // at a random x each shot) rather than "guess the exact right power."
+  const GRAVITY = 0.17;            // %-of-court-height per frame^2
+  const VERTICAL_POWER = 5.3;      // fixed upward launch speed for any valid shot
+  const HORIZONTAL_SENSITIVITY = 0.018; // how much sideways drag becomes sideways velocity
+  const MAX_HORIZONTAL_VELOCITY = 2.2;  // clamp so an extreme sideways drag can't send it flying wildly off-screen
+  const MIN_UPWARD_DRAG_PCT = 8;   // drags weaker/less-upward than this don't count as a real shot attempt
   const SHOT_TIME_LIMIT_MS = 6000;
   const BALL_SPAWN_Y = 84;
-  const HOOP_X = 50, HOOP_Y = 11, HOOP_TOL_X = 6, HOOP_TOL_Y_MIN = 8, HOOP_TOL_Y_MAX = 14;
+  const HOOP_X = 50, HOOP_TOL_X = 8, HOOP_TOL_Y_MIN = 6, HOOP_TOL_Y_MAX = 18;
 
   const court = document.getElementById("bh-court");
   const ball = document.getElementById("bh-ball");
@@ -261,12 +277,18 @@ function initBasketball() {
     const dyPx = e.clientY - state.dragStartClient.y;
     const dxPct = (dxPx / rect.width) * 100;
     const dyPct = (dyPx / rect.height) * 100;
-    // Ball flies in the SAME direction the finger dragged (a flick), so
-    // dragging up (dyPct negative) sends the ball up.
     clearTimeout(state.shotTimeoutId);
     disableDrag();
     hint.classList.add("hidden");
-    launchShot(dxPct * VELOCITY_SCALE, dyPct * VELOCITY_SCALE);
+    // A drag that isn't meaningfully upward (too short, or dragged sideways/
+    // down instead) doesn't count as a real shot attempt -- launch a weak,
+    // guaranteed-miss airball rather than silently doing nothing (the
+    // question was already answered, so this shot attempt is spent either
+    // way; better to show *something* than leave the kid wondering why
+    // nothing happened).
+    if (-dyPct < MIN_UPWARD_DRAG_PCT) { launchShot(0, -2); return; }
+    const vx = Math.max(-MAX_HORIZONTAL_VELOCITY, Math.min(MAX_HORIZONTAL_VELOCITY, dxPct * HORIZONTAL_SENSITIVITY));
+    launchShot(vx, -VERTICAL_POWER);
   }
 
   function launchShot(vx, vy) {
