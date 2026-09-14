@@ -22,6 +22,35 @@
   }
   const aigDb = aigApp.database();
 
+  // =====================================================================
+  // LIGHTWEIGHT CLIENT ERROR LOGGING -- catches uncaught errors and
+  // unhandled promise rejections across every game (this file is shared),
+  // logging a small record to Firebase instead of a bug only ever
+  // surfacing as a parent's screenshot (see the Kids' Quiz "Start Quiz"
+  // stuck-button bug found this session -- this would have shown up here
+  // immediately instead of needing a device photo to diagnose). Nested
+  // under players/{id}/errorLogs, no new top-level RTDB path/rules
+  // needed. Best-effort only: if logging itself throws, it's swallowed --
+  // it must never compound the original error or throw a second one.
+  // =====================================================================
+  function logClientError(message, extra) {
+    try {
+      const player = window.AIGPlayer && AIGPlayer.getPlayer();
+      if (!player) return; // no signed-in player yet (e.g. error on the sign-in screen itself) -- nowhere to attribute it
+      aigDb.ref(`players/${player.id}/errorLogs`).push({
+        message: String(message || "").slice(0, 500),
+        extra: extra ? String(extra).slice(0, 500) : "",
+        page: location.pathname,
+        at: firebase.database.ServerValue.TIMESTAMP
+      });
+    } catch (e) { /* logging must never itself throw */ }
+  }
+  window.addEventListener("error", e => logClientError(e.message, `${e.filename}:${e.lineno}`));
+  window.addEventListener("unhandledrejection", e => {
+    const reason = e.reason;
+    logClientError("Unhandled rejection: " + (reason && reason.message ? reason.message : reason));
+  });
+
   // Record one "play" for the currently-picked player in the given game.
   // gameId: "mathrace" | "language-arts" | "solarquest"
   // Silently does nothing if no one has picked a name yet. Returns a
@@ -991,11 +1020,26 @@
   // Cross-player discovery (getApprovedCustomQuestionPool) reads the whole
   // players/ tree once, same technique as getWeeklyLeaderboard.
   // =====================================================================
-  function submitCustomQuestion(prompt, options, correctIndex) {
+  // Caps how many of a kid's OWN questions can sit unreviewed at once --
+  // the known gap this repo had documented (no submit limit at all)
+  // meant a kid could flood a parent's approval queue with dozens of
+  // pending questions in one sitting. Once a parent approves/rejects
+  // some of the existing ones, the count drops back below the cap and
+  // they can submit more -- this isn't a lifetime limit, just a queue
+  // depth limit.
+  const MAX_PENDING_CUSTOM_QUESTIONS = 10;
+
+  async function submitCustomQuestion(prompt, options, correctIndex) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
-    if (!player || player.role === "parent") return null;
+    if (!player || player.role === "parent") return { ok: false };
+    const snap = await aigDb.ref(`players/${player.id}/customQuestions`).get();
+    const existing = snap.exists() ? Object.values(snap.val()) : [];
+    const pendingCount = existing.filter(q => q.status === "pending").length;
+    if (pendingCount >= MAX_PENDING_CUSTOM_QUESTIONS) {
+      return { ok: false, reason: "too-many-pending" };
+    }
     const ref = aigDb.ref(`players/${player.id}/customQuestions`).push();
-    ref.set({
+    await ref.set({
       authorName: player.name,
       prompt,
       options,
@@ -1003,7 +1047,7 @@
       status: "pending",
       createdAt: firebase.database.ServerValue.TIMESTAMP
     });
-    return ref.key;
+    return { ok: true, id: ref.key };
   }
 
   async function getMyCustomQuestions() {

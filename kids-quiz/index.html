@@ -236,6 +236,16 @@
     }
     renderNewOptionInputs();
 
+    // Small blocklist check before it ever reaches a parent's approval
+    // queue -- a parent still reviews every question regardless (nothing
+    // shows to other kids until approved), so this is a friendly "please
+    // rephrase" nudge, not a security boundary.
+    const KQ_BLOCKED_WORDS = ["anjing", "bangsat", "goblok", "tolol", "kontol", "memek", "babi", "bego", "idiot", "stupid", "damn", "hell", "fuck", "shit", "bitch"];
+    function kqContainsBlockedWord(text) {
+      const lower = text.toLowerCase();
+      return KQ_BLOCKED_WORDS.some(w => lower.includes(w));
+    }
+
     document.getElementById("kq-submit-btn").addEventListener("click", async () => {
       const prompt = document.getElementById("kq-new-prompt").value.trim();
       const options = Array.from(document.querySelectorAll("[data-opt-input]")).map(i => i.value.trim());
@@ -245,15 +255,36 @@
         msg.textContent = "Please fill in the question and all 4 choices.";
         return;
       }
-      document.getElementById("kq-submit-btn").disabled = true;
-      AIGLeaderboard.submitCustomQuestion(prompt, options, correctChoice);
-      document.getElementById("kq-submit-btn").disabled = false;
-      msg.textContent = "Submitted! A parent needs to approve it before others can play it.";
-      document.getElementById("kq-new-prompt").value = "";
-      document.querySelectorAll("[data-opt-input]").forEach(i => i.value = "");
-      correctChoice = 0;
-      renderNewOptionInputs();
-      renderMyQuestions();
+      if (kqContainsBlockedWord(prompt) || options.some(kqContainsBlockedWord)) {
+        msg.textContent = "Please use kind, school-friendly words in your question.";
+        return;
+      }
+      const submitBtn = document.getElementById("kq-submit-btn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting…";
+      // try/catch/finally so a thrown/rejected Firebase call (flaky
+      // connection) can never leave this button stuck disabled forever --
+      // the exact bug already fixed once on the Start Quiz button above.
+      try {
+        const result = await AIGLeaderboard.submitCustomQuestion(prompt, options, correctChoice);
+        if (!result.ok) {
+          msg.textContent = result.reason === "too-many-pending"
+            ? "You already have a lot of questions waiting for approval -- wait for a parent to review some first!"
+            : "Couldn't submit -- check your connection and try again.";
+          return;
+        }
+        msg.textContent = "Submitted! A parent needs to approve it before others can play it.";
+        document.getElementById("kq-new-prompt").value = "";
+        document.querySelectorAll("[data-opt-input]").forEach(i => i.value = "");
+        correctChoice = 0;
+        renderNewOptionInputs();
+        renderMyQuestions();
+      } catch (e) {
+        msg.textContent = "Couldn't submit -- check your connection and try again.";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit for Approval";
+      }
     });
 
     async function renderMyQuestions() {
