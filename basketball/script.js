@@ -285,6 +285,15 @@ function initBasketball() {
     clearTimeout(state.shotTimeoutId);
     disableDrag();
     hint.classList.add("hidden");
+    // Slingshot-style snap-back: onDragMove visually moves the ball to
+    // follow the finger while aiming, but the shot itself must always
+    // launch from the SAME fixed spot regardless of how far it was pulled
+    // -- otherwise a long pull-back (which also drags the ball further
+    // toward the hoop) starts the physics simulation that much closer to
+    // the target, silently overshooting despite using the exact same fixed
+    // VERTICAL_POWER. Without this, drag distance secretly leaked back
+    // into "power" through the launch position instead of being ignored.
+    placeBall(state.dragStartBallPct.x, state.dragStartBallPct.y);
     // A drag that isn't meaningfully upward (too short, or dragged sideways/
     // down instead) doesn't count as a real shot attempt -- launch a weak,
     // guaranteed-miss airball rather than silently doing nothing (the
