@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>My Profile — BrainBox</title>
+<meta name="theme-color" content="#8c2f6b">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #FDF0F7 0%, #F3E9FC 100%); font-family: "Nunito", sans-serif; color: #3d2e22; }
+  .pf-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .pf-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .pf-back { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #8c2f6b; font-size: 1.05rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); text-decoration: none; flex: none; }
+  .pf-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #8c2f6b; }
+
+  .pf-hero { text-align: center; padding: 10px 20px 20px; }
+  .pf-avatar { width: 84px; height: 84px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 2.2rem; color: #3d2e22; }
+  .pf-avatar.frame-bronze { box-shadow: 0 0 0 5px #C1793E; }
+  .pf-avatar.frame-silver { box-shadow: 0 0 0 5px #C7CDD6; }
+  .pf-avatar.frame-gold { box-shadow: 0 0 0 5px #F7C548; }
+  /* Approximation of the hub's conic-gradient rainbow ring (see style.css's
+     .frame-rainbow) -- a real gradient border needs a border-box/padding-
+     box background split that would fight with this avatar's own solid
+     background-color, so this uses a plain gradient-toned pink/purple ring
+     instead of trying to reproduce the exact conic-gradient. */
+  .pf-avatar.frame-rainbow { box-shadow: 0 0 0 5px #d9c1f6; }
+  .pf-avatar.frame-fire { box-shadow: 0 0 0 5px #E4572E, 0 0 16px 3px rgba(228,87,46,.6); }
+  .pf-name { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; }
+  .pf-nickname { font-weight: 700; color: #8a7a6a; font-size: .88rem; margin-top: 2px; }
+  .pf-title-badge { display: inline-block; margin-top: 8px; background: #fff; border-radius: 100px; padding: 6px 16px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; color: #8c2f6b; box-shadow: 0 2px 0 rgba(0,0,0,.05); }
+
+  .pf-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 16px; }
+  .pf-stat-card { background: #fff; border-radius: 16px; padding: 14px; text-align: center; box-shadow: 0 3px 0 rgba(0,0,0,.05); }
+  .pf-stat-emoji { font-size: 1.5rem; }
+  .pf-stat-value { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; margin: 4px 0 2px; }
+  .pf-stat-label { font-weight: 700; color: #8a7a6a; font-size: .72rem; }
+
+  .pf-section { margin: 0 16px 16px; background: #fff; border-radius: 18px; padding: 16px; box-shadow: 0 3px 0 rgba(0,0,0,.05); }
+  .pf-section-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; margin-bottom: 10px; color: #3d2e22; }
+  .pf-collection-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .pf-card-mini { aspect-ratio: 1; border-radius: 10px; background: #fdf6ea; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+  .pf-card-mini.locked { opacity: .25; filter: grayscale(1); }
+  .pf-collection-count { font-weight: 700; color: #8a7a6a; font-size: .78rem; margin-top: 8px; text-align: right; }
+
+  .pf-pet-row { display: flex; align-items: center; gap: 12px; }
+  .pf-pet-emoji { font-size: 2.2rem; }
+  .pf-pet-name { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; }
+  .pf-pet-sub { font-weight: 700; color: #8a7a6a; font-size: .78rem; }
+
+  .pf-share-hint { text-align: center; font-weight: 700; color: #8a7a6a; font-size: .78rem; margin: 6px 16px 0; }
+  .pf-empty-note { text-align: center; color: #8a7a6a; font-weight: 700; padding: 20px 0; }
+</style>
+</head>
+<body>
+
+<div class="pf-page" id="pf-page">
+  <div class="pf-topbar">
+    <a href="../" class="pf-back">←</a>
+    <div class="pf-title">🌟 My Profile</div>
+  </div>
+
+  <div class="pf-hero">
+    <div class="pf-avatar" id="pf-avatar">?</div>
+    <div class="pf-name" id="pf-name"></div>
+    <div class="pf-nickname" id="pf-nickname" hidden></div>
+    <div class="pf-title-badge" id="pf-title-badge" hidden></div>
+  </div>
+
+  <div class="pf-stats-grid">
+    <div class="pf-stat-card"><div class="pf-stat-emoji">⭐</div><div class="pf-stat-value" id="pf-stat-level">--</div><div class="pf-stat-label">Level</div></div>
+    <div class="pf-stat-card"><div class="pf-stat-emoji">🔥</div><div class="pf-stat-value" id="pf-stat-streak">--</div><div class="pf-stat-label">Day Streak</div></div>
+    <div class="pf-stat-card"><div class="pf-stat-emoji">🪙</div><div class="pf-stat-value" id="pf-stat-coins">--</div><div class="pf-stat-label">Coins</div></div>
+    <div class="pf-stat-card"><div class="pf-stat-emoji">💎</div><div class="pf-stat-value" id="pf-stat-gems">--</div><div class="pf-stat-label">Gems</div></div>
+  </div>
+
+  <div class="pf-section">
+    <div class="pf-section-title">📚 Collection</div>
+    <div class="pf-collection-grid" id="pf-collection-grid"></div>
+    <div class="pf-collection-count" id="pf-collection-count"></div>
+  </div>
+
+  <div class="pf-section">
+    <div class="pf-section-title">🐾 My Pet</div>
+    <div class="pf-pet-row">
+      <span class="pf-pet-emoji" id="pf-pet-emoji">🥚</span>
+      <div>
+        <div class="pf-pet-name" id="pf-pet-name">--</div>
+        <div class="pf-pet-sub" id="pf-pet-sub"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="pf-share-hint">📸 Screenshot me to show off your profile!</p>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
