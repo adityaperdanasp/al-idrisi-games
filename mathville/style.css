@@ -858,6 +858,12 @@ button { font-family: inherit; }
 .reward-title { text-align: center; font: 800 22px "Baloo 2", sans-serif; margin-top: 20px; }
 .reward-stars { text-align: center; font-size: 40px; letter-spacing: 8px; color: var(--gold); margin: 12px 0; }
 .reward-xp { text-align: center; font: 700 15px "Fredoka", sans-serif; color: var(--wood-dark); margin-bottom: 12px; }
+.trivia-card {
+  display: flex; align-items: center; gap: 10px; background: var(--cream);
+  border-radius: 14px; padding: 12px 14px; margin: 0 0 14px;
+  font: 600 12px "Fredoka", sans-serif; color: var(--ink-soft);
+}
+.trivia-emoji { font-size: 18px; flex: none; }
 
 /* ---------- Boss Challenge ---------- */
 .boss-banner {

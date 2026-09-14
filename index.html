@@ -535,6 +535,8 @@
         <span class="sc-modal-title">📚 Collection</span>
         <button class="sc-modal-close" id="sc-collection-close" type="button">✕</button>
       </div>
+      <div class="sc-rank-strip" id="sc-rank-strip"></div>
+      <div class="sc-rank-next" id="sc-rank-next"></div>
       <div class="sc-modal-sub" id="sc-collection-count"></div>
       <div class="sc-card-grid" id="sc-card-grid"></div>
     </div>
@@ -552,10 +554,12 @@
         <button class="sc-modal-tab active" id="sc-tab-frames" type="button">Frames</button>
         <button class="sc-modal-tab" id="sc-tab-sounds" type="button">Sounds</button>
         <button class="sc-modal-tab" id="sc-tab-powerups" type="button">⚡ Power-ups</button>
+        <button class="sc-modal-tab" id="sc-tab-avatarcolor" type="button">🎨 Avatar</button>
       </div>
       <div class="sc-cosmetic-list" id="sc-frame-list"></div>
       <div class="sc-cosmetic-list" id="sc-sound-list" hidden></div>
       <div class="sc-cosmetic-list" id="sc-powerup-list" hidden></div>
+      <div class="sc-avatarcolor-grid" id="sc-avatarcolor-grid" hidden></div>
     </div>
   </div>
 
@@ -687,6 +691,14 @@
     const current = AIGPlayer.getPlayer();
     if (!current) return;
     document.getElementById("sc-player-avatar").style.background = scColorFor(current);
+    // Custom color override -- async, so the hash-derived default above
+    // paints immediately (no flash of unstyled avatar) and this just
+    // repaints on top of it once the saved preference comes back.
+    if (current.role !== "parent" && window.AIGLeaderboard && AIGLeaderboard.getAvatarColor) {
+      AIGLeaderboard.getAvatarColor().then(color => {
+        if (color) document.getElementById("sc-player-avatar").style.background = color;
+      });
+    }
     document.getElementById("sc-player-avatar").textContent = current.name[0].toUpperCase();
     document.getElementById("sc-player-name").textContent = current.name;
     document.getElementById("sc-screen-select").classList.remove("active");
@@ -932,6 +944,25 @@
           ${owned ? `<span class="sc-card-name">${c.name}</span>` : ""}
         </div>`;
     }).join("");
+    renderRankLadder();
+  }
+
+  // Rank ladder -- the 7 Title/Rank tiers (see leaderboard.js's
+  // TITLE_TIERS) shown as one strip with the current tier highlighted,
+  // reusing the same overlay the card collection already lives in
+  // rather than a brand new screen for just this.
+  async function renderRankLadder() {
+    if (!window.AIGLeaderboard || !AIGLeaderboard.getTitleTiers) return;
+    const [title, tiers] = await Promise.all([AIGLeaderboard.getTitle(), Promise.resolve(AIGLeaderboard.getTitleTiers())]);
+    if (!title) { document.getElementById("sc-rank-strip").innerHTML = ""; document.getElementById("sc-rank-next").textContent = ""; return; }
+    document.getElementById("sc-rank-strip").innerHTML = tiers.map(t => {
+      const reached = title.count >= t.min;
+      const current = t.name === title.name;
+      return `<div class="sc-rank-pip${reached ? " reached" : ""}${current ? " current" : ""}" title="${t.name} (${t.min}+ correct)">${t.emoji}</div>`;
+    }).join("");
+    document.getElementById("sc-rank-next").textContent = title.next
+      ? `${title.emoji} ${title.name} — ${title.next.min - title.count} more correct to reach ${title.next.emoji} ${title.next.name}`
+      : `${title.emoji} ${title.name} — top rank reached!`;
   }
 
   document.getElementById("sc-collection-btn").addEventListener("click", () => {
@@ -1012,6 +1043,7 @@
     const cos = await AIGLeaderboard.getCosmetics();
     if (!cos) return;
     renderPowerupShop();
+    renderAvatarColorPicker();
 
     document.getElementById("sc-frame-list").innerHTML = cos.frames.map(f => {
       const isEquipped = cos.equippedFrame === f.id;
@@ -1087,16 +1119,37 @@
   document.getElementById("sc-customize-close").addEventListener("click", () => {
     document.getElementById("sc-customize-overlay").hidden = true;
   });
-  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups"];
+  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups", "avatarcolor"];
+  const CUSTOMIZE_TAB_LIST_ID = { frames: "sc-frame-list", sounds: "sc-sound-list", powerups: "sc-powerup-list", avatarcolor: "sc-avatarcolor-grid" };
   function switchCustomizeTab(tab) {
     CUSTOMIZE_TABS.forEach(t => {
       document.getElementById(`sc-tab-${t}`).classList.toggle("active", t === tab);
-      document.getElementById(`sc-${t === "frames" ? "frame" : t === "sounds" ? "sound" : "powerup"}-list`).hidden = t !== tab;
+      document.getElementById(CUSTOMIZE_TAB_LIST_ID[t]).hidden = t !== tab;
     });
   }
   document.getElementById("sc-tab-frames").addEventListener("click", () => switchCustomizeTab("frames"));
   document.getElementById("sc-tab-sounds").addEventListener("click", () => switchCustomizeTab("sounds"));
   document.getElementById("sc-tab-powerups").addEventListener("click", () => switchCustomizeTab("powerups"));
+  document.getElementById("sc-tab-avatarcolor").addEventListener("click", () => switchCustomizeTab("avatarcolor"));
+
+  // Avatar color picker -- free, no unlock/cost (unlike frames/sounds
+  // above). Swatches are the SAME 7 colors scColorFor() already
+  // auto-assigns from a name hash; this just lets a kid override that
+  // with their own pick, persisted via AIGLeaderboard.setAvatarColor.
+  async function renderAvatarColorPicker() {
+    const current = await AIGLeaderboard.getAvatarColor();
+    const grid = document.getElementById("sc-avatarcolor-grid");
+    grid.innerHTML = SC_STUDENT_PALETTE.map(c => `
+      <button class="sc-avatarcolor-swatch${c === current ? " selected" : ""}" type="button" data-color="${c}" style="background:${c}"></button>
+    `).join("");
+    grid.querySelectorAll(".sc-avatarcolor-swatch").forEach(btn => {
+      btn.onclick = async () => {
+        await AIGLeaderboard.setAvatarColor(btn.dataset.color);
+        document.getElementById("sc-player-avatar").style.background = btn.dataset.color;
+        renderAvatarColorPicker();
+      };
+    });
+  }
 
   // One-way (parent -> child) message set from /parents
   // (players/{id}/parentMessage: {text, sentAt, read}) -- shows once per

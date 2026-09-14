@@ -4927,12 +4927,44 @@ function finishRound() {
   showReward(stars);
 }
 
+// Short, kid-friendly math/science facts -- pure content, no new engine,
+// shown once per reward screen so finishing a round teaches one small
+// extra thing beyond the chapter itself. Never shown in MP (mvRenderReward
+// doesn't call showReward at all, so this is naturally solo-only).
+const TRIVIA_FACTS = [
+  "A 'googol' is the number 1 followed by 100 zeros!",
+  "Zero was invented as a number in ancient India.",
+  "An octopus has three hearts and blue blood.",
+  "Honey never spoils -- archaeologists found 3,000-year-old honey that was still edible!",
+  "The Sun is so big that about 1.3 million Earths could fit inside it.",
+  "A group of flamingos is called a 'flamboyance'.",
+  "Every snowflake has a unique six-sided pattern.",
+  "Sharks existed before trees -- they're over 400 million years old!",
+  "A day on Venus is longer than a year on Venus.",
+  "Bananas are berries, but strawberries aren't!",
+  "The number pi (π) never ends and never repeats.",
+  "Your heart beats about 100,000 times every single day.",
+  "A bolt of lightning is hotter than the surface of the Sun.",
+  "There are more possible chess games than atoms in the universe.",
+  "Ants don't have lungs -- they breathe through tiny holes in their body.",
+  "The Great Wall of China is not actually visible from space with the naked eye.",
+  "A rhinoceros's horn is made of the same stuff as your fingernails.",
+  "One million seconds is about 12 days, but one billion seconds is almost 32 years!",
+  "Water can boil AND freeze at the same time -- it's called the 'triple point'.",
+  "The word 'mathematics' comes from a Greek word meaning 'to learn'."
+];
+function showTriviaFact() {
+  $("trivia-text").textContent = TRIVIA_FACTS[rand(0, TRIVIA_FACTS.length - 1)];
+  $("trivia-card").classList.remove("hidden");
+}
+
 function showReward(stars) {
   const meta = CHAPTER_META[state.chapterId];
   $("reward-title").textContent = `Nice work in ${meta.location}!`;
   $("reward-stars").textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
   const xp = stars * 10;
   $("reward-xp").textContent = `+${xp} XP`;
+  showTriviaFact();
   $("mp-results").classList.add("hidden");
   $("btn-reward-continue").classList.remove("hidden");
   $("btn-reward-boss").classList.remove("hidden");

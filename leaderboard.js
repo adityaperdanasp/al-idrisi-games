@@ -890,6 +890,26 @@
     return { ok: true };
   }
 
+  // Avatar color -- a FREE preference override (unlike frames/sounds
+  // above, which are paid cosmetics with owned/unlock gating). Kids just
+  // pick which of the 7 existing palette colors they want instead of
+  // being stuck with whatever the name-hash landed on (see scColorFor in
+  // the hub). Stored separately from `equipped` since there's no
+  // ownership concept here at all.
+  async function getAvatarColor() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`players/${player.id}/avatarColor`).get();
+    return snap.exists() ? snap.val() : null;
+  }
+
+  async function setAvatarColor(color) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    await aigDb.ref(`players/${player.id}/avatarColor`).set(color);
+    return { ok: true };
+  }
+
   // Weekly Recap -- a shareable "your week in review" summary (players are
   // explicitly meant to screenshot this to show a parent). Deliberately
   // mixes a true weekly delta (correct answers this week, from the same
@@ -956,6 +976,11 @@
     const next = TITLE_TIERS.find(t => t.min > count) || null;
     return { count, name: tier.name, emoji: tier.emoji, next };
   }
+
+  // Exposes the full 7-tier ladder (a plain constant, not player-specific)
+  // for a "rank showcase" view -- getTitle() above only ever returns the
+  // CURRENT tier + next, not the whole list to render alongside it.
+  function getTitleTiers() { return TITLE_TIERS; }
 
   // =====================================================================
   // CUSTOM QUIZ QUESTIONS — a kid writes a multiple-choice question, a
@@ -1209,8 +1234,9 @@
     getBattlePass, claimBattlePassTier,
     getCollection,
     getCosmetics, unlockCosmetic, equipCosmetic,
+    getAvatarColor, setAvatarColor,
     getWeeklyLeaderboard, getWeeklyRecap, getBonusHourInfo,
-    getTitle,
+    getTitle, getTitleTiers,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
     getPowerupDefs, getPowerups, buyPowerup, usePowerup,
     submitSpeedRoundScore, getSpeedRoundLeaderboard,
