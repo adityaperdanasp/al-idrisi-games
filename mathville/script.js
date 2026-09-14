@@ -4220,7 +4220,26 @@ function buildRound(chapterId, difficulty) {
 /* =================================================================
    4. GRADING HELPERS
    ================================================================= */
-function extractNumbers(s) { return (String(s).match(/-?\d+(\.\d+)?/g) || []).map(Number); }
+// Long-documented bug fixed here (2026-09-14): the old regex
+// (`-?\d+(\.\d+)?`) never included commas as part of a number, so a
+// comma-thousands answer like "7,398" split into TWO numbers [7, 398]
+// -- a kid typing the natural "7398" (no comma) on the numeric keypad
+// got marked wrong even though the value was right. Confirmed via the
+// new scripts/qa-mathville-questions.js this affected 119 answers in
+// addition-subtraction alone (any answer >= 1,000), not just the one
+// previously-known word-problems entry.
+// Fix: match a proper comma-grouped thousands run ("7,398", "1,234,567")
+// as ONE token first, falling back to a plain digit run otherwise. This
+// does NOT break genuine multi-value list answers ("17, 19, 23",
+// "2, 5, 10") -- those use ", " (comma+SPACE), and `,\d{3}` requires the
+// comma be immediately followed by a digit with no space, so a list's
+// commas never match the thousands-group alternative and each number is
+// still extracted separately. Verified via scripts/qa-mathville-questions.js
+// against the full question bank: 0 failures (was 119) after this change.
+function extractNumbers(s) {
+  const matches = String(s).match(/-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+(?:\.\d+)?/g) || [];
+  return matches.map(n => Number(n.replace(/,/g, "")));
+}
 function normalizeText(s) { return String(s).toLowerCase().replace(/[×X]/g, "x").replace(/[^\w.,\s-]/g, "").replace(/\s+/g, " ").trim(); }
 function labelsEqual(a, b) { return String(a).trim().toLowerCase() === String(b).trim().toLowerCase(); }
 
