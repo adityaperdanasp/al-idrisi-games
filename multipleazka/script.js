@@ -99,8 +99,10 @@ const STEP = {
 // timer everywhere, and (Solo only) how fast the AI opponent moves.
 // `medium` matches the original fixed values this game shipped with, so
 // picking no difficulty at all behaves exactly like before this existed.
+// easy's min was 2 -- bumped to 3 so neither multiplication factor can be
+// 1 or 2 (too trivial even for the easiest tier, per explicit request).
 const DIFFICULTY = {
-  easy:   { time: 10, min: 2, max: 5,  divisionChance: 0,   maxDividend: 25,  opponentSeconds: 90 },
+  easy:   { time: 10, min: 3, max: 5,  divisionChance: 0,   maxDividend: 25,  opponentSeconds: 90 },
   medium: { time: 9,  min: 3, max: 10, divisionChance: 0.5, maxDividend: 100, opponentSeconds: 55 },
   hard:   { time: 7,  min: 4, max: 12, divisionChance: 0.5, maxDividend: 120, opponentSeconds: 40 }
 };
@@ -115,7 +117,10 @@ const VEHICLE_EMOJI = {
   ship: "🚢",
   bus: "🚌",
   truck: "🚚",
-  train: "🚂"
+  train: "🚂",
+  skateboard: "🛹",
+  helicopter: "🚁",
+  rocket: "🚀"
 };
 
 // Kids cheering — spoken aloud + green popup.

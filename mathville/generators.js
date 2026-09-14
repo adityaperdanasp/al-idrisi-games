@@ -55,8 +55,12 @@
 
   /* ---- Addition & Subtraction ---- */
   function genAddition(difficulty) {
+    // easy used to allow 1-digit addends (digits: [1, 2]) -- dropped down to
+    // a fixed 2-digit minimum per explicit request: single-digit addition
+    // is too trivial even for the "easy" Drive Mode/Plane Mode/Ninja Runner
+    // quick-quiz tier.
     const OPTS = {
-      easy: { digits: [1, 2], addends: [2] },
+      easy: { digits: [2], addends: [2] },
       medium: { digits: [2, 3], addends: [2] },
       hard: { digits: [5, 6], addends: [2, 3] }
     };
@@ -69,7 +73,9 @@
   }
 
   function genSubtraction(difficulty) {
-    const DIGIT_RANGE = { easy: [1, 2], medium: [2, 3], hard: [5, 6] };
+    // Same reasoning as genAddition above -- easy no longer allows a
+    // 1-digit minuend/subtrahend.
+    const DIGIT_RANGE = { easy: [2], medium: [2, 3], hard: [5, 6] };
     const digits = choice(DIGIT_RANGE[difficulty] || DIGIT_RANGE.hard);
     let a = randDigits(digits), b = randDigits(digits);
     if (b > a) [a, b] = [b, a];
@@ -79,8 +85,9 @@
   /* ---- Multiplication ---- */
   function genMultiplication(difficulty) {
     if (difficulty === "easy") {
-      // Times-table facts only.
-      const a = rand(2, 12), b = rand(2, 12);
+      // Times-table facts only -- floor bumped 2->3 so neither factor can
+      // be 1 or 2 (too trivial for the "easy" tier, per explicit request).
+      const a = rand(3, 12), b = rand(3, 12);
       return { prompt: `${a} × ${b} = ?`, answer: fmt(a * b) };
     }
     if (difficulty === "medium") {
