@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Duel a Friend — BrainBox</title>
+<meta name="theme-color" content="#D64545">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: #fdf6ea; font-family: "Nunito", sans-serif; color: #3d2e22; }
+  .dl-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .dl-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .dl-back { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #b8342f; font-size: 1.05rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); text-decoration: none; flex: none; }
+  .dl-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #b8342f; }
+
+  .dl-tabs { display: flex; gap: 8px; margin: 0 16px 16px; }
+  .dl-tab { flex: 1; border: none; background: #f1ede6; color: #8a7a6a; font-family: "Baloo 2", sans-serif; font-weight: 700; font-size: .85rem; padding: 10px; border-radius: 100px; cursor: pointer; }
+  .dl-tab.active { background: #D64545; color: #fff; }
+  .dl-panel { padding: 0 16px; }
+  .dl-panel[hidden] { display: none; }
+
+  .dl-card { background: #fff; border-radius: 18px; padding: 18px; box-shadow: 0 3px 0 rgba(0,0,0,.05); margin-bottom: 14px; }
+  .dl-field label { display: block; font-weight: 800; font-size: .8rem; color: #8a7a6a; margin-bottom: 6px; }
+  .dl-field input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 2px solid #f1ede6; font-family: "Nunito", sans-serif; font-size: .95rem; margin-bottom: 12px; }
+  .dl-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; text-align: center; text-decoration: none; }
+  .dl-btn-primary { background: #D64545; color: #fff; }
+  .dl-btn-secondary { background: #f1ede6; color: #3d2e22; }
+  .dl-note { font-weight: 700; color: #8a7a6a; font-size: .8rem; margin-top: 8px; }
+  .dl-note.error { color: #D64545; }
+
+  .dl-empty { text-align: center; color: #8a7a6a; font-weight: 700; padding: 20px 0; }
+  .dl-list { display: flex; flex-direction: column; gap: 10px; }
+  .dl-item { background: #fff; border-radius: 16px; padding: 14px 16px; box-shadow: 0 3px 0 rgba(0,0,0,.05); display: flex; align-items: center; gap: 10px; }
+  .dl-item-info { flex: 1; min-width: 0; }
+  .dl-item-name { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; }
+  .dl-item-sub { font-weight: 700; color: #8a7a6a; font-size: .78rem; margin-top: 2px; }
+  .dl-item-btn { border: none; border-radius: 100px; padding: 8px 16px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .82rem; cursor: pointer; background: #D64545; color: #fff; flex: none; }
+  .dl-item-outcome { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; flex: none; }
+  .dl-item-outcome.win { color: #3F8F5F; }
+  .dl-item-outcome.lose { color: #D64545; }
+  .dl-item-outcome.tie { color: #8a7a6a; }
+  .dl-dismiss { background: none; border: none; color: #8a7a6a; font-size: 1rem; cursor: pointer; flex: none; padding: 4px; }
+  .dl-section-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .9rem; margin: 0 0 10px; }
+
+  .dl-overlay { position: fixed; inset: 0; background: rgba(61,46,34,.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .dl-overlay.hidden { display: none; }
+  .dl-modal { background: #fff; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
+  .dl-q-count { font-weight: 700; color: #8a7a6a; font-size: .78rem; margin-bottom: 8px; }
+  .dl-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 16px; }
+  .dl-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dl-q-btn { border: 2px solid #f1ede6; background: #fdf6ea; border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; color: #3d2e22; cursor: pointer; }
+  .dl-q-btn:disabled { cursor: default; }
+  .dl-q-btn.correct { border-color: #3F8F5F; background: #eaf7ee; }
+  .dl-q-btn.wrong { border-color: #D64545; background: #fdeaea; }
+  .dl-result-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .dl-result-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
+  .dl-result-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="dl-page" id="dl-page">
+  <div class="dl-topbar">
+    <a href="../" class="dl-back">←</a>
+    <div class="dl-title">⚔️ Duel a Friend</div>
+  </div>
+
+  <div class="dl-tabs">
+    <button class="dl-tab active" id="dl-tab-challenge" type="button">Challenge</button>
+    <button class="dl-tab" id="dl-tab-mine" type="button">My Duels</button>
+  </div>
+
+  <div class="dl-panel" id="dl-panel-challenge">
+    <div class="dl-card">
+      <div class="dl-field">
+        <label>Friend's name</label>
+        <input type="text" id="dl-friend-name" placeholder="e.g. Bram" autocomplete="off" />
+      </div>
+      <button class="dl-btn dl-btn-primary" id="dl-challenge-btn">Answer 10 Questions to Challenge!</button>
+      <p class="dl-note" id="dl-challenge-note"></p>
+    </div>
+  </div>
+
+  <div class="dl-panel" id="dl-panel-mine" hidden>
+    <div class="dl-section-title">📥 Pending Challenges</div>
+    <div class="dl-list" id="dl-inbox-list"></div>
+    <div class="dl-section-title" style="margin-top:18px;">🏁 Results</div>
+    <div class="dl-list" id="dl-results-list"></div>
+  </div>
+
+  <div class="dl-overlay hidden" id="dl-question-overlay">
+    <div class="dl-modal">
+      <div class="dl-q-count" id="dl-q-count"></div>
+      <div class="dl-q-prompt" id="dl-q-prompt"></div>
+      <div class="dl-q-grid" id="dl-q-grid"></div>
+    </div>
+  </div>
+
+  <div class="dl-overlay hidden" id="dl-result-overlay">
+    <div class="dl-modal">
+      <div class="dl-result-emoji" id="dl-result-emoji">🏆</div>
+      <div class="dl-result-title" id="dl-result-title"></div>
+      <div class="dl-result-sub" id="dl-result-sub"></div>
+      <button class="dl-btn dl-btn-primary" id="dl-result-close-btn">OK</button>
+    </div>
+  </div>
+
+  <div class="dl-overlay hidden" id="dl-signedout-overlay">
+    <div class="dl-modal">
+      <p class="dl-result-sub">Please sign in from the hub first.</p>
+      <a href="../" class="dl-btn dl-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

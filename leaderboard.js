@@ -2131,6 +2131,109 @@
     return { ok: true, event };
   }
 
+  // =====================================================================
+  // ASYNC DUEL (duel/) — challenge a friend to the SAME 10-question set,
+  // async (they don't need to be online at the same time, unlike Math
+  // Race's real-time multiplayer). The sender plays first, then the
+  // question set + sender's score is written to the RECIPIENT's own
+  // inbox; the recipient plays the identical set later, and whichever
+  // client resolves it (always the recipient's, since only they know
+  // their own score) writes the outcome back to BOTH sides' wallets and
+  // to the sender's results list. This app has no per-player write
+  // restriction in its RTDB rules (no Firebase Auth, just a lightweight
+  // PIN system -- see CLAUDE.md), so a client writing to another
+  // player's wallet/inbox is the same trust model every other
+  // cross-player feature here already uses (Class Goal, Weekly
+  // Leaderboard, Kids' Quiz approval, etc).
+  // =====================================================================
+  const DUEL_WIN_BONUS = { coins: 5 };
+  const DUEL_TIE_BONUS = { coins: 2 };
+
+  function sanitizeNameKey(name) {
+    return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+
+  async function sendDuelChallenge(friendName, questions, fromScore) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false, reason: "no-player" };
+    const toId = sanitizeNameKey(friendName);
+    if (!toId || toId === player.id) return { ok: false, reason: "invalid-name" };
+    const toAccountSnap = await aigDb.ref(`testerAccounts/${toId}`).get();
+    if (!toAccountSnap.exists()) return { ok: false, reason: "friend-not-found" };
+    const duelRef = aigDb.ref(`players/${toId}/duelInbox`).push();
+    await duelRef.set({
+      fromId: player.id,
+      fromName: player.name,
+      questions,
+      fromScore,
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    return { ok: true, toName: toAccountSnap.val().name || friendName };
+  }
+
+  async function getDuelInbox() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return [];
+    const snap = await aigDb.ref(`players/${player.id}/duelInbox`).get();
+    if (!snap.exists()) return [];
+    const out = [];
+    snap.forEach(child => out.push({ id: child.key, ...child.val() }));
+    return out.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+
+  async function getDuelSentResults() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return [];
+    const snap = await aigDb.ref(`players/${player.id}/duelSentResults`).get();
+    if (!snap.exists()) return [];
+    const out = [];
+    snap.forEach(child => out.push({ id: child.key, ...child.val() }));
+    return out.sort((a, b) => (b.resolvedAt || 0) - (a.resolvedAt || 0));
+  }
+
+  async function dismissDuelResult(duelId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    await aigDb.ref(`players/${player.id}/duelSentResults/${duelId}`).remove();
+    return { ok: true };
+  }
+
+  // Called by the RECIPIENT's client right after they finish playing the
+  // shared question set. `duel` is the exact inbox entry object (already
+  // has fromId/fromName/fromScore) so this doesn't need a second read.
+  async function resolveDuelChallenge(duel, toScore) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const fromScore = duel.fromScore;
+    const outcome = toScore > fromScore ? "to" : toScore < fromScore ? "from" : "tie";
+
+    async function addBonus(playerId, bonus) {
+      if (!bonus) return;
+      await aigDb.ref(`players/${playerId}/wallet`).transaction(cur => {
+        const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+        wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+        wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+        return wallet;
+      });
+    }
+    if (outcome === "tie") {
+      await Promise.all([addBonus(duel.fromId, DUEL_TIE_BONUS), addBonus(player.id, DUEL_TIE_BONUS)]);
+    } else {
+      const winnerId = outcome === "to" ? player.id : duel.fromId;
+      await addBonus(winnerId, DUEL_WIN_BONUS);
+    }
+
+    await aigDb.ref(`players/${duel.fromId}/duelSentResults/${duel.id}`).set({
+      toName: player.name,
+      fromScore,
+      toScore,
+      outcome, // "to" = recipient won, "from" = sender won, "tie"
+      resolvedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    await aigDb.ref(`players/${player.id}/duelInbox/${duel.id}`).remove();
+    return { ok: true, outcome, fromScore, toScore };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -2172,6 +2275,7 @@
     awardMathTennisBonus,
     awardFortressMathBonus,
     getActiveSeasonalEvent, claimSeasonalEvent,
+    sendDuelChallenge, getDuelInbox, getDuelSentResults, dismissDuelResult, resolveDuelChallenge,
     db: aigDb
   };
 })();
