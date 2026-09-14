@@ -156,7 +156,17 @@ function initFortressMath() {
     emptySlots.forEach(slot => {
       slot.onclick = () => {
         placeTower(slot);
-        emptySlots.forEach(s => { s.onclick = null; s.classList.add("disabled"); });
+        // Only clear THIS round's stale handlers -- the other empty slots
+        // stay fully normal (no visual "disabled" state) since they're
+        // still real, clickable options for whichever future correct
+        // answer earns the next tower. A previous version of this also
+        // added a permanent .disabled class to every other empty slot
+        // here, which made every tower after the first impossible to
+        // place: it looked dimmed/unavailable even though a fresh
+        // awaitTowerPlacement() call would have attached a working
+        // handler to it next round anyway -- just confusingly hidden
+        // behind CSS opacity.
+        emptySlots.forEach(s => { s.onclick = null; });
         setTimeout(askBuildQuestion, 500);
       };
     });
@@ -164,7 +174,6 @@ function initFortressMath() {
 
   function placeTower(slotEl) {
     slotEl.classList.add("filled");
-    slotEl.classList.remove("disabled");
     slotEl.textContent = "🗼";
     state.towers.push({ x: Number(slotEl.dataset.x), el: slotEl });
   }
