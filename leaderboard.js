@@ -1929,6 +1929,32 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // MEMORY MATCH (memory-match/) — same one-time-per-round bonus pattern
+  // as Math Hoops above, tiered on MOVES used (fewer is better) instead of
+  // shots made. 8 pairs need a minimum of 8 moves for a flawless game, so
+  // the tiers are calibrated around that floor rather than a percentage.
+  // =====================================================================
+  function memoryMatchBonusFor(moves) {
+    if (moves <= 12) return { coins: 15, gems: 1 };
+    if (moves <= 18) return { coins: 10, gems: 0 };
+    if (moves <= 26) return { coins: 5, gems: 0 };
+    return null;
+  }
+  async function awardMemoryMatchBonus(moves) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = memoryMatchBonusFor(moves);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -1964,6 +1990,7 @@
     awardReferralBonus,
     awardTeachBoBonus,
     awardBasketballRoundBonus,
+    awardMemoryMatchBonus,
     db: aigDb
   };
 })();

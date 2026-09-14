@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Memory Match — BrainBox</title>
+<meta name="theme-color" content="#9B59D0">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #F3E9FC 0%, #E4D0F7 100%); font-family: "Nunito", sans-serif; color: #3d2e22; }
+  .mm-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .mm-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .mm-back { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #6B3F9B; font-size: 1.05rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); text-decoration: none; flex: none; }
+  .mm-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #6B3F9B; }
+  .mm-hud { display: flex; justify-content: center; gap: 10px; padding: 0 14px 12px; }
+  .mm-hud-chip { background: #fff; border-radius: 100px; padding: 5px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; box-shadow: 0 2px 0 rgba(0,0,0,.05); }
+
+  .mm-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 14px; }
+  .mm-card { aspect-ratio: 3/4; perspective: 600px; }
+  .mm-card-inner { position: relative; width: 100%; height: 100%; transition: transform .35s; transform-style: preserve-3d; cursor: pointer; }
+  .mm-card.flipped .mm-card-inner, .mm-card.matched .mm-card-inner { transform: rotateY(180deg); }
+  .mm-card-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 4px; }
+  .mm-card-back { background: linear-gradient(135deg, #9B59D0, #6B3F9B); color: #fff; font-size: 1.4rem; box-shadow: 0 3px 0 rgba(0,0,0,.1); }
+  .mm-card-front { background: #fff; transform: rotateY(180deg); font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .92rem; color: #3d2e22; box-shadow: 0 3px 0 rgba(0,0,0,.06); border: 2px solid #f1ede6; word-break: break-word; }
+  .mm-card.matched .mm-card-front { background: #eaf7ee; border-color: #3F8F5F; color: #2f6b3a; }
+  .mm-card.mismatch .mm-card-front { background: #fdeaea; border-color: #D64545; }
+  .mm-card.hidden { visibility: hidden; }
+
+  .mm-overlay { position: fixed; inset: 0; background: rgba(61,46,34,.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .mm-overlay.hidden { display: none; }
+  .mm-card-modal { background: #fff; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
+  .mm-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .mm-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
+  .mm-modal-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+  .mm-modal-bonus { font-weight: 800; color: #6B3F9B; margin-bottom: 16px; min-height: 1.2em; }
+  .mm-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .mm-btn-primary { background: #9B59D0; color: #fff; }
+  .mm-btn-secondary { background: #f1ede6; color: #3d2e22; }
+</style>
+</head>
+<body>
+
+<div class="mm-page">
+  <div class="mm-topbar">
+    <a href="../" class="mm-back">←</a>
+    <div class="mm-title">🧠 Memory Match</div>
+  </div>
+  <div class="mm-hud">
+    <span class="mm-hud-chip">✅ <span id="mm-hud-pairs">0</span>/8</span>
+    <span class="mm-hud-chip">🔁 <span id="mm-hud-moves">0</span> moves</span>
+    <span class="mm-hud-chip">🪙 <span id="mm-hud-coins">0</span> 💎 <span id="mm-hud-gems">0</span></span>
+  </div>
+
+  <div class="mm-grid" id="mm-grid"></div>
+
+  <div class="mm-overlay" id="mm-start-overlay">
+    <div class="mm-card-modal">
+      <div class="mm-modal-emoji">🧠</div>
+      <div class="mm-modal-title">Memory Match</div>
+      <p class="mm-modal-sub">Flip 2 cards at a time to find equal pairs, like 24 ÷ 8 and 3. Find all 8 pairs in as few moves as possible!</p>
+      <button class="mm-btn mm-btn-primary" id="mm-start-btn">Start Game</button>
+    </div>
+  </div>
+
+  <div class="mm-overlay hidden" id="mm-end-overlay">
+    <div class="mm-card-modal">
+      <div class="mm-modal-emoji" id="mm-end-emoji">🏆</div>
+      <div class="mm-modal-title" id="mm-end-title">Nice memory!</div>
+      <div class="mm-modal-sub" id="mm-end-sub"></div>
+      <div class="mm-modal-bonus" id="mm-end-bonus"></div>
+      <button class="mm-btn mm-btn-primary" id="mm-play-again-btn">Play Again</button>
+      <a href="../" class="mm-btn mm-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="mm-overlay hidden" id="mm-signedout-overlay">
+    <div class="mm-card-modal">
+      <div class="mm-modal-emoji">🧠</div>
+      <p class="mm-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="mm-btn mm-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
