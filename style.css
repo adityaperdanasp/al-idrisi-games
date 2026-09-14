@@ -977,6 +977,19 @@ body {
 .sc-cosmetic-list[hidden] { display: none; }
 .sc-empty-note { font-family: "Nunito", sans-serif; font-weight: 700; font-size: 0.78rem; color: #8a7a6a; text-align: center; padding: 10px 0; }
 
+/* ---------- Mistake Journal ---------- */
+.sc-journal-card { background: #fbf6ec; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+.sc-journal-card:last-child { margin-bottom: 0; }
+.sc-journal-prompt { font: 700 0.85rem "Nunito", sans-serif; color: #3d2e22; margin-bottom: 6px; }
+.sc-journal-answer { font: 600 0.78rem "Nunito", sans-serif; color: #8a7a6a; margin-bottom: 4px; }
+.sc-journal-answer b { color: #2f6b3a; }
+.sc-journal-meta { font-size: 0.68rem; color: #b3a3c9; margin-bottom: 8px; }
+.sc-journal-practice-btn {
+  display: inline-block; font: 700 0.72rem "Baloo 2", sans-serif;
+  color: #4a2d70; background: #ece0fa; padding: 6px 12px; border-radius: 100px;
+  text-decoration: none;
+}
+
 .sc-avatarcolor-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .sc-avatarcolor-grid[hidden] { display: none; }
 .sc-avatarcolor-swatch {

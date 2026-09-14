@@ -1009,6 +1009,57 @@
     return { ok: true };
   }
 
+  // =====================================================================
+  // MISTAKE JOURNAL — every wrong answer, across whatever games call
+  // logMistake(), kept as a small rolling log (capped at
+  // MISTAKE_JOURNAL_MAX, oldest dropped first) rather than growing
+  // forever. Scope note: currently only MathVille calls this (see
+  // submitAnswer() there) -- azkacraft/azkauniverse aren't wired up yet,
+  // a separate follow-up since their question-rendering code is entirely
+  // its own copy, not shared with MathVille's.
+  // =====================================================================
+  const MISTAKE_JOURNAL_MAX = 60;
+
+  async function logMistake(gameId, topic, prompt, correctAnswer) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    const ref = aigDb.ref(`players/${player.id}/mistakeJournal`);
+    const snap = await ref.get();
+    const entries = snap.exists() ? Object.entries(snap.val()) : [];
+    await ref.push().set({
+      gameId, topic,
+      prompt: String(prompt).slice(0, 300),
+      correctAnswer: String(correctAnswer).slice(0, 200),
+      at: firebase.database.ServerValue.TIMESTAMP,
+      reviewed: false
+    });
+    // Prune oldest entries down to the cap -- checked against the count
+    // BEFORE this push (off-by-one on the newest entry doesn't matter,
+    // this is a rolling log not an exact-size invariant).
+    if (entries.length >= MISTAKE_JOURNAL_MAX) {
+      entries.sort((a, b) => (a[1].at || 0) - (b[1].at || 0));
+      const toRemove = entries.slice(0, entries.length - MISTAKE_JOURNAL_MAX + 1);
+      await Promise.all(toRemove.map(([id]) => ref.child(id).remove()));
+    }
+  }
+
+  async function getMistakeJournal() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return [];
+    const snap = await aigDb.ref(`players/${player.id}/mistakeJournal`).get();
+    if (!snap.exists()) return [];
+    return Object.entries(snap.val())
+      .map(([id, m]) => ({ id, ...m }))
+      .sort((a, b) => (b.at || 0) - (a.at || 0));
+  }
+
+  async function markMistakeReviewed(id) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    await aigDb.ref(`players/${player.id}/mistakeJournal/${id}/reviewed`).set(true);
+    return { ok: true };
+  }
+
   // Weekly Recap -- a shareable "your week in review" summary (players are
   // explicitly meant to screenshot this to show a parent). Deliberately
   // mixes a true weekly delta (correct answers this week, from the same
@@ -1351,6 +1402,7 @@
     getAvatarColor, setAvatarColor,
     getRewardCatalog, redeemReward,
     getMathvilleTheme, setMathvilleTheme,
+    logMistake, getMistakeJournal, markMistakeReviewed,
     getWeeklyLeaderboard, getWeeklyRecap, getBonusHourInfo,
     getTitle, getTitleTiers,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,

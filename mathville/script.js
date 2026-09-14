@@ -4667,6 +4667,15 @@ function submitAnswer(isCorrect, prompt, answerForHint) {
   if (!isCorrect) {
     state.mistakes++;
     state.lastWrong = { prompt, answer: answerForHint };
+    // Mistake Journal -- same Family Challenge exclusion as
+    // recordTopicAttempt above (guest turn has no real account, and the
+    // same 6 questions get answered twice). Best-effort, matches every
+    // other Firebase call in this function.
+    if (!state.isChallenge) {
+      try {
+        if (window.AIGLeaderboard && state.chapterId) AIGLeaderboard.logMistake("mathville", state.chapterId, prompt, answerForHint);
+      } catch (e) {}
+    }
   }
   if (state.isBoss) {
     clearBossTimer();
@@ -4872,7 +4881,12 @@ function renderMatchStep(step) {
           } else {
             matchMistakes++;
             state.lastWrong = { prompt: `Match: ${pairs[from].left}`, answer: pairs[from].right };
-            try { if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, false); } catch (e) {}
+            try {
+              if (window.AIGLeaderboard) {
+                AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, false);
+                AIGLeaderboard.logMistake("mathville", state.chapterId, `Match: ${pairs[from].left}`, pairs[from].right);
+              }
+            } catch (e) {}
             const rd = rightWrap.querySelector(`.match-dot[data-slot="${closestSlot}"]`);
             rd.classList.add("wrong-flash");
             setTimeout(() => rd.classList.remove("wrong-flash"), 500);

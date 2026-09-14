@@ -234,6 +234,7 @@
           <button class="sc-trophy" id="sc-collection-btn" title="Collection" type="button">📚</button>
           <button class="sc-trophy" id="sc-customize-btn" title="Customize" type="button">🎨</button>
           <button class="sc-trophy" id="sc-recap-btn" title="Weekly Recap" type="button">📜</button>
+          <button class="sc-trophy" id="sc-journal-btn" title="Mistake Journal" type="button">📔</button>
         </div>
         <div class="sc-header-right">
           <div class="sc-wallet-badge" id="sc-wallet-badge" hidden>
@@ -575,6 +576,22 @@
       </div>
       <div class="sc-recap-body" id="sc-recap-body"></div>
       <div class="sc-recap-hint">📸 Screenshot me to show your family!</div>
+    </div>
+  </div>
+
+  <!-- Mistake Journal -- every wrong answer MathVille has logged
+       (azkacraft/azkauniverse not wired up yet, see leaderboard.js's
+       logMistake comment), newest first, with a one-tap link back into
+       that exact chapter (reuses the SAME ?focus=1&quicktopic= deep
+       link Smart Practice's "Practice Now" button already uses). -->
+  <div id="sc-journal-overlay" class="sc-modal-overlay" hidden>
+    <div class="sc-modal-card">
+      <div class="sc-modal-header">
+        <span class="sc-modal-title">📔 Mistake Journal</span>
+        <button class="sc-modal-close" id="sc-journal-close" type="button">✕</button>
+      </div>
+      <div class="sc-modal-sub" id="sc-journal-count"></div>
+      <div id="sc-journal-list"></div>
     </div>
   </div>
 </main>
@@ -987,6 +1004,45 @@
       <div class="sc-recap-row"><span class="sc-recap-emoji">📚</span><span>${recap.cardsOwned}/${recap.cardsTotal} cards collected</span></div>
     `;
   }
+  document.getElementById("sc-journal-btn").addEventListener("click", () => {
+    document.getElementById("sc-journal-overlay").hidden = false;
+    renderMistakeJournal();
+  });
+  document.getElementById("sc-journal-close").addEventListener("click", () => {
+    document.getElementById("sc-journal-overlay").hidden = true;
+  });
+
+  async function renderMistakeJournal() {
+    const list = document.getElementById("sc-journal-list");
+    const countEl = document.getElementById("sc-journal-count");
+    countEl.textContent = "Loading…";
+    list.innerHTML = "";
+    const entries = await AIGLeaderboard.getMistakeJournal();
+    if (!entries.length) {
+      countEl.textContent = "";
+      list.innerHTML = `<p class="sc-empty-note">No mistakes logged yet -- keep playing MathVille and this fills in automatically!</p>`;
+      return;
+    }
+    countEl.textContent = `${entries.length} logged (MathVille only so far)`;
+    list.innerHTML = entries.map(m => {
+      const chapterName = SC_MATHVILLE_CHAPTER_TITLES[m.topic] || m.topic;
+      const dateStr = m.at ? new Date(m.at).toLocaleDateString() : "";
+      const practiceLink = m.topic && SC_MATHVILLE_CHAPTER_TITLES[m.topic]
+        ? `<a class="sc-journal-practice-btn" href="mathville/index.html?focus=1&quicktopic=${encodeURIComponent(m.topic)}">Practice this chapter →</a>`
+        : "";
+      return `
+        <div class="sc-journal-card">
+          <div class="sc-journal-prompt">${escapeHtml(m.prompt)}</div>
+          <div class="sc-journal-answer">Correct answer: <b>${escapeHtml(m.correctAnswer)}</b></div>
+          <div class="sc-journal-meta">${escapeHtml(chapterName)} · ${dateStr}</div>
+          ${practiceLink}
+        </div>`;
+    }).join("");
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
   document.getElementById("sc-recap-btn").addEventListener("click", () => {
     document.getElementById("sc-recap-overlay").hidden = false;
     renderRecap();
