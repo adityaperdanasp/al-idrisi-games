@@ -329,6 +329,12 @@
       </div>
 
       <div class="sc-bonus-hour-banner" id="sc-bonus-hour-banner" hidden>⚡ Bonus Hour! Double coins right now!</div>
+      <div class="sc-bonus-hour-banner" id="sc-weekend-bonus-banner" hidden>🎉 Weekend Bonus! Double coins all weekend!</div>
+
+      <div class="sc-goal-card" id="sc-classgoal-card" hidden>
+        <div class="sc-goal-title">🤝 Class Goal This Week</div>
+        <div id="sc-classgoal-body"></div>
+      </div>
 
       <div class="sc-smart-card" id="sc-beat-yesterday-card" hidden>
         <span class="sc-smart-text" id="sc-beat-yesterday-text"></span>
@@ -366,6 +372,11 @@
       <div class="sc-goal-card" id="sc-goal-card" hidden>
         <div class="sc-goal-title">🎯 My Weekly Goal</div>
         <div id="sc-goal-body"></div>
+      </div>
+
+      <div class="sc-goal-card" id="sc-nickname-card" hidden>
+        <div class="sc-goal-title">💬 My Tagline</div>
+        <div id="sc-nickname-body"></div>
       </div>
 
       <div class="sc-bp-panel" id="sc-bp-panel" hidden>
@@ -802,8 +813,68 @@
       renderMysteryBox();
       renderPerfectWeek();
       renderPersonalGoal();
+      renderNicknameCard();
+      renderClassGoal();
+      const weekendBonus = AIGLeaderboard.getWeekendBonusInfo();
+      document.getElementById("sc-weekend-bonus-banner").hidden = !weekendBonus.active;
       renderSmartPracticeAndDiagnostic();
     }
+  }
+
+  async function renderNicknameCard() {
+    const nick = await AIGLeaderboard.getNickname();
+    const card = document.getElementById("sc-nickname-card");
+    const body = document.getElementById("sc-nickname-body");
+    card.hidden = false;
+    if (nick && nick.status === "pending") {
+      body.innerHTML = `<p class="sc-goal-desc">"${escapeHtml(nick.text)}" — waiting for a parent to approve it.</p>`;
+      return;
+    }
+    if (nick && nick.status === "approved") {
+      body.innerHTML = `<p class="sc-goal-desc">"${escapeHtml(nick.text)}" ✓</p>
+        <button class="sc-quest-claim-btn" id="sc-nickname-edit-btn">Change</button>`;
+    } else {
+      body.innerHTML = `
+        <p class="sc-goal-desc">Write a short fun tagline for yourself! A parent needs to approve it first.</p>
+        <div class="sc-goal-form">
+          <input type="text" id="sc-nickname-input" maxlength="40" placeholder="e.g. Math Wizard!" />
+          <button class="sc-quest-claim-btn" id="sc-nickname-submit-btn">Submit</button>
+        </div>`;
+    }
+    const editBtn = document.getElementById("sc-nickname-edit-btn");
+    if (editBtn) editBtn.addEventListener("click", () => { document.getElementById("sc-nickname-body").innerHTML = ""; renderNicknameEditor(); });
+    const submitBtn = document.getElementById("sc-nickname-submit-btn");
+    if (submitBtn) submitBtn.addEventListener("click", async () => {
+      const val = document.getElementById("sc-nickname-input").value.trim();
+      if (!val) return;
+      submitBtn.disabled = true;
+      await AIGLeaderboard.submitNickname(val);
+      renderNicknameCard();
+    });
+  }
+  function renderNicknameEditor() {
+    document.getElementById("sc-nickname-body").innerHTML = `
+      <div class="sc-goal-form">
+        <input type="text" id="sc-nickname-input" maxlength="40" placeholder="e.g. Math Wizard!" />
+        <button class="sc-quest-claim-btn" id="sc-nickname-submit-btn">Submit</button>
+      </div>`;
+    document.getElementById("sc-nickname-submit-btn").addEventListener("click", async () => {
+      const val = document.getElementById("sc-nickname-input").value.trim();
+      if (!val) return;
+      await AIGLeaderboard.submitNickname(val);
+      renderNicknameCard();
+    });
+  }
+
+  async function renderClassGoal() {
+    const goal = await AIGLeaderboard.getClassGoalProgress();
+    const card = document.getElementById("sc-classgoal-card");
+    const body = document.getElementById("sc-classgoal-body");
+    card.hidden = false;
+    const pct = Math.min(100, Math.round((goal.progress / goal.target) * 100));
+    body.innerHTML = `
+      <p class="sc-goal-desc">${goal.achieved ? "🎉 Class goal reached this week!" : `${goal.progress}/${goal.target} correct answers from everyone combined`}</p>
+      <div class="sc-goal-track"><div class="sc-goal-fill" style="width:${pct}%"></div></div>`;
   }
 
   async function renderPerfectWeek() {

@@ -190,6 +190,9 @@
     // ---- Review kid-written quiz questions ----
     renderQuizReview(player.customQuestions || {});
 
+    // ---- Review custom nickname/tagline ----
+    renderNicknameReview(player.nickname || null);
+
     // ---- Real-world reward ledger ----
     renderRewardCatalog(player.rewardCatalog || {});
     renderRewardRedemptions(player.rewardRedemptions || {});
@@ -303,6 +306,40 @@
         await aigDb.ref(`players/${childId}/customQuestions/${btn.dataset.quizReject}/status`).set("rejected");
         loadPortal();
       });
+    });
+  }
+
+  // Same approve/reject flow as renderQuizReview above, just for the
+  // single nickname/tagline field instead of a list of questions --
+  // only shown at all once the kid has actually submitted one.
+  function renderNicknameReview(nickname) {
+    const section = document.getElementById("p-nickname-section");
+    const wrap = document.getElementById("p-nickname-review");
+    if (!nickname) { section.hidden = true; return; }
+    section.hidden = false;
+    if (nickname.status !== "pending") {
+      wrap.innerHTML = `
+        <div class="p-quiz-card">
+          <div class="p-quiz-prompt">"${escapeHtml(nickname.text)}"</div>
+          <span class="p-quiz-status p-quiz-status-${nickname.status}">${nickname.status}</span>
+        </div>`;
+      return;
+    }
+    wrap.innerHTML = `
+      <div class="p-quiz-card">
+        <div class="p-quiz-prompt">"${escapeHtml(nickname.text)}"</div>
+        <div class="p-quiz-actions">
+          <button class="p-quiz-btn p-quiz-approve" id="btn-nickname-approve">✓ Approve</button>
+          <button class="p-quiz-btn p-quiz-reject" id="btn-nickname-reject">✕ Reject</button>
+        </div>
+      </div>`;
+    document.getElementById("btn-nickname-approve").addEventListener("click", async () => {
+      await aigDb.ref(`players/${childId}/nickname/status`).set("approved");
+      loadPortal();
+    });
+    document.getElementById("btn-nickname-reject").addEventListener("click", async () => {
+      await aigDb.ref(`players/${childId}/nickname/status`).set("rejected");
+      loadPortal();
     });
   }
 

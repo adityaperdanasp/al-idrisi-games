@@ -288,6 +288,20 @@
     return { active: isBonusHourNow(), hour: seedFrom(dateStr) % 24 };
   }
 
+  // Weekend Double XP -- a SECOND, separate 2x-coins window from Bonus
+  // Hour above (both can independently be active; awardCurrency below
+  // just needs EITHER to be true, not both). Same UTC-day-boundary
+  // reasoning Bonus Hour already accepts (a few hours of local-timezone
+  // imprecision near midnight, consistent with the existing convention
+  // rather than a new one).
+  function isWeekendNow() {
+    const day = new Date().getUTCDay(); // 0=Sun, 6=Sat
+    return day === 0 || day === 6;
+  }
+  function getWeekendBonusInfo() {
+    return { active: isWeekendNow() };
+  }
+
   // +1 coin per correct answer (x2 during Bonus Hour, further scaled by an
   // optional combo multiplier from the caller -- see recordTopicAttempt),
   // no matter which game. Every ~15th correct answer (tracked via a
@@ -300,7 +314,7 @@
   function awardCurrency(comboMultiplier) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return;
-    const bonusMult = isBonusHourNow() ? 2 : 1;
+    const bonusMult = (isBonusHourNow() || isWeekendNow()) ? 2 : 1;
     const coinGain = Math.max(1, Math.round(1 * (comboMultiplier || 1) * bonusMult));
     aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
       const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
@@ -1334,6 +1348,57 @@
     return { ok: true, target: t };
   }
 
+  // =====================================================================
+  // CUSTOM NICKNAME/TAGLINE — a short line a kid writes for themselves
+  // (shown under their name once approved), same parent-moderation flow
+  // as Kids' Quiz custom questions (players/{id}/customQuestions):
+  // status starts "pending", a parent approves/rejects from Parent
+  // Portal, only "approved" ever displays.
+  // =====================================================================
+  async function submitNickname(text) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const trimmed = String(text).trim().slice(0, 40);
+    if (!trimmed) return { ok: false };
+    await aigDb.ref(`players/${player.id}/nickname`).set({
+      text: trimmed,
+      status: "pending",
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    return { ok: true };
+  }
+
+  async function getNickname() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`players/${player.id}/nickname`).get();
+    return snap.exists() ? snap.val() : null;
+  }
+
+  // =====================================================================
+  // CLASS-WIDE SHARED GOAL — one collective progress bar for every kid
+  // together (not a competition -- everyone contributes to the SAME
+  // total), reusing the SAME players/{id}/weekly/{weekKey}.correct
+  // counter Weekly Leaderboard/Most Improved already read, just summed
+  // across every player instead of ranked individually. Fixed weekly
+  // target (not stored anywhere -- a constant is simpler than a new
+  // writable node, and this is a shared morale target, not something
+  // that needs per-class tuning yet).
+  // =====================================================================
+  const CLASS_GOAL_TARGET = 500;
+
+  async function getClassGoalProgress() {
+    const wk = weekKey();
+    const snap = await aigDb.ref("players").get();
+    let progress = 0;
+    if (snap.exists()) {
+      Object.values(snap.val()).forEach(data => {
+        if (data.weekly && data.weekly[wk]) progress += data.weekly[wk].correct || 0;
+      });
+    }
+    return { progress, target: CLASS_GOAL_TARGET, weekKey: wk, achieved: progress >= CLASS_GOAL_TARGET };
+  }
+
   // Weekly Recap -- a shareable "your week in review" summary (players are
   // explicitly meant to screenshot this to show a parent). Deliberately
   // mixes a true weekly delta (correct answers this week, from the same
@@ -1682,7 +1747,9 @@
     getPlayerLevel,
     getWeekPlayProgress, getMostImproved,
     getPersonalGoal, setPersonalGoal,
-    getWeeklyLeaderboard, getWeeklyRecap, getBonusHourInfo,
+    submitNickname, getNickname,
+    getClassGoalProgress,
+    getWeeklyLeaderboard, getWeeklyRecap, getBonusHourInfo, getWeekendBonusInfo,
     getTitle, getTitleTiers,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
     getPowerupDefs, getPowerups, buyPowerup, usePowerup,
