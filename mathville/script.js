@@ -24,6 +24,27 @@ const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPl
 const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().id) || "guest";
 if (window.AIGLeaderboard) AIGLeaderboard.startSession("mathville");
 
+// Theme (dark mode + world skins) -- see style.css's [data-theme] blocks
+// for the actual palettes. Applied as early as possible (before first
+// paint would be ideal, but this still runs before the DOM is visible to
+// the player since it's a synchronous script near the top of <body>) so
+// there's no flash of the light theme before a saved dark/other pick
+// kicks in.
+const MATHVILLE_THEMES = [
+  { id: "light", name: "Classic Blockville", swatch: "#C1793E" },
+  { id: "dark", name: "Dark Mode", swatch: "#2A2420" },
+  { id: "winter", name: "Winter Wonderland", swatch: "#4A7BA6" },
+  { id: "candy", name: "Candy Land", swatch: "#FF6FA8" },
+  { id: "space", name: "Space Station", swatch: "#8B6FC4" }
+];
+function applyMathvilleTheme(theme) {
+  if (theme === "light") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", theme);
+}
+if (window.AIGLeaderboard) {
+  AIGLeaderboard.getMathvilleTheme().then(applyMathvilleTheme).catch(() => {});
+}
+
 // Town-stop flavor per chapter — order matches MATHVILLE_BANK (= PDF order).
 // mapX/mapY are the exact node positions from the validated Claude Design
 // prototype (built for these same 9 chapters) — a winding two-column path,
@@ -211,6 +232,7 @@ function showScreen(id) {
   $("btn-speedround").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
   $("btn-weeklyboss").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
   $("btn-timer-toggle").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
+  $("btn-theme-picker").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
   // Screens that already have their own Bo (Drive Mode's car, the reward
   // screen's AI Tutor card) or where it'd just be clutter (landing, pair
   // setup, Plane Mode, Ninja Runner has its own review-with-Bo overlay)
@@ -261,6 +283,27 @@ $("btn-powerup-skip").addEventListener("click", useSkipPowerup);
 $("btn-powerup-extratime").addEventListener("click", useExtraTimePowerup);
 $("btn-timer-toggle").addEventListener("click", () => setPressureTimerEnabled(!pressureTimerEnabled));
 updateTimerToggleBtn();
+$("btn-theme-picker").addEventListener("click", openThemePicker);
+$("btn-theme-close").addEventListener("click", () => $("theme-picker-overlay").classList.add("hidden"));
+
+async function openThemePicker() {
+  const current = window.AIGLeaderboard ? await AIGLeaderboard.getMathvilleTheme() : "light";
+  const grid = $("theme-swatch-grid");
+  grid.innerHTML = MATHVILLE_THEMES.map(t => `
+    <button class="theme-swatch-btn${t.id === current ? " selected" : ""}" data-theme-pick="${t.id}" type="button">
+      <span class="theme-swatch-dot" style="background:${t.swatch}"></span>
+      <span class="theme-swatch-name">${t.name}</span>
+    </button>`).join("");
+  grid.querySelectorAll("[data-theme-pick]").forEach(btn => {
+    btn.onclick = async () => {
+      const theme = btn.dataset.themePick;
+      applyMathvilleTheme(theme);
+      if (window.AIGLeaderboard) await AIGLeaderboard.setMathvilleTheme(theme);
+      openThemePicker(); // re-render so the "selected" highlight updates
+    };
+  });
+  $("theme-picker-overlay").classList.remove("hidden");
+}
 $("btn-speedround").addEventListener("click", launchSpeedRound);
 $("btn-weeklyboss").addEventListener("click", launchWeeklyBossRush);
 document.querySelectorAll(".mp-cheer-btn").forEach(btn => {

@@ -19,6 +19,34 @@
   --bad: #D64545;
 }
 
+/* ---------- Themes (dark mode + world skins) ----------
+   Same 12 variable names, different values -- everything already
+   built against var(--wood) etc. re-colors for free, no per-component
+   dark/theme overrides needed anywhere else in this file. Applied via
+   [data-theme] on <html> (setMathvilleTheme() in script.js), persisted
+   to players/{id}/mathvilleTheme so it follows the kid across devices,
+   same pattern as avatar color. */
+:root[data-theme="dark"] {
+  --wood: #D98B4F; --wood-dark: #B8703A; --cherry: #F06B45; --cherry-dark: #D9552F;
+  --gold: #F7C548; --taupe: #4A4038; --cream: #2A2420; --ink: #F0E6D8; --ink-soft: #C4B8A8;
+  --card: #352E28; --good: #5FBF82; --bad: #E86B6B;
+}
+:root[data-theme="winter"] {
+  --wood: #4A7BA6; --wood-dark: #3A6389; --cherry: #6FB8E3; --cherry-dark: #4FA0D0;
+  --gold: #BEE3F5; --taupe: #C8DCE8; --cream: #EEF7FC; --ink: #1F3A52; --ink-soft: #5A7A90;
+  --card: #ffffff; --good: #3F8F5F; --bad: #D64545;
+}
+:root[data-theme="candy"] {
+  --wood: #D472A6; --wood-dark: #B85A8C; --cherry: #FF6FA8; --cherry-dark: #E85590;
+  --gold: #FFD4E5; --taupe: #F5D0E0; --cream: #FFF0F7; --ink: #5C2A4A; --ink-soft: #9C6A88;
+  --card: #ffffff; --good: #3F8F5F; --bad: #D64545;
+}
+:root[data-theme="space"] {
+  --wood: #8B6FC4; --wood-dark: #6F54A8; --cherry: #B58AFF; --cherry-dark: #9B6FE8;
+  --gold: #F0E6FF; --taupe: #3A3560; --cream: #211D3D; --ink: #EAE4FF; --ink-soft: #B0A8D8;
+  --card: #2B2650; --good: #5FBF82; --bad: #E86B6B;
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -28,6 +56,7 @@ html, body {
   color: var(--ink);
   color-scheme: light;
 }
+:root[data-theme="dark"], :root[data-theme="space"] { color-scheme: dark; }
 
 button { font-family: inherit; }
 
@@ -651,6 +680,15 @@ button { font-family: inherit; }
 .drive-difficulty-name { font: 800 16px "Baloo 2", sans-serif; color: var(--ink); }
 .drive-difficulty-desc { font-size: 12px; color: var(--ink-soft); margin-left: auto; }
 .drive-end-card { text-align: center; }
+
+.theme-swatch-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.theme-swatch-btn {
+  display: flex; align-items: center; gap: 10px; border: 3px solid transparent;
+  background: var(--cream); border-radius: 14px; padding: 10px 14px; cursor: pointer;
+}
+.theme-swatch-btn.selected { border-color: var(--wood); }
+.theme-swatch-dot { width: 22px; height: 22px; border-radius: 50%; flex: none; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.theme-swatch-name { font: 700 14px "Fredoka", sans-serif; color: var(--ink); }
 .drive-end-emoji { font-size: 52px; margin-bottom: 6px; }
 .drive-end-title { font: 800 22px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 6px; }
 .drive-end-sub { font-size: 14px; color: var(--ink-soft); margin-bottom: 18px; }

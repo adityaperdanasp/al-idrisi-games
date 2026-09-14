@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=86" />
+<link rel="stylesheet" href="style.css?v=87" />
 </head>
 <body>
 
@@ -44,6 +44,7 @@
   <div id="btn-speedround" class="icon-btn hidden" aria-label="Speed Round" title="Speed Round">⚡</div>
   <div id="btn-weeklyboss" class="icon-btn hidden" aria-label="Weekly Boss Rush" title="Weekly Boss Rush">👑</div>
   <button id="btn-timer-toggle" class="icon-btn hidden" aria-label="Timed Mode" title="Timed Mode: Off" type="button">⏱️</button>
+  <button id="btn-theme-picker" class="icon-btn hidden" aria-label="Theme" title="Theme" type="button">🎨</button>
   <div class="topbar-spacer"></div>
   <div id="wallet-badge" class="xp-badge wallet-badge"><span>🪙</span><span id="wallet-coins">0</span><span>💎</span><span id="wallet-gems">0</span></div>
   <div id="xp-badge" class="xp-badge"><span>✨</span><span id="xp-total">0</span> XP</div>
@@ -96,6 +97,18 @@
         <span class="drive-difficulty-name">2 Players</span>
         <span class="drive-difficulty-desc">Two phones, same sky</span>
       </button>
+    </div>
+  </div>
+
+  <!-- Theme picker -- dark mode + 3 world skins, all just [data-theme]
+       overrides of style.css's existing CSS variables (see there for the
+       full palette per theme). Outside every .screen for the same
+       overlay-nested-in-inactive-screen reason as the other overlays here. -->
+  <div id="theme-picker-overlay" class="drive-question-overlay hidden">
+    <div class="drive-question-card drive-difficulty-card">
+      <div class="drive-difficulty-title">Pick a theme</div>
+      <div class="theme-swatch-grid" id="theme-swatch-grid"></div>
+      <button class="btn boss-challenge-btn" id="btn-theme-close">Close</button>
     </div>
   </div>
 
@@ -1015,6 +1028,6 @@
 <script src="questions.js?v=9"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=113"></script>
+<script src="script.js?v=114"></script>
 </body>
 </html>

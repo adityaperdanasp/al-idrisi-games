@@ -988,6 +988,27 @@
     return { ok: true };
   }
 
+  // =====================================================================
+  // MATHVILLE THEME (dark mode + world skins) — a free cosmetic
+  // preference, same free/no-unlock spirit as avatar color above. Actual
+  // color values live entirely in mathville/style.css's [data-theme]
+  // blocks; this just persists which one is picked so it follows the
+  // kid across devices.
+  // =====================================================================
+  async function getMathvilleTheme() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return "light";
+    const snap = await aigDb.ref(`players/${player.id}/mathvilleTheme`).get();
+    return snap.exists() ? snap.val() : "light";
+  }
+
+  async function setMathvilleTheme(theme) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    await aigDb.ref(`players/${player.id}/mathvilleTheme`).set(theme);
+    return { ok: true };
+  }
+
   // Weekly Recap -- a shareable "your week in review" summary (players are
   // explicitly meant to screenshot this to show a parent). Deliberately
   // mixes a true weekly delta (correct answers this week, from the same
@@ -1329,6 +1350,7 @@
     getCosmetics, unlockCosmetic, equipCosmetic,
     getAvatarColor, setAvatarColor,
     getRewardCatalog, redeemReward,
+    getMathvilleTheme, setMathvilleTheme,
     getWeeklyLeaderboard, getWeeklyRecap, getBonusHourInfo,
     getTitle, getTitleTiers,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
