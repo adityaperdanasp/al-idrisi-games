@@ -416,6 +416,18 @@ body {
 }
 .sc-player-title[hidden] { display: none; }
 
+.sc-level-badge {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 0.68rem;
+  color: #b3862a;
+  background: #fdf0d8;
+  padding: 4px 12px;
+  border-radius: 100px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
+}
+.sc-level-badge[hidden] { display: none; }
+
 .sc-header-right {
   display: flex;
   flex-direction: column;

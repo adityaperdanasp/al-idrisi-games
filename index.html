@@ -248,6 +248,7 @@
             </span>
           </button>
           <div class="sc-player-title" id="sc-player-title" hidden></div>
+          <div class="sc-level-badge" id="sc-level-badge" hidden></div>
         </div>
       </div>
 
@@ -328,6 +329,15 @@
       </div>
 
       <div class="sc-bonus-hour-banner" id="sc-bonus-hour-banner" hidden>⚡ Bonus Hour! Double coins right now!</div>
+
+      <div class="sc-smart-card" id="sc-beat-yesterday-card" hidden>
+        <span class="sc-smart-text" id="sc-beat-yesterday-text"></span>
+      </div>
+
+      <div class="sc-smart-card" id="sc-mysterybox-card" hidden>
+        <span class="sc-smart-text">🎁 Daily Mystery Box — spin for a surprise!</span>
+        <button class="sc-quest-claim-btn" id="sc-mysterybox-btn">🪙10</button>
+      </div>
 
       <div class="sc-smart-card" id="sc-diagnostic-card" hidden>
         <span class="sc-smart-text">🩺 New here? Take a 2-minute Quick Check to see where you're starting!</span>
@@ -772,8 +782,53 @@
         el.textContent = `${title.emoji} ${title.name}`;
         el.hidden = false;
       });
+      AIGLeaderboard.getPlayerLevel().then(lvl => {
+        if (!lvl) return;
+        const el = document.getElementById("sc-level-badge");
+        el.textContent = `⭐ Lv.${lvl.level}`;
+        el.title = `${lvl.xpIntoLevel}/${lvl.xpForNextLevel} XP to next level`;
+        el.hidden = false;
+      });
+      renderBeatYesterday();
+      renderMysteryBox();
       renderSmartPracticeAndDiagnostic();
     }
+  }
+
+  async function renderBeatYesterday() {
+    const cmp = await AIGLeaderboard.getDailyComparison();
+    const card = document.getElementById("sc-beat-yesterday-card");
+    if (!cmp || (cmp.today === 0 && cmp.yesterday === 0)) { card.hidden = true; return; }
+    const text = document.getElementById("sc-beat-yesterday-text");
+    text.textContent = cmp.beat
+      ? `🎉 You've beaten yesterday! ${cmp.today} correct today vs ${cmp.yesterday} yesterday.`
+      : `📊 ${cmp.today} correct today so far — yesterday you got ${cmp.yesterday}. Keep going!`;
+    card.hidden = false;
+  }
+
+  async function renderMysteryBox() {
+    const status = await AIGLeaderboard.getMysteryBoxStatus();
+    const card = document.getElementById("sc-mysterybox-card");
+    const btn = document.getElementById("sc-mysterybox-btn");
+    if (status.opened) { card.hidden = true; return; }
+    card.hidden = false;
+    btn.disabled = false;
+    btn.textContent = status.cost.coins ? `🪙${status.cost.coins}` : `💎${status.cost.gems}`;
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const result = await AIGLeaderboard.openMysteryBox();
+      if (!result.ok) { btn.disabled = false; return; }
+      const r = result.reward;
+      const label = r.type === "coins" ? `+${r.amount} 🪙`
+        : r.type === "gems" ? `+${r.amount} 💎`
+        : "a new collectible card! 📚";
+      const toast = document.createElement("div");
+      toast.className = "sc-card-toast";
+      toast.innerHTML = `<span class="sc-card-toast-emoji">🎁</span><span>Mystery Box: ${label}</span>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+      card.hidden = true;
+    };
   }
 
   const SC_MATHVILLE_CHAPTER_TITLES = {

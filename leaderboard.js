@@ -1121,6 +1121,104 @@
     return { ok: true };
   }
 
+  // =====================================================================
+  // BEAT YESTERDAY — a simple daily comparison, reading data that
+  // already exists (players/{id}/dailyStats/{date}, populated by
+  // touchDailyStats() on every single answer already) rather than
+  // tracking anything new.
+  // =====================================================================
+  async function getDailyComparison() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const today = todayKey();
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const [todaySnap, yesterdaySnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/dailyStats/${today}`).get(),
+      aigDb.ref(`players/${player.id}/dailyStats/${yesterday}`).get()
+    ]);
+    const todayCorrect = todaySnap.exists() ? (todaySnap.val().correct || 0) : 0;
+    const yesterdayCorrect = yesterdaySnap.exists() ? (yesterdaySnap.val().correct || 0) : 0;
+    return { today: todayCorrect, yesterday: yesterdayCorrect, beat: todayCorrect > yesterdayCorrect };
+  }
+
+  // =====================================================================
+  // MYSTERY BOX — one paid spin per calendar day (10 coins), always
+  // gives SOMETHING back (never a true "loss" -- this is for kids, not
+  // a real gambling mechanic). Same get-check-set wallet pattern as
+  // unlockCosmetic/redeemReward above.
+  // =====================================================================
+  const MYSTERY_BOX_COST = { coins: 10 };
+
+  async function getMysteryBoxStatus() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { opened: true, cost: MYSTERY_BOX_COST };
+    const snap = await aigDb.ref(`players/${player.id}/mysteryBox/${todayKey()}`).get();
+    return { opened: snap.exists() && snap.val() === true, cost: MYSTERY_BOX_COST };
+  }
+
+  async function openMysteryBox() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const dayRef = aigDb.ref(`players/${player.id}/mysteryBox/${todayKey()}`);
+    const daySnap = await dayRef.get();
+    if (daySnap.exists() && daySnap.val()) return { ok: false, reason: "already-opened" };
+
+    const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+    const walletSnap = await walletRef.get();
+    const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    if ((wallet.coins || 0) < MYSTERY_BOX_COST.coins) return { ok: false, reason: "insufficient-funds" };
+    await walletRef.set({ ...wallet, coins: wallet.coins - MYSTERY_BOX_COST.coins });
+    await dayRef.set(true);
+
+    // Reward table -- mostly small coin/gem prizes, a rare card at the
+    // tail end. Rolled AFTER the cost is already deducted so a lucky
+    // roll can net more than the 10-coin spend, unlucky still gets
+    // something (5-14 coins covers the cost either way on the most
+    // common outcome).
+    const roll = Math.random();
+    let reward;
+    if (roll < 0.5) reward = { type: "coins", amount: 5 + Math.floor(Math.random() * 10) };
+    else if (roll < 0.8) reward = { type: "gems", amount: 1 };
+    else if (roll < 0.95) reward = { type: "gems", amount: 3 };
+    else reward = { type: "card" };
+
+    if (reward.type === "card") {
+      reward.cardId = await awardRandomCard("rare");
+    } else {
+      const freshSnap = await walletRef.get();
+      const fresh = freshSnap.exists() ? freshSnap.val() : { coins: 0, gems: 0 };
+      await walletRef.set({ ...fresh, [reward.type]: (fresh[reward.type] || 0) + reward.amount });
+    }
+    return { ok: true, reward };
+  }
+
+  // =====================================================================
+  // LEVEL-UP — a numeric level (separate from the 7-tier Title/Rank
+  // above), derived from the SAME per-game XP totals Parent Portal
+  // already sums for its "Progress by Game" section (players/{id}/
+  // badges/{gameId}.xpTotal or .xp depending on the game) -- one read of
+  // the whole `badges` node, no new Firebase writes needed anywhere.
+  // =====================================================================
+  const XP_PER_LEVEL = 50;
+
+  function xpForGame(gameId, badges) {
+    if (!badges) return 0;
+    if (gameId === "language-arts") return badges.xpTotal || 0;
+    if (gameId === "solarquest") return badges.xp || 0;
+    if (gameId === "mathville") return badges.xpTotal || 0;
+    return 0; // Math Race has no XP system, sticker badges only
+  }
+
+  async function getPlayerLevel() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`players/${player.id}/badges`).get();
+    const badges = snap.exists() ? snap.val() : {};
+    const totalXp = ["mathville", "language-arts", "solarquest"].reduce((sum, g) => sum + xpForGame(g, badges[g]), 0);
+    const level = Math.floor(totalXp / XP_PER_LEVEL) + 1;
+    return { totalXp, level, xpIntoLevel: totalXp % XP_PER_LEVEL, xpForNextLevel: XP_PER_LEVEL };
+  }
+
   // Weekly Recap -- a shareable "your week in review" summary (players are
   // explicitly meant to screenshot this to show a parent). Deliberately
   // mixes a true weekly delta (correct answers this week, from the same
@@ -1464,6 +1562,9 @@
     getRewardCatalog, redeemReward,
     getMathvilleTheme, setMathvilleTheme,
     logMistake, getMistakeJournal, markMistakeReviewed,
+    getDailyComparison,
+    getMysteryBoxStatus, openMysteryBox,
+    getPlayerLevel,
     getWeeklyLeaderboard, getWeeklyRecap, getBonusHourInfo,
     getTitle, getTitleTiers,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
