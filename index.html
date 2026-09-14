@@ -205,6 +205,10 @@
           <span class="sc-auth-field-label">4-digit PIN</span>
           <input type="password" inputmode="numeric" maxlength="4" class="sc-auth-input sc-auth-pin" id="sc-auth-pin" placeholder="••••" autocomplete="off" />
         </label>
+        <label class="sc-auth-field" id="sc-auth-referral-field">
+          <span class="sc-auth-field-label">Referred by a friend? (optional)</span>
+          <input type="text" class="sc-auth-input" id="sc-auth-referral" placeholder="Their name" autocomplete="off" />
+        </label>
         <button class="sc-auth-submit" id="sc-auth-submit">Let's Go! 🚀</button>
       </div>
     </div>
@@ -1897,6 +1901,7 @@
     tab.addEventListener("click", () => {
       document.querySelectorAll(".sc-auth-tab").forEach(t => t.classList.toggle("active", t === tab));
       document.getElementById("sc-auth-subtitle").textContent = AUTH_SUBTITLES[tab.dataset.mode];
+      document.getElementById("sc-auth-referral-field").hidden = tab.dataset.mode !== "signup";
       clearAuthError();
     });
   });
@@ -1938,6 +1943,17 @@
         if (existing) { showAuthError("This name is already taken"); return; }
         await aigDb.ref(`testerAccounts/${key}`).set({ name: rawName, pin, createdAt: Date.now() });
         AIGPlayer.setPlayer({ id: key, name: rawName, role: "student" });
+        // Referral bonus -- best-effort, never blocks account creation if
+        // the referrer name is missing/typo'd/doesn't exist. See
+        // AIGLeaderboard.awardReferralBonus for the get-check-set wallet
+        // writes (same pattern as unlockVehicle/feedPet above).
+        const referralName = document.getElementById("sc-auth-referral").value.trim();
+        if (referralName) {
+          const referrerKey = sanitizeNameKey(referralName);
+          if (referrerKey && referrerKey !== key) {
+            try { await AIGLeaderboard.awardReferralBonus(key, referrerKey); } catch (e) { /* cosmetic bonus only, skip silently */ }
+          }
+        }
         showLanding();
       } else {
         if (!existing || existing.pin !== pin) { showAuthError("Name or PIN is incorrect"); return; }

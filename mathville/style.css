@@ -220,6 +220,14 @@ button { font-family: inherit; }
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   width: 128px; text-align: center; cursor: pointer; z-index: 1;
 }
+.map-decoration-slot {
+  width: 48px; height: 48px; border-radius: 50%; font-size: 24px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--card); border: 2px dashed var(--taupe); cursor: pointer;
+  box-shadow: 0 2px 6px rgba(59,42,26,.12); padding: 0;
+}
+.map-decoration-slot:active { transform: scale(0.94); }
+
 .map-stop-node {
   width: 64px; height: 64px; border-radius: 20px;
   display: flex; align-items: center; justify-content: center; font-size: 28px;
@@ -1063,6 +1071,8 @@ button { font-family: inherit; }
 }
 .ai-hint-card.chat-open { cursor: default; }
 .ai-hint-badge { font: 700 12px "Fredoka", sans-serif; color: var(--cherry); margin-bottom: 8px; }
+.teach-bo-prompt { font: 600 14px "Fredoka", sans-serif; color: var(--ink); margin: 0 0 10px; line-height: 1.4; }
+.teach-bo-response { font: 600 14px "Fredoka", sans-serif; color: var(--ink-soft); margin: 8px 0 0; font-style: italic; }
 .ai-hint-tap-cue {
   font: 700 11px "Fredoka", sans-serif; color: var(--wood); opacity: .7;
   margin-top: 6px;

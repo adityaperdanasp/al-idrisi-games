@@ -331,6 +331,41 @@ async function openThemePicker() {
   });
   $("theme-picker-overlay").classList.remove("hidden");
 }
+
+// Town Map corner decoration -- free cosmetic pick, own emoji + name pool
+// (independent of MATHVILLE_THEMES above). Rendered at a fixed empty spot
+// in renderTownMap() below (bottom-center, clear of both the last
+// MAP_ORNAMENTS entry and the Word Problems chapter node).
+const TOWN_DECORATIONS = [
+  { id: "windmill", emoji: "🎡", name: "Ferris Wheel" },
+  { id: "castle", emoji: "🏰", name: "Little Castle" },
+  { id: "fountain", emoji: "⛲", name: "Fountain" },
+  { id: "carousel", emoji: "🎠", name: "Carousel" },
+  { id: "sunflower", emoji: "🌻", name: "Sunflower Patch" },
+  { id: "slide", emoji: "🛝", name: "Slide" },
+  { id: "lighthouse", emoji: "🗼", name: "Lighthouse" },
+  { id: "balloon", emoji: "🎈", name: "Balloon Stand" }
+];
+$("btn-decoration-close").addEventListener("click", () => $("decoration-picker-overlay").classList.add("hidden"));
+
+async function openDecorationPicker() {
+  const current = window.AIGLeaderboard ? await AIGLeaderboard.getTownDecoration() : null;
+  const grid = $("decoration-swatch-grid");
+  grid.innerHTML = TOWN_DECORATIONS.map(d => `
+    <button class="theme-swatch-btn${d.id === current ? " selected" : ""}" data-deco-pick="${d.id}" type="button">
+      <span class="theme-swatch-dot" style="background:transparent;display:flex;align-items:center;justify-content:center;font-size:20px;">${d.emoji}</span>
+      <span class="theme-swatch-name">${d.name}</span>
+    </button>`).join("");
+  grid.querySelectorAll("[data-deco-pick]").forEach(btn => {
+    btn.onclick = async () => {
+      const decoId = btn.dataset.decoPick;
+      if (window.AIGLeaderboard) await AIGLeaderboard.setTownDecoration(decoId);
+      openDecorationPicker(); // re-render so the "selected" highlight updates
+      if ($("screen-map").classList.contains("active")) renderTownMap();
+    };
+  });
+  $("decoration-picker-overlay").classList.remove("hidden");
+}
 $("btn-speedround").addEventListener("click", launchSpeedRound);
 $("btn-weeklyboss").addEventListener("click", launchWeeklyBossRush);
 document.querySelectorAll(".mp-cheer-btn").forEach(btn => {
@@ -471,6 +506,25 @@ function renderTownMap() {
   mvPlaceTraveler(chapters, nextIdx === -1 ? chapters.length - 1 : nextIdx);
   mvFitMapScale();
   applyMasteryBadges();
+  renderTownDecoration(wrap);
+}
+
+// Fire-and-forget, same pattern as applyMasteryBadges() above -- a Firebase
+// read never delays the map itself from appearing. Bottom-center spot,
+// clear of both the last MAP_ORNAMENTS entry (20,1650) and the Word
+// Problems chapter node (340,1600).
+async function renderTownDecoration(wrap) {
+  if (!window.AIGLeaderboard) return;
+  const decoId = await AIGLeaderboard.getTownDecoration();
+  const deco = TOWN_DECORATIONS.find(d => d.id === decoId);
+  const slot = document.createElement("button");
+  slot.className = "map-decoration-slot";
+  slot.type = "button";
+  slot.title = "Decorate your corner!";
+  slot.style.cssText = "position:absolute;left:150px;top:1665px;";
+  slot.textContent = deco ? deco.emoji : "➕";
+  slot.addEventListener("click", openDecorationPicker);
+  wrap.appendChild(slot);
 }
 
 // Purely decorative -- patches in a small star badge on top of an
@@ -784,6 +838,7 @@ function goToIntro(chapterId, isMp) {
     state.stepIndex = 0;
     state.mistakes = 0;
     state.lastWrong = null;
+    state.lastCorrect = null;
     state.isBoss = false; // defensive -- a normal round entry always clears any leftover boss/challenge/coop flag
     state.isChallenge = false;
     state.isCoop = false;
@@ -2972,6 +3027,7 @@ async function buildFocusRoundSteps(selected) {
     state.stepIndex = 0;
     state.mistakes = 0;
     state.lastWrong = null;
+    state.lastCorrect = null;
     state.steps = steps;
     renderStep();
   });
@@ -4738,6 +4794,13 @@ function submitAnswer(isCorrect, prompt, answerForHint) {
         if (window.AIGLeaderboard && state.chapterId) AIGLeaderboard.logMistake("mathville", state.chapterId, prompt, answerForHint);
       } catch (e) {}
     }
+  } else {
+    // Last CORRECT answer this round -- used by "Teach Bo" on the reward
+    // screen (the flip side of the AI hint's "explain a miss": here the
+    // kid explains a question they got right, to reinforce it via the
+    // protege effect). Overwritten every correct answer so it always
+    // reflects the most recent one, same convention as lastWrong above.
+    state.lastCorrect = { prompt, answer: answerForHint };
   }
   if (state.isBoss) {
     clearBossTimer();
@@ -5113,6 +5176,7 @@ function showReward(stars) {
   updateXpBadge();
   showScreen("screen-reward");
   loadAiHint();
+  renderTeachBo();
   // If this chapter was entered by driving into its building, Continue
   // should drop the player back into the driving world (with that city
   // now shown complete) instead of the tap-map.
@@ -5161,6 +5225,7 @@ function launchBossChallenge(chapterId) {
   state.stepIndex = 0;
   state.mistakes = 0;
   state.lastWrong = null;
+  state.lastCorrect = null;
   renderStep();
   startBossTimer();
 }
@@ -5220,6 +5285,7 @@ async function launchWeeklyBossRush() {
   state.stepIndex = 0;
   state.mistakes = 0;
   state.lastWrong = null;
+  state.lastCorrect = null;
   renderStep();
   startBossTimer();
 }
@@ -5324,6 +5390,7 @@ function startChallengeRound(turnNum, name) {
   state.stepIndex = 0;
   state.mistakes = 0;
   state.lastWrong = null;
+  state.lastCorrect = null;
   renderStep();
 }
 
@@ -5390,6 +5457,7 @@ function launchCoopRound(p2Name) {
   state.stepIndex = 0;
   state.mistakes = 0;
   state.lastWrong = null;
+  state.lastCorrect = null;
   showCoopTurnGate();
 }
 
@@ -5729,6 +5797,48 @@ async function loadAiHint() {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openChat(); }
   });
 })();
+
+// Bo's canned acknowledgments when a kid teaches him back a question they
+// got right -- no AI call needed since there's nothing to grade here, the
+// reward is for engaging/explaining at all, not for the content.
+const TEACH_BO_RESPONSES = [
+  "Ohh, that makes sense now -- thanks for teaching me!",
+  "Wow, you explained that really clearly!",
+  "I get it now! You'd make a great teacher.",
+  "That's a great way to think about it. Thanks!",
+  "You explained that better than I would have!"
+];
+
+// Solo rounds only: state.lastCorrect is per-device and only meaningful
+// for a single player answering their own questions, so boss/challenge/
+// co-op (2 players sharing a device, or a fast timed mode) skip this
+// entirely rather than showing something that'd be confusing/wrong there.
+function renderTeachBo() {
+  const card = $("teach-bo-card");
+  if (state.isBoss || state.isChallenge || state.isCoop || !state.lastCorrect) {
+    card.classList.add("hidden");
+    return;
+  }
+  card.classList.remove("hidden");
+  $("teach-bo-prompt").textContent = `How did you solve this one: "${state.lastCorrect.prompt}"?`;
+  $("teach-bo-input").value = "";
+  $("teach-bo-response").classList.add("hidden");
+  $("teach-bo-form").classList.remove("hidden");
+}
+$("teach-bo-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const input = $("teach-bo-input");
+  const text = input.value.trim();
+  if (!text) return;
+  $("teach-bo-form").classList.add("hidden");
+  const responseEl = $("teach-bo-response");
+  responseEl.textContent = TEACH_BO_RESPONSES[rand(0, TEACH_BO_RESPONSES.length - 1)];
+  responseEl.classList.remove("hidden");
+  // No manual wallet refresh needed -- the topbar's watchWallet()
+  // subscription (wired near updateXpBadge() above) picks up the +1 gem
+  // on its own.
+  try { if (window.AIGLeaderboard) await AIGLeaderboard.awardTeachBoBonus(); } catch (err) { /* engagement bonus only, skip silently */ }
+});
 
 function appendAiHintMessage(text, from) {
   const thread = $("ai-hint-thread");

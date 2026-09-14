@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=89" />
+<link rel="stylesheet" href="style.css?v=91" />
 </head>
 <body>
 
@@ -109,6 +109,19 @@
       <div class="drive-difficulty-title">Pick a theme</div>
       <div class="theme-swatch-grid" id="theme-swatch-grid"></div>
       <button class="btn boss-challenge-btn" id="btn-theme-close">Close</button>
+    </div>
+  </div>
+
+  <!-- Town Map corner decoration picker -- opened by tapping the
+       decoration slot rendered in renderTownMap() (only ever visible while
+       #screen-map is already active, so no overlay-in-inactive-screen risk
+       even though this lives outside every .screen for consistency with
+       the other pickers here). Free, cosmetic-only, no wallet cost. -->
+  <div id="decoration-picker-overlay" class="drive-question-overlay hidden">
+    <div class="drive-question-card drive-difficulty-card">
+      <div class="drive-difficulty-title">Decorate your corner!</div>
+      <div class="theme-swatch-grid" id="decoration-swatch-grid"></div>
+      <button class="btn boss-challenge-btn" id="btn-decoration-close">Close</button>
     </div>
   </div>
 
@@ -768,6 +781,20 @@
       </form>
     </div>
 
+    <!-- "Teach Bo" -- the flip side of the AI hint card above: explain a
+         question you got RIGHT back in your own words, for the protege-
+         effect reinforcement. Solo rounds only (see renderTeachBo() in
+         script.js for why boss/challenge/co-op skip it). -->
+    <div id="teach-bo-card" class="ai-hint-card hidden">
+      <div class="ai-hint-badge">👩‍🏫 Teach Bo</div>
+      <p class="teach-bo-prompt" id="teach-bo-prompt"></p>
+      <form id="teach-bo-form" class="ai-hint-form">
+        <input id="teach-bo-input" class="ai-hint-input" placeholder="Explain it in your own words..." autocomplete="off" maxlength="300" />
+        <button type="submit" class="ai-hint-send" aria-label="Send">➤</button>
+      </form>
+      <p id="teach-bo-response" class="teach-bo-response hidden"></p>
+    </div>
+
     <div id="mp-results" class="mp-results hidden"></div>
 
     <button class="btn boss-challenge-btn hidden" id="btn-reward-boss">⚔️ Boss Challenge</button>
@@ -1045,6 +1072,6 @@
 <script src="questions.js?v=9"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=118"></script>
+<script src="script.js?v=120"></script>
 </body>
 </html>

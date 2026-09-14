@@ -972,6 +972,53 @@
   }
 
   // =====================================================================
+  // TEACH BO — the flip side of the AI hint: after getting a question
+  // right, the kid explains it back in their own words (the "protege
+  // effect" -- explaining something reinforces understanding of it). No AI
+  // call needed, Bo just gives a warm canned acknowledgment client-side; a
+  // flat +1 gem rewards the act of engaging, not the content of the
+  // explanation (there's nothing here to grade). Uses the same additive
+  // .transaction() as awardCurrency() above, not the get-check-set
+  // pattern used for spends -- this only ever ADDS a gem, so it can't hit
+  // the abort-on-null-cache bug documented on unlockVehicle()/feedPet().
+  // =====================================================================
+  async function awardTeachBoBonus() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.gems = (wallet.gems || 0) + 1;
+      return wallet;
+    });
+    return { ok: true };
+  }
+
+  // =====================================================================
+  // REFERRAL BONUS — called once, right after a new testerAccounts record
+  // is created at Sign Up (see index.html's handleAuthSubmit). Best-effort:
+  // a missing/typo'd/nonexistent referrer name just means no bonus, never
+  // blocks account creation (which already happened by the time this
+  // runs). Both sides get the same flat reward -- no cap/limit on how many
+  // times an existing player can be listed as a referrer, since each
+  // referral can only ever fire once per NEW account (accounts are
+  // one-time-created), so there's no way to grind this by resubmitting.
+  // =====================================================================
+  const REFERRAL_BONUS_COINS = 5;
+  async function awardReferralBonus(newPlayerId, referrerId) {
+    const referrerSnap = await aigDb.ref(`testerAccounts/${referrerId}`).get();
+    if (!referrerSnap.exists()) return { ok: false, reason: "referrer-not-found" };
+    async function addCoins(playerId) {
+      const walletRef = aigDb.ref(`players/${playerId}/wallet`);
+      const snap = await walletRef.get();
+      const wallet = snap.exists() ? snap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+      await walletRef.set({ ...wallet, coins: (wallet.coins || 0) + REFERRAL_BONUS_COINS });
+    }
+    await addCoins(newPlayerId);
+    await addCoins(referrerId);
+    return { ok: true, bonus: REFERRAL_BONUS_COINS };
+  }
+
+  // =====================================================================
   // MILESTONE SURPRISE — a one-time celebratory moment at 7/30/100/365
   // days since account creation. Reuses testerAccounts/{id}/createdAt
   // (already written at Sign Up, see index.html) rather than tracking a
@@ -1179,6 +1226,26 @@
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return { ok: false };
     await aigDb.ref(`players/${player.id}/mathvilleTheme`).set(theme);
+    return { ok: true };
+  }
+
+  // Town Map corner decoration -- a single emoji a kid picks for a fixed
+  // spot on their own Town Map, purely self-expression (free, no wallet
+  // cost, unlike vehicle skins/cosmetics above). Same get/set shape as
+  // getMathvilleTheme/setMathvilleTheme just above, deliberately its own
+  // path rather than folded into mathvilleTheme since it's independent
+  // (light/dark/world theme vs. a personal decoration are unrelated axes).
+  async function getTownDecoration() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`players/${player.id}/townDecoration`).get();
+    return snap.exists() ? snap.val() : null;
+  }
+
+  async function setTownDecoration(decoId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    await aigDb.ref(`players/${player.id}/townDecoration`).set(decoId);
     return { ok: true };
   }
 
@@ -1861,6 +1928,9 @@
     getPetStatus, feedPet,
     getClassmateAccuracy,
     getMilestoneSurprise,
+    getTownDecoration, setTownDecoration,
+    awardReferralBonus,
+    awardTeachBoBonus,
     db: aigDb
   };
 })();
