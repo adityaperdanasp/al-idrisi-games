@@ -975,6 +975,7 @@ body {
 
 .sc-cosmetic-list { display: flex; flex-direction: column; gap: 10px; }
 .sc-cosmetic-list[hidden] { display: none; }
+.sc-empty-note { font-family: "Nunito", sans-serif; font-weight: 700; font-size: 0.78rem; color: #8a7a6a; text-align: center; padding: 10px 0; }
 
 .sc-avatarcolor-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .sc-avatarcolor-grid[hidden] { display: none; }

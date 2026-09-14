@@ -120,6 +120,28 @@
         <div id="p-quiz-list"><p class="p-empty-note">Loading…</p></div>
       </div>
 
+      <!-- ---- Real-world reward ledger ---- -->
+      <div class="p-section">
+        <div class="p-section-title">🎁 Real-World Rewards</div>
+        <p class="p-section-desc">Set up rewards your child can redeem with their in-game coins/gems (e.g. "30 min extra screen time"). Redeeming doesn't auto-deliver anything -- check back here and mark it given once you've followed through.</p>
+        <div class="p-reward-add-row">
+          <input type="text" id="p-reward-label" placeholder="Reward, e.g. Pick tonight's movie" maxlength="60">
+          <input type="number" id="p-reward-coins" placeholder="🪙 cost" min="0">
+          <input type="number" id="p-reward-gems" placeholder="💎 cost" min="0">
+          <button class="p-save-btn" id="p-reward-add-btn">Add Reward</button>
+        </div>
+        <div id="p-reward-catalog"><p class="p-empty-note">Loading…</p></div>
+        <div class="p-section-title" style="margin-top:18px;font-size:0.85rem;">📋 Redeemed, waiting to be given</div>
+        <div id="p-reward-redemptions"><p class="p-empty-note">Loading…</p></div>
+      </div>
+
+      <!-- ---- Report: achievements snapshot ---- -->
+      <div class="p-section">
+        <div class="p-section-title">🏆 Achievements</div>
+        <p class="p-section-desc">Current rank and personal bests -- check in whenever you like, no need to wait for a notification.</p>
+        <div id="p-achievements"><p class="p-empty-note">Loading…</p></div>
+      </div>
+
       <!-- ---- Report: needs practice ---- -->
       <div class="p-section">
         <div class="p-section-title">⚠️ Needs Practice</div>

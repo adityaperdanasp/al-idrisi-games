@@ -27,6 +27,7 @@
   <div class="lb-tabs" id="lb-tabs"></div>
 
   <div class="lb-metric-label" id="lb-metric-label">Ranked by <b>🎮 times played</b></div>
+  <div class="lb-hof-hint hidden" id="lb-hof-hint">🏆 This week's Hall of Fame! 📸 Screenshot to share with your family!</div>
 
   <div class="lb-podium" id="lb-podium"></div>
   <div class="lb-you hidden" id="lb-you"></div>
@@ -185,6 +186,10 @@
     Object.keys(SCOPES).forEach(s => document.getElementById(`lb-scope-${s}`).classList.toggle("active", s === scope));
     document.getElementById("lb-tabs").hidden = !SCOPES[scope].showTabs;
     document.getElementById("lb-metric-label").innerHTML = SCOPES[scope].label;
+    // "This Week" doubles as a shareable Hall of Fame -- the podium above
+    // already shows the top 3, this just frames it as something worth
+    // screenshotting, same spirit as the hub's Weekly Recap card.
+    document.getElementById("lb-hof-hint").classList.toggle("hidden", scope !== "weekly");
     SCOPES[scope].load();
   }
   document.getElementById("lb-scope-alltime").addEventListener("click", () => switchScope("alltime"));

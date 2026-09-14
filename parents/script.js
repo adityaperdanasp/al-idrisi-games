@@ -28,6 +28,25 @@
     "rounding": "Rounding", "word-problems": "Word Problems"
   };
 
+  // Same 7 tiers as leaderboard.js's TITLE_TIERS -- duplicated here (this
+  // page talks to Firebase directly via aigDb, not through
+  // window.AIGLeaderboard) same pattern as MATHVILLE_CHAPTER_TITLES above.
+  // Keep both lists in sync if the tiers ever change.
+  const TITLE_TIERS = [
+    { min: 0, name: "Pemula", emoji: "🌱" },
+    { min: 20, name: "Rajin Belajar", emoji: "📘" },
+    { min: 50, name: "Jagoan Matematika", emoji: "⚡" },
+    { min: 100, name: "Bintang Kelas", emoji: "⭐" },
+    { min: 200, name: "Master BrainBox", emoji: "🏅" },
+    { min: 400, name: "Grandmaster", emoji: "👑" },
+    { min: 800, name: "Legenda BrainBox", emoji: "🌟" }
+  ];
+  function titleForCount(count) {
+    let result = TITLE_TIERS[0];
+    for (const t of TITLE_TIERS) if (count >= t.min) result = t;
+    return result;
+  }
+
   function sanitizeNameKey(name) {
     return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   }
@@ -162,8 +181,18 @@
     });
     renderPicked();
 
+    // ---- Achievements snapshot (current state, not a push notification --
+    // there's no event log of "when" a rank/high-score changed, and wiring
+    // a real push alert would need a server-side trigger this app doesn't
+    // have; a parent checking here any time still sees where things stand) ----
+    renderAchievements(player);
+
     // ---- Review kid-written quiz questions ----
     renderQuizReview(player.customQuestions || {});
+
+    // ---- Real-world reward ledger ----
+    renderRewardCatalog(player.rewardCatalog || {});
+    renderRewardRedemptions(player.rewardRedemptions || {});
 
     // ---- Needs Practice ----
     let weak = [];
@@ -207,6 +236,28 @@
           </div>
         </div>`;
     }).join("");
+  }
+
+  function renderAchievements(player) {
+    const wrap = document.getElementById("p-achievements");
+    const totalCorrect = player.totalCorrect || 0;
+    const tier = titleForCount(totalCorrect);
+    const next = TITLE_TIERS.find(t => t.min > totalCorrect) || null;
+    const mv = (player.badges && player.badges.mathville) || {};
+    const speedBest = player.speedRoundBest || null;
+
+    const rows = [
+      { label: "Rank", value: `${tier.emoji} ${tier.name}`, sub: next ? `${next.min - totalCorrect} more correct to reach ${next.emoji} ${next.name}` : "Top rank reached!" },
+      { label: "Plane Mode best score", value: mv.planeHighScore || 0 },
+      { label: "Ninja Runner best score", value: mv.ninjaHighScore || 0 },
+      { label: "Speed Round best score", value: speedBest ? speedBest.score : 0 }
+    ];
+    wrap.innerHTML = rows.map(r => `
+      <div class="p-achievement-row">
+        <span class="p-achievement-label">${escapeHtml(r.label)}</span>
+        <span class="p-achievement-value">${escapeHtml(String(r.value))}</span>
+        ${r.sub ? `<span class="p-achievement-sub">${escapeHtml(r.sub)}</span>` : ""}
+      </div>`).join("");
   }
 
   function renderQuizReview(customQuestions) {
@@ -254,6 +305,69 @@
       });
     });
   }
+
+  function rewardCostLabel(cost) {
+    const parts = [];
+    if (cost.coins) parts.push(`🪙${cost.coins}`);
+    if (cost.gems) parts.push(`💎${cost.gems}`);
+    return parts.join(" ") || "Free";
+  }
+
+  function renderRewardCatalog(catalog) {
+    const wrap = document.getElementById("p-reward-catalog");
+    const entries = Object.entries(catalog);
+    if (!entries.length) {
+      wrap.innerHTML = `<p class="p-empty-note">No rewards set up yet -- add one above!</p>`;
+      return;
+    }
+    wrap.innerHTML = entries.map(([id, item]) => `
+      <div class="p-reward-row">
+        <span class="p-reward-name">${escapeHtml(item.label)}</span>
+        <span class="p-reward-cost">${rewardCostLabel(item.cost || {})}</span>
+        <button class="p-reward-remove" data-reward-remove="${id}" type="button">✕</button>
+      </div>`).join("");
+    wrap.querySelectorAll("[data-reward-remove]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        await aigDb.ref(`players/${childId}/rewardCatalog/${btn.dataset.rewardRemove}`).remove();
+        loadPortal();
+      });
+    });
+  }
+
+  function renderRewardRedemptions(redemptions) {
+    const wrap = document.getElementById("p-reward-redemptions");
+    const entries = Object.entries(redemptions).filter(([, r]) => !r.fulfilled);
+    entries.sort((a, b) => (b[1].redeemedAt || 0) - (a[1].redeemedAt || 0));
+    if (!entries.length) {
+      wrap.innerHTML = `<p class="p-empty-note">Nothing waiting -- all caught up!</p>`;
+      return;
+    }
+    wrap.innerHTML = entries.map(([id, r]) => `
+      <div class="p-reward-row">
+        <span class="p-reward-name">${escapeHtml(r.label)}</span>
+        <span class="p-reward-cost">${rewardCostLabel(r.cost || {})}</span>
+        <button class="p-quiz-btn p-quiz-approve" data-reward-fulfill="${id}" type="button">✓ Given</button>
+      </div>`).join("");
+    wrap.querySelectorAll("[data-reward-fulfill]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        await aigDb.ref(`players/${childId}/rewardRedemptions/${btn.dataset.rewardFulfill}/fulfilled`).set(true);
+        loadPortal();
+      });
+    });
+  }
+
+  document.getElementById("p-reward-add-btn").addEventListener("click", async () => {
+    const label = document.getElementById("p-reward-label").value.trim();
+    const coins = Number(document.getElementById("p-reward-coins").value) || 0;
+    const gems = Number(document.getElementById("p-reward-gems").value) || 0;
+    if (!label || (!coins && !gems)) return;
+    const ref = aigDb.ref(`players/${childId}/rewardCatalog`).push();
+    await ref.set({ label, cost: { coins, gems } });
+    document.getElementById("p-reward-label").value = "";
+    document.getElementById("p-reward-coins").value = "";
+    document.getElementById("p-reward-gems").value = "";
+    loadPortal();
+  });
 
   // ---- Assign picker interactivity (same recipe as MathVille's Focus
   // Round overlay: pick moves into the pinned box, capped at 8) ----

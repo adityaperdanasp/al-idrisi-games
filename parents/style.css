@@ -111,6 +111,33 @@
 .p-quiz-status-approved { background: #e2f3e5; color: #2f6b3a; }
 .p-quiz-status-rejected { background: #fbe3e3; color: #a13a3a; }
 
+/* ---- Achievements snapshot ---- */
+.p-achievement-row {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+  padding: 8px 0; border-bottom: 1px solid #f1e6d3;
+}
+.p-achievement-row:last-child { border-bottom: none; }
+.p-achievement-label { font: 700 0.82rem "Nunito", sans-serif; color: #3d2e22; }
+.p-achievement-value { font: 800 0.9rem "Baloo 2", sans-serif; color: #4a2d70; }
+.p-achievement-sub { flex-basis: 100%; font-size: 0.7rem; color: #9c8a76; margin-top: 2px; }
+
+/* ---- Real-world reward ledger ---- */
+.p-reward-add-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.p-reward-add-row input {
+  border: 2px solid #e4d4f7; border-radius: 12px; padding: 9px 10px;
+  font: 600 0.82rem "Nunito", sans-serif; color: #3d2e22; box-sizing: border-box;
+}
+.p-reward-add-row input[type="text"] { flex: 1 1 100%; }
+.p-reward-add-row input[type="number"] { flex: 1; min-width: 70px; }
+.p-reward-add-row .p-save-btn { flex: 1 1 100%; margin-top: 0; }
+.p-reward-row {
+  display: flex; align-items: center; gap: 10px; background: #fbf6ec;
+  border-radius: 14px; padding: 10px 12px; margin-bottom: 8px;
+}
+.p-reward-name { flex: 1; font: 700 0.82rem "Nunito", sans-serif; color: #3d2e22; }
+.p-reward-cost { font: 800 0.75rem "Baloo 2", sans-serif; color: #b3862a; }
+.p-reward-remove { border: none; background: none; color: #a13a3a; cursor: pointer; font-size: 0.9rem; padding: 2px 6px; }
+
 /* ---- Weak-topic cards ---- */
 .p-weak-card { margin-bottom: 12px; }
 .p-weak-card:last-child { margin-bottom: 0; }

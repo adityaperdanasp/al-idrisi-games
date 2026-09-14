@@ -939,6 +939,55 @@
     return { ok: true };
   }
 
+  // =====================================================================
+  // REAL-WORLD REWARD LEDGER — a parent defines a small catalog of real
+  // rewards (e.g. "30 min extra screen time" for 20 coins) from Parent
+  // Portal (writes players/{id}/rewardCatalog directly via aigDb, same as
+  // every other parent-side write -- Parent Portal doesn't go through
+  // this file's player-role gating at all, see its own script.js). A kid
+  // redeems one here, spending from the SAME coins/gems wallet vehicle
+  // skins/power-ups already use; the redemption is logged (not
+  // auto-fulfilled -- a parent still has to actually deliver the real
+  // reward and marks it given from Parent Portal).
+  // =====================================================================
+  async function getRewardCatalog() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return {};
+    const snap = await aigDb.ref(`players/${player.id}/rewardCatalog`).get();
+    return snap.exists() ? snap.val() : {};
+  }
+
+  // Get-check-set pattern, same as unlockCosmetic/unlockVehicle above --
+  // deliberately not a transaction, for the same reason documented on
+  // those (a real-money-adjacent purchase would need one, a cosmetic-ish
+  // real-world reward doesn't).
+  async function redeemReward(itemId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const catalogSnap = await aigDb.ref(`players/${player.id}/rewardCatalog/${itemId}`).get();
+    if (!catalogSnap.exists()) return { ok: false, reason: "not-found" };
+    const item = catalogSnap.val();
+    const cost = item.cost || {};
+    const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+    const walletSnap = await walletRef.get();
+    const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    if ((wallet.coins || 0) < (cost.coins || 0) || (wallet.gems || 0) < (cost.gems || 0)) {
+      return { ok: false, reason: "insufficient-funds" };
+    }
+    await walletRef.set({
+      ...wallet,
+      coins: Math.max(0, (wallet.coins || 0) - (cost.coins || 0)),
+      gems: Math.max(0, (wallet.gems || 0) - (cost.gems || 0))
+    });
+    await aigDb.ref(`players/${player.id}/rewardRedemptions`).push({
+      label: item.label,
+      cost,
+      redeemedAt: firebase.database.ServerValue.TIMESTAMP,
+      fulfilled: false
+    });
+    return { ok: true };
+  }
+
   // Weekly Recap -- a shareable "your week in review" summary (players are
   // explicitly meant to screenshot this to show a parent). Deliberately
   // mixes a true weekly delta (correct answers this week, from the same
@@ -1279,6 +1328,7 @@
     getCollection,
     getCosmetics, unlockCosmetic, equipCosmetic,
     getAvatarColor, setAvatarColor,
+    getRewardCatalog, redeemReward,
     getWeeklyLeaderboard, getWeeklyRecap, getBonusHourInfo,
     getTitle, getTitleTiers,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,

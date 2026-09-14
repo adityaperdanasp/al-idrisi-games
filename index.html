@@ -555,11 +555,13 @@
         <button class="sc-modal-tab" id="sc-tab-sounds" type="button">Sounds</button>
         <button class="sc-modal-tab" id="sc-tab-powerups" type="button">⚡ Power-ups</button>
         <button class="sc-modal-tab" id="sc-tab-avatarcolor" type="button">🎨 Avatar</button>
+        <button class="sc-modal-tab" id="sc-tab-rewards" type="button">🎁 Rewards</button>
       </div>
       <div class="sc-cosmetic-list" id="sc-frame-list"></div>
       <div class="sc-cosmetic-list" id="sc-sound-list" hidden></div>
       <div class="sc-cosmetic-list" id="sc-powerup-list" hidden></div>
       <div class="sc-avatarcolor-grid" id="sc-avatarcolor-grid" hidden></div>
+      <div class="sc-cosmetic-list" id="sc-reward-list" hidden></div>
     </div>
   </div>
 
@@ -1044,6 +1046,7 @@
     if (!cos) return;
     renderPowerupShop();
     renderAvatarColorPicker();
+    renderRewardList();
 
     document.getElementById("sc-frame-list").innerHTML = cos.frames.map(f => {
       const isEquipped = cos.equippedFrame === f.id;
@@ -1119,8 +1122,8 @@
   document.getElementById("sc-customize-close").addEventListener("click", () => {
     document.getElementById("sc-customize-overlay").hidden = true;
   });
-  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups", "avatarcolor"];
-  const CUSTOMIZE_TAB_LIST_ID = { frames: "sc-frame-list", sounds: "sc-sound-list", powerups: "sc-powerup-list", avatarcolor: "sc-avatarcolor-grid" };
+  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups", "avatarcolor", "rewards"];
+  const CUSTOMIZE_TAB_LIST_ID = { frames: "sc-frame-list", sounds: "sc-sound-list", powerups: "sc-powerup-list", avatarcolor: "sc-avatarcolor-grid", rewards: "sc-reward-list" };
   function switchCustomizeTab(tab) {
     CUSTOMIZE_TABS.forEach(t => {
       document.getElementById(`sc-tab-${t}`).classList.toggle("active", t === tab);
@@ -1131,6 +1134,49 @@
   document.getElementById("sc-tab-sounds").addEventListener("click", () => switchCustomizeTab("sounds"));
   document.getElementById("sc-tab-powerups").addEventListener("click", () => switchCustomizeTab("powerups"));
   document.getElementById("sc-tab-avatarcolor").addEventListener("click", () => switchCustomizeTab("avatarcolor"));
+  document.getElementById("sc-tab-rewards").addEventListener("click", () => switchCustomizeTab("rewards"));
+
+  // Real-world reward ledger -- redeems from the SAME coins/gems wallet
+  // as vehicle skins/power-ups. The catalog itself is set by a parent
+  // from Parent Portal (players/{id}/rewardCatalog); this just lists it
+  // and lets the kid spend on one. Redeeming logs it for the parent to
+  // see and mark "given" -- it never auto-delivers anything real.
+  async function renderRewardList() {
+    const [catalog, wallet] = await Promise.all([AIGLeaderboard.getRewardCatalog(), AIGLeaderboard.getWallet()]);
+    const list = document.getElementById("sc-reward-list");
+    const entries = Object.entries(catalog || {});
+    if (!entries.length) {
+      list.innerHTML = `<p class="sc-empty-note">No rewards set up yet -- ask a parent to add some from the Parent Portal!</p>`;
+      return;
+    }
+    list.innerHTML = entries.map(([id, item]) => {
+      const cost = item.cost || {};
+      const affordable = (wallet.coins || 0) >= (cost.coins || 0) && (wallet.gems || 0) >= (cost.gems || 0);
+      const costLabel = [cost.coins ? `🪙${cost.coins}` : "", cost.gems ? `💎${cost.gems}` : ""].filter(Boolean).join(" ") || "Free";
+      return `
+        <div class="sc-cosmetic-item">
+          <span class="sc-cosmetic-preview">🎁</span>
+          <span class="sc-cosmetic-name">${item.label}</span>
+          <button class="sc-quest-claim-btn" data-reward-redeem="${id}" ${affordable ? "" : "disabled"}>${costLabel}</button>
+        </div>`;
+    }).join("");
+    list.querySelectorAll("[data-reward-redeem]").forEach(btn => {
+      btn.onclick = async () => {
+        btn.disabled = true;
+        const result = await AIGLeaderboard.redeemReward(btn.dataset.rewardRedeem);
+        if (result.ok) {
+          renderRewardList();
+          const toast = document.createElement("div");
+          toast.className = "sc-card-toast";
+          toast.innerHTML = `<span class="sc-card-toast-emoji">🎁</span><span>Redeemed! A parent will see this in Parent Portal.</span>`;
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 3000);
+        } else {
+          btn.disabled = false;
+        }
+      };
+    });
+  }
 
   // Avatar color picker -- free, no unlock/cost (unlike frames/sounds
   // above). Swatches are the SAME 7 colors scColorFor() already
