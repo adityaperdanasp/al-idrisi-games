@@ -302,7 +302,6 @@ function initBasketball() {
     // nothing happened).
     if (-dyPct < MIN_UPWARD_DRAG_PCT) { launchShot(0, -2); return; }
     const vx = Math.max(-MAX_HORIZONTAL_VELOCITY, Math.min(MAX_HORIZONTAL_VELOCITY, dxPct * HORIZONTAL_SENSITIVITY));
-    window.BH_DEBUG = { dxPct, dyPct, vx, vy: -VERTICAL_POWER, ballXAtLaunch: state.ballX, ballYAtLaunch: state.ballY };
     launchShot(vx, -VERTICAL_POWER);
   }
 
@@ -324,15 +323,11 @@ function initBasketball() {
       const inHoopY = ny > HOOP_TOL_Y_MIN && ny < HOOP_TOL_Y_MAX;
       if (!state.scored && inHoopX && inHoopY) {
         state.scored = true;
-        if (window.BH_DEBUG) window.BH_DEBUG.result = { outcome: "score", frames, finalX: nx, finalY: ny };
         handleMake();
         return;
       }
       if (ny > 106 || ny < -15 || nx < -15 || nx > 115 || frames > 240) {
-        if (!state.scored) {
-          if (window.BH_DEBUG) window.BH_DEBUG.result = { outcome: "miss", frames, finalX: nx, finalY: ny };
-          handleMiss();
-        }
+        if (!state.scored) handleMiss();
         return;
       }
       state.rafId = requestAnimationFrame(step);
