@@ -499,6 +499,126 @@
           "type": "flashcard",
           "front": "What determines the color of a star?",
           "back": "Its temperature! Blue stars are the hottest, red stars are the coolest, with white and yellow in between."
+        },
+        {
+          "type": "mc",
+          "question": "If a star like the Sun runs out of hydrogen fuel in its core, what happens next?",
+          "options": [
+            "It swells into a red giant",
+            "It instantly disappears",
+            "It turns into a planet",
+            "It stays exactly the same"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If a very massive star's core collapses at the end of its life, what can it create?",
+          "options": [
+            "A black hole",
+            "A new ocean",
+            "A comet",
+            "A moon"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If you compare a red giant to the Sun's CURRENT size, what do you find?",
+          "options": [
+            "The red giant is much bigger",
+            "The red giant is much smaller",
+            "They are the same size",
+            "The red giant has no size"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If a low-mass star like the Sun reaches the end of its life, what does it leave behind?",
+          "options": [
+            "A white dwarf",
+            "A new nebula only",
+            "Nothing at all",
+            "A second sun"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If a star explodes as a supernova, what happens to the material around it?",
+          "options": [
+            "It blasts out into space and can form new nebulae",
+            "It disappears completely",
+            "It turns into water",
+            "It stays perfectly still"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If a nebula's gas and dust clump together under gravity, what begins to form?",
+          "options": [
+            "A protostar",
+            "A finished planet",
+            "A black hole immediately",
+            "A comet"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If a protostar becomes hot and dense enough at its core, what starts happening inside it?",
+          "options": [
+            "Nuclear fusion begins",
+            "It freezes solid",
+            "It turns transparent",
+            "It stops spinning forever"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If a star is much MORE massive than the Sun, how does its lifespan compare?",
+          "options": [
+            "It burns fuel faster and has a shorter lifespan",
+            "It lives forever",
+            "It has the exact same lifespan",
+            "It never starts fusion"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If you could weigh a white dwarf the size of Earth, what would surprise you?",
+          "options": [
+            "It would be extremely heavy for its size",
+            "It would weigh almost nothing",
+            "It would float away",
+            "It would weigh the same as a feather"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If two neutron stars collide, what is one thing that can result?",
+          "options": [
+            "A black hole",
+            "A brand new ocean",
+            "A rainbow",
+            "Nothing happens at all"
+          ],
+          "answer": 0,
+          "labExperiment": true
         }
       ],
       "funFacts": [
@@ -1013,6 +1133,126 @@
           "type": "flashcard",
           "front": "Why don't electrons fall into the nucleus?",
           "back": "Electrons move so fast around the nucleus that they stay in their orbits, similar to how the Moon orbits Earth instead of falling into it."
+        },
+        {
+          "type": "mc",
+          "question": "If you add one more proton to an atom's nucleus, what happens?",
+          "options": [
+            "It becomes a different element",
+            "Nothing changes at all",
+            "It becomes a molecule",
+            "It disappears"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If an atom gains an extra electron, what does it become?",
+          "options": [
+            "A negatively charged ion",
+            "A positively charged ion",
+            "A completely different element",
+            "A proton"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If an atom loses an electron, what does it become?",
+          "options": [
+            "A positively charged ion",
+            "A negatively charged ion",
+            "A neutron",
+            "A different element"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If you could remove ALL the electrons from an atom, what would be left?",
+          "options": [
+            "Just the nucleus (protons and neutrons)",
+            "Nothing at all",
+            "Only protons floating separately",
+            "A full new atom"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If two atoms share electrons with each other, what do they form?",
+          "options": [
+            "A molecule",
+            "Two separate stars",
+            "A single giant proton",
+            "Pure energy with no matter"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If an atom has EQUAL numbers of protons and electrons, what is true about its charge?",
+          "options": [
+            "It's neutral, with no overall charge",
+            "It's always positive",
+            "It's always negative",
+            "It has no protons"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If you change the number of neutrons in an atom but keep the same protons, what do you get?",
+          "options": [
+            "An isotope of the same element",
+            "A totally different element",
+            "A molecule",
+            "An electron"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If you zoom into the very center of an atom, what would you find?",
+          "options": [
+            "The nucleus, made of protons and neutrons",
+            "A tiny empty planet",
+            "Only electrons",
+            "Pure empty space with nothing"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If you compare removing an OUTER-shell electron to an INNER-shell electron, which is usually easier?",
+          "options": [
+            "Removing the outer-shell electron",
+            "Removing the inner-shell electron",
+            "They are exactly the same",
+            "Neither can ever be removed"
+          ],
+          "answer": 0,
+          "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "If you compare the size of an atom's nucleus to the size of the WHOLE atom, what do you find?",
+          "options": [
+            "The nucleus is extremely tiny compared to the whole atom",
+            "The nucleus takes up almost all the space",
+            "They are the same size",
+            "The atom has no nucleus"
+          ],
+          "answer": 0,
+          "labExperiment": true
         }
       ],
       "funFacts": [

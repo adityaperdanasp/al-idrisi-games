@@ -799,6 +799,12 @@ button:focus-visible {
   line-height: 1.4;
 }
 
+.lab-badge {
+  display: inline-block; font-size: 0.72rem; font-weight: 800;
+  color: #2A7A32; background: rgba(63,168,74,.14);
+  padding: 4px 12px; border-radius: 100px; margin-bottom: 10px;
+}
+
 .options-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -1026,7 +1026,13 @@ function questionImageHtml(q) {
 
 function renderMC(stage, q) {
   const wrap = document.createElement("div");
-  wrap.innerHTML = `${questionImageHtml(q)}<p class="question-text">${q.question}</p><div class="options-grid"></div>`;
+  // Science Lab -- purely a cosmetic badge on top of a normal MC question
+  // (q.labExperiment: true in questions.json), not a new render path or
+  // scoring rule. Frames a cause-effect "what happens if..." question as
+  // a mini experiment, matching this batch's content additions to the
+  // star-lifecycle/atom-structure levels.
+  const labBadge = q.labExperiment ? `<div class="lab-badge">🧪 Science Lab</div>` : "";
+  wrap.innerHTML = `${labBadge}${questionImageHtml(q)}<p class="question-text">${q.question}</p><div class="options-grid"></div>`;
   const grid = wrap.querySelector(".options-grid");
 
   // Shuffle option order each time this question is shown (doesn't mutate q).
