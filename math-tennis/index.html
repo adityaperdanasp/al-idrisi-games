@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Math Tennis — BrainBox</title>
+<meta name="theme-color" content="#C2D94E">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #F3F9DC 0%, #D9EBA0 100%); font-family: "Nunito", sans-serif; color: #3d2e22; }
+  .mt-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .mt-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .mt-back { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #5a7a1f; font-size: 1.05rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); text-decoration: none; flex: none; }
+  .mt-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #5a7a1f; }
+  .mt-hud { display: flex; justify-content: center; gap: 10px; padding: 0 14px 16px; }
+  .mt-hud-chip { background: #fff; border-radius: 100px; padding: 5px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; box-shadow: 0 2px 0 rgba(0,0,0,.05); }
+
+  .mt-court { margin: 0 20px 16px; height: 60px; border-radius: 16px; background: #A9C23F; position: relative; overflow: hidden; box-shadow: inset 0 0 0 3px rgba(90,122,31,.25); }
+  .mt-court-net { position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; background: repeating-linear-gradient(0deg, #fff, #fff 4px, transparent 4px, transparent 8px); transform: translateX(-50%); }
+  .mt-sweet-zone { position: absolute; top: 6px; bottom: 6px; background: rgba(255,255,255,.55); border-radius: 8px; border: 2px dashed rgba(90,122,31,.6); }
+  .mt-ball { position: absolute; top: 50%; font-size: 1.6rem; transform: translate(-50%, -50%); left: 2%; }
+
+  .mt-swing-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+  .mt-swing-btn { width: 140px; height: 140px; border-radius: 50%; border: none; background: linear-gradient(160deg, #C2D94E, #8FAE1F); color: #fff; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; box-shadow: 0 6px 0 #5a7a1f; cursor: pointer; }
+  .mt-swing-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #5a7a1f; }
+  .mt-swing-btn.hidden { visibility: hidden; }
+
+  .mt-result-banner { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; margin: 0 14px 10px; min-height: 1.4em; color: #5a7a1f; }
+  .mt-result-banner.miss { color: #D64545; }
+
+  .mt-overlay { position: fixed; inset: 0; background: rgba(61,46,34,.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .mt-overlay.hidden { display: none; }
+  .mt-card { background: #fff; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
+  .mt-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 16px; color: #3d2e22; }
+  .mt-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mt-q-btn { border: 2px solid #f1ede6; background: #fdf6ea; border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; color: #3d2e22; cursor: pointer; }
+  .mt-q-btn:disabled { cursor: default; }
+  .mt-q-btn.correct { border-color: #3F8F5F; background: #eaf7ee; }
+  .mt-q-btn.wrong { border-color: #D64545; background: #fdeaea; }
+
+  .mt-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .mt-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
+  .mt-modal-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+  .mt-modal-bonus { font-weight: 800; color: #5a7a1f; margin-bottom: 16px; min-height: 1.2em; }
+  .mt-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .mt-btn-primary { background: #8FAE1F; color: #fff; }
+  .mt-btn-secondary { background: #f1ede6; color: #3d2e22; }
+</style>
+</head>
+<body>
+
+<div class="mt-page">
+  <div class="mt-topbar">
+    <a href="../" class="mt-back">←</a>
+    <div class="mt-title">🎾 Math Tennis</div>
+  </div>
+  <div class="mt-hud">
+    <span class="mt-hud-chip">🏆 <span id="mt-hud-points">0</span>/10</span>
+    <span class="mt-hud-chip">🪙 <span id="mt-hud-coins">0</span> 💎 <span id="mt-hud-gems">0</span></span>
+  </div>
+
+  <div class="mt-court" id="mt-court">
+    <div class="mt-sweet-zone" id="mt-sweet-zone"></div>
+    <div class="mt-court-net"></div>
+    <div class="mt-ball" id="mt-ball">🎾</div>
+  </div>
+
+  <div class="mt-swing-wrap">
+    <button class="mt-swing-btn hidden" id="mt-swing-btn">SWING!</button>
+  </div>
+
+  <div class="mt-result-banner" id="mt-result-banner"></div>
+
+  <div class="mt-overlay" id="mt-start-overlay">
+    <div class="mt-card">
+      <div class="mt-modal-emoji">🎾</div>
+      <div class="mt-modal-title">Math Tennis</div>
+      <p class="mt-modal-sub">Answer right to serve, then tap SWING! at the exact right moment as the ball crosses into your zone. Too early or too late and you miss the return!</p>
+      <button class="mt-btn mt-btn-primary" id="mt-start-btn">Start Match</button>
+    </div>
+  </div>
+
+  <div class="mt-overlay hidden" id="mt-question-overlay">
+    <div class="mt-card">
+      <div class="mt-q-prompt" id="mt-q-prompt"></div>
+      <div class="mt-q-grid" id="mt-q-grid"></div>
+    </div>
+  </div>
+
+  <div class="mt-overlay hidden" id="mt-end-overlay">
+    <div class="mt-card">
+      <div class="mt-modal-emoji" id="mt-end-emoji">🏆</div>
+      <div class="mt-modal-title" id="mt-end-title">Nice match!</div>
+      <div class="mt-modal-sub" id="mt-end-sub"></div>
+      <div class="mt-modal-bonus" id="mt-end-bonus"></div>
+      <button class="mt-btn mt-btn-primary" id="mt-play-again-btn">Play Again</button>
+      <a href="../" class="mt-btn mt-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="mt-overlay hidden" id="mt-signedout-overlay">
+    <div class="mt-card">
+      <div class="mt-modal-emoji">🎾</div>
+      <p class="mt-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="mt-btn mt-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
