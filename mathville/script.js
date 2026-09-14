@@ -2468,11 +2468,12 @@ function planeTakeHit() {
 // world or strand the guest, so the round keeps running and a long invuln
 // window keeps this ship safe while its pilot is heads-down answering.
 function startPlaneRespawnChallenge() {
-  if (planeState.is2p) {
-    planeState.invulnUntil = Math.max(planeState.invulnUntil, performance.now() + 60000);
-  } else {
-    planeState.paused = true;
-  }
+  // Same same-frame gap as showPlaneQuestion() above -- invuln must be set
+  // unconditionally, not just for 2P, since setting `paused` alone doesn't
+  // stop the rest of the CURRENT frame() call from still running collision
+  // checks against the ship.
+  planeState.invulnUntil = Math.max(planeState.invulnUntil, performance.now() + 60000);
+  if (!planeState.is2p) planeState.paused = true;
   planeState.respawnCorrectCount = 0;
   updatePlaneRespawnProgress();
   $("plane-respawn-overlay").classList.remove("hidden");
@@ -3056,11 +3057,23 @@ function showPlaneQuestion(preset) {
   // leave the other waiting. Instead the round keeps running and the
   // answering pilot is invulnerable while their overlay is up, so nobody
   // dies to something they couldn't see behind the question card.
-  if (is2p) {
-    planeState.invulnUntil = Math.max(planeState.invulnUntil, performance.now() + 60000);
-  } else {
-    planeState.paused = true;
-  }
+  // Bug fix: setting planeState.paused = true here does NOT stop the rest
+  // of THIS frame() call from still running -- frame() only checks
+  // `!planeState.paused` once, at the top, before this function is ever
+  // reached (see the periodic-question check further down in the same
+  // block). Everything after that check -- enemies firing fresh bullets,
+  // existing bullets moving, and the enemy-bullet/enemy-body/boss
+  // collision checks against the ship -- was still executing in the same
+  // frame the question overlay just opened, so a bullet already close to
+  // the ship (or one spawned/moved into it in that same tick) could still
+  // land a hit an instant after the "safe" question card appeared, before
+  // the pause actually took effect on the NEXT frame. Setting invulnUntil
+  // unconditionally (not just for 2P, which already needed it since it
+  // never pauses at all) closes that same-frame gap: planeTakeHit()'s own
+  // invuln check now blocks it regardless of whether pause has "kicked in"
+  // yet.
+  planeState.invulnUntil = Math.max(planeState.invulnUntil, performance.now() + 60000);
+  if (!is2p) planeState.paused = true;
 
   const step = preset || rollPlaneQuestion();
   if (is2p && !preset && p2p.role === "host") p2pSend({ t: "q", q: step });
