@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Number Line Long Jump — BrainBox</title>
+<meta name="theme-color" content="#3F8F5F">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #EAF7EE 0%, #C7E8D3 100%); font-family: "Nunito", sans-serif; color: #3d2e22; }
+  .nlj-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .nlj-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .nlj-back { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #2f6b3a; font-size: 1.05rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); text-decoration: none; flex: none; }
+  .nlj-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #2f6b3a; }
+  .nlj-hud { display: flex; justify-content: center; gap: 10px; padding: 0 14px 12px; }
+  .nlj-hud-chip { background: #fff; border-radius: 100px; padding: 5px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; box-shadow: 0 2px 0 rgba(0,0,0,.05); }
+
+  .nlj-q-prompt { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.2rem; margin: 6px 14px 18px; color: #3d2e22; }
+
+  .nlj-track-wrap { position: relative; margin: 40px 20px 10px; height: 90px; }
+  .nlj-track { position: absolute; left: 0; right: 0; top: 50%; height: 6px; background: #fff; border-radius: 4px; transform: translateY(-50%); box-shadow: 0 2px 0 rgba(0,0,0,.06); }
+  .nlj-tick { position: absolute; top: 50%; width: 2px; height: 14px; background: #b8d9c2; transform: translate(-50%, -50%); }
+  .nlj-tick-label { position: absolute; top: 100%; margin-top: 4px; transform: translateX(-50%); font-size: .68rem; font-weight: 700; color: #6b9478; white-space: nowrap; }
+  .nlj-runner { position: absolute; top: 50%; font-size: 2rem; transform: translate(-50%, -50%); transition: left .6s cubic-bezier(.2,.8,.3,1), transform .6s cubic-bezier(.2,.8,.3,1); z-index: 3; }
+  .nlj-runner.jumping { transform: translate(-50%, -140%) scale(1.15); }
+  .nlj-target-flag { position: absolute; top: 50%; font-size: 1.3rem; transform: translate(-50%, -180%); z-index: 2; opacity: 0; transition: opacity .3s; }
+  .nlj-target-flag.show { opacity: 1; }
+  .nlj-landing-mark { position: absolute; top: 50%; width: 3px; height: 26px; background: #D64545; transform: translate(-50%, -50%); opacity: 0; z-index: 1; }
+  .nlj-landing-mark.show { opacity: 1; }
+  .nlj-landing-mark.hit { background: #3F8F5F; }
+
+  .nlj-pull-zone { margin: 30px 20px 10px; height: 70px; border-radius: 20px; background: #fff; box-shadow: 0 3px 0 rgba(0,0,0,.05); position: relative; touch-action: none; cursor: grab; display: flex; align-items: center; justify-content: center; }
+  .nlj-pull-hint { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .9rem; color: #6b9478; pointer-events: none; }
+  .nlj-pull-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: linear-gradient(90deg, #a7ddb8, #3F8F5F); border-radius: 20px; pointer-events: none; }
+
+  .nlj-result-banner { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; margin: 14px 14px 0; min-height: 1.4em; color: #3F8F5F; }
+  .nlj-result-banner.miss { color: #D64545; }
+
+  .nlj-overlay { position: fixed; inset: 0; background: rgba(61,46,34,.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .nlj-overlay.hidden { display: none; }
+  .nlj-card { background: #fff; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
+  .nlj-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .nlj-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
+  .nlj-modal-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+  .nlj-modal-bonus { font-weight: 800; color: #2f6b3a; margin-bottom: 16px; min-height: 1.2em; }
+  .nlj-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .nlj-btn-primary { background: #3F8F5F; color: #fff; }
+  .nlj-btn-secondary { background: #f1ede6; color: #3d2e22; }
+</style>
+</head>
+<body>
+
+<div class="nlj-page">
+  <div class="nlj-topbar">
+    <a href="../" class="nlj-back">←</a>
+    <div class="nlj-title">🦘 Number Line Long Jump</div>
+  </div>
+  <div class="nlj-hud">
+    <span class="nlj-hud-chip">🎯 <span id="nlj-hud-hits">0</span>/10</span>
+    <span class="nlj-hud-chip">🪙 <span id="nlj-hud-coins">0</span> 💎 <span id="nlj-hud-gems">0</span></span>
+  </div>
+
+  <div class="nlj-q-prompt" id="nlj-q-prompt">Jump to the answer!</div>
+
+  <div class="nlj-track-wrap" id="nlj-track-wrap">
+    <div class="nlj-track"></div>
+    <div class="nlj-runner" id="nlj-runner">🐇</div>
+    <div class="nlj-target-flag" id="nlj-target-flag">🚩</div>
+    <div class="nlj-landing-mark" id="nlj-landing-mark"></div>
+  </div>
+
+  <div class="nlj-pull-zone" id="nlj-pull-zone">
+    <div class="nlj-pull-fill" id="nlj-pull-fill"></div>
+    <div class="nlj-pull-hint" id="nlj-pull-hint">👉 Drag right to power up your jump, then let go!</div>
+  </div>
+
+  <div class="nlj-result-banner" id="nlj-result-banner"></div>
+
+  <div class="nlj-overlay" id="nlj-start-overlay">
+    <div class="nlj-card">
+      <div class="nlj-modal-emoji">🦘</div>
+      <div class="nlj-modal-title">Number Line Long Jump</div>
+      <p class="nlj-modal-sub">Work out the answer, then pull back and release to jump exactly to where it sits on the number line. Judge the distance, not the aim!</p>
+      <button class="nlj-btn nlj-btn-primary" id="nlj-start-btn">Start Jumping</button>
+    </div>
+  </div>
+
+  <div class="nlj-overlay hidden" id="nlj-end-overlay">
+    <div class="nlj-card">
+      <div class="nlj-modal-emoji" id="nlj-end-emoji">🏆</div>
+      <div class="nlj-modal-title" id="nlj-end-title">Nice jumping!</div>
+      <div class="nlj-modal-sub" id="nlj-end-sub"></div>
+      <div class="nlj-modal-bonus" id="nlj-end-bonus"></div>
+      <button class="nlj-btn nlj-btn-primary" id="nlj-play-again-btn">Play Again</button>
+      <a href="../" class="nlj-btn nlj-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="nlj-overlay hidden" id="nlj-signedout-overlay">
+    <div class="nlj-card">
+      <div class="nlj-modal-emoji">🦘</div>
+      <p class="nlj-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="nlj-btn nlj-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

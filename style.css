@@ -1435,6 +1435,7 @@ body {
 .sc-game-card.hoops { background: #ffdfb3; transform: rotate(-0.6deg); }
 .sc-game-card.memory { background: #e6d4f7; transform: rotate(0.6deg); }
 .sc-game-card.dig { background: #f0dcc4; transform: rotate(-0.6deg); }
+.sc-game-card.jump { background: #c1e1c1; transform: rotate(0.6deg); }
 
 /* ---------- Ninja Runner card: decorative side-view ninja jog loop ---------- */
 .sc-card-runner { position: absolute; left: 0; right: 0; bottom: 6px; height: 22px; overflow: hidden; pointer-events: none; }
@@ -1500,6 +1501,8 @@ body {
 .sc-game-card.memory .sc-game-sub { color: #8f6db8; }
 .sc-game-card.dig .sc-game-title { color: #8a4a1f; }
 .sc-game-card.dig .sc-game-sub { color: #a97a4f; }
+.sc-game-card.jump .sc-game-title { color: #3f7a4e; }
+.sc-game-card.jump .sc-game-sub { color: #5d9268; }
 
 /* ---------- "Who's actually playing?" step (student vs their parent) ---------- */
 .sc-whois-overlay {
