@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Weekly Report Card — BrainBox</title>
+<meta name="theme-color" content="#8c2f6b">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: #e9dcc5; font-family: "Nunito", sans-serif; color: #3d2e22; }
+  .rc-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .rc-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .rc-back { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #8c2f6b; font-size: 1.05rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); text-decoration: none; flex: none; }
+  .rc-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #8c2f6b; }
+
+  .rc-sheet { background: #fffdf8; margin: 0 16px 16px; border-radius: 18px; padding: 26px 22px; box-shadow: 0 3px 0 rgba(0,0,0,.06); border: 3px double #d9c1a3; }
+  .rc-sheet-header { text-align: center; margin-bottom: 18px; }
+  .rc-brand { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; color: #8c2f6b; }
+  .rc-sheet-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.4rem; margin: 6px 0 2px; }
+  .rc-sheet-sub { font-weight: 700; color: #8a7a6a; font-size: .82rem; }
+
+  .rc-name-row { text-align: center; margin: 16px 0 20px; padding: 12px 0; border-top: 1px dashed #d9c1a3; border-bottom: 1px dashed #d9c1a3; }
+  .rc-name { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.2rem; }
+  .rc-title-badge { font-weight: 700; color: #8c2f6b; font-size: .85rem; margin-top: 2px; }
+
+  .rc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .rc-stat { text-align: center; padding: 12px 6px; background: #fdf6ea; border-radius: 12px; }
+  .rc-stat-emoji { font-size: 1.3rem; }
+  .rc-stat-value { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; margin: 4px 0 2px; }
+  .rc-stat-label { font-weight: 700; color: #8a7a6a; font-size: .72rem; }
+
+  .rc-note-box { background: #fdf1cf; border-radius: 14px; padding: 14px 16px; margin-bottom: 8px; }
+  .rc-note-label { font-weight: 800; font-size: .75rem; color: #8a6a1e; margin-bottom: 4px; }
+  .rc-note-text { font-weight: 700; font-size: .92rem; line-height: 1.5; }
+
+  .rc-footer { text-align: center; font-weight: 700; color: #8a7a6a; font-size: .74rem; margin-top: 16px; }
+
+  .rc-print-btn { display: block; width: calc(100% - 32px); margin: 0 16px; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; background: #8c2f6b; color: #fff; }
+  .rc-print-hint { text-align: center; font-weight: 700; color: #8a7a6a; font-size: .78rem; margin: 10px 16px 0; }
+
+  @media print {
+    .rc-no-print { display: none !important; }
+    html, body { background: #fff; }
+    .rc-sheet { margin: 0; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="rc-page" id="rc-page">
+  <div class="rc-topbar rc-no-print">
+    <a href="../" class="rc-back">←</a>
+    <div class="rc-title">🗒️ Report Card</div>
+  </div>
+
+  <div class="rc-sheet" id="rc-sheet">
+    <div class="rc-sheet-header">
+      <div class="rc-brand">🧠 BrainBox</div>
+      <div class="rc-sheet-title">Weekly Report Card</div>
+      <div class="rc-sheet-sub" id="rc-week-of"></div>
+    </div>
+
+    <div class="rc-name-row">
+      <div class="rc-name" id="rc-name"></div>
+      <div class="rc-title-badge" id="rc-title-badge"></div>
+    </div>
+
+    <div class="rc-grid">
+      <div class="rc-stat"><div class="rc-stat-emoji">🎯</div><div class="rc-stat-value" id="rc-stat-correct">--</div><div class="rc-stat-label">Correct This Week</div></div>
+      <div class="rc-stat"><div class="rc-stat-emoji">🔥</div><div class="rc-stat-value" id="rc-stat-streak">--</div><div class="rc-stat-label">Day Streak</div></div>
+      <div class="rc-stat"><div class="rc-stat-emoji">⭐</div><div class="rc-stat-value" id="rc-stat-level">--</div><div class="rc-stat-label">Level</div></div>
+      <div class="rc-stat"><div class="rc-stat-emoji">📚</div><div class="rc-stat-value" id="rc-stat-cards">--</div><div class="rc-stat-label">Cards Collected</div></div>
+    </div>
+
+    <div class="rc-note-box">
+      <div class="rc-note-label">TEACHER'S NOTE</div>
+      <div class="rc-note-text" id="rc-note-text">Loading…</div>
+    </div>
+
+    <div class="rc-footer">Generated by BrainBox · playalidrisi.fun</div>
+  </div>
+
+  <button class="rc-print-btn rc-no-print" id="rc-print-btn">🖨️ Print / Save as PDF</button>
+  <p class="rc-print-hint rc-no-print">On most phones, "Print" also lets you save this as a PDF.</p>
+
+  <div id="rc-signedout" style="display:none;" class="rc-no-print">
+    <p style="text-align:center;color:#8a7a6a;font-weight:700;padding:20px;">Please sign in from the hub first.</p>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
