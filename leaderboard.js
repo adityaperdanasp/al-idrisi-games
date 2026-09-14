@@ -1955,6 +1955,48 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // TREASURE DIG (treasure-dig/) — two separate reward paths, unlike
+  // Math Hoops/Memory Match's single round-end bonus. Loot is awarded
+  // PER LEVEL dug (immediate, variable -- sometimes nothing, sometimes a
+  // gem) via awardTreasureDigLoot(), a plain additive grant same as
+  // awardTeachBoBonus() above. The round-end bonus below is a SEPARATE,
+  // smaller top-up tiered on max depth reached, same pattern as the other
+  // games' round-end bonuses -- the two don't overlap in purpose (loot
+  // rewards the moment-to-moment digging, the round bonus rewards overall
+  // depth reached).
+  // =====================================================================
+  async function awardTreasureDigLoot(coins, gems) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (coins || 0);
+      wallet.gems = (wallet.gems || 0) + (gems || 0);
+      return wallet;
+    });
+    return { ok: true };
+  }
+  function treasureDigBonusFor(depth, total) {
+    if (depth >= total) return { coins: 10, gems: 1 };
+    if (depth >= total * 0.7) return { coins: 5, gems: 0 };
+    if (depth >= total * 0.4) return { coins: 2, gems: 0 };
+    return null;
+  }
+  async function awardTreasureDigRoundBonus(depth, total) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = treasureDigBonusFor(depth, total);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -1991,6 +2033,7 @@
     awardTeachBoBonus,
     awardBasketballRoundBonus,
     awardMemoryMatchBonus,
+    awardTreasureDigLoot, awardTreasureDigRoundBonus,
     db: aigDb
   };
 })();

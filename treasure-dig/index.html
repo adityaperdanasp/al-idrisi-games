@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Treasure Dig — BrainBox</title>
+<meta name="theme-color" content="#8B5A2B">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #FDF0DD 0%, #E8C79A 100%); font-family: "Nunito", sans-serif; color: #3d2e22; }
+  .td-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .td-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .td-back { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #8B5A2B; font-size: 1.05rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); text-decoration: none; flex: none; }
+  .td-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #8B5A2B; }
+  .td-hud { display: flex; justify-content: center; gap: 10px; padding: 0 14px 12px; }
+  .td-hud-chip { background: #fff; border-radius: 100px; padding: 5px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; box-shadow: 0 2px 0 rgba(0,0,0,.05); }
+
+  .td-shaft { display: flex; flex-direction: column; gap: 5px; padding: 0 14px; margin-bottom: 16px; }
+  .td-layer { height: 32px; border-radius: 8px; display: flex; align-items: center; padding: 0 12px; font-size: 1.1rem; background: #C89563; box-shadow: inset 0 2px 4px rgba(0,0,0,.15); position: relative; transition: background .3s; }
+  .td-layer.dug { background: #F1E0C4; box-shadow: none; }
+  .td-layer.current { background: linear-gradient(90deg, #F7C548, #E4A020); box-shadow: 0 0 0 2px #8B5A2B; }
+  .td-layer-loot { margin-left: auto; font-size: 1rem; }
+
+  .td-overlay { position: fixed; inset: 0; background: rgba(61,46,34,.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .td-overlay.hidden { display: none; }
+  .td-card { background: #fff; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
+  .td-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 16px; color: #3d2e22; }
+  .td-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .td-q-btn { border: 2px solid #f1ede6; background: #fdf6ea; border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; color: #3d2e22; cursor: pointer; }
+  .td-q-btn:disabled { cursor: default; }
+  .td-q-btn.correct { border-color: #3F8F5F; background: #eaf7ee; }
+  .td-q-btn.wrong { border-color: #D64545; background: #fdeaea; }
+
+  .td-loot-emoji { font-size: 3rem; margin-bottom: 8px; }
+  .td-loot-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.2rem; margin-bottom: 6px; }
+  .td-loot-sub { font-weight: 700; color: #8a7a6a; font-size: .9rem; }
+
+  .td-end-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .td-end-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
+  .td-end-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 6px; font-size: .9rem; }
+  .td-end-bonus { font-weight: 800; color: #8B5A2B; margin-bottom: 16px; min-height: 1.2em; }
+  .td-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .td-btn-primary { background: #C87F3A; color: #fff; }
+  .td-btn-secondary { background: #f1ede6; color: #3d2e22; }
+
+  .td-start-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .td-start-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
+  .td-start-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="td-page">
+  <div class="td-topbar">
+    <a href="../" class="td-back">←</a>
+    <div class="td-title">⛏️ Treasure Dig</div>
+  </div>
+  <div class="td-hud">
+    <span class="td-hud-chip">⛏️ <span id="td-hud-depth">0</span>/10</span>
+    <span class="td-hud-chip" id="td-hud-energy">❤️❤️❤️</span>
+    <span class="td-hud-chip">🪙 <span id="td-hud-coins">0</span> 💎 <span id="td-hud-gems">0</span></span>
+  </div>
+
+  <div class="td-shaft" id="td-shaft"></div>
+
+  <div class="td-overlay" id="td-start-overlay">
+    <div class="td-card">
+      <div class="td-start-emoji">⛏️</div>
+      <div class="td-start-title">Treasure Dig</div>
+      <p class="td-start-sub">Answer questions to dig deeper! Questions get harder the deeper you go, and so does the treasure. 3 wrong answers and your pickaxe needs a rest.</p>
+      <button class="td-btn td-btn-primary" id="td-start-btn">Start Digging</button>
+    </div>
+  </div>
+
+  <div class="td-overlay hidden" id="td-question-overlay">
+    <div class="td-card">
+      <div class="td-q-prompt" id="td-q-prompt"></div>
+      <div class="td-q-grid" id="td-q-grid"></div>
+    </div>
+  </div>
+
+  <div class="td-overlay hidden" id="td-loot-overlay">
+    <div class="td-card">
+      <div class="td-loot-emoji" id="td-loot-emoji">💎</div>
+      <div class="td-loot-title" id="td-loot-title"></div>
+      <div class="td-loot-sub" id="td-loot-sub"></div>
+    </div>
+  </div>
+
+  <div class="td-overlay hidden" id="td-end-overlay">
+    <div class="td-card">
+      <div class="td-end-emoji" id="td-end-emoji">🏆</div>
+      <div class="td-end-title" id="td-end-title">Nice digging!</div>
+      <div class="td-end-sub" id="td-end-sub"></div>
+      <div class="td-end-bonus" id="td-end-bonus"></div>
+      <button class="td-btn td-btn-primary" id="td-play-again-btn">Dig Again</button>
+      <a href="../" class="td-btn td-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="td-overlay hidden" id="td-signedout-overlay">
+    <div class="td-card">
+      <div class="td-start-emoji">⛏️</div>
+      <p class="td-start-sub">Please sign in from the hub first.</p>
+      <a href="../" class="td-btn td-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
