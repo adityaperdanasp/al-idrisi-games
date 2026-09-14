@@ -236,7 +236,12 @@ function initBasketball() {
     e.preventDefault();
     state.dragging = true;
     ball.classList.add("dragging");
-    ball.setPointerCapture(e.pointerId);
+    // Best-effort -- keeps the drag tracking the pointer even if it slides
+    // off the (small) ball element mid-gesture. Wrapped since some
+    // synthetic/edge-case pointer sessions can reject capture entirely;
+    // the drag still works via the document-level move/up listeners below
+    // either way, capture is just extra robustness, not a requirement.
+    try { ball.setPointerCapture(e.pointerId); } catch (err) {}
     state.dragStartClient = { x: e.clientX, y: e.clientY };
     state.dragStartBallPct = { x: state.ballX, y: state.ballY };
     document.addEventListener("pointermove", onDragMove);
