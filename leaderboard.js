@@ -51,6 +51,59 @@
     logClientError("Unhandled rejection: " + (reason && reason.message ? reason.message : reason));
   });
 
+  // =====================================================================
+  // OFFLINE WRITE QUEUE — the existing sw.js offline mode only ever
+  // covered STATIC assets (network-first, cache fallback); a question
+  // answered with no signal at all previously just silently lost that
+  // attempt (Firebase's own SDK queues writes in memory while offline,
+  // but that queue doesn't survive the tab/app actually closing before
+  // reconnecting -- common on a phone with spotty signal). This adds a
+  // localStorage-backed queue for the highest-value writes
+  // (recordTopicAttempt, logMistake) specifically, checked BEFORE
+  // attempting the Firebase call (navigator.onLine is the standard,
+  // if imperfect, client-side signal -- it reflects the network
+  // adapter being up, not that Firebase's servers are specifically
+  // reachable, but it's the best signal available without extra network
+  // probing) so a flaky connection can't half-succeed into a
+  // partially-applied write.
+  // =====================================================================
+  const OFFLINE_QUEUE_KEY = "aig_offline_queue";
+  const OFFLINE_QUEUE_MAX = 100;
+
+  function queueOfflineWrite(type, args) {
+    try {
+      const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
+      const queue = raw ? JSON.parse(raw) : [];
+      queue.push({ type, args, at: Date.now() });
+      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue.slice(-OFFLINE_QUEUE_MAX)));
+    } catch (e) { /* localStorage unavailable/full -- the attempt is lost, same as before this feature existed */ }
+  }
+
+  async function flushOfflineQueue() {
+    let queue;
+    try {
+      const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
+      queue = raw ? JSON.parse(raw) : [];
+    } catch (e) { return; }
+    if (!queue.length) return;
+    localStorage.removeItem(OFFLINE_QUEUE_KEY); // clear first -- anything that fails below re-queues itself individually, rather than risking replaying the whole batch again on a partial failure
+    for (const item of queue) {
+      try {
+        if (item.type === "recordTopicAttempt") recordTopicAttempt(...item.args);
+        else if (item.type === "logMistake") await logMistake(...item.args);
+      } catch (e) {
+        queueOfflineWrite(item.type, item.args); // still offline (or a new failure) -- try again next time
+      }
+    }
+  }
+  window.addEventListener("online", flushOfflineQueue);
+  if (typeof navigator !== "undefined" && navigator.onLine) {
+    // Also try once on load -- covers "was offline when the app was last
+    // closed, now reopened already back online" (the "online" event only
+    // fires on a LIVE transition, not on page load into an already-online state).
+    flushOfflineQueue();
+  }
+
   // Record one "play" for the currently-picked player in the given game.
   // gameId: "mathrace" | "language-arts" | "solarquest"
   // Silently does nothing if no one has picked a name yet. Returns a
@@ -187,6 +240,10 @@
   function recordTopicAttempt(gameId, topicKey, isCorrect, comboMultiplier) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      queueOfflineWrite("recordTopicAttempt", [gameId, topicKey, isCorrect, comboMultiplier]);
+      return;
+    }
     const ref = aigDb.ref(`players/${player.id}/topicStats/${gameId}/${topicKey}`);
     ref.child(isCorrect ? "correct" : "wrong").transaction(cur => (cur || 0) + 1);
     if (!isCorrect) ref.update({ lastWrongAt: firebase.database.ServerValue.TIMESTAMP });
@@ -1023,6 +1080,10 @@
   async function logMistake(gameId, topic, prompt, correctAnswer) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      queueOfflineWrite("logMistake", [gameId, topic, prompt, correctAnswer]);
+      return;
+    }
     const ref = aigDb.ref(`players/${player.id}/mistakeJournal`);
     const snap = await ref.get();
     const entries = snap.exists() ? Object.entries(snap.val()) : [];
