@@ -693,6 +693,11 @@
       <div class="db-detail-section">
         <button class="db-btn-small" id="generate-draft-btn">Generate draft insight untuk ortu</button>
       </div>
+
+      <div class="db-detail-section">
+        <button class="db-btn-small" id="graduate-btn">🎓 Memuat status kelulusan…</button>
+        <div class="db-empty-note" id="graduate-note" style="margin-top:8px;"></div>
+      </div>
     `;
 
     document.getElementById("generate-draft-btn").addEventListener("click", () => generateDraft(studentId));
@@ -705,6 +710,49 @@
 
     overlay.classList.remove("hidden");
     renderRadar(s, GAMES[0].id);
+    renderGraduateButton(studentId, player);
+  }
+
+  // ---- Hall of Fame graduation toggle ----
+  // Stores a NAME SNAPSHOT (not just a boolean) at players/{id}/graduatedInfo
+  // so hall-of-fame/ can render the wall without a second lookup against
+  // testerAccounts (players/{id} itself has no name field otherwise --
+  // that only lives in testerAccounts, which this dashboard already reads
+  // via window.AIG_PLAYERS/roster, not something the public Hall of Fame
+  // page should need to read wholesale just to get names).
+  async function renderGraduateButton(studentId, player) {
+    const btn = document.getElementById("graduate-btn");
+    const note = document.getElementById("graduate-note");
+    if (!btn) return; // panel closed/replaced before this resolved
+    const snap = await AIGLeaderboard.db.ref(`players/${studentId}/graduatedInfo`).get();
+    if (!document.getElementById("graduate-btn")) return; // still guard after the await
+    if (snap.exists()) {
+      const info = snap.val();
+      btn.textContent = "🎓 Batalkan Status Lulus";
+      note.textContent = `Sudah masuk Hall of Fame sejak ${new Date(info.graduatedAt).toLocaleDateString("id-ID")}.`;
+    } else {
+      btn.textContent = "🎓 Tandai Lulus (masuk Hall of Fame)";
+      note.textContent = "Menandai murid ini sebagai lulus akan menampilkan namanya secara permanen di halaman Hall of Fame publik.";
+    }
+    btn.onclick = () => toggleGraduate(studentId, player);
+  }
+
+  async function toggleGraduate(studentId, player) {
+    const ref = AIGLeaderboard.db.ref(`players/${studentId}/graduatedInfo`);
+    const snap = await ref.get();
+    if (snap.exists()) {
+      if (!confirm(`Batalkan status lulus untuk ${player.name}? Namanya akan hilang dari Hall of Fame.`)) return;
+      await ref.remove();
+    } else {
+      if (!confirm(`Tandai ${player.name} sebagai lulus? Namanya akan tampil permanen di Hall of Fame publik.`)) return;
+      const totalCorrectSnap = await AIGLeaderboard.db.ref(`players/${studentId}/totalCorrect`).get();
+      await ref.set({
+        name: player.name,
+        totalCorrect: totalCorrectSnap.exists() ? totalCorrectSnap.val() : 0,
+        graduatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+    renderGraduateButton(studentId, player);
   }
 
   // Template fallback — used if the AI endpoint is unreachable or misconfigured,

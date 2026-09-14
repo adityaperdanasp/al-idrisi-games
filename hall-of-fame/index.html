@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Hall of Fame — BrainBox</title>
+<meta name="theme-color" content="#3d2e22">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #3d2e22 0%, #5a4636 100%); font-family: "Nunito", sans-serif; color: #fdf6ea; }
+  .hf-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 40px; }
+
+  .hf-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .hf-back { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.12); color: #fdf6ea; font-size: 1.05rem; display: grid; place-items: center; text-decoration: none; flex: none; }
+  .hf-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; }
+
+  .hf-hero { text-align: center; padding: 20px 20px 24px; }
+  .hf-hero-emoji { font-size: 3rem; margin-bottom: 6px; }
+  .hf-hero-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.5rem; }
+  .hf-hero-sub { font-weight: 700; color: #d9c7b0; font-size: .88rem; margin-top: 4px; }
+
+  .hf-list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+  .hf-card { background: rgba(255,255,255,.08); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  .hf-card.top1 { background: linear-gradient(135deg, rgba(247,197,72,.25), rgba(255,255,255,.08)); box-shadow: 0 0 0 1.5px rgba(247,197,72,.5); }
+  .hf-rank { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.2rem; width: 34px; text-align: center; flex: none; }
+  .hf-info { flex: 1; min-width: 0; }
+  .hf-name { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; }
+  .hf-meta { font-weight: 700; color: #d9c7b0; font-size: .76rem; margin-top: 2px; }
+  .hf-title-badge { font-weight: 800; font-size: .8rem; flex: none; text-align: right; }
+
+  .hf-empty-note { text-align: center; color: #d9c7b0; font-weight: 700; padding: 30px 20px; }
+</style>
+</head>
+<body>
+
+<div class="hf-page">
+  <div class="hf-topbar">
+    <a href="../" class="hf-back">←</a>
+    <div class="hf-title">🏛️ Hall of Fame</div>
+  </div>
+
+  <div class="hf-hero">
+    <div class="hf-hero-emoji">🏛️</div>
+    <div class="hf-hero-title">BrainBox Legends</div>
+    <div class="hf-hero-sub">Students who graduated with their names forever on this wall.</div>
+  </div>
+
+  <div class="hf-list" id="hf-list">
+    <p class="hf-empty-note">Loading…</p>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
