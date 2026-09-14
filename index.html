@@ -620,6 +620,8 @@
         <button class="sc-modal-close" id="sc-recap-close" type="button">✕</button>
       </div>
       <div class="sc-recap-body" id="sc-recap-body"></div>
+      <div class="sc-journey-title">🕰️ My Journey</div>
+      <div class="sc-journey-timeline" id="sc-journey-timeline"></div>
       <div class="sc-recap-hint">📸 Screenshot me to show your family!</div>
     </div>
   </div>
@@ -1275,6 +1277,35 @@
       <div class="sc-recap-row"><span class="sc-recap-emoji">🪙</span><span>${recap.coins} coins · 💎 ${recap.gems} gems</span></div>
       <div class="sc-recap-row"><span class="sc-recap-emoji">📚</span><span>${recap.cardsOwned}/${recap.cardsTotal} cards collected</span></div>
     `;
+    renderJourneyTimeline();
+  }
+
+  // "My Journey" -- a lifetime timeline underneath the weekly numbers
+  // above, scoped down from a literal photo timeline (this app has no
+  // camera/photo-storage infrastructure) to a strip of dated milestones
+  // built entirely from data already tracked elsewhere (testerAccounts'
+  // createdAt, getTitle()'s totalCorrect, getPlayerLevel()) -- zero new
+  // Firebase writes, just reads of what's already there.
+  async function renderJourneyTimeline() {
+    const timelineEl = document.getElementById("sc-journey-timeline");
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player) { timelineEl.innerHTML = ""; return; }
+    const [accountSnap, title, level] = await Promise.all([
+      aigDb.ref(`testerAccounts/${player.id}/createdAt`).get(),
+      AIGLeaderboard.getTitle(),
+      AIGLeaderboard.getPlayerLevel()
+    ]);
+    const joinedText = accountSnap.exists()
+      ? new Date(accountSnap.val()).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
+      : "a while back";
+    const rows = [
+      { emoji: "🚀", text: `Joined BrainBox on ${joinedText}` }
+    ];
+    if (title) rows.push({ emoji: title.emoji, text: `${title.count} correct answers all-time -- now "${title.name}"` });
+    if (level) rows.push({ emoji: "⭐", text: `Level ${level.level}` });
+    timelineEl.innerHTML = rows.map(r => `
+      <div class="sc-journey-row"><span class="sc-journey-dot">${r.emoji}</span><span>${r.text}</span></div>
+    `).join("");
   }
   document.getElementById("sc-journal-btn").addEventListener("click", () => {
     document.getElementById("sc-journal-overlay").hidden = false;

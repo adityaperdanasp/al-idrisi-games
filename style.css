@@ -848,6 +848,18 @@ body {
   color: #8a7a6a;
 }
 
+.sc-journey-title {
+  font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 0.85rem;
+  color: #4a2d70; margin: 4px 0 10px; text-align: left;
+}
+.sc-journey-timeline { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+.sc-journey-row {
+  display: flex; align-items: center; gap: 10px;
+  font-family: "Nunito", sans-serif; font-weight: 700; font-size: 0.82rem;
+  color: #5a4a3a; text-align: left;
+}
+.sc-journey-dot { font-size: 1.1rem; }
+
 /* ---------- Hidden easter egg (tap Bo 10x) ---------- */
 .sc-egg-overlay {
   position: fixed;
