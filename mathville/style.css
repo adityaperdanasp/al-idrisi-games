@@ -1041,6 +1041,12 @@ button { font-family: inherit; }
   display: block; width: 100%; padding: 14px; border-radius: 14px; border: 2px solid var(--taupe);
   font: 700 16px "Fredoka", sans-serif; text-align: center; margin-bottom: 10px; background: var(--card);
 }
+.challenge-mode-toggle { display: flex; gap: 8px; margin: 16px 0 0; }
+.challenge-mode-btn {
+  flex: 1; border: none; background: var(--cream); color: var(--ink-soft);
+  font: 700 13px "Fredoka", sans-serif; padding: 10px 6px; border-radius: 100px; cursor: pointer;
+}
+.challenge-mode-btn.active { background: var(--wood); color: #fff; }
 .challenge-scoreboard { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 20px; }
 .challenge-score-row {
   display: flex; justify-content: space-between; align-items: center;

@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=87" />
+<link rel="stylesheet" href="style.css?v=88" />
 </head>
 <body>
 
@@ -803,10 +803,27 @@
   <section id="screen-challenge-setup" class="screen">
     <div class="challenge-emoji">🤝</div>
     <div class="challenge-title">Family Challenge</div>
-    <div class="challenge-sub">Take turns! <span id="challenge-p1-name">Player 1</span> goes first, then pass the device to someone else — same 6 questions, whoever gets more right wins.</div>
+    <div class="challenge-mode-toggle">
+      <button class="challenge-mode-btn active" id="challenge-mode-compete" type="button" data-mode="compete">🤝 Compete</button>
+      <button class="challenge-mode-btn" id="challenge-mode-coop" type="button" data-mode="coop">🧑‍🤝‍🧑 Co-op</button>
+    </div>
+    <div class="challenge-sub" id="challenge-mode-desc">Take turns! <span id="challenge-p1-name">Player 1</span> goes first, then pass the device to someone else — same 6 questions, whoever gets more right wins.</div>
+    <input class="challenge-name-input hidden" id="challenge-coop-p2-name" placeholder="Player 2's name" maxlength="20" autocomplete="off">
     <button class="btn btn-primary btn-cta" id="btn-challenge-start">Start!</button>
     <button class="btn boss-challenge-btn" id="btn-challenge-cancel">Back to Map</button>
   </section>
+
+  <!-- Co-op turn gate -- shown BETWEEN questions (not a full screen swap,
+       to avoid 6 jarring transitions in one round), pausing on the SAME
+       screen-question so the device can be handed over before the next
+       prompt appears. Outside every .screen for the usual overlay-in-
+       inactive-screen reason. -->
+  <div id="coop-turn-gate" class="drive-question-overlay hidden">
+    <div class="drive-question-card drive-difficulty-card">
+      <div class="drive-difficulty-title" id="coop-turn-gate-title">Pass to Player 2!</div>
+      <button class="btn btn-primary btn-cta" id="btn-coop-turn-ready">I'm ready!</button>
+    </div>
+  </div>
 
   <section id="screen-challenge-handoff" class="screen">
     <div class="challenge-emoji">🔄</div>
@@ -1028,6 +1045,6 @@
 <script src="questions.js?v=9"></script>
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
-<script src="script.js?v=115"></script>
+<script src="script.js?v=116"></script>
 </body>
 </html>

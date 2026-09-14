@@ -191,6 +191,8 @@ const state = {
   bossTimerTimeout: null,
   isChallenge: false,   // true only inside a Family Challenge turn -- see submitAnswer/goToNextStep
   challenge: null,       // { steps, turn, currentName, results: [{name, correct, total}] }
+  isCoop: false,        // true only inside a Co-op Challenge (same device, alternating turns per question toward ONE shared result) -- see launchCoopMode/finishCoopRound
+  coop: null,            // { steps, playerNames: [p1, p2], perPlayerCorrect: [0,0], perPlayerTotal: [0,0] }
   combo: 0,              // consecutive correct answers THIS round (normal rounds only, not Boss/Challenge)
   difficultyTier: "hard", // adaptive difficulty's current tier for the 5 supported chapters -- see comboMultiplierFor/adaptDifficulty
   difficultyStreak: 0,    // positive = N correct in a row at current tier, negative = N wrong in a row
@@ -227,7 +229,7 @@ function showScreen(id) {
   // Never shown mid-round (Boss/Challenge or otherwise) or on the
   // Challenge flow's own screens -- only a safe place to launch a NEW
   // challenge from, not somewhere that should interrupt one in progress.
-  const midRound = id === "screen-question" && (state.isChallenge || state.isBoss);
+  const midRound = id === "screen-question" && (state.isChallenge || state.isBoss || state.isCoop);
   $("btn-challenge").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
   $("btn-speedround").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
   $("btn-weeklyboss").classList.toggle("hidden", hideNav || id === "screen-plane" || id.startsWith("screen-challenge") || id.startsWith("screen-speedround") || midRound);
@@ -270,8 +272,33 @@ function showScreen(id) {
 $("btn-home").addEventListener("click", () => { window.location.href = "../"; });
 $("btn-map").addEventListener("click", goToMap);
 $("btn-challenge").addEventListener("click", launchChallengeMode);
-$("btn-challenge-start").addEventListener("click", () => startChallengeRound(1, state.challenge.player1Name));
+$("btn-challenge-start").addEventListener("click", () => {
+  if (challengeSetupMode === "coop") {
+    const p2 = $("challenge-coop-p2-name").value.trim() || "Player 2";
+    launchCoopRound(p2);
+  } else {
+    startChallengeRound(1, state.challenge.player1Name);
+  }
+});
 $("btn-challenge-cancel").addEventListener("click", goToMap);
+let challengeSetupMode = "compete";
+function setChallengeSetupMode(mode) {
+  challengeSetupMode = mode;
+  const isCoop = mode === "coop";
+  $("challenge-mode-compete").classList.toggle("active", !isCoop);
+  $("challenge-mode-coop").classList.toggle("active", isCoop);
+  $("challenge-mode-desc").textContent = isCoop
+    ? "Work together! You and a partner take turns on the SAME 6-question round -- one shared team score, not a competition."
+    : `Take turns! ${state.challenge ? state.challenge.player1Name : CHILD_NAME} goes first, then pass the device to someone else — same 6 questions, whoever gets more right wins.`;
+  $("challenge-coop-p2-name").classList.toggle("hidden", !isCoop);
+  $("challenge-coop-p2-name").value = "";
+}
+$("challenge-mode-compete").addEventListener("click", () => setChallengeSetupMode("compete"));
+$("challenge-mode-coop").addEventListener("click", () => setChallengeSetupMode("coop"));
+$("btn-coop-turn-ready").addEventListener("click", () => {
+  $("coop-turn-gate").classList.add("hidden");
+  renderStep();
+});
 $("btn-challenge-continue").addEventListener("click", () => {
   const name = $("challenge-p2-name").value.trim() || "Player 2";
   startChallengeRound(2, name);
@@ -757,8 +784,9 @@ function goToIntro(chapterId, isMp) {
     state.stepIndex = 0;
     state.mistakes = 0;
     state.lastWrong = null;
-    state.isBoss = false; // defensive -- a normal round entry always clears any leftover boss/challenge flag
+    state.isBoss = false; // defensive -- a normal round entry always clears any leftover boss/challenge/coop flag
     state.isChallenge = false;
+    state.isCoop = false;
     state.combo = 0;
     state.difficultyTier = "hard";
     state.difficultyStreak = 0;
@@ -4321,7 +4349,9 @@ function renderStep() {
     $("boss-progress").textContent = `${state.stepIndex + 1}/${state.steps.length}`;
     $("boss-phase-label").textContent = bossPhaseFor(state.stepIndex, state.isWeeklyBossRush ? WEEKLY_BOSS_RUSH_PHASES : BOSS_PHASES).label;
   }
-  const turnLabel = state.isChallenge ? ` — ${state.challenge.currentName}'s turn` : "";
+  const turnLabel = state.isChallenge
+    ? ` — ${state.challenge.currentName}'s turn`
+    : state.isCoop ? ` — ${state.coop.playerNames[state.stepIndex % 2]}'s turn` : "";
   $("q-label").textContent = step.uiType === "match" ? "" : `Question ${state.stepIndex + 1} of ${state.steps.length}${turnLabel}`;
   const pressureActive = pressureActiveFor(step);
   $("qtimer-track").classList.toggle("hidden", !pressureActive);
@@ -4357,10 +4387,16 @@ function goToNextStep() {
     } catch (e) {}
   }
   if (state.stepIndex < state.steps.length) {
-    renderStep();
-    if (state.isBoss) startBossTimer();
+    if (state.isCoop) {
+      showCoopTurnGate(); // pauses on a "pass the device" gate before rendering the next question -- see coop section below
+    } else {
+      renderStep();
+      if (state.isBoss) startBossTimer();
+    }
   } else if (state.isBoss) {
     finishBossRound(true);
+  } else if (state.isCoop) {
+    finishCoopRound();
   } else if (state.isChallenge) {
     finishChallengeTurn();
   } else {
@@ -4451,7 +4487,7 @@ async function refreshPowerupCounts() {
 
 function updatePowerupBar(step) {
   const bar = $("powerup-bar");
-  if (state.isBoss || state.isChallenge || !step) { bar.classList.add("hidden"); return; }
+  if (state.isBoss || state.isChallenge || state.isCoop || !step) { bar.classList.add("hidden"); return; }
   bar.classList.remove("hidden");
   const fiftyBtn = $("btn-powerup-fifty");
   const optionBased = step.uiType === "mc" || step.uiType === "tap";
@@ -4543,7 +4579,7 @@ function pressureActiveFor(step) {
   // (multi-tap wildcard sequencing, inherently slower than a one-tap MC
   // answer) are both excluded -- same reasoning, a strict countdown
   // wouldn't be a fair fit for either.
-  return pressureTimerEnabled && !state.isBoss && !state.isChallenge && !!step && step.uiType !== "match" && step.uiType !== "order";
+  return pressureTimerEnabled && !state.isBoss && !state.isChallenge && !state.isCoop && !!step && step.uiType !== "match" && step.uiType !== "order";
 }
 
 let qTimerToken = 0;
@@ -4643,7 +4679,7 @@ function showComboBadge(combo, multiplier) {
 function submitAnswer(isCorrect, prompt, answerForHint) {
   clearQuestionTimer(); // a real answer (or the timeout path itself) always cancels any in-flight question timer -- no-op if Pressure Timer was off
   let comboMultiplier = 1;
-  const comboActive = !state.isBoss && !state.isChallenge;
+  const comboActive = !state.isBoss && !state.isChallenge && !state.isCoop;
   if (comboActive) {
     if (isCorrect) {
       state.combo = (state.combo || 0) + 1;
@@ -4654,24 +4690,26 @@ function submitAnswer(isCorrect, prompt, answerForHint) {
     }
     adaptDifficulty(state.chapterId, isCorrect);
   }
-  // Family Challenge answers never touch Firebase stats -- a guest
-  // player (turn 2) has no account to attribute them to, and the same 6
-  // questions get answered twice across both turns, so even turn 1's
-  // "real" answers would double-count against the logged-in kid's own
-  // topicStats/currency/streak if this weren't skipped.
-  if (!state.isChallenge) {
+  // Family Challenge / Co-op answers never touch Firebase stats -- in
+  // both, at least one of the 2 players typically has no real account
+  // (Co-op's Player 2 is a free-text name, same as Family Challenge's),
+  // so there's no single account to attribute a "real" topicStats/
+  // currency/streak update to.
+  if (!state.isChallenge && !state.isCoop) {
     try {
       if (window.AIGLeaderboard && state.chapterId) AIGLeaderboard.recordTopicAttempt("mathville", state.chapterId, isCorrect, comboMultiplier);
     } catch (e) { /* never let analytics block the round */ }
   }
+  if (state.isCoop) {
+    const idx = state.stepIndex % 2;
+    state.coop.perPlayerTotal[idx]++;
+    if (isCorrect) state.coop.perPlayerCorrect[idx]++;
+  }
   if (!isCorrect) {
     state.mistakes++;
     state.lastWrong = { prompt, answer: answerForHint };
-    // Mistake Journal -- same Family Challenge exclusion as
-    // recordTopicAttempt above (guest turn has no real account, and the
-    // same 6 questions get answered twice). Best-effort, matches every
-    // other Firebase call in this function.
-    if (!state.isChallenge) {
+    // Mistake Journal -- same exclusion as recordTopicAttempt above.
+    if (!state.isChallenge && !state.isCoop) {
       try {
         if (window.AIGLeaderboard && state.chapterId) AIGLeaderboard.logMistake("mathville", state.chapterId, prompt, answerForHint);
       } catch (e) {}
@@ -5249,6 +5287,7 @@ function launchChallengeMode() {
     player1Name: (player && player.name) || "Player 1"
   };
   $("challenge-p1-name").textContent = state.challenge.player1Name;
+  setChallengeSetupMode("compete"); // always reset to Compete on a fresh entry -- avoids a stale Co-op pick lingering silently from a previous visit
   showScreen("screen-challenge-setup");
 }
 
@@ -5294,6 +5333,59 @@ function showChallengeResults() {
     <div class="challenge-score-row${r.correct === Math.max(r1.correct, r2.correct) && r1.correct !== r2.correct ? " winner" : ""}">
       <span class="challenge-score-name">${escapeHtml(r.name)}</span>
       <span class="challenge-score-value">${r.correct}/${r.total}</span>
+    </div>`).join("");
+  showScreen("screen-challenge-result");
+}
+
+/* =================================================================
+   CO-OP CHALLENGE — a second mode reachable from the SAME setup screen
+   as Family Challenge (mode toggle there), same device. Unlike Family
+   Challenge (each player answers ALL 6 questions on their own, then
+   compares scores), Co-op alternates who answers EACH question within
+   ONE shared 6-question round, contributing to ONE combined result --
+   "let's get through this together" instead of "who's better". Reuses
+   renderStep/submitAnswer/goToNextStep via state.isCoop, same pattern
+   as isBoss/isChallenge -- inert whenever the flag is false.
+   ================================================================= */
+function launchCoopRound(p2Name) {
+  // Reuses the SAME round launchChallengeMode() already built for the
+  // setup screen (random chapter, buildRound()) rather than generating
+  // a second one -- the mode toggle picks how it's PLAYED, not a
+  // different question source.
+  state.coop = {
+    steps: state.challenge.steps,
+    playerNames: [state.challenge.player1Name, p2Name],
+    perPlayerCorrect: [0, 0],
+    perPlayerTotal: [0, 0]
+  };
+  state.isCoop = true;
+  state.isChallenge = false;
+  state.isBoss = false;
+  state.chapterId = null;
+  state.steps = state.coop.steps;
+  state.stepIndex = 0;
+  state.mistakes = 0;
+  state.lastWrong = null;
+  showCoopTurnGate();
+}
+
+function showCoopTurnGate() {
+  const name = state.coop.playerNames[state.stepIndex % 2];
+  $("coop-turn-gate-title").textContent = `Pass to ${name}!`;
+  $("coop-turn-gate").classList.remove("hidden");
+}
+
+function finishCoopRound() {
+  state.isCoop = false;
+  const coop = state.coop;
+  const totalCorrect = coop.perPlayerCorrect[0] + coop.perPlayerCorrect[1];
+  const totalQuestions = coop.steps.length;
+  $("challenge-result-emoji").textContent = "🎉";
+  $("challenge-result-title").textContent = `Great teamwork! ${totalCorrect}/${totalQuestions} together!`;
+  $("challenge-scoreboard").innerHTML = coop.playerNames.map((name, i) => `
+    <div class="challenge-score-row">
+      <span class="challenge-score-name">${escapeHtml(name)}</span>
+      <span class="challenge-score-value">${coop.perPlayerCorrect[i]}/${coop.perPlayerTotal[i]}</span>
     </div>`).join("");
   showScreen("screen-challenge-result");
 }
