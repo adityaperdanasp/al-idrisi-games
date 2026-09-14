@@ -2273,6 +2273,102 @@
               "right": "caught"
             }
           ]
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"the meal you eat in the morning\"? Spell it correctly.",
+          "answer": "breakfast",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"a person who teaches at a school\"? Spell it correctly.",
+          "answer": "teacher",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"the last month of the year\"? Spell it correctly.",
+          "answer": "December",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"a very large sea animal that breathes air\"? Spell it correctly.",
+          "answer": "whale",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"a tool used to measure temperature\"? Spell it correctly.",
+          "answer": "thermometer",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"the day right before today\"? Spell it correctly.",
+          "answer": "yesterday",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"the day right after today\"? Spell it correctly.",
+          "answer": "tomorrow",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"something you use to erase pencil marks\"? Spell it correctly.",
+          "answer": "eraser",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"a building where sick people get medical care\"? Spell it correctly.",
+          "answer": "hospital",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"a place where you can borrow books for free\"? Spell it correctly.",
+          "answer": "library",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"the star at the center of our solar system\"? Spell it correctly.",
+          "answer": "sun",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"a large group of musicians playing instruments together\"? Spell it correctly.",
+          "answer": "orchestra",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"the school subject about numbers and shapes\"? Spell it correctly.",
+          "answer": "mathematics",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"a baby dog\"? Spell it correctly.",
+          "answer": "puppy",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"a baby cat\"? Spell it correctly.",
+          "answer": "kitten",
+          "spellingBee": true
+        },
+        {
+          "type": "fill",
+          "prompt": "🐝 Spelling Bee: What word means \"the day of the week right after Sunday\"? Spell it correctly.",
+          "answer": "Monday",
+          "spellingBee": true
         }
       ]
     },

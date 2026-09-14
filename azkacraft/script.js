@@ -540,7 +540,13 @@ function handleMCAnswer(selected, q, grid) {
 
 /* ----- Fill in the blank ----- */
 function renderFill(q, area) {
+  // Spelling Bee -- purely a cosmetic badge on top of the existing fill
+  // type (q.spellingBee: true in questions.json), not a new render path
+  // or grading rule. The prompt itself already says "🐝 Spelling Bee:",
+  // this just adds a small visual badge above it too.
+  const beeBadge = q.spellingBee ? `<div class="spelling-bee-badge">🐝 Spelling Bee</div>` : "";
   area.innerHTML = `
+    ${beeBadge}
     <div class="question-prompt">${q.prompt}</div>
     <form class="fill-form" id="fill-form">
       <input class="fill-input" id="fill-input" type="text" autocomplete="off" placeholder="Type your answer...">

@@ -755,6 +755,12 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
   color: var(--ink);
 }
 
+.spelling-bee-badge {
+  display: inline-block; font-size: 0.72rem; font-weight: 800;
+  color: #7A5A00; background: var(--accent-2);
+  padding: 4px 12px; border-radius: 100px; margin-bottom: 10px;
+}
+
 /* MC options */
 .options-grid { display: grid; gap: 12px; }
 .option-btn {
