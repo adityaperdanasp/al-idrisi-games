@@ -359,6 +359,15 @@
         <div class="sc-daily-bonus-note" id="sc-daily-bonus-note" hidden>🎉 Daily Bonus claimed — +2 💎!</div>
       </div>
 
+      <div class="sc-smart-card" id="sc-perfectweek-card" hidden>
+        <span class="sc-smart-text" id="sc-perfectweek-text"></span>
+      </div>
+
+      <div class="sc-goal-card" id="sc-goal-card" hidden>
+        <div class="sc-goal-title">🎯 My Weekly Goal</div>
+        <div id="sc-goal-body"></div>
+      </div>
+
       <div class="sc-bp-panel" id="sc-bp-panel" hidden>
         <div class="sc-bp-header">
           <span class="sc-bp-title">🎖️ Season Pass</span>
@@ -791,8 +800,48 @@
       });
       renderBeatYesterday();
       renderMysteryBox();
+      renderPerfectWeek();
+      renderPersonalGoal();
       renderSmartPracticeAndDiagnostic();
     }
+  }
+
+  async function renderPerfectWeek() {
+    const prog = await AIGLeaderboard.getWeekPlayProgress();
+    const card = document.getElementById("sc-perfectweek-card");
+    if (!prog || prog.daysPlayed === 0) { card.hidden = true; return; }
+    const text = document.getElementById("sc-perfectweek-text");
+    text.textContent = prog.perfect
+      ? `🏆 Perfect Week! You played all 7 days this week!`
+      : `📅 ${prog.daysPlayed}/7 days played this week -- keep it up!`;
+    card.hidden = false;
+  }
+
+  async function renderPersonalGoal() {
+    const goal = await AIGLeaderboard.getPersonalGoal();
+    const card = document.getElementById("sc-goal-card");
+    const body = document.getElementById("sc-goal-body");
+    if (!goal) { card.hidden = true; return; }
+    card.hidden = false;
+    if (!goal.target) {
+      body.innerHTML = `
+        <p class="sc-goal-desc">Set your own target for this week!</p>
+        <div class="sc-goal-form">
+          <input type="number" id="sc-goal-input" min="1" max="500" placeholder="e.g. 50" />
+          <button class="sc-quest-claim-btn" id="sc-goal-set-btn">Set Goal</button>
+        </div>`;
+      document.getElementById("sc-goal-set-btn").addEventListener("click", async () => {
+        const val = Number(document.getElementById("sc-goal-input").value);
+        if (!val || val < 1) return;
+        await AIGLeaderboard.setPersonalGoal(val);
+        renderPersonalGoal();
+      });
+      return;
+    }
+    const pct = Math.min(100, Math.round((goal.progress / goal.target) * 100));
+    body.innerHTML = `
+      <p class="sc-goal-desc">${goal.achieved ? "🎉 Goal reached!" : `${goal.progress}/${goal.target} correct answers this week`}</p>
+      <div class="sc-goal-track"><div class="sc-goal-fill" style="width:${pct}%"></div></div>`;
   }
 
   async function renderBeatYesterday() {

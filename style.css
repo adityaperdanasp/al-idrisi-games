@@ -512,6 +512,25 @@ body {
   z-index: 1;
 }
 
+.sc-goal-card {
+  margin: 12px 24px 0;
+  padding: 14px 18px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 1;
+}
+.sc-goal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 0.9rem; color: #3d2e22; margin-bottom: 6px; }
+.sc-goal-desc { font-family: "Nunito", sans-serif; font-weight: 700; font-size: 0.8rem; color: #8a7a6a; margin: 0 0 8px; }
+.sc-goal-form { display: flex; gap: 8px; }
+.sc-goal-form input {
+  flex: 1; border: 2px solid #f1ede6; border-radius: 12px; padding: 8px 10px;
+  font: 700 0.85rem "Nunito", sans-serif; color: #3d2e22;
+}
+.sc-goal-track { height: 10px; background: #f1e6d3; border-radius: 100px; overflow: hidden; }
+.sc-goal-fill { height: 100%; background: #22B573; border-radius: 100px; transition: width 0.3s ease; }
+
 .sc-streak-badge {
   display: flex;
   align-items: center;

@@ -22,6 +22,7 @@
     <button class="lb-scope-btn active" id="lb-scope-alltime" type="button">All-Time</button>
     <button class="lb-scope-btn" id="lb-scope-weekly" type="button">This Week 🔥</button>
     <button class="lb-scope-btn" id="lb-scope-speedround" type="button">⚡ Speed Round</button>
+    <button class="lb-scope-btn" id="lb-scope-improved" type="button">📈 Most Improved</button>
   </div>
 
   <div class="lb-tabs" id="lb-tabs"></div>
@@ -177,10 +178,25 @@
     render(data, "best", "best score");
   }
 
+  // Reuses the SAME podium/list render() as every other scope above --
+  // just a differently-shaped ranking (accuracy delta vs last week,
+  // not a raw count), converted to a whole-number percentage so it
+  // displays the same way "best score"/"correct" do elsewhere.
+  async function loadMostImproved() {
+    if (unwatch) { unwatch(); unwatch = null; }
+    document.getElementById("lb-podium").innerHTML = "";
+    document.getElementById("lb-list").innerHTML = "";
+    const ranking = await AIGLeaderboard.getMostImproved();
+    const data = {};
+    ranking.forEach(r => { data[r.id] = { name: r.name, improvementPct: Math.round(r.improvement * 100) }; });
+    render(data, "improvementPct", "accuracy improvement");
+  }
+
   const SCOPES = {
     alltime: { label: "Ranked by <b>🎮 times played</b>", showTabs: true, load: () => loadGame(activeGame) },
     weekly: { label: "Ranked by <b>🎯 correct answers this week</b>", showTabs: false, load: loadWeekly },
-    speedround: { label: "Ranked by <b>⚡ Speed Round best score</b>", showTabs: false, load: loadSpeedRound }
+    speedround: { label: "Ranked by <b>⚡ Speed Round best score</b>", showTabs: false, load: loadSpeedRound },
+    improved: { label: "Ranked by <b>📈 accuracy improvement vs last week</b>", showTabs: false, load: loadMostImproved }
   };
   function switchScope(scope) {
     Object.keys(SCOPES).forEach(s => document.getElementById(`lb-scope-${s}`).classList.toggle("active", s === scope));
@@ -195,6 +211,7 @@
   document.getElementById("lb-scope-alltime").addEventListener("click", () => switchScope("alltime"));
   document.getElementById("lb-scope-weekly").addEventListener("click", () => switchScope("weekly"));
   document.getElementById("lb-scope-speedround").addEventListener("click", () => switchScope("speedround"));
+  document.getElementById("lb-scope-improved").addEventListener("click", () => switchScope("improved"));
 
   renderTabs();
   loadGame(activeGame);

@@ -1219,6 +1219,121 @@
     return { totalXp, level, xpIntoLevel: totalXp % XP_PER_LEVEL, xpForNextLevel: XP_PER_LEVEL };
   }
 
+  // The 7 calendar dates (Monday..Sunday, YYYY-MM-DD) for the week whose
+  // Monday is `mondayKey` -- shared helper for Perfect Week + Most
+  // Improved below, both of which need to sum players/{id}/dailyStats
+  // across a specific week.
+  function weekDatesFor(mondayKey) {
+    const monday = new Date(mondayKey + "T00:00:00Z");
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setUTCDate(monday.getUTCDate() + i);
+      dates.push(d.toISOString().slice(0, 10));
+    }
+    return dates;
+  }
+  function sumDailyStats(dailyStats, dates) {
+    let correct = 0, wrong = 0, daysPlayed = 0;
+    dates.forEach(d => {
+      const day = dailyStats && dailyStats[d];
+      if (!day) return;
+      const c = day.correct || 0, w = day.wrong || 0;
+      correct += c; wrong += w;
+      if (c + w > 0) daysPlayed++;
+    });
+    return { correct, wrong, total: correct + wrong, daysPlayed };
+  }
+
+  // =====================================================================
+  // PERFECT WEEK — how many of the CURRENT week's 7 days (so far) had
+  // any play activity, reading players/{id}/dailyStats (same data Beat
+  // Yesterday above already reads, just summed across more dates).
+  // "Perfect" becomes true only once all 7 days have activity, which can
+  // only happen once the week has actually run its full course.
+  // =====================================================================
+  async function getWeekPlayProgress() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const wk = weekKey();
+    const dates = weekDatesFor(wk);
+    const snap = await aigDb.ref(`players/${player.id}/dailyStats`).get();
+    const dailyStats = snap.exists() ? snap.val() : {};
+    const { daysPlayed } = sumDailyStats(dailyStats, dates);
+    return { daysPlayed, totalDays: 7, perfect: daysPlayed === 7, weekKey: wk };
+  }
+
+  // =====================================================================
+  // MOST IMPROVED — top 5 players by accuracy delta (this week's
+  // accuracy minus last week's), NOT just raw correct-answer count like
+  // the existing Weekly Leaderboard -- rewards a kid getting BETTER, not
+  // just a kid who happens to play more. Reads the whole players/ tree
+  // once (same technique getWeeklyLeaderboard/Kids' Quiz pool already
+  // use), since dailyStats needed for the accuracy calc is nested under
+  // every player anyway. Requires at least 5 attempts in EACH week to
+  // qualify, so a single lucky/unlucky day can't swing the ranking.
+  // =====================================================================
+  const MOST_IMPROVED_MIN_ATTEMPTS = 5;
+
+  async function getMostImproved() {
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return [];
+    const all = snap.val();
+    const thisWeekKey = weekKey();
+    const lastMonday = new Date(thisWeekKey + "T00:00:00Z");
+    lastMonday.setUTCDate(lastMonday.getUTCDate() - 7);
+    const lastWeekKey = lastMonday.toISOString().slice(0, 10);
+    const thisWeekDates = weekDatesFor(thisWeekKey);
+    const lastWeekDates = weekDatesFor(lastWeekKey);
+
+    const results = [];
+    Object.entries(all).forEach(([id, data]) => {
+      if (!data.dailyStats) return;
+      const thisWeek = sumDailyStats(data.dailyStats, thisWeekDates);
+      const lastWeek = sumDailyStats(data.dailyStats, lastWeekDates);
+      if (thisWeek.total < MOST_IMPROVED_MIN_ATTEMPTS || lastWeek.total < MOST_IMPROVED_MIN_ATTEMPTS) return;
+      const thisAcc = thisWeek.correct / thisWeek.total;
+      const lastAcc = lastWeek.correct / lastWeek.total;
+      // Same name source Weekly Leaderboard already relies on for
+      // cross-player display names (touchWeeklyStats writes it there).
+      const name = (data.weekly && data.weekly[thisWeekKey] && data.weekly[thisWeekKey].name) || "Player";
+      results.push({ id, name, improvement: thisAcc - lastAcc, thisAccuracy: thisAcc, lastAccuracy: lastAcc });
+    });
+    results.sort((a, b) => b.improvement - a.improvement);
+    return results.slice(0, 5);
+  }
+
+  // =====================================================================
+  // PERSONAL GOAL — a kid-set weekly target ("answer 50 questions this
+  // week"), distinct from the system-generated Daily Quests above.
+  // Progress reuses the SAME players/{id}/weekly/{weekKey}.correct
+  // counter the Weekly Leaderboard already maintains -- no new tracking
+  // needed, just a stored target to compare it against. A goal only
+  // applies to the week it was set for; a new week means no goal until
+  // the kid sets a fresh one.
+  // =====================================================================
+  async function getPersonalGoal() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const wk = weekKey();
+    const [goalSnap, weeklySnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/personalGoal`).get(),
+      aigDb.ref(`players/${player.id}/weekly/${wk}`).get()
+    ]);
+    const goal = goalSnap.exists() ? goalSnap.val() : null;
+    const progress = weeklySnap.exists() ? (weeklySnap.val().correct || 0) : 0;
+    if (!goal || goal.weekKey !== wk) return { target: null, progress, weekKey: wk, achieved: false };
+    return { target: goal.target, progress, weekKey: wk, achieved: progress >= goal.target };
+  }
+
+  async function setPersonalGoal(target) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const t = Math.max(1, Math.min(500, Math.round(target))); // sane bounds -- not zero/negative, not an impossible number
+    await aigDb.ref(`players/${player.id}/personalGoal`).set({ target: t, weekKey: weekKey(), createdAt: firebase.database.ServerValue.TIMESTAMP });
+    return { ok: true, target: t };
+  }
+
   // Weekly Recap -- a shareable "your week in review" summary (players are
   // explicitly meant to screenshot this to show a parent). Deliberately
   // mixes a true weekly delta (correct answers this week, from the same
@@ -1565,6 +1680,8 @@
     getDailyComparison,
     getMysteryBoxStatus, openMysteryBox,
     getPlayerLevel,
+    getWeekPlayProgress, getMostImproved,
+    getPersonalGoal, setPersonalGoal,
     getWeeklyLeaderboard, getWeeklyRecap, getBonusHourInfo,
     getTitle, getTitleTiers,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
