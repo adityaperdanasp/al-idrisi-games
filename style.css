@@ -531,6 +531,20 @@ body {
 .sc-goal-track { height: 10px; background: #f1e6d3; border-radius: 100px; overflow: hidden; }
 .sc-goal-fill { height: 100%; background: #22B573; border-radius: 100px; transition: width 0.3s ease; }
 
+.sc-pet-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.sc-pet-emoji { font-size: 2.4rem; line-height: 1; }
+.sc-pet-name { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 0.95rem; color: #3d2e22; margin: 0; }
+.sc-pet-fed { font-family: "Nunito", sans-serif; font-weight: 700; font-size: 0.78rem; color: #8a7a6a; margin: 2px 0 0; }
+
+.sc-milestone-toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+  background: #4a2d70; color: #fff; padding: 14px 22px; border-radius: 100px;
+  font: 800 0.9rem "Baloo 2", sans-serif; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; z-index: 10000;
+  max-width: 90vw; text-align: center;
+}
+.sc-milestone-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 .sc-streak-badge {
   display: flex;
   align-items: center;

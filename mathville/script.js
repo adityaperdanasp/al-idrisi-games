@@ -5691,6 +5691,19 @@ async function loadAiHint() {
   } finally {
     loading.classList.add("hidden");
   }
+
+  // "Ask a friend" social proof -- best-effort, purely additive. Framed the
+  // same regardless of the percentage (even a low one just means "this
+  // topic is genuinely tricky for everyone"), so there's no wording branch
+  // that could read as discouraging.
+  try {
+    if (window.AIGLeaderboard) {
+      const classmateInfo = await AIGLeaderboard.getClassmateAccuracy("mathville", state.chapterId);
+      if (classmateInfo) {
+        appendAiHintMessage(`🗣️ ${classmateInfo.pct}% of your classmates have gotten this topic right too -- you're not alone learning it!`, "ai");
+      }
+    }
+  } catch (e) { /* no classmate stat available, skip silently */ }
 }
 
 // Wired once (not per showReward() call) so the collapsed-message ->

@@ -918,6 +918,108 @@
   }
 
   // =====================================================================
+  // VIRTUAL PET — a small companion (players/{id}/pet: {feedCount}) that
+  // grows through stages the more it's fed. Deliberately NO hunger/decay
+  // over time (that would need a scheduled job ticking down a value while
+  // the app is closed, a much bigger lift for a purely-cosmetic feature) --
+  // feedCount only ever goes up, so the pet is a pure reflection of total
+  // care given, never something that can "starve" from time away.
+  // =====================================================================
+  const PET_FEED_COST = { coins: 3 };
+  const PET_STAGES = [
+    { min: 0, emoji: "🥚", name: "Mystery Egg" },
+    { min: 3, emoji: "🐣", name: "Hatchling" },
+    { min: 8, emoji: "🐥", name: "Chick" },
+    { min: 15, emoji: "🐦", name: "Fledgling" },
+    { min: 25, emoji: "🦉", name: "Wise Owl" },
+    { min: 40, emoji: "🦅", name: "Soaring Eagle" }
+  ];
+  function petStageIndexFor(feedCount) {
+    let idx = 0;
+    for (let i = 0; i < PET_STAGES.length; i++) {
+      if (feedCount >= PET_STAGES[i].min) idx = i;
+    }
+    return idx;
+  }
+  async function getPetStatus() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`players/${player.id}/pet`).get();
+    const feedCount = snap.exists() ? (snap.val().feedCount || 0) : 0;
+    const stageIdx = petStageIndexFor(feedCount);
+    const stage = PET_STAGES[stageIdx];
+    const next = PET_STAGES[stageIdx + 1] || null;
+    return { feedCount, stage, next, cost: PET_FEED_COST };
+  }
+  // Get-check-set (not .transaction()) -- same reasoning as unlockVehicle()
+  // above: this named app instance's transactions can abort on a cold-cache
+  // null read and never retry, so currency spends here do the check in JS.
+  async function feedPet() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false, reason: "no-player" };
+    const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+    const walletSnap = await walletRef.get();
+    const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    if ((wallet.coins || 0) < PET_FEED_COST.coins) return { ok: false, reason: "insufficient-funds" };
+    const newWallet = { ...wallet, coins: wallet.coins - PET_FEED_COST.coins };
+    await walletRef.set(newWallet);
+    const petRef = aigDb.ref(`players/${player.id}/pet`);
+    const petSnap = await petRef.get();
+    const feedCount = (petSnap.exists() ? (petSnap.val().feedCount || 0) : 0) + 1;
+    await petRef.set({ feedCount });
+    const stageIdx = petStageIndexFor(feedCount);
+    return { ok: true, feedCount, wallet: newWallet, stage: PET_STAGES[stageIdx], leveledUp: PET_STAGES[stageIdx].min === feedCount };
+  }
+
+  // =====================================================================
+  // MILESTONE SURPRISE — a one-time celebratory moment at 7/30/100/365
+  // days since account creation. Reuses testerAccounts/{id}/createdAt
+  // (already written at Sign Up, see index.html) rather than tracking a
+  // separate "days active" counter -- this is calendar days since signup,
+  // not days actually played, which is a deliberate simplification (no
+  // extra Firebase writes needed at all, this function is 100% reads).
+  // Callers dedupe "already shown this milestone" via localStorage, same
+  // as the push-token-popup pattern elsewhere in this codebase.
+  // =====================================================================
+  const MILESTONE_DAYS = [7, 30, 100, 365];
+  async function getMilestoneSurprise() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`testerAccounts/${player.id}/createdAt`).get();
+    if (!snap.exists()) return null;
+    const days = Math.floor((Date.now() - snap.val()) / 86400000);
+    const hit = MILESTONE_DAYS.find(d => d === days);
+    return hit ? { days: hit } : null;
+  }
+
+  // =====================================================================
+  // "ASK A FRIEND" SOCIAL PROOF — reads the whole players/ tree ONCE (same
+  // pattern as getMostImproved()/getClassGoalProgress() above) and reports
+  // what share of OTHER kids got a given topic right, so a missed question
+  // can be framed as "you're not the only one still learning this" instead
+  // of just a correction. Deliberately excludes the current player and
+  // requires a minimum sample size -- a 1/1 or 2/2 "classmate" stat would
+  // be misleading noise, not real social proof.
+  // =====================================================================
+  const CLASSMATE_MIN_SAMPLE = 5;
+  async function getClassmateAccuracy(gameId, topicKey) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return null;
+    let correct = 0, total = 0;
+    snap.forEach(childSnap => {
+      if (player && childSnap.key === player.id) return;
+      const stats = childSnap.child(`topicStats/${gameId}/${topicKey}`).val();
+      if (stats) {
+        correct += stats.correct || 0;
+        total += (stats.correct || 0) + (stats.wrong || 0);
+      }
+    });
+    if (total < CLASSMATE_MIN_SAMPLE) return null;
+    return { pct: Math.round((correct / total) * 100), sampleSize: total };
+  }
+
+  // =====================================================================
   // COSMETICS — Avatar Frames + Sound Packs, bought with the same
   // coins/gems wallet as vehicle skins. Two independent "slots" (frame /
   // sound), each with its own owned-set and one equipped choice. Sound
@@ -1756,6 +1858,9 @@
     submitSpeedRoundScore, getSpeedRoundLeaderboard,
     getMasteryMap, getSmartPractice,
     submitDiagnosticResult, getDiagnosticResult,
+    getPetStatus, feedPet,
+    getClassmateAccuracy,
+    getMilestoneSurprise,
     db: aigDb
   };
 })();

@@ -379,6 +379,11 @@
         <div id="sc-nickname-body"></div>
       </div>
 
+      <div class="sc-goal-card" id="sc-pet-card" hidden>
+        <div class="sc-goal-title">🐾 My Pet</div>
+        <div id="sc-pet-body"></div>
+      </div>
+
       <div class="sc-bp-panel" id="sc-bp-panel" hidden>
         <div class="sc-bp-header">
           <span class="sc-bp-title">🎖️ Season Pass</span>
@@ -853,10 +858,60 @@
       renderPersonalGoal();
       renderNicknameCard();
       renderClassGoal();
+      renderPet();
+      checkMilestoneSurprise();
       const weekendBonus = AIGLeaderboard.getWeekendBonusInfo();
       document.getElementById("sc-weekend-bonus-banner").hidden = !weekendBonus.active;
       renderSmartPracticeAndDiagnostic();
     }
+  }
+
+  async function renderPet() {
+    const status = await AIGLeaderboard.getPetStatus();
+    const card = document.getElementById("sc-pet-card");
+    const body = document.getElementById("sc-pet-body");
+    if (!status) { card.hidden = true; return; }
+    card.hidden = false;
+    const nextText = status.next
+      ? `<p class="sc-goal-desc">${status.next.min - status.feedCount} more feeding${status.next.min - status.feedCount === 1 ? "" : "s"} until it grows into a ${status.next.name} ${status.next.emoji}!</p>`
+      : `<p class="sc-goal-desc">Fully grown! Keep feeding just for fun.</p>`;
+    body.innerHTML = `
+      <div class="sc-pet-row">
+        <span class="sc-pet-emoji">${status.stage.emoji}</span>
+        <div>
+          <p class="sc-pet-name">${status.stage.name}</p>
+          <p class="sc-pet-fed">Fed ${status.feedCount} time${status.feedCount === 1 ? "" : "s"}</p>
+        </div>
+      </div>
+      ${nextText}
+      <button class="sc-quest-claim-btn" id="sc-pet-feed-btn">Feed 🪙${status.cost.coins}</button>`;
+    document.getElementById("sc-pet-feed-btn").addEventListener("click", async () => {
+      const btn = document.getElementById("sc-pet-feed-btn");
+      btn.disabled = true;
+      const result = await AIGLeaderboard.feedPet();
+      if (!result.ok) { btn.disabled = false; return; }
+      if (result.leveledUp && window.confetti) confetti({ particleCount: 60, spread: 65, origin: { y: 0.6 } });
+      renderPet();
+    });
+  }
+
+  // One-time celebratory toast, deduped per milestone via localStorage so
+  // it doesn't repeat every hub load after the day it's crossed.
+  async function checkMilestoneSurprise() {
+    try {
+      const hit = await AIGLeaderboard.getMilestoneSurprise();
+      if (!hit) return;
+      const key = `aig_milestone_shown_${hit.days}`;
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, "1");
+      if (window.confetti) confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
+      const toast = document.createElement("div");
+      toast.className = "sc-milestone-toast";
+      toast.textContent = `🎉 You've been learning with BrainBox for ${hit.days} days! Keep it up!`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.classList.add("show"), 30);
+      setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 400); }, 4500);
+    } catch (e) { /* purely decorative, skip silently on failure */ }
   }
 
   async function renderNicknameCard() {
