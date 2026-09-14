@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Math Hoops — BrainBox</title>
+<meta name="theme-color" content="#E4772E">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; overflow: hidden; height: 100%; background: linear-gradient(180deg, #FFF3E0 0%, #FFE0B3 100%); font-family: "Nunito", sans-serif; color: #3d2e22; }
+  .bh-page { max-width: 480px; margin: 0 auto; height: 100dvh; display: flex; flex-direction: column; position: relative; }
+
+  .bh-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; flex: none; }
+  .bh-back { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #A8531F; font-size: 1.05rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); text-decoration: none; flex: none; }
+  .bh-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #A8531F; }
+  .bh-hud { display: flex; justify-content: center; gap: 10px; padding: 0 14px 10px; flex: none; }
+  .bh-hud-chip { background: #fff; border-radius: 100px; padding: 5px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; box-shadow: 0 2px 0 rgba(0,0,0,.05); }
+
+  .bh-court { position: relative; flex: 1; margin: 0 10px 10px; border-radius: 24px; overflow: hidden; background: linear-gradient(180deg, #FFF9F0 0%, #FDECD1 60%, #F3D9A8 100%); box-shadow: inset 0 0 0 3px rgba(184,87,26,.15); }
+  .bh-court-line { position: absolute; left: 50%; bottom: 0; width: 2px; height: 34%; background: rgba(184,87,26,.15); transform: translateX(-50%); }
+  .bh-court-arc { position: absolute; left: 50%; bottom: -30%; width: 90%; height: 60%; border: 2px solid rgba(184,87,26,.15); border-radius: 50%; transform: translateX(-50%); }
+
+  .bh-backboard { position: absolute; top: 6%; left: 50%; width: 26%; height: 3.5%; background: #fff; border: 2px solid #B8571A; border-radius: 3px; transform: translateX(-50%); }
+  .bh-rim { position: absolute; top: 9.5%; left: 50%; width: 15%; height: 3%; border: 3px solid #E4772E; border-top-color: #ff9d54; border-radius: 50%; transform: translateX(-50%); z-index: 4; }
+  .bh-net { position: absolute; top: 11.5%; left: 50%; width: 12%; height: 8%; transform: translateX(-50%); z-index: 3; opacity: .8;
+    background: repeating-linear-gradient(100deg, transparent, transparent 6px, rgba(184,87,26,.35) 6px, rgba(184,87,26,.35) 7px),
+                repeating-linear-gradient(80deg, transparent, transparent 6px, rgba(184,87,26,.35) 6px, rgba(184,87,26,.35) 7px);
+    clip-path: polygon(8% 0%, 92% 0%, 76% 100%, 24% 100%);
+  }
+  .bh-net.swish { animation: bhNetSwish .4s ease; }
+  @keyframes bhNetSwish { 0% { transform: translateX(-50%) scaleY(1); } 40% { transform: translateX(-50%) scaleY(1.25); } 100% { transform: translateX(-50%) scaleY(1); } }
+
+  .bh-ball { position: absolute; width: 11%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; cursor: grab; touch-action: none;
+    background: radial-gradient(circle at 35% 30%, #ff9d54, #E4772E 55%, #B8571A 100%);
+    box-shadow: 0 3px 6px rgba(0,0,0,.25);
+  }
+  .bh-ball::before, .bh-ball::after { content: ""; position: absolute; inset: 0; border: 1.4px solid rgba(59,42,26,.55); border-radius: 50%; }
+  .bh-ball::before { clip-path: polygon(0 45%, 100% 45%, 100% 55%, 0 55%); }
+  .bh-ball::after { clip-path: polygon(45% 0, 55% 0, 55% 100%, 45% 100%); }
+  .bh-ball.dragging { cursor: grabbing; }
+  .bh-ball.hidden { display: none; }
+
+  .bh-aim-line { position: absolute; height: 2px; background: rgba(184,87,26,.35); transform-origin: 0 50%; pointer-events: none; z-index: 4; border-radius: 2px; }
+  .bh-aim-line.hidden { display: none; }
+
+  .bh-hint { position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .82rem; color: #A8531F; background: #fff; padding: 6px 14px; border-radius: 100px; box-shadow: 0 2px 0 rgba(0,0,0,.05); z-index: 6; white-space: nowrap; }
+  .bh-hint.hidden { display: none; }
+
+  .bh-toast { position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%) scale(0.6); font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.6rem; color: #3F8F5F; z-index: 10; opacity: 0; pointer-events: none; text-shadow: 0 2px 0 rgba(255,255,255,.6); }
+  .bh-toast.show { animation: bhToastPop .8s ease forwards; }
+  .bh-toast.miss { color: #D64545; }
+  @keyframes bhToastPop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 70% { opacity: 1; transform: translate(-50%, -60%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -80%) scale(1); } }
+
+  .bh-overlay { position: absolute; inset: 0; background: rgba(61,46,34,.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .bh-overlay.hidden { display: none; }
+  .bh-card { background: #fff; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
+  .bh-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; margin-bottom: 16px; color: #3d2e22; }
+  .bh-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .bh-q-btn { border: 2px solid #f1ede6; background: #fdf6ea; border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; color: #3d2e22; cursor: pointer; }
+  .bh-q-btn:disabled { cursor: default; }
+  .bh-q-btn.correct { border-color: #3F8F5F; background: #eaf7ee; }
+  .bh-q-btn.wrong { border-color: #D64545; background: #fdeaea; }
+
+  .bh-end-emoji { font-size: 3rem; margin-bottom: 6px; }
+  .bh-end-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 4px; }
+  .bh-end-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 6px; }
+  .bh-end-bonus { font-weight: 800; color: #A8531F; margin-bottom: 18px; min-height: 1.2em; }
+  .bh-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; }
+  .bh-btn-primary { background: #E4772E; color: #fff; }
+  .bh-btn-secondary { background: #f1ede6; color: #3d2e22; }
+
+  .bh-start-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .bh-start-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
+  .bh-start-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="bh-page" id="bh-page">
+  <div class="bh-topbar">
+    <a href="../" class="bh-back">←</a>
+    <div class="bh-title">🏀 Math Hoops</div>
+  </div>
+  <div class="bh-hud">
+    <span class="bh-hud-chip">🏀 <span id="bh-hud-made">0</span>/<span id="bh-hud-total">10</span></span>
+    <span class="bh-hud-chip">🔥 <span id="bh-hud-streak">0</span></span>
+    <span class="bh-hud-chip">🪙 <span id="bh-hud-coins">0</span> 💎 <span id="bh-hud-gems">0</span></span>
+  </div>
+
+  <div class="bh-court" id="bh-court">
+    <div class="bh-court-arc"></div>
+    <div class="bh-court-line"></div>
+    <div class="bh-backboard"></div>
+    <div class="bh-net" id="bh-net"></div>
+    <div class="bh-rim" id="bh-rim"></div>
+    <div class="bh-aim-line hidden" id="bh-aim-line"></div>
+    <div class="bh-ball hidden" id="bh-ball"></div>
+    <div class="bh-hint hidden" id="bh-hint">👆 Drag the ball up to shoot!</div>
+    <div class="bh-toast" id="bh-toast"></div>
+  </div>
+
+  <!-- Start screen -->
+  <div class="bh-overlay" id="bh-start-overlay">
+    <div class="bh-card">
+      <div class="bh-start-emoji">🏀</div>
+      <div class="bh-start-title">Math Hoops</div>
+      <p class="bh-start-sub">Answer the question right to earn a shot, then drag the ball up toward the hoop and let go to shoot. 10 questions per game!</p>
+      <button class="bh-btn bh-btn-primary" id="bh-start-btn">Start Shootaround</button>
+    </div>
+  </div>
+
+  <!-- Question card -->
+  <div class="bh-overlay hidden" id="bh-question-overlay">
+    <div class="bh-card">
+      <div class="bh-q-prompt" id="bh-q-prompt"></div>
+      <div class="bh-q-grid" id="bh-q-grid"></div>
+    </div>
+  </div>
+
+  <!-- Round end -->
+  <div class="bh-overlay hidden" id="bh-end-overlay">
+    <div class="bh-card">
+      <div class="bh-end-emoji" id="bh-end-emoji">🏆</div>
+      <div class="bh-end-title" id="bh-end-title">Nice shootaround!</div>
+      <div class="bh-end-sub" id="bh-end-sub"></div>
+      <div class="bh-end-bonus" id="bh-end-bonus"></div>
+      <button class="bh-btn bh-btn-primary" id="bh-play-again-btn">Play Again</button>
+      <a href="../" class="bh-btn bh-btn-secondary" style="text-decoration:none;display:block;text-align:center;">Back to Hub</a>
+    </div>
+  </div>
+
+  <!-- Signed-out gate -->
+  <div class="bh-overlay hidden" id="bh-signedout-overlay">
+    <div class="bh-card">
+      <div class="bh-start-emoji">🏀</div>
+      <p class="bh-start-sub">Please sign in from the hub first.</p>
+      <a href="../" class="bh-btn bh-btn-primary" style="text-decoration:none;display:block;text-align:center;">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

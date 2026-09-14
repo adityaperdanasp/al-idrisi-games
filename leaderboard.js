@@ -1897,6 +1897,38 @@
     return snap.exists() ? snap.val() : null;
   }
 
+  // =====================================================================
+  // MATH HOOPS (basketball/) — a one-time-per-round bonus on top of the
+  // per-question currency recordTopicAttempt("basketball", ...) already
+  // pays out. Tiered on shots MADE (the mini-game's own skill layer), not
+  // on questions answered right (which is what already earns the regular
+  // per-answer coin/gem trickle) -- so a kid who knows the math but airballs
+  // every shot still gets normal per-answer credit, but the extra flourish
+  // here is for actually being good at the basketball part too. Same
+  // additive .transaction() as awardCurrency()/awardTeachBoBonus() above,
+  // never a spend, so no abort-on-null-cache risk.
+  // =====================================================================
+  function basketballBonusFor(made, total) {
+    const pct = made / total;
+    if (pct >= 1) return { coins: 15, gems: 1 };
+    if (pct >= 0.8) return { coins: 10, gems: 0 };
+    if (pct >= 0.5) return { coins: 5, gems: 0 };
+    return null;
+  }
+  async function awardBasketballRoundBonus(made, total) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = basketballBonusFor(made, total);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -1931,6 +1963,7 @@
     getTownDecoration, setTownDecoration,
     awardReferralBonus,
     awardTeachBoBonus,
+    awardBasketballRoundBonus,
     db: aigDb
   };
 })();
