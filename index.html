@@ -337,6 +337,11 @@
       <div class="sc-bonus-hour-banner" id="sc-bonus-hour-banner" hidden>⚡ Bonus Hour! Double coins right now!</div>
       <div class="sc-bonus-hour-banner" id="sc-weekend-bonus-banner" hidden>🎉 Weekend Bonus! Double coins all weekend!</div>
 
+      <div class="sc-smart-card" id="sc-seasonal-card" hidden>
+        <span class="sc-smart-text" id="sc-seasonal-text"></span>
+        <button class="sc-quest-claim-btn" id="sc-seasonal-claim-btn">Claim</button>
+      </div>
+
       <div class="sc-goal-card" id="sc-classgoal-card" hidden>
         <div class="sc-goal-title">🤝 Class Goal This Week</div>
         <div id="sc-classgoal-body"></div>
@@ -958,6 +963,7 @@
       });
       renderBeatYesterday();
       renderMysteryBox();
+      renderSeasonalEvent();
       renderPerfectWeek();
       renderPersonalGoal();
       renderNicknameCard();
@@ -1145,6 +1151,35 @@
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 3000);
       card.hidden = true;
+    };
+  }
+
+  async function renderSeasonalEvent() {
+    const event = await AIGLeaderboard.getActiveSeasonalEvent();
+    const card = document.getElementById("sc-seasonal-card");
+    if (!event) { card.hidden = true; return; }
+    card.hidden = false;
+    const text = document.getElementById("sc-seasonal-text");
+    const btn = document.getElementById("sc-seasonal-claim-btn");
+    if (event.claimed) {
+      text.textContent = `${event.emoji} ${event.name} -- already claimed!`;
+      btn.hidden = true;
+      return;
+    }
+    text.textContent = `${event.emoji} ${event.name} is here!`;
+    btn.hidden = false;
+    btn.disabled = false;
+    btn.textContent = `Claim 🪙${event.coins}${event.gems ? ` 💎${event.gems}` : ""}`;
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const result = await AIGLeaderboard.claimSeasonalEvent(event.id);
+      if (!result.ok) { btn.disabled = false; return; }
+      const toast = document.createElement("div");
+      toast.className = "sc-card-toast";
+      toast.innerHTML = `<span class="sc-card-toast-emoji">${event.emoji}</span><span>${event.name}: +${event.coins} 🪙${event.gems ? ` +${event.gems} 💎` : ""}</span>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+      renderSeasonalEvent();
     };
   }
 

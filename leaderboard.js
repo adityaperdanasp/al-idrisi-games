@@ -2074,6 +2074,63 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // SEASONAL EVENTS — a handful of date-ranged banners (real Indonesian
+  // school-calendar moments), each with a flat ONE-TIME claim per event id
+  // per player, tracked at players/{id}/seasonalClaims/{eventId}. No
+  // cosmetic reskinning (that would need actual new art per event) --
+  // scoped down to "a banner + a bonus you can claim once while it's
+  // running", same spirit as Bonus Hour/Weekend Bonus above but tied to a
+  // calendar date range instead of a recurring daily/weekly window.
+  // Month/day only (no year) so the same config works every year without
+  // needing an annual edit; date ranges are deliberately kept within a
+  // single calendar year (no Dec->Jan wraparound) to keep the comparison
+  // simple.
+  // =====================================================================
+  const SEASONAL_EVENTS = [
+    { id: "tahun-ajaran-baru", name: "Tahun Ajaran Baru", emoji: "🎒", startMonth: 7, startDay: 1, endMonth: 7, endDay: 20, coins: 20, gems: 1 },
+    { id: "kemerdekaan", name: "Kemerdekaan RI", emoji: "🇮🇩", startMonth: 8, startDay: 14, endMonth: 8, endDay: 20, coins: 17, gems: 1 },
+    { id: "semangat-september", name: "Semangat September", emoji: "📚", startMonth: 9, startDay: 1, endMonth: 9, endDay: 30, coins: 15, gems: 0 },
+    { id: "hari-pahlawan", name: "Hari Pahlawan", emoji: "🎖️", startMonth: 11, startDay: 8, endMonth: 11, endDay: 12, coins: 15, gems: 1 },
+    { id: "akhir-tahun", name: "Akhir Tahun", emoji: "🎉", startMonth: 12, startDay: 24, endMonth: 12, endDay: 31, coins: 25, gems: 2 }
+  ];
+
+  function findActiveSeasonalEventConfig(now) {
+    const month = now.getMonth() + 1, day = now.getDate();
+    return SEASONAL_EVENTS.find(e => {
+      const afterStart = month > e.startMonth || (month === e.startMonth && day >= e.startDay);
+      const beforeEnd = month < e.endMonth || (month === e.endMonth && day <= e.endDay);
+      return afterStart && beforeEnd;
+    }) || null;
+  }
+
+  async function getActiveSeasonalEvent() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const event = findActiveSeasonalEventConfig(new Date());
+    if (!event) return null;
+    const snap = await aigDb.ref(`players/${player.id}/seasonalClaims/${event.id}`).get();
+    return { ...event, claimed: snap.exists() && snap.val() === true };
+  }
+
+  async function claimSeasonalEvent(eventId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const event = SEASONAL_EVENTS.find(e => e.id === eventId);
+    if (!event) return { ok: false, reason: "unknown-event" };
+    const claimRef = aigDb.ref(`players/${player.id}/seasonalClaims/${eventId}`);
+    const already = await claimRef.get();
+    if (already.exists() && already.val() === true) return { ok: false, reason: "already-claimed" };
+    await claimRef.set(true);
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (event.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (event.gems || 0);
+      return wallet;
+    });
+    return { ok: true, event };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -2114,6 +2171,7 @@
     awardNumberLineJumpBonus,
     awardMathTennisBonus,
     awardFortressMathBonus,
+    getActiveSeasonalEvent, claimSeasonalEvent,
     db: aigDb
   };
 })();
