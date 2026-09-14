@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Fortress Math — BrainBox</title>
+<meta name="theme-color" content="#6B7A8F">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #E8ECF1 0%, #C7D2DE 100%); font-family: "Nunito", sans-serif; color: #3d2e22; }
+  .fm-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .fm-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .fm-back { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #4a5a6f; font-size: 1.05rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); text-decoration: none; flex: none; }
+  .fm-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #4a5a6f; }
+  .fm-hud { display: flex; justify-content: center; gap: 10px; padding: 0 14px 12px; flex-wrap: wrap; }
+  .fm-hud-chip { background: #fff; border-radius: 100px; padding: 5px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; box-shadow: 0 2px 0 rgba(0,0,0,.05); }
+
+  .fm-phase-banner { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; color: #4a5a6f; margin: 0 14px 10px; }
+
+  .fm-battlefield { position: relative; margin: 0 14px 16px; height: 140px; border-radius: 16px; background: linear-gradient(180deg, #D9E4EC, #B9C9D8); overflow: hidden; box-shadow: inset 0 0 0 3px rgba(74,90,111,.2); }
+  .fm-path { position: absolute; left: 0; right: 0; top: 50%; height: 26px; background: #A9BAC9; transform: translateY(-50%); }
+  .fm-fortress { position: absolute; left: 3%; top: 50%; font-size: 2.2rem; transform: translate(-20%, -50%); z-index: 3; }
+  .fm-slot { position: absolute; top: 50%; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.6); border: 2px dashed #8fa0b3; transform: translate(-50%, -140%); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; cursor: pointer; z-index: 4; }
+  .fm-slot.filled { border-style: solid; background: #fff; cursor: default; }
+  .fm-slot.disabled { cursor: default; opacity: .5; }
+  .fm-enemy { position: absolute; top: 50%; font-size: 1.5rem; transform: translate(-50%, -50%); z-index: 2; transition: left .1s linear; }
+  .fm-enemy.hit { filter: brightness(1.6); }
+
+  .fm-q-overlay { position: fixed; inset: 0; background: rgba(61,46,34,.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .fm-q-overlay.hidden { display: none; }
+  .fm-card { background: #fff; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
+  .fm-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 16px; color: #3d2e22; }
+  .fm-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .fm-q-btn { border: 2px solid #f1ede6; background: #fdf6ea; border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; color: #3d2e22; cursor: pointer; }
+  .fm-q-btn:disabled { cursor: default; }
+  .fm-q-btn.correct { border-color: #3F8F5F; background: #eaf7ee; }
+  .fm-q-btn.wrong { border-color: #D64545; background: #fdeaea; }
+
+  .fm-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .fm-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
+  .fm-modal-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+  .fm-modal-bonus { font-weight: 800; color: #4a5a6f; margin-bottom: 16px; min-height: 1.2em; }
+  .fm-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .fm-btn-primary { background: #6B7A8F; color: #fff; }
+  .fm-btn-secondary { background: #f1ede6; color: #3d2e22; }
+</style>
+</head>
+<body>
+
+<div class="fm-page">
+  <div class="fm-topbar">
+    <a href="../" class="fm-back">←</a>
+    <div class="fm-title">🏰 Fortress Math</div>
+  </div>
+  <div class="fm-hud">
+    <span class="fm-hud-chip">❤️ <span id="fm-hud-hp">5</span></span>
+    <span class="fm-hud-chip">🌊 <span id="fm-hud-wave">0</span>/5</span>
+    <span class="fm-hud-chip">🪙 <span id="fm-hud-coins">0</span> 💎 <span id="fm-hud-gems">0</span></span>
+  </div>
+  <div class="fm-phase-banner" id="fm-phase-banner"></div>
+
+  <div class="fm-battlefield" id="fm-battlefield">
+    <div class="fm-path"></div>
+    <div class="fm-fortress">🏰</div>
+  </div>
+
+  <div class="fm-q-overlay" id="fm-start-overlay">
+    <div class="fm-card">
+      <div class="fm-modal-emoji">🏰</div>
+      <div class="fm-modal-title">Fortress Math</div>
+      <p class="fm-modal-sub">Answer 4 questions to earn towers -- tap an empty ring to place each one. Then watch your towers defend the fortress through 5 waves of monsters!</p>
+      <button class="fm-btn fm-btn-primary" id="fm-start-btn">Start Building</button>
+    </div>
+  </div>
+
+  <div class="fm-q-overlay hidden" id="fm-question-overlay">
+    <div class="fm-card">
+      <div class="fm-q-prompt" id="fm-q-prompt"></div>
+      <div class="fm-q-grid" id="fm-q-grid"></div>
+    </div>
+  </div>
+
+  <div class="fm-q-overlay hidden" id="fm-end-overlay">
+    <div class="fm-card">
+      <div class="fm-modal-emoji" id="fm-end-emoji">🏆</div>
+      <div class="fm-modal-title" id="fm-end-title">Fortress held!</div>
+      <div class="fm-modal-sub" id="fm-end-sub"></div>
+      <div class="fm-modal-bonus" id="fm-end-bonus"></div>
+      <button class="fm-btn fm-btn-primary" id="fm-play-again-btn">Play Again</button>
+      <a href="../" class="fm-btn fm-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="fm-q-overlay hidden" id="fm-signedout-overlay">
+    <div class="fm-card">
+      <div class="fm-modal-emoji">🏰</div>
+      <p class="fm-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="fm-btn fm-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

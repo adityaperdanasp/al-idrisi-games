@@ -2048,6 +2048,32 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // FORTRESS MATH (fortress-math/) — same one-time-per-round bonus
+  // pattern as the other new mini-games, tiered on waves cleared PLUS a
+  // top tier that also requires ending with most of the fortress's HP
+  // intact (a flawless defense), not just technically surviving.
+  // =====================================================================
+  function fortressMathBonusFor(wavesCleared, totalWaves, hpRemaining) {
+    if (wavesCleared >= totalWaves && hpRemaining >= 4) return { coins: 15, gems: 1 };
+    if (wavesCleared >= totalWaves) return { coins: 10, gems: 0 };
+    if (wavesCleared >= Math.ceil(totalWaves * 0.6)) return { coins: 5, gems: 0 };
+    return null;
+  }
+  async function awardFortressMathBonus(wavesCleared, totalWaves, hpRemaining) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = fortressMathBonusFor(wavesCleared, totalWaves, hpRemaining);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -2087,6 +2113,7 @@
     awardTreasureDigLoot, awardTreasureDigRoundBonus,
     awardNumberLineJumpBonus,
     awardMathTennisBonus,
+    awardFortressMathBonus,
     db: aigDb
   };
 })();
