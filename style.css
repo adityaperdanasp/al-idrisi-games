@@ -746,6 +746,38 @@ body {
    elsewhere in this codebase as ".xxx.hidden { display:none }" pairs. */
 .sc-bp-tiers[hidden] { display: none; }
 
+.sc-roulette-card {
+  margin: 12px 24px 0;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #fff0f7, #f3e9fc);
+  border-radius: 16px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.sc-roulette-result {
+  margin: 8px 24px 0;
+  padding: 10px 16px;
+  text-align: center;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  color: #4a2d70;
+}
+.sc-roulette-result.hidden { display: none; }
+.sc-roulette-go {
+  display: inline-block;
+  margin-left: 10px;
+  font-size: 0.85rem;
+  color: #fff;
+  background: #9b6fd1;
+  padding: 6px 14px;
+  border-radius: 100px;
+  text-decoration: none;
+}
+
 .sc-smart-card {
   margin: 12px 24px 0;
   padding: 14px 16px;

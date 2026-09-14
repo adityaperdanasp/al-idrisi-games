@@ -4676,8 +4676,32 @@ function showComboBadge(combo, multiplier) {
   comboBadgeTimeout = setTimeout(() => el.classList.add("hidden"), 1500);
 }
 
+// Juicier feedback -- a few emoji particles bursting from the center of
+// the screen on any correct answer, purely decorative (no state/scoring
+// touched). Hooked into submitAnswer() since every UI type (typein/mc/
+// tap/order, solo/MP/Boss/Challenge/Co-op) already funnels through it,
+// so this doesn't need its own copy per render*Step function.
+const SPARKLE_EMOJI = ["✨", "⭐", "🎉", "💫"];
+function spawnSparkleBurst() {
+  const container = document.createElement("div");
+  container.className = "sparkle-burst";
+  for (let i = 0; i < 6; i++) {
+    const p = document.createElement("span");
+    p.className = "sparkle-particle";
+    p.textContent = SPARKLE_EMOJI[rand(0, SPARKLE_EMOJI.length - 1)];
+    const angle = (i / 6) * 360 + rand(-15, 15);
+    const dist = rand(40, 90);
+    p.style.setProperty("--dx", `${Math.cos(angle * Math.PI / 180) * dist}px`);
+    p.style.setProperty("--dy", `${Math.sin(angle * Math.PI / 180) * dist}px`);
+    container.appendChild(p);
+  }
+  document.body.appendChild(container);
+  setTimeout(() => container.remove(), 700);
+}
+
 function submitAnswer(isCorrect, prompt, answerForHint) {
   clearQuestionTimer(); // a real answer (or the timeout path itself) always cancels any in-flight question timer -- no-op if Pressure Timer was off
+  if (isCorrect) spawnSparkleBurst();
   let comboMultiplier = 1;
   const comboActive = !state.isBoss && !state.isChallenge && !state.isCoop;
   if (comboActive) {

@@ -1663,3 +1663,21 @@ button { font-family: inherit; }
 .ninja-review-nav .btn { padding: 8px 16px; font-size: 13px; }
 .ninja-review-done { width: 100%; }
 
+/* Juicier feedback -- emoji particle burst on any correct answer (submitAnswer()
+   in script.js). Fixed to viewport center since it fires across every UI type
+   (typein/mc/tap/order, solo/MP/boss/challenge/co-op) without needing per-screen
+   coordinates. */
+.sparkle-burst {
+  position: fixed; top: 50%; left: 50%; width: 0; height: 0;
+  pointer-events: none; z-index: 9999;
+}
+.sparkle-particle {
+  position: absolute; top: 0; left: 0; font-size: 22px;
+  transform: translate(-50%, -50%);
+  animation: sparkleBurstOut .7s ease-out forwards;
+}
+@keyframes sparkleBurstOut {
+  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1); opacity: 0; }
+}
+

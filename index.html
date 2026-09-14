@@ -389,6 +389,12 @@
         <div class="sc-bp-tiers" id="sc-bp-tiers" hidden></div>
       </div>
 
+      <div class="sc-roulette-card">
+        <span class="sc-smart-text">🎡 Not sure what to play?</span>
+        <button class="sc-quest-claim-btn" id="sc-roulette-btn" type="button">Spin!</button>
+      </div>
+      <div class="sc-roulette-result hidden" id="sc-roulette-result"></div>
+
       <div class="sc-game-list">
         <div class="sc-emoji" style="top:2px;right:2px;font-size:16px;transform:rotate(10deg);z-index:0;">⭐</div>
         <div class="sc-emoji" style="top:100px;left:-4px;font-size:14px;transform:rotate(-8deg);z-index:0;">✨</div>
@@ -735,6 +741,38 @@
     "Let's learn something new today, {name}!",
     "{name}, your streak is looking great!"
   ];
+
+  // Subject Roulette -- pure client-side fun (no Firebase read/write at
+  // all), just picks one of the game cards already on this page at
+  // random with a little spin animation, for a kid who can't decide
+  // what to play.
+  const ROULETTE_OPTIONS = [
+    { emoji: "🏎️", name: "Math Race", href: "multipleazka/" },
+    { emoji: "📖", name: "Language & Arts", href: "azkacraft/" },
+    { emoji: "🪐", name: "SolarQuest", href: "azkauniverse/" },
+    { emoji: "🏘️", name: "MathVille", href: "mathville/" },
+    { emoji: "🌈", name: "Focus Round", href: "focus-round/" },
+    { emoji: "🥷", name: "Ninja Runner", href: "ninja-runner/" }
+  ];
+  document.getElementById("sc-roulette-btn").addEventListener("click", () => {
+    const btn = document.getElementById("sc-roulette-btn");
+    const result = document.getElementById("sc-roulette-result");
+    btn.disabled = true;
+    result.classList.add("hidden");
+    let spins = 0;
+    const spinInterval = setInterval(() => {
+      const pick = ROULETTE_OPTIONS[Math.floor(Math.random() * ROULETTE_OPTIONS.length)];
+      result.textContent = `${pick.emoji} ${pick.name}`;
+      result.classList.remove("hidden");
+      spins++;
+      if (spins >= 12) {
+        clearInterval(spinInterval);
+        const finalPick = ROULETTE_OPTIONS[Math.floor(Math.random() * ROULETTE_OPTIONS.length)];
+        result.innerHTML = `${finalPick.emoji} <b>${finalPick.name}</b> <a class="sc-roulette-go" href="${finalPick.href}">Play now! →</a>`;
+        btn.disabled = false;
+      }
+    }, 100);
+  });
 
   function showLanding() {
     const current = AIGPlayer.getPlayer();
