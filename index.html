@@ -373,6 +373,10 @@
           <span class="sc-streak-label">day streak</span>
         </div>
         <div class="sc-quest-list" id="sc-quest-list"></div>
+        <div class="sc-daily-bonus-claim" id="sc-daily-bonus-claim" hidden>
+          <span class="sc-quest-text">🎉 All 3 quests done!</span>
+          <button class="sc-quest-claim-btn" id="sc-daily-bonus-claim-btn">Claim +2 💎</button>
+        </div>
         <div class="sc-daily-bonus-note" id="sc-daily-bonus-note" hidden>🎉 Daily Bonus claimed — +2 💎!</div>
       </div>
 
@@ -1433,16 +1437,26 @@
         </div>`;
     }).join("");
 
+    const allQuestsClaimed = state.quests.every(q => q.claimed);
     document.getElementById("sc-daily-bonus-note").hidden = !state.bonusClaimed;
+    document.getElementById("sc-daily-bonus-claim").hidden = !(allQuestsClaimed && !state.bonusClaimed);
 
     list.querySelectorAll(".sc-quest-claim-btn").forEach(btn => {
       btn.onclick = async () => {
         btn.disabled = true;
         const result = await AIGLeaderboard.claimDailyQuest(Number(btn.dataset.questIndex));
-        if (result.ok) { renderDailyPanel(player); showNewCardToast(result.newCard); }
+        if (result.ok) renderDailyPanel(player);
         else btn.disabled = false;
       };
     });
+
+    const bonusBtn = document.getElementById("sc-daily-bonus-claim-btn");
+    bonusBtn.onclick = async () => {
+      bonusBtn.disabled = true;
+      const result = await AIGLeaderboard.claimDailyBonus();
+      if (result.ok) { renderDailyPanel(player); showNewCardToast(result.newCard); }
+      else bonusBtn.disabled = false;
+    };
   }
 
   // Season Pass (Battle Pass) panel -- collapsed by default to just the

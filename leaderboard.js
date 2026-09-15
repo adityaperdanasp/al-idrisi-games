@@ -637,21 +637,32 @@
     const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
     await walletRef.set({ ...wallet, gems: (wallet.gems || 0) + 1 });
 
-    // Bonus gems once all 3 quests for the day have been claimed.
-    const freshSnap = await questRef.get();
-    const fresh = freshSnap.val();
-    const allClaimed = fresh.quests.every(q => q.claimed);
-    let bonus = false;
-    if (allClaimed && !fresh.bonusClaimed) {
-      await questRef.child("bonusClaimed").set(true);
-      const w2Snap = await walletRef.get();
-      const w2 = w2Snap.exists() ? w2Snap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
-      await walletRef.set({ ...w2, gems: (w2.gems || 0) + 2 });
-      bonus = true;
-    }
+    return { ok: true };
+  }
 
-    const newCard = bonus ? await awardRandomCard("common") : null;
-    return { ok: true, bonus, newCard };
+  // Separate explicit tap, NOT auto-granted the instant the 3rd quest is
+  // claimed (per user request -- claiming should always be a deliberate
+  // press, never something that happens silently as a side effect of
+  // another action). Same get-check-set pattern as claimDailyQuest above.
+  async function claimDailyBonus() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const today = todayKey();
+    const questRef = aigDb.ref(`players/${player.id}/dailyQuests/${today}`);
+    const snap = await questRef.get();
+    if (!snap.exists()) return { ok: false };
+    const state = snap.val();
+    const allClaimed = state.quests.every(q => q.claimed);
+    if (!allClaimed || state.bonusClaimed) return { ok: false };
+
+    await questRef.child("bonusClaimed").set(true);
+    const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+    const walletSnap = await walletRef.get();
+    const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    await walletRef.set({ ...wallet, gems: (wallet.gems || 0) + 2 });
+
+    const newCard = await awardRandomCard("common");
+    return { ok: true, newCard };
   }
 
   // =====================================================================
@@ -2575,7 +2586,7 @@
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
-    getStreak, getDailyQuests, claimDailyQuest, getQuestLabel,
+    getStreak, getDailyQuests, claimDailyQuest, claimDailyBonus, getQuestLabel,
     claimBossWin,
     getWeeklyBossRushStatus, claimWeeklyBossRush,
     getNinjaGhost, saveNinjaGhost,

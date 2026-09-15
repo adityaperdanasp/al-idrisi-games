@@ -706,6 +706,21 @@ body {
   padding: 6px 10px;
 }
 
+.sc-daily-bonus-claim {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #fdf6e5;
+  border-radius: 100px;
+  padding: 6px 6px 6px 14px;
+}
+/* an explicit `display` above would otherwise outrank the browser's
+   default [hidden]{display:none} rule -- same pattern documented for
+   .sc-bp-tiers above. */
+.sc-daily-bonus-claim[hidden] { display: none; }
+
 .sc-bp-panel {
   margin: 14px 24px 0;
   padding: 16px 18px;
