@@ -12,8 +12,8 @@ const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multi
 const CUSTOMER_EMOJIS = ["😀", "😊", "🤠", "👦", "👧", "🧑", "👵", "👴", "🐻", "🐰"];
 const SLOT_COUNT = 3;
 const ROUND_DURATION_SEC = 60;
-const MIN_PATIENCE_SEC = 9;
-const MAX_PATIENCE_SEC = 14;
+const MIN_PATIENCE_SEC = 10;
+const MAX_PATIENCE_SEC = 15;
 const TICK_MS = 100;
 
 const player = window.AIGPlayer && AIGPlayer.getPlayer();
