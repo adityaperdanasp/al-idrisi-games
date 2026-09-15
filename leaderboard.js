@@ -2546,6 +2546,32 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // TREASURE MAP SCAVENGER HUNT (treasure-map/) — one-time-per-round
+  // bonus scaled by how many of the 8 landmarks were found (finding all
+  // 8 and claiming the Grand Treasure is the top tier).
+  // =====================================================================
+  function treasureMapBonusFor(foundCount, totalLandmarks) {
+    if (foundCount >= totalLandmarks) return { coins: 20, gems: 2 };
+    if (foundCount >= 6) return { coins: 12, gems: 1 };
+    if (foundCount >= 3) return { coins: 6, gems: 0 };
+    if (foundCount >= 1) return { coins: 2, gems: 0 };
+    return null;
+  }
+  async function awardTreasureMapBonus(foundCount, totalLandmarks) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = treasureMapBonusFor(foundCount, totalLandmarks);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -2597,6 +2623,7 @@
     awardCookingRushBonus,
     awardParkourRunBonus,
     submitSpaceRaceDistance, getSpaceRaceLeaderboard, awardSpaceRaceBonus,
+    awardTreasureMapBonus,
     db: aigDb
   };
 })();

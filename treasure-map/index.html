@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Treasure Map — BrainBox</title>
+<meta name="theme-color" content="#e8d3a0">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  .hidden { display: none !important; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #e8d3a0 0%, #d9bd7d 100%); font-family: "Nunito", sans-serif; color: #4a3418; }
+  .tm-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .tm-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .tm-back { width: 34px; height: 34px; border-radius: 50%; background: rgba(0,0,0,.08); color: #4a3418; font-size: 1.05rem; display: grid; place-items: center; text-decoration: none; flex: none; }
+  .tm-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #8a4a1e; }
+
+  .tm-hud { display: flex; justify-content: center; gap: 14px; padding: 0 14px 10px; font-weight: 800; font-size: .85rem; color: #6b4a24; }
+
+  .tm-map { position: relative; height: 380px; margin: 0 14px 14px; background: repeating-linear-gradient(135deg, #e0c589 0 3px, #d9bb78 3px 6px); border-radius: 16px; overflow: hidden; box-shadow: inset 0 0 0 4px #b48a4a, 0 4px 10px rgba(0,0,0,.15); }
+  .tm-landmark { position: absolute; transform: translate(-50%, -50%); width: 54px; height: 54px; border-radius: 50%; border: none; background: rgba(255,255,255,.6); font-size: 1.7rem; display: grid; place-items: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+  .tm-landmark.found { background: #F7C548; font-size: 1.5rem; }
+
+  .tm-claim-banner { text-align: center; padding: 0 14px 12px; }
+  .tm-claim-btn { width: 100%; border: none; border-radius: 14px; padding: 14px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; cursor: pointer; background: #F7C548; color: #4a3418; }
+  .tm-claim-btn:disabled { opacity: .35; cursor: default; }
+
+  .tm-finish-link { display: block; text-align: center; font-weight: 800; font-size: .82rem; color: #8a4a1e; padding-bottom: 10px; text-decoration: underline; cursor: pointer; background: none; border: none; margin: 0 auto; }
+
+  .tm-riddle-card { margin: 0 16px 16px; background: rgba(255,255,255,.7); border-radius: 18px; padding: 18px; text-align: center; box-shadow: 0 0 0 1.5px rgba(138,74,30,.2); }
+  .tm-riddle-label { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; color: #8a4a1e; margin-bottom: 8px; }
+  .tm-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; margin-bottom: 16px; color: #4a3418; }
+  .tm-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tm-q-btn { border: 2px solid rgba(138,74,30,.3); background: #fffaf0; border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .92rem; color: #4a3418; cursor: pointer; }
+  .tm-q-btn:disabled { cursor: default; }
+  .tm-q-btn.correct { border-color: #3F8F5F; background: rgba(63,143,95,.25); }
+  .tm-q-btn.wrong { border-color: #D64545; background: rgba(214,69,69,.2); }
+  .tm-riddle-feedback { text-align: center; font-weight: 800; font-size: .85rem; min-height: 1.3em; padding: 0 14px; }
+
+  .tm-overlay { position: fixed; inset: 0; background: rgba(50,30,10,.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .tm-overlay.hidden { display: none; }
+  .tm-card { background: #fffaf0; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.25); }
+  .tm-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .tm-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; color: #8a4a1e; }
+  .tm-modal-sub { font-weight: 700; color: #6b5240; margin-bottom: 14px; font-size: .9rem; line-height: 1.5; }
+  .tm-modal-bonus { font-weight: 800; color: #8a4a1e; margin-bottom: 16px; min-height: 1.2em; }
+  .tm-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .tm-btn-primary { background: #8a4a1e; color: #fff; }
+  .tm-btn-secondary { background: rgba(0,0,0,.08); color: #4a3418; }
+</style>
+</head>
+<body>
+
+<div class="tm-page" id="tm-page">
+  <div class="tm-topbar">
+    <a href="../" class="tm-back">←</a>
+    <div class="tm-title">🗺️ Treasure Map</div>
+  </div>
+
+  <div class="tm-hud">
+    <span>🔍 Found: <span id="tm-found-count">0</span> / <span id="tm-total-count">8</span></span>
+  </div>
+
+  <div class="tm-map" id="tm-map"></div>
+
+  <div class="tm-claim-banner">
+    <button class="tm-claim-btn" id="tm-claim-btn" type="button" disabled>🏆 Claim the Grand Treasure!</button>
+  </div>
+  <button class="tm-finish-link hidden" id="tm-finish-link" type="button">Finish hunt early &amp; take what I've found</button>
+
+  <div class="tm-riddle-card hidden" id="tm-riddle-card">
+    <div class="tm-riddle-label" id="tm-riddle-label">Riddle at this spot:</div>
+    <div class="tm-q-prompt" id="tm-q-prompt"></div>
+    <div class="tm-q-grid" id="tm-q-grid"></div>
+  </div>
+  <div class="tm-riddle-feedback" id="tm-riddle-feedback"></div>
+
+  <div class="tm-overlay" id="tm-start-overlay">
+    <div class="tm-card">
+      <div class="tm-modal-emoji">🗺️</div>
+      <div class="tm-modal-title">Treasure Map Scavenger Hunt</div>
+      <p class="tm-modal-sub">Tap any landmark, in any order, and solve its riddle to mark it found. Find all 8 to claim the Grand Treasure -- or finish early and keep what you've found!</p>
+      <button class="tm-btn tm-btn-primary" id="tm-start-btn">Begin the Hunt!</button>
+    </div>
+  </div>
+
+  <div class="tm-overlay hidden" id="tm-end-overlay">
+    <div class="tm-card">
+      <div class="tm-modal-emoji" id="tm-end-emoji">🏆</div>
+      <div class="tm-modal-title" id="tm-end-title">Treasure Found!</div>
+      <div class="tm-modal-sub" id="tm-end-sub"></div>
+      <div class="tm-modal-bonus" id="tm-end-bonus"></div>
+      <button class="tm-btn tm-btn-primary" id="tm-play-again-btn">Play Again</button>
+      <a href="../" class="tm-btn tm-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="tm-overlay hidden" id="tm-signedout-overlay">
+    <div class="tm-card">
+      <div class="tm-modal-emoji">🗺️</div>
+      <p class="tm-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="tm-btn tm-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

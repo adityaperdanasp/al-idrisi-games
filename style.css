@@ -1457,6 +1457,8 @@ body {
 .sc-game-card.parkourrun .sc-game-icon { background: transparent; }
 .sc-game-card.spacerace { background: #10163a; transform: rotate(0.6deg); }
 .sc-game-card.spacerace .sc-game-icon { background: transparent; }
+.sc-game-card.treasuremap { background: #e8d3a0; transform: rotate(-0.6deg); }
+.sc-game-card.treasuremap .sc-game-icon { background: transparent; }
 
 /* ---------- Ninja Runner card: decorative side-view ninja jog loop ---------- */
 .sc-card-runner { position: absolute; left: 0; right: 0; bottom: 6px; height: 22px; overflow: hidden; pointer-events: none; }
@@ -1548,6 +1550,8 @@ body {
 .sc-game-card.parkourrun .sc-game-sub { color: #9fd0e8; }
 .sc-game-card.spacerace .sc-game-title { color: #7FDBFF; }
 .sc-game-card.spacerace .sc-game-sub { color: #a8b8ff; }
+.sc-game-card.treasuremap .sc-game-title { color: #8a4a1e; }
+.sc-game-card.treasuremap .sc-game-sub { color: #6b4a24; }
 
 /* ---------- "Who's actually playing?" step (student vs their parent) ---------- */
 .sc-whois-overlay {
