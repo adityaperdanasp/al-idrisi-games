@@ -52,12 +52,20 @@
           // applied to Focus Round / Plane Mode's pools for the same reason.
           if (ch.id === 6 || ch.id === 7) return;
           (ch.questions || []).forEach(q => {
-            if (q.type === "mc") langPool.push({ prompt: q.prompt, options: q.options, correctLabel: q.answer });
+            // Some Antonyms-chapter entries (and one Capitalization one)
+            // only have 3 options instead of the usual 4 -- fine in
+            // azkacraft's own UI (which sizes its grid to whatever it gets),
+            // but every one of these 15 games renders a fixed 2x2 grid, so
+            // a 3-option pick leaves a visibly broken empty cell. Filtered
+            // out here rather than patched per-game.
+            if (q.type === "mc" && q.options && q.options.length === 4) {
+              langPool.push({ prompt: q.prompt, options: q.options, correctLabel: q.answer });
+            }
           });
         });
         const solarPool = [];
         (solar.levels || []).forEach(lvl => (lvl.questions || []).forEach(q => {
-          if (q.type === "mc" && !q.image) {
+          if (q.type === "mc" && !q.image && q.options && q.options.length === 4) {
             solarPool.push({ prompt: q.question, options: q.options, correctLabel: q.options[q.answer] });
           }
         }));

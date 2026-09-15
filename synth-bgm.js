@@ -31,6 +31,23 @@
     ctx = new AudioCtx();
   }
 
+  // iOS Safari can leave the AudioContext stuck in "suspended" even after
+  // resume() is called from directly inside a gesture handler -- the
+  // promise it returns can silently never settle. Playing a one-frame
+  // silent buffer through the context (the classic "kick" trick, same
+  // fix already proven in mathville/bgm.js) forces Safari to actually
+  // start the underlying audio hardware clock; every gesture retries it,
+  // not just the first one.
+  function kickAudioContext() {
+    if (!ctx) return;
+    ctx.resume();
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  }
+
   function playNote(freq, dur) {
     if (!ctx || !freq) return;
     const osc = ctx.createOscillator();
@@ -60,7 +77,7 @@
   function start() {
     ensureCtx();
     if (!ctx || playing) return;
-    if (ctx.state === "suspended") ctx.resume();
+    kickAudioContext();
     playing = true;
     stepIndex = 0;
     scheduleStep();
@@ -72,8 +89,13 @@
     timerId = null;
   }
 
+  // NOT one-time-only, for the same reason as mathville/bgm.js's
+  // unlockOnce(): ctx.resume() can fail silently on iOS Safari, so every
+  // subsequent tap gets a chance to retry kicking the AudioContext back
+  // into "running".
   function unlockOnce() {
-    if (ctx && ctx.state === "suspended") ctx.resume();
+    ensureCtx();
+    kickAudioContext();
   }
   ["pointerdown", "touchend", "click", "keydown"].forEach(evt =>
     document.addEventListener(evt, unlockOnce, { passive: true })
@@ -85,7 +107,7 @@
   function playCollectChime() {
     ensureCtx();
     if (!ctx) return;
-    if (ctx.state === "suspended") ctx.resume();
+    kickAudioContext();
     const now = ctx.currentTime;
     [NOTES.C4, NOTES.E4, NOTES.G4, NOTES.C5].forEach((freq, i) => {
       const osc = ctx.createOscillator();
