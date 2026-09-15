@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Monster Catch &amp; Battle — BrainBox</title>
+<meta name="theme-color" content="#0f2419">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #1b3b2f 0%, #0f2419 60%); font-family: "Nunito", sans-serif; color: #eafff0; }
+  .mb-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .mb-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .mb-back { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.1); color: #eafff0; font-size: 1.05rem; display: grid; place-items: center; text-decoration: none; flex: none; }
+  .mb-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #F7A63C; }
+
+  .mb-phase-label { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .82rem; color: #9fe0b8; padding: 0 14px 12px; letter-spacing: .02em; }
+
+  .mb-catch-stage { text-align: center; padding: 8px 14px 6px; }
+  .mb-wild-emoji { font-size: 5rem; line-height: 1; filter: drop-shadow(0 6px 10px rgba(0,0,0,.4)); }
+  .mb-wild-emoji.fled { opacity: .15; transform: scale(.6); transition: all .4s ease; }
+  .mb-wild-emoji.caught { transform: scale(1.15); transition: all .3s ease; }
+  .mb-catch-counter { font-weight: 800; font-size: .8rem; color: #9fe0b8; margin-top: 4px; }
+
+  .mb-catch-banner { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; min-height: 1.4em; margin: 6px 0 2px; color: #F7A63C; }
+
+  .mb-battle-stage { padding: 6px 14px 10px; }
+  .mb-monster-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .mb-monster-row.rival { flex-direction: row-reverse; }
+  .mb-monster-emoji { font-size: 2.6rem; flex: none; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
+  .mb-monster-emoji.hit { animation: mbHit .35s ease; }
+  @keyframes mbHit { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-3px); } }
+  .mb-hp-wrap { flex: 1; }
+  .mb-hp-name { font-weight: 800; font-size: .78rem; color: #eafff0; margin-bottom: 3px; }
+  .mb-hp-bar { height: 12px; border-radius: 100px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .mb-hp-fill { height: 100%; background: linear-gradient(90deg,#4caf7d,#8be3a8); border-radius: 100px; transition: width .4s ease; }
+  .mb-hp-fill.low { background: linear-gradient(90deg,#d64545,#f08a6c); }
+  .mb-hp-text { font-size: .68rem; font-weight: 700; color: #9fe0b8; margin-top: 2px; text-align: right; }
+
+  .mb-bench { display: flex; justify-content: center; gap: 8px; padding: 2px 0 10px; flex-wrap: wrap; }
+  .mb-bench-mon { font-size: 1.5rem; opacity: .35; filter: grayscale(1); }
+  .mb-bench-mon.alive { opacity: 1; filter: none; }
+  .mb-bench-mon.active { transform: scale(1.25); }
+
+  .mb-log { text-align: center; font-weight: 700; font-size: .82rem; color: #cdeed9; min-height: 1.3em; margin-bottom: 6px; }
+
+  .mb-q-card { margin: 0 16px 16px; background: rgba(255,255,255,.06); border-radius: 18px; padding: 18px; text-align: center; box-shadow: 0 0 0 1.5px rgba(247,166,60,.2); }
+  .mb-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; margin-bottom: 16px; }
+  .mb-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mb-q-btn { border: 2px solid rgba(247,166,60,.35); background: rgba(255,255,255,.04); border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .92rem; color: #eafff0; cursor: pointer; }
+  .mb-q-btn:disabled { cursor: default; }
+  .mb-q-btn.correct { border-color: #3F8F5F; background: rgba(63,143,95,.35); }
+  .mb-q-btn.wrong { border-color: #D64545; background: rgba(214,69,69,.3); }
+  .mb-q-card.hidden { display: none; }
+
+  .mb-overlay { position: fixed; inset: 0; background: rgba(6,15,10,.82); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .mb-overlay.hidden { display: none; }
+  .mb-card { background: #163628; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+  .mb-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .mb-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; color: #F7A63C; }
+  .mb-modal-sub { font-weight: 700; color: #cdeed9; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+  .mb-modal-bonus { font-weight: 800; color: #F7A63C; margin-bottom: 16px; min-height: 1.2em; }
+  .mb-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .mb-btn-primary { background: #F7A63C; color: #0f2419; }
+  .mb-btn-secondary { background: rgba(255,255,255,.1); color: #eafff0; }
+</style>
+</head>
+<body>
+
+<div class="mb-page" id="mb-page">
+  <div class="mb-topbar">
+    <a href="../" class="mb-back">←</a>
+    <div class="mb-title">🐲 Monster Catch &amp; Battle</div>
+  </div>
+
+  <div class="mb-phase-label" id="mb-phase-label">CATCH PHASE</div>
+
+  <div id="mb-catch-stage" class="mb-catch-stage">
+    <div class="mb-wild-emoji" id="mb-wild-emoji">🐲</div>
+    <div class="mb-catch-counter" id="mb-catch-counter">Monster 1 / 5</div>
+  </div>
+
+  <div id="mb-battle-stage" class="mb-battle-stage hidden">
+    <div class="mb-monster-row rival">
+      <div class="mb-monster-emoji" id="mb-rival-emoji">👹</div>
+      <div class="mb-hp-wrap">
+        <div class="mb-hp-name" id="mb-rival-name">Rival</div>
+        <div class="mb-hp-bar"><div class="mb-hp-fill" id="mb-rival-hp-fill"></div></div>
+        <div class="mb-hp-text" id="mb-rival-hp-text"></div>
+      </div>
+    </div>
+    <div class="mb-monster-row">
+      <div class="mb-monster-emoji" id="mb-player-emoji">🐣</div>
+      <div class="mb-hp-wrap">
+        <div class="mb-hp-name" id="mb-player-name">Your Monster</div>
+        <div class="mb-hp-bar"><div class="mb-hp-fill" id="mb-player-hp-fill"></div></div>
+        <div class="mb-hp-text" id="mb-player-hp-text"></div>
+      </div>
+    </div>
+    <div class="mb-bench" id="mb-bench"></div>
+  </div>
+
+  <div class="mb-catch-banner" id="mb-catch-banner"></div>
+  <div class="mb-log" id="mb-log"></div>
+
+  <div class="mb-q-card hidden" id="mb-q-card">
+    <div class="mb-q-prompt" id="mb-q-prompt"></div>
+    <div class="mb-q-grid" id="mb-q-grid"></div>
+  </div>
+
+  <div class="mb-overlay" id="mb-start-overlay">
+    <div class="mb-card">
+      <div class="mb-modal-emoji">🐲</div>
+      <div class="mb-modal-title">Monster Catch &amp; Battle</div>
+      <p class="mb-modal-sub">Answer fast and correctly to catch 5 wild monsters — the quicker you answer, the stronger your catch! Then battle a rival trainer's team to win big rewards.</p>
+      <button class="mb-btn mb-btn-primary" id="mb-start-btn">Start Catching!</button>
+    </div>
+  </div>
+
+  <div class="mb-overlay hidden" id="mb-end-overlay">
+    <div class="mb-card">
+      <div class="mb-modal-emoji" id="mb-end-emoji">🏆</div>
+      <div class="mb-modal-title" id="mb-end-title">You Won!</div>
+      <div class="mb-modal-sub" id="mb-end-sub"></div>
+      <div class="mb-modal-bonus" id="mb-end-bonus"></div>
+      <button class="mb-btn mb-btn-primary" id="mb-play-again-btn">Play Again</button>
+      <a href="../" class="mb-btn mb-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="mb-overlay hidden" id="mb-signedout-overlay">
+    <div class="mb-card">
+      <div class="mb-modal-emoji">🐲</div>
+      <p class="mb-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="mb-btn mb-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
