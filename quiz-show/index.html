@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Quiz Show Live — BrainBox</title>
+<meta name="theme-color" content="#1a0a2e">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: radial-gradient(circle at 50% 0%, #3a1a5e 0%, #1a0a2e 60%); font-family: "Nunito", sans-serif; color: #fff2d9; }
+  .qs-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .qs-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .qs-back { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.1); color: #fff2d9; font-size: 1.05rem; display: grid; place-items: center; text-decoration: none; flex: none; }
+  .qs-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #F7C548; }
+
+  .qs-prize { text-align: center; padding: 6px 14px 16px; }
+  .qs-prize-value { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.8rem; color: #F7C548; text-shadow: 0 0 12px rgba(247,197,72,.5); }
+  .qs-prize-label { font-weight: 700; font-size: .78rem; color: #c9b8e0; }
+  .qs-ladder { display: flex; justify-content: center; gap: 4px; padding: 0 14px 14px; flex-wrap: wrap; }
+  .qs-ladder-rung { font-weight: 700; font-size: .68rem; padding: 3px 7px; border-radius: 100px; background: rgba(255,255,255,.06); color: #c9b8e0; }
+  .qs-ladder-rung.done { background: #F7C548; color: #1a0a2e; }
+  .qs-ladder-rung.current { background: rgba(247,197,72,.3); color: #F7C548; box-shadow: 0 0 0 1.5px #F7C548; }
+  .qs-ladder-rung.checkpoint { text-decoration: underline; }
+
+  .qs-lifelines { display: flex; justify-content: center; gap: 10px; padding: 0 14px 16px; }
+  .qs-lifeline-btn { border: 2px solid rgba(247,197,72,.4); background: rgba(255,255,255,.05); color: #F7C548; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .8rem; padding: 8px 14px; border-radius: 100px; cursor: pointer; }
+  .qs-lifeline-btn:disabled { opacity: .3; cursor: default; }
+
+  .qs-wheel-wrap { margin: 0 auto 20px; width: 220px; height: 220px; position: relative; }
+  .qs-wheel { width: 100%; height: 100%; border-radius: 50%; position: relative; overflow: hidden; box-shadow: 0 0 0 6px #F7C548, 0 0 30px rgba(247,197,72,.4); transition: transform 3s cubic-bezier(.17,.67,.16,.99); }
+  .qs-wheel-slice { position: absolute; width: 50%; height: 50%; top: 0; left: 50%; transform-origin: 0% 100%; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; font-size: .7rem; font-weight: 800; color: #fff; }
+  .qs-wheel-pointer { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 1.6rem; z-index: 5; }
+
+  .qs-q-card { margin: 0 16px 16px; background: rgba(255,255,255,.06); border-radius: 18px; padding: 18px; text-align: center; box-shadow: 0 0 0 1.5px rgba(247,197,72,.2); }
+  .qs-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; margin-bottom: 16px; }
+  .qs-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .qs-q-btn { border: 2px solid rgba(247,197,72,.3); background: rgba(255,255,255,.04); border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .92rem; color: #fff2d9; cursor: pointer; }
+  .qs-q-btn:disabled { cursor: default; }
+  .qs-q-btn.picked { background: rgba(247,197,72,.25); border-color: #F7C548; }
+  .qs-q-btn.removed { visibility: hidden; }
+  .qs-q-btn.correct { border-color: #3F8F5F; background: rgba(63,143,95,.3); }
+  .qs-q-btn.wrong { border-color: #D64545; background: rgba(214,69,69,.3); }
+
+  .qs-overlay { position: fixed; inset: 0; background: rgba(10,5,20,.8); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .qs-overlay.hidden { display: none; }
+  .qs-card { background: #2a1650; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+  .qs-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .qs-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; color: #F7C548; }
+  .qs-modal-sub { font-weight: 700; color: #c9b8e0; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+  .qs-modal-bonus { font-weight: 800; color: #F7C548; margin-bottom: 16px; min-height: 1.2em; }
+  .qs-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .qs-btn-primary { background: #F7C548; color: #1a0a2e; }
+  .qs-btn-secondary { background: rgba(255,255,255,.1); color: #fff2d9; }
+</style>
+</head>
+<body>
+
+<div class="qs-page" id="qs-page">
+  <div class="qs-topbar">
+    <a href="../" class="qs-back">←</a>
+    <div class="qs-title">🎤 Quiz Show Live</div>
+  </div>
+
+  <div class="qs-prize">
+    <div class="qs-prize-value" id="qs-prize-value">$0</div>
+    <div class="qs-prize-label">Current Prize</div>
+  </div>
+  <div class="qs-ladder" id="qs-ladder"></div>
+
+  <div class="qs-lifelines">
+    <button class="qs-lifeline-btn" id="qs-lifeline-5050" type="button">🎯 50/50</button>
+    <button class="qs-lifeline-btn" id="qs-lifeline-skip" type="button">⏭️ Skip</button>
+  </div>
+
+  <div class="qs-wheel-wrap" id="qs-wheel-wrap">
+    <div class="qs-wheel-pointer">🔻</div>
+    <div class="qs-wheel" id="qs-wheel"></div>
+  </div>
+
+  <div class="qs-q-card hidden" id="qs-q-card">
+    <div class="qs-q-prompt" id="qs-q-prompt"></div>
+    <div class="qs-q-grid" id="qs-q-grid"></div>
+  </div>
+
+  <div class="qs-overlay" id="qs-start-overlay">
+    <div class="qs-card">
+      <div class="qs-modal-emoji">🎤</div>
+      <div class="qs-modal-title">Quiz Show Live</div>
+      <p class="qs-modal-sub">Spin the wheel for your category, answer 10 questions up the prize ladder, and lock in your Final Answer! Miss one and you drop back to your last checkpoint. Use your 2 lifelines wisely.</p>
+      <button class="qs-btn qs-btn-primary" id="qs-start-btn">Spin to Begin!</button>
+    </div>
+  </div>
+
+  <div class="qs-overlay hidden" id="qs-final-overlay">
+    <div class="qs-card">
+      <div class="qs-modal-emoji">🎙️</div>
+      <div class="qs-modal-title" id="qs-final-title">Is that your Final Answer?</div>
+      <p class="qs-modal-sub" id="qs-final-sub"></p>
+      <button class="qs-btn qs-btn-primary" id="qs-final-yes-btn">Yes, Final Answer!</button>
+      <button class="qs-btn qs-btn-secondary" id="qs-final-no-btn">Let me change it</button>
+    </div>
+  </div>
+
+  <div class="qs-overlay hidden" id="qs-end-overlay">
+    <div class="qs-card">
+      <div class="qs-modal-emoji" id="qs-end-emoji">🏆</div>
+      <div class="qs-modal-title" id="qs-end-title">Congratulations!</div>
+      <div class="qs-modal-sub" id="qs-end-sub"></div>
+      <div class="qs-modal-bonus" id="qs-end-bonus"></div>
+      <button class="qs-btn qs-btn-primary" id="qs-play-again-btn">Play Again</button>
+      <a href="../" class="qs-btn qs-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="qs-overlay hidden" id="qs-signedout-overlay">
+    <div class="qs-card">
+      <div class="qs-modal-emoji">🎤</div>
+      <p class="qs-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="qs-btn qs-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

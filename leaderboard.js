@@ -2261,6 +2261,33 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // QUIZ SHOW LIVE (quiz-show/) — same one-time-per-round bonus pattern,
+  // scaled from the in-game "prize" reached (a dramatic $10-$500 ladder,
+  // not real currency) down to a modest coins/gems grant. Reaching the
+  // top prize ($500) is the only way to earn gems here.
+  // =====================================================================
+  function quizShowBonusFor(finalPrize, topPrize) {
+    if (finalPrize >= topPrize) return { coins: 20, gems: 2 };
+    if (finalPrize >= 150) return { coins: 12, gems: 0 };
+    if (finalPrize >= 75) return { coins: 6, gems: 0 };
+    if (finalPrize >= 20) return { coins: 2, gems: 0 };
+    return null;
+  }
+  async function awardQuizShowBonus(finalPrize, topPrize) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = quizShowBonusFor(finalPrize, topPrize);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -2304,6 +2331,7 @@
     getActiveSeasonalEvent, claimSeasonalEvent,
     sendDuelChallenge, getDuelInbox, getDuelSentResults, dismissDuelResult, resolveDuelChallenge,
     awardEscapeRoomBonus,
+    awardQuizShowBonus,
     db: aigDb
   };
 })();
