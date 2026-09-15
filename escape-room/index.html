@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Escape the Vault — BrainBox</title>
+<meta name="theme-color" content="#1a1a2e">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); font-family: "Nunito", sans-serif; color: #e8e4f0; }
+  .er-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .er-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .er-back { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.1); color: #e8e4f0; font-size: 1.05rem; display: grid; place-items: center; text-decoration: none; flex: none; }
+  .er-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #F7C548; }
+  .er-hud { display: flex; justify-content: center; gap: 10px; padding: 0 14px 12px; }
+  .er-hud-chip { background: rgba(255,255,255,.08); border-radius: 100px; padding: 5px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; }
+  .er-hud-chip.timer { color: #F7C548; }
+  .er-hud-chip.timer.urgent { color: #ff6b6b; animation: erPulse .6s ease-in-out infinite; }
+  @keyframes erPulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+
+  .er-room-track { display: flex; justify-content: center; gap: 6px; padding: 0 14px 16px; flex-wrap: wrap; }
+  .er-room-dot { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; font-size: .9rem; }
+  .er-room-dot.done { background: #3F8F5F; }
+  .er-room-dot.current { background: #F7C548; color: #1a1a2e; }
+
+  .er-vault { margin: 0 20px 16px; padding: 30px 20px; border-radius: 20px; background: radial-gradient(circle at 50% 30%, #2a2a4a, #1a1a2e); text-align: center; box-shadow: inset 0 0 0 3px rgba(247,197,72,.25); }
+  .er-vault-emoji { font-size: 3.4rem; margin-bottom: 10px; }
+  .er-vault-flavor { font-weight: 700; font-size: .85rem; color: #b8b0d0; line-height: 1.5; margin-bottom: 4px; }
+  .er-combo-dots { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+  .er-combo-dot { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.15); }
+  .er-combo-dot.lit { background: #F7C548; box-shadow: 0 0 10px 2px rgba(247,197,72,.6); }
+
+  .er-hint-btn { display: block; width: calc(100% - 40px); margin: 0 20px 16px; border: 2px dashed rgba(255,255,255,.25); background: none; color: #b8b0d0; border-radius: 14px; padding: 10px; font-family: "Baloo 2", sans-serif; font-weight: 700; font-size: .85rem; cursor: pointer; }
+  .er-hint-btn:disabled { opacity: .35; cursor: default; }
+
+  .er-overlay { position: fixed; inset: 0; background: rgba(10,10,20,.75); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .er-overlay.hidden { display: none; }
+  .er-card { background: #232342; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.4); color: #e8e4f0; }
+  .er-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 16px; }
+  .er-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .er-q-btn { border: 2px solid rgba(255,255,255,.15); background: rgba(255,255,255,.06); border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; color: #e8e4f0; cursor: pointer; }
+  .er-q-btn:disabled { cursor: default; }
+  .er-q-btn.correct { border-color: #3F8F5F; background: rgba(63,143,95,.25); }
+  .er-q-btn.wrong { border-color: #D64545; background: rgba(214,69,69,.25); }
+
+  .er-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .er-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; color: #F7C548; }
+  .er-modal-sub { font-weight: 700; color: #b8b0d0; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+  .er-modal-bonus { font-weight: 800; color: #F7C548; margin-bottom: 16px; min-height: 1.2em; }
+  .er-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .er-btn-primary { background: #F7C548; color: #1a1a2e; }
+  .er-btn-secondary { background: rgba(255,255,255,.1); color: #e8e4f0; }
+</style>
+</head>
+<body>
+
+<div class="er-page" id="er-page">
+  <div class="er-topbar">
+    <a href="../" class="er-back">←</a>
+    <div class="er-title">🔐 Escape the Vault</div>
+  </div>
+  <div class="er-hud">
+    <span class="er-hud-chip timer" id="er-hud-timer">5:00</span>
+    <span class="er-hud-chip">🚪 <span id="er-hud-room">0</span>/6</span>
+  </div>
+  <div class="er-room-track" id="er-room-track"></div>
+
+  <div class="er-vault">
+    <div class="er-vault-emoji" id="er-vault-emoji">🔒</div>
+    <div class="er-vault-flavor" id="er-vault-flavor">A heavy door blocks your path. Answer 2 in a row to unlock it...</div>
+    <div class="er-combo-dots" id="er-combo-dots"></div>
+  </div>
+
+  <button class="er-hint-btn" id="er-hint-btn" type="button">💡 Use Hint (1 left) -- skip this door</button>
+
+  <div class="er-overlay" id="er-start-overlay">
+    <div class="er-card">
+      <div class="er-modal-emoji">🔐</div>
+      <div class="er-modal-title">Escape the Vault</div>
+      <p class="er-modal-sub">You're locked in! Answer 2 questions in a row to break each door's combo lock. Get through all 6 doors before the 5-minute timer runs out. One wrong answer resets that door's combo -- and you only get 1 hint.</p>
+      <button class="er-btn er-btn-primary" id="er-start-btn">Start Escaping</button>
+    </div>
+  </div>
+
+  <div class="er-overlay hidden" id="er-question-overlay">
+    <div class="er-card">
+      <div class="er-q-prompt" id="er-q-prompt"></div>
+      <div class="er-q-grid" id="er-q-grid"></div>
+    </div>
+  </div>
+
+  <div class="er-overlay hidden" id="er-end-overlay">
+    <div class="er-card">
+      <div class="er-modal-emoji" id="er-end-emoji">🏆</div>
+      <div class="er-modal-title" id="er-end-title">You escaped!</div>
+      <div class="er-modal-sub" id="er-end-sub"></div>
+      <div class="er-modal-bonus" id="er-end-bonus"></div>
+      <button class="er-btn er-btn-primary" id="er-play-again-btn">Try Again</button>
+      <a href="../" class="er-btn er-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="er-overlay hidden" id="er-signedout-overlay">
+    <div class="er-card">
+      <div class="er-modal-emoji">🔐</div>
+      <p class="er-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="er-btn er-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

@@ -2234,6 +2234,33 @@
     return { ok: true, outcome, fromScore, toScore };
   }
 
+  // =====================================================================
+  // ESCAPE THE VAULT (escape-room/) — same one-time-per-round bonus
+  // pattern as the other new mini-games, tiered on doors escaped, with
+  // an extra top tier for escaping ALL doors with time to spare (a
+  // combo-lock game rewards a clean escape, not just survival).
+  // =====================================================================
+  function escapeRoomBonusFor(roomsCleared, totalRooms, secondsLeftIfEscaped) {
+    if (roomsCleared >= totalRooms && secondsLeftIfEscaped >= 60) return { coins: 20, gems: 2 };
+    if (roomsCleared >= totalRooms) return { coins: 15, gems: 1 };
+    if (roomsCleared >= Math.ceil(totalRooms * 0.6)) return { coins: 8, gems: 0 };
+    if (roomsCleared >= 2) return { coins: 3, gems: 0 };
+    return null;
+  }
+  async function awardEscapeRoomBonus(roomsCleared, totalRooms, secondsLeftIfEscaped) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = escapeRoomBonusFor(roomsCleared, totalRooms, secondsLeftIfEscaped);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -2276,6 +2303,7 @@
     awardFortressMathBonus,
     getActiveSeasonalEvent, claimSeasonalEvent,
     sendDuelChallenge, getDuelInbox, getDuelSentResults, dismissDuelResult, resolveDuelChallenge,
+    awardEscapeRoomBonus,
     db: aigDb
   };
 })();
