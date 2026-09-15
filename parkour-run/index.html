@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Parkour Wall-Run — BrainBox</title>
+<meta name="theme-color" content="#0e1a26">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  .hidden { display: none !important; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #0e1a26 0%, #182a3a 100%); font-family: "Nunito", sans-serif; color: #e6f3ff; }
+  .pk-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .pk-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .pk-back { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.1); color: #e6f3ff; font-size: 1.05rem; display: grid; place-items: center; text-decoration: none; flex: none; }
+  .pk-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #5FE1C7; }
+
+  .pk-hud { display: flex; justify-content: center; gap: 14px; padding: 0 14px 10px; font-weight: 800; font-size: .85rem; color: #9fd0e8; }
+
+  .pk-lane { position: relative; height: 130px; margin: 0 14px 12px; background: rgba(255,255,255,.04); border-radius: 16px; overflow: hidden; border-bottom: 4px solid rgba(95,225,199,.3); }
+  .pk-runner { position: absolute; left: 14%; bottom: 6px; font-size: 2.6rem; transition: transform .25s ease; }
+  .pk-runner.jumping { transform: translateY(-38px); }
+  .pk-runner.wallrun { transform: translateY(-20px) rotate(-12deg); }
+  .pk-runner.sliding { transform: translateY(4px) scaleY(.6) translateX(4px); }
+  .pk-runner.hit { animation: pkHit .3s ease; }
+  @keyframes pkHit { 0%,100% { filter: none; } 50% { filter: brightness(2) hue-rotate(90deg); } }
+  .pk-obstacle { position: absolute; right: 6%; bottom: 6px; font-size: 2.4rem; transition: right linear; }
+
+  .pk-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 14px 14px; }
+  .pk-action-btn { border: none; border-radius: 14px; padding: 14px 4px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; cursor: pointer; background: rgba(255,255,255,.08); color: #e6f3ff; }
+  .pk-action-btn:active { background: rgba(95,225,199,.3); }
+
+  .pk-feedback { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; min-height: 1.4em; color: #FFD166; }
+
+  .pk-gate-card { margin: 0 16px 16px; background: rgba(255,255,255,.06); border-radius: 18px; padding: 18px; text-align: center; box-shadow: 0 0 0 1.5px rgba(95,225,199,.25); }
+  .pk-gate-label { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; color: #5FE1C7; margin-bottom: 8px; }
+  .pk-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; margin-bottom: 16px; }
+  .pk-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pk-q-btn { border: 2px solid rgba(95,225,199,.35); background: rgba(255,255,255,.04); border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .92rem; color: #e6f3ff; cursor: pointer; }
+  .pk-q-btn:disabled { cursor: default; }
+  .pk-q-btn.correct { border-color: #3F8F5F; background: rgba(63,143,95,.35); }
+  .pk-q-btn.wrong { border-color: #D64545; background: rgba(214,69,69,.3); }
+
+  .pk-overlay { position: fixed; inset: 0; background: rgba(5,10,15,.82); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .pk-overlay.hidden { display: none; }
+  .pk-card { background: #16283a; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+  .pk-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .pk-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; color: #5FE1C7; }
+  .pk-modal-sub { font-weight: 700; color: #b8d4e6; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+  .pk-modal-bonus { font-weight: 800; color: #5FE1C7; margin-bottom: 16px; min-height: 1.2em; }
+  .pk-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .pk-btn-primary { background: #5FE1C7; color: #0e1a26; }
+  .pk-btn-secondary { background: rgba(255,255,255,.1); color: #e6f3ff; }
+</style>
+</head>
+<body>
+
+<div class="pk-page" id="pk-page">
+  <div class="pk-topbar">
+    <a href="../" class="pk-back">←</a>
+    <div class="pk-title">🥷 Parkour Wall-Run</div>
+  </div>
+
+  <div class="pk-hud">
+    <span>❤️ <span id="pk-lives">3</span></span>
+    <span>🏁 Obstacle <span id="pk-obstacle-count">1</span> / 15</span>
+  </div>
+
+  <div class="pk-lane" id="pk-lane">
+    <div class="pk-obstacle hidden" id="pk-obstacle"></div>
+    <div class="pk-runner" id="pk-runner">🥷</div>
+  </div>
+
+  <div class="pk-feedback" id="pk-feedback"></div>
+
+  <div class="pk-actions" id="pk-actions">
+    <button class="pk-action-btn" id="pk-jump-btn" type="button">⬆️ JUMP</button>
+    <button class="pk-action-btn" id="pk-wallrun-btn" type="button">🧗 WALL-RUN</button>
+    <button class="pk-action-btn" id="pk-slide-btn" type="button">⬇️ SLIDE</button>
+  </div>
+
+  <div class="pk-gate-card hidden" id="pk-gate-card">
+    <div class="pk-gate-label">🔒 Locked Gate! Answer to vault through:</div>
+    <div class="pk-q-prompt" id="pk-q-prompt"></div>
+    <div class="pk-q-grid" id="pk-q-grid"></div>
+  </div>
+
+  <div class="pk-overlay" id="pk-start-overlay">
+    <div class="pk-card">
+      <div class="pk-modal-emoji">🥷</div>
+      <div class="pk-modal-title">Parkour Wall-Run</div>
+      <p class="pk-modal-sub">Rocks need a JUMP, tall walls need a WALL-RUN, webs need a SLIDE -- time it right as they arrive! Locked gates need a quick answer to vault through.</p>
+      <button class="pk-btn pk-btn-primary" id="pk-start-btn">Start the Run!</button>
+    </div>
+  </div>
+
+  <div class="pk-overlay hidden" id="pk-end-overlay">
+    <div class="pk-card">
+      <div class="pk-modal-emoji" id="pk-end-emoji">🏆</div>
+      <div class="pk-modal-title" id="pk-end-title">Run Complete!</div>
+      <div class="pk-modal-sub" id="pk-end-sub"></div>
+      <div class="pk-modal-bonus" id="pk-end-bonus"></div>
+      <button class="pk-btn pk-btn-primary" id="pk-play-again-btn">Play Again</button>
+      <a href="../" class="pk-btn pk-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="pk-overlay hidden" id="pk-signedout-overlay">
+    <div class="pk-card">
+      <div class="pk-modal-emoji">🥷</div>
+      <p class="pk-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="pk-btn pk-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

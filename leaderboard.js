@@ -2468,6 +2468,32 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // NINJA PARKOUR WALL-RUN (parkour-run/) — one-time-per-round bonus
+  // scaled by obstacles cleared, whether the full run was completed, and
+  // lives remaining at the end.
+  // =====================================================================
+  function parkourRunBonusFor(cleared, totalObstacles, completedAll, livesLeft) {
+    if (completedAll && livesLeft >= 2) return { coins: 18, gems: 2 };
+    if (completedAll) return { coins: 12, gems: 1 };
+    if (cleared >= 8) return { coins: 6, gems: 0 };
+    if (cleared >= 3) return { coins: 2, gems: 0 };
+    return null;
+  }
+  async function awardParkourRunBonus(cleared, totalObstacles, completedAll, livesLeft) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = parkourRunBonusFor(cleared, totalObstacles, completedAll, livesLeft);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -2517,6 +2543,7 @@
     awardBossRushBonus,
     awardDanceBattleBonus,
     awardCookingRushBonus,
+    awardParkourRunBonus,
     db: aigDb
   };
 })();
