@@ -30,6 +30,8 @@ function initMathTennis() {
   const sweetZone = document.getElementById("mt-sweet-zone");
   const swingBtn = document.getElementById("mt-swing-btn");
   const resultBanner = document.getElementById("mt-result-banner");
+  const racketTop = document.getElementById("mt-racket-top");
+  const racketBottom = document.getElementById("mt-racket-bottom");
 
   const state = { qIndex: 0, points: 0, rallyRunning: false, rallyStart: 0, rallyDuration: BASE_DURATION_MS, rafId: null, resolved: false };
 
@@ -47,8 +49,14 @@ function initMathTennis() {
     });
   }
 
-  sweetZone.style.left = SWEET_MIN_PCT + "%";
-  sweetZone.style.width = (SWEET_MAX_PCT - SWEET_MIN_PCT) + "%";
+  sweetZone.style.top = SWEET_MIN_PCT + "%";
+  sweetZone.style.height = (SWEET_MAX_PCT - SWEET_MIN_PCT) + "%";
+
+  function swingRacket(el) {
+    el.classList.remove("swinging");
+    void el.offsetWidth;
+    el.classList.add("swinging");
+  }
 
   // Same MC-building approach as basketball/treasure-dig's buildMc.
   function buildMc(q) {
@@ -127,7 +135,8 @@ function initMathTennis() {
   function startRally() {
     resultBanner.textContent = "";
     resultBanner.classList.remove("miss");
-    ball.style.left = "2%";
+    ball.style.opacity = "1";
+    ball.style.top = "10%";
     ball.style.transition = "none";
     void ball.offsetWidth;
     swingBtn.classList.remove("hidden");
@@ -136,9 +145,10 @@ function initMathTennis() {
     state.rallyRunning = true;
     state.rallyStart = performance.now();
     state.rallyDuration = Math.max(MIN_DURATION_MS, BASE_DURATION_MS - state.points * DURATION_STEP_MS);
+    swingRacket(racketTop); // the robot serves -- ball starts its descent right as it swings
     requestAnimationFrame(() => {
-      ball.style.transition = `left ${state.rallyDuration}ms linear`;
-      ball.style.left = "98%";
+      ball.style.transition = `top ${state.rallyDuration}ms linear`;
+      ball.style.top = "90%";
     });
     state.rafId = requestAnimationFrame(rallyTick);
   }
@@ -159,6 +169,7 @@ function initMathTennis() {
     const elapsed = performance.now() - state.rallyStart;
     const pct = (elapsed / state.rallyDuration) * 100;
     const isHit = pct >= SWEET_MIN_PCT && pct <= SWEET_MAX_PCT;
+    swingRacket(racketBottom);
     resolveRally(isHit);
   }
 
@@ -174,9 +185,19 @@ function initMathTennis() {
       hudPoints.textContent = state.points;
       resultBanner.textContent = "🎾 Great return!";
       resultBanner.classList.remove("miss");
+      // Send the ball flying back up to the robot rather than freezing it
+      // mid-court -- reads as an actual return, not just a stopped clock.
+      ball.style.transition = "top .35s ease-in, opacity .35s ease-in .15s";
+      ball.style.top = "-8%";
+      ball.style.opacity = "0";
     } else {
       resultBanner.textContent = "You missed the timing on that return.";
       resultBanner.classList.add("miss");
+      // A mistimed swing just lets the ball continue past the racket to
+      // the bottom edge and fade -- the ball's already-scheduled CSS
+      // transition toward top:90% keeps running, this only fades it out.
+      ball.style.transition += ", opacity .3s ease .1s";
+      ball.style.opacity = "0";
     }
     setTimeout(() => { if (state.qIndex >= ROUND_SIZE) finishMatch(); else askQuestion(); }, 1000);
   }

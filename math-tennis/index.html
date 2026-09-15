@@ -20,10 +20,21 @@
   .mt-hud { display: flex; justify-content: center; gap: 10px; padding: 0 14px 16px; }
   .mt-hud-chip { background: #fff; border-radius: 100px; padding: 5px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; box-shadow: 0 2px 0 rgba(0,0,0,.05); }
 
-  .mt-court { margin: 0 20px 16px; height: 60px; border-radius: 16px; background: #A9C23F; position: relative; overflow: hidden; box-shadow: inset 0 0 0 3px rgba(90,122,31,.25); }
-  .mt-court-net { position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; background: repeating-linear-gradient(0deg, #fff, #fff 4px, transparent 4px, transparent 8px); transform: translateX(-50%); }
-  .mt-sweet-zone { position: absolute; top: 6px; bottom: 6px; background: rgba(255,255,255,.55); border-radius: 8px; border: 2px dashed rgba(90,122,31,.6); }
-  .mt-ball { position: absolute; top: 50%; font-size: 1.6rem; transform: translate(-50%, -50%); left: 2%; }
+  .mt-court { margin: 0 20px 16px; height: min(56vh, 460px); border-radius: 20px; background: linear-gradient(180deg, #B9D452, #96B838); position: relative; overflow: hidden; box-shadow: inset 0 0 0 3px rgba(90,122,31,.25); }
+  .mt-court-net { position: absolute; top: 50%; left: 0; right: 0; height: 4px; background: repeating-linear-gradient(90deg, #fff, #fff 4px, transparent 4px, transparent 8px); transform: translateY(-50%); }
+  .mt-sweet-zone { position: absolute; left: 8px; right: 8px; background: rgba(255,255,255,.5); border-radius: 10px; border: 2px dashed rgba(90,122,31,.6); }
+  .mt-ball { position: absolute; left: 50%; font-size: 1.7rem; transform: translate(-50%, -50%); top: 10%; z-index: 5; filter: drop-shadow(0 3px 3px rgba(0,0,0,.25)); }
+
+  .mt-racket { position: absolute; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 4; }
+  .mt-racket.swinging { animation: mtSwing .28s ease; }
+  @keyframes mtSwing { 0% { transform: translateX(-50%) rotate(0deg); } 45% { transform: translateX(-50%) rotate(-32deg); } 100% { transform: translateX(-50%) rotate(0deg); } }
+  .mt-racket-top { top: 36px; }
+  .mt-racket-bottom { bottom: 36px; }
+  .mt-racket-head { width: 30px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.3); border: 4px solid #6b4a1f; }
+  .mt-racket-handle { width: 6px; height: 18px; background: #6b4a1f; border-radius: 3px; }
+  .mt-racket-face { position: absolute; font-size: 1.1rem; top: -26px; }
+  .mt-racket-top .mt-racket-face { top: -22px; }
+  .mt-racket-bottom .mt-racket-face { bottom: -22px; top: auto; }
 
   .mt-swing-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
   .mt-swing-btn { width: 140px; height: 140px; border-radius: 50%; border: none; background: linear-gradient(160deg, #C2D94E, #8FAE1F); color: #fff; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; box-shadow: 0 6px 0 #5a7a1f; cursor: pointer; }
@@ -65,9 +76,19 @@
   </div>
 
   <div class="mt-court" id="mt-court">
+    <div class="mt-racket mt-racket-top" id="mt-racket-top">
+      <span class="mt-racket-face">🤖</span>
+      <div class="mt-racket-handle"></div>
+      <div class="mt-racket-head"></div>
+    </div>
     <div class="mt-sweet-zone" id="mt-sweet-zone"></div>
     <div class="mt-court-net"></div>
     <div class="mt-ball" id="mt-ball">🎾</div>
+    <div class="mt-racket mt-racket-bottom" id="mt-racket-bottom">
+      <div class="mt-racket-head"></div>
+      <div class="mt-racket-handle"></div>
+      <span class="mt-racket-face">🙂</span>
+    </div>
   </div>
 
   <div class="mt-swing-wrap">
@@ -80,7 +101,7 @@
     <div class="mt-card">
       <div class="mt-modal-emoji">🎾</div>
       <div class="mt-modal-title">Math Tennis</div>
-      <p class="mt-modal-sub">Answer right to serve, then tap SWING! at the exact right moment as the ball crosses into your zone. Too early or too late and you miss the return!</p>
+      <p class="mt-modal-sub">Answer right to make the robot serve! The ball drops down the court -- tap SWING! at the exact right moment as it reaches your side. Too early or too late and you miss the return!</p>
       <button class="mt-btn mt-btn-primary" id="mt-start-btn">Start Match</button>
     </div>
   </div>

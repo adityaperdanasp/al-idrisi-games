@@ -92,6 +92,57 @@ function initTreasureDig() {
     return { coins, gems: 0, emoji: "🪙", label: `${coins} coins!` };
   }
 
+  // Lets the child TAP the found treasure themselves rather than it just
+  // auto-dismissing after a fixed timer -- a little sparkle burst + pop
+  // animation + chime plays on tap, per explicit request ("saat dapat
+  // hadiah bisa di click biar anak senang ada efek klik").
+  function showLoot(loot, onDone) {
+    const btn = document.getElementById("td-loot-emoji-btn");
+    const emojiEl = document.getElementById("td-loot-emoji");
+    const hintEl = document.getElementById("td-loot-hint");
+    emojiEl.textContent = loot.emoji;
+    emojiEl.classList.remove("collected");
+    document.getElementById("td-loot-title").textContent = "Found treasure!";
+    document.getElementById("td-loot-sub").textContent = loot.label;
+    hintEl.textContent = "Tap it!";
+    document.getElementById("td-loot-overlay").classList.remove("hidden");
+
+    let collected = false;
+    function onClick() {
+      if (collected) return;
+      collected = true;
+      emojiEl.classList.add("collected");
+      hintEl.textContent = "";
+      spawnSparkles(btn);
+      if (window.AIGSynthBgm) AIGSynthBgm.playCollectChime();
+      setTimeout(() => {
+        document.getElementById("td-loot-overlay").classList.add("hidden");
+        btn.removeEventListener("click", onClick);
+        onDone();
+      }, 650);
+    }
+    btn.addEventListener("click", onClick);
+  }
+
+  function spawnSparkles(anchorEl) {
+    const count = 6;
+    const shapes = ["✨", "⭐", "💫"];
+    for (let i = 0; i < count; i++) {
+      const s = document.createElement("span");
+      s.className = "td-sparkle";
+      s.textContent = shapes[rand(0, shapes.length - 1)];
+      const angle = (360 / count) * i + rand(-10, 10);
+      const dist = rand(38, 58);
+      const rad = (angle * Math.PI) / 180;
+      s.style.setProperty("--sx", Math.cos(rad) * dist + "px");
+      s.style.setProperty("--sy", Math.sin(rad) * dist + "px");
+      anchorEl.appendChild(s);
+      void s.offsetWidth;
+      s.classList.add("firing");
+      setTimeout(() => s.remove(), 700);
+    }
+  }
+
   function renderShaft() {
     shaftEl.innerHTML = "";
     for (let i = 1; i <= DEPTH_TOTAL; i++) {
@@ -147,14 +198,9 @@ function initTreasureDig() {
         const loot = rollLoot(nextDepth);
         if (loot) {
           if (window.AIGLeaderboard) AIGLeaderboard.awardTreasureDigLoot(loot.coins, loot.gems);
-          document.getElementById("td-loot-emoji").textContent = loot.emoji;
-          document.getElementById("td-loot-title").textContent = "Found treasure!";
-          document.getElementById("td-loot-sub").textContent = loot.label;
-          document.getElementById("td-loot-overlay").classList.remove("hidden");
-          setTimeout(() => {
-            document.getElementById("td-loot-overlay").classList.add("hidden");
+          showLoot(loot, () => {
             if (state.depth >= DEPTH_TOTAL) finishDig(); else askQuestion();
-          }, 1200);
+          });
         } else if (state.depth >= DEPTH_TOTAL) {
           finishDig();
         } else {
@@ -173,6 +219,7 @@ function initTreasureDig() {
   }
 
   function finishDig() {
+    if (window.AIGSynthBgm) AIGSynthBgm.stop();
     state.ended = true;
     renderShaft();
     const depth = state.depth;
@@ -194,6 +241,7 @@ function initTreasureDig() {
   }
 
   function startDig() {
+    if (window.AIGSynthBgm) AIGSynthBgm.start();
     state.depth = 0;
     state.energy = ENERGY_MAX;
     state.ended = false;

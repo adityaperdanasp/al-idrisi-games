@@ -63,6 +63,14 @@ function initQuizShow() {
     };
   }
 
+  // Each slice's OUTER div rotates to point at its position on the wheel
+  // (needed to place the label along the right radial line), but the
+  // label TEXT itself is a child span counter-rotated by the same
+  // angle in the opposite direction -- so it always renders upright and
+  // horizontal no matter where it sits on the wheel, instead of
+  // appearing sideways/upside-down on the lower half like a plain
+  // radially-rotated label would (found from a real-device screenshot
+  // showing exactly that -- "Division"/"Round"/"Add" unreadable).
   function renderWheel() {
     const wheel = document.getElementById("qs-wheel");
     wheel.innerHTML = "";
@@ -70,11 +78,16 @@ function initQuizShow() {
     const sliceDeg = 360 / n;
     wheel.style.background = `conic-gradient(${SLICE_KEYS.map((k, i) => `${WHEEL_COLORS[i]} ${i * sliceDeg}deg ${(i + 1) * sliceDeg}deg`).join(",")})`;
     SLICE_KEYS.forEach((k, i) => {
-      const label = document.createElement("div");
-      label.className = "qs-wheel-slice";
-      label.style.transform = `rotate(${i * sliceDeg + sliceDeg / 2}deg)`;
-      label.textContent = CATEGORY_LABELS[k];
-      wheel.appendChild(label);
+      const angle = i * sliceDeg + sliceDeg / 2;
+      const slice = document.createElement("div");
+      slice.className = "qs-wheel-slice";
+      slice.style.transform = `rotate(${angle}deg)`;
+      const text = document.createElement("span");
+      text.className = "qs-wheel-slice-text";
+      text.style.transform = `translateX(-50%) rotate(${-angle}deg)`;
+      text.textContent = CATEGORY_LABELS[k];
+      slice.appendChild(text);
+      wheel.appendChild(slice);
     });
   }
 
@@ -211,6 +224,7 @@ function initQuizShow() {
   });
 
   function finishShow(reachedTop) {
+    if (window.AIGSynthBgm) AIGSynthBgm.stop();
     const finalPrizeIndex = reachedTop ? PRIZE_LADDER.length - 1 : state.lastCheckpointIndex;
     const finalPrize = finalPrizeIndex >= 0 ? PRIZE_LADDER[finalPrizeIndex] : 0;
     document.getElementById("qs-q-card").classList.add("hidden");
@@ -234,6 +248,7 @@ function initQuizShow() {
   }
 
   function startShow() {
+    if (window.AIGSynthBgm) AIGSynthBgm.start();
     state.qIndex = 0;
     state.prizeIndex = -1;
     state.lastCheckpointIndex = -1;

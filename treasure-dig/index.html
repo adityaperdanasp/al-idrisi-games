@@ -36,9 +36,17 @@
   .td-q-btn.correct { border-color: #3F8F5F; background: #eaf7ee; }
   .td-q-btn.wrong { border-color: #D64545; background: #fdeaea; }
 
-  .td-loot-emoji { font-size: 3rem; margin-bottom: 8px; }
+  .td-loot-emoji-btn { position: relative; background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 8px; }
+  .td-loot-emoji { font-size: 3.4rem; display: block; transition: transform .15s ease; }
+  .td-loot-emoji-btn:active .td-loot-emoji { transform: scale(.85); }
+  .td-loot-emoji.collected { animation: tdLootPop .5s ease; }
+  @keyframes tdLootPop { 0% { transform: scale(1); } 35% { transform: scale(1.5) rotate(-8deg); } 60% { transform: scale(1.2) rotate(6deg); } 100% { transform: scale(1) rotate(0deg); } }
+  .td-sparkle { position: absolute; top: 50%; left: 50%; font-size: 1.1rem; pointer-events: none; opacity: 0; }
+  .td-sparkle.firing { animation: tdSparkle .6s ease-out forwards; }
+  @keyframes tdSparkle { 0% { opacity: 1; transform: translate(-50%, -50%) translate(0, 0) scale(.5); } 100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--sx), var(--sy)) scale(1.1); } }
   .td-loot-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.2rem; margin-bottom: 6px; }
-  .td-loot-sub { font-weight: 700; color: #8a7a6a; font-size: .9rem; }
+  .td-loot-sub { font-weight: 700; color: #8a7a6a; font-size: .9rem; margin-bottom: 4px; }
+  .td-loot-hint { font-weight: 700; color: #b8a68e; font-size: .78rem; }
 
   .td-end-emoji { font-size: 3.4rem; margin-bottom: 8px; }
   .td-end-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
@@ -86,9 +94,12 @@
 
   <div class="td-overlay hidden" id="td-loot-overlay">
     <div class="td-card">
-      <div class="td-loot-emoji" id="td-loot-emoji">💎</div>
+      <button class="td-loot-emoji-btn" id="td-loot-emoji-btn" type="button">
+        <span class="td-loot-emoji" id="td-loot-emoji">💎</span>
+      </button>
       <div class="td-loot-title" id="td-loot-title"></div>
       <div class="td-loot-sub" id="td-loot-sub"></div>
+      <div class="td-loot-hint" id="td-loot-hint">Tap it!</div>
     </div>
   </div>
 
@@ -117,6 +128,7 @@
 <script src="../leaderboard.js"></script>
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js"></script>
+<script src="../synth-bgm.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
