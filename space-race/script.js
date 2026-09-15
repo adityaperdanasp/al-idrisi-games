@@ -147,10 +147,12 @@ function initSpaceRace() {
     const lbEl = document.getElementById("sr-leaderboard");
 
     if (window.AIGLeaderboard) {
-      const [bestResult, leaderboard] = await Promise.all([
-        AIGLeaderboard.submitSpaceRaceDistance(state.distance),
-        AIGLeaderboard.getSpaceRaceLeaderboard()
-      ]);
+      // Sequential, not Promise.all: the leaderboard read must happen
+      // AFTER the write commits, or a first-time player's own new best
+      // can lose the race and be missing from the leaderboard they just
+      // set (found via live preview testing).
+      const bestResult = await AIGLeaderboard.submitSpaceRaceDistance(state.distance);
+      const leaderboard = await AIGLeaderboard.getSpaceRaceLeaderboard();
       if (bestResult && bestResult.isNewBest) {
         document.getElementById("sr-end-sub").textContent += " 🏅 New personal best!";
       } else if (bestResult) {
