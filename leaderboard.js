@@ -2346,7 +2346,11 @@
       return data;
     });
     const snap = await ref.get();
-    return { ok: true, data: snap.exists() ? snap.val() : cbEmptyCity() };
+    const val = snap.exists() ? snap.val() : cbEmptyCity();
+    // Firebase RTDB never persists an empty object -- grid:{} (no plots
+    // placed yet) simply doesn't come back as a key at all, so this must
+    // default it explicitly rather than trust val.grid to exist.
+    return { ok: true, data: { bricks: val.bricks || 0, totalEarned: val.totalEarned || 0, grid: val.grid || {} } };
   }
 
   // Spends bricks to occupy a plot -- get()-check-set (NOT .transaction()),

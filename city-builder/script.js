@@ -76,8 +76,9 @@ async function initCityBuilder() {
   function renderGrid() {
     const grid = document.getElementById("cb-grid");
     grid.innerHTML = "";
+    const cityGrid = city.grid || {};
     for (let i = 0; i < PLOT_COUNT; i++) {
-      const buildingId = city.grid[String(i)];
+      const buildingId = cityGrid[String(i)];
       const building = BUILDING_TYPES.find(b => b.id === buildingId);
       const plot = document.createElement("button");
       plot.type = "button";
