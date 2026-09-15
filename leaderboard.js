@@ -2443,6 +2443,31 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // COOKING RESTAURANT RUSH (cooking-rush/) — one-time-per-round bonus
+  // scaled by how many customers were served in the 60-second rush.
+  // =====================================================================
+  function cookingRushBonusFor(served, missed) {
+    if (served >= 14) return { coins: 18, gems: 2 };
+    if (served >= 9) return { coins: 10, gems: 1 };
+    if (served >= 5) return { coins: 5, gems: 0 };
+    if (served >= 1) return { coins: 2, gems: 0 };
+    return null;
+  }
+  async function awardCookingRushBonus(served, missed) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = cookingRushBonusFor(served, missed);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -2491,6 +2516,7 @@
     getCityBuilder, awardCityBuilderBricks, placeCityBuilding, awardCityBuilderBonus,
     awardBossRushBonus,
     awardDanceBattleBonus,
+    awardCookingRushBonus,
     db: aigDb
   };
 })();

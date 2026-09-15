@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Cooking Rush — BrainBox</title>
+<meta name="theme-color" content="#fff4e0">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  .hidden { display: none !important; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #fff4e0 0%, #ffe6c2 100%); font-family: "Nunito", sans-serif; color: #4a2e14; }
+  .cr-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .cr-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .cr-back { width: 34px; height: 34px; border-radius: 50%; background: rgba(0,0,0,.06); color: #4a2e14; font-size: 1.05rem; display: grid; place-items: center; text-decoration: none; flex: none; }
+  .cr-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #E8632E; }
+
+  .cr-hud { display: flex; justify-content: center; gap: 12px; padding: 0 14px 12px; font-weight: 800; font-size: .82rem; color: #8a5a2e; flex-wrap: wrap; }
+
+  .cr-slots { display: flex; flex-direction: column; gap: 10px; padding: 0 14px 16px; }
+  .cr-slot { background: #fff; border-radius: 16px; padding: 12px 14px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+  .cr-slot.empty { opacity: .35; }
+  .cr-slot-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .cr-slot-emoji { font-size: 1.8rem; flex: none; }
+  .cr-slot-patience-wrap { flex: 1; }
+  .cr-slot-patience-bar { height: 8px; border-radius: 100px; background: rgba(0,0,0,.08); overflow: hidden; }
+  .cr-slot-patience-fill { height: 100%; background: linear-gradient(90deg,#3F8F5F,#7ecb96); border-radius: 100px; transition: width .1s linear; }
+  .cr-slot-patience-fill.low { background: linear-gradient(90deg,#d64545,#f08a6c); }
+  .cr-slot-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; text-align: center; margin-bottom: 8px; }
+  .cr-slot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .cr-slot-btn { border: 2px solid rgba(232,99,46,.3); background: #fff8ef; border-radius: 10px; padding: 9px 6px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .82rem; color: #4a2e14; cursor: pointer; }
+  .cr-slot-btn:disabled { cursor: default; }
+  .cr-slot-btn.correct { border-color: #3F8F5F; background: rgba(63,143,95,.2); }
+  .cr-slot-btn.wrong { border-color: #D64545; background: rgba(214,69,69,.15); }
+  .cr-slot-status { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; min-height: 1.3em; }
+
+  .cr-overlay { position: fixed; inset: 0; background: rgba(60,30,10,.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .cr-overlay.hidden { display: none; }
+  .cr-card { background: #fffaf2; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.25); }
+  .cr-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .cr-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; color: #E8632E; }
+  .cr-modal-sub { font-weight: 700; color: #6b5240; margin-bottom: 14px; font-size: .9rem; line-height: 1.5; }
+  .cr-modal-bonus { font-weight: 800; color: #E8632E; margin-bottom: 16px; min-height: 1.2em; }
+  .cr-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .cr-btn-primary { background: #E8632E; color: #fff; }
+  .cr-btn-secondary { background: rgba(0,0,0,.08); color: #4a2e14; }
+</style>
+</head>
+<body>
+
+<div class="cr-page" id="cr-page">
+  <div class="cr-topbar">
+    <a href="../" class="cr-back">←</a>
+    <div class="cr-title">🍳 Cooking Rush</div>
+  </div>
+
+  <div class="cr-hud">
+    <span>⏱️ Time: <span id="cr-time-left">60</span>s</span>
+    <span>🍽️ Served: <span id="cr-served">0</span></span>
+    <span>😠 Missed: <span id="cr-missed">0</span></span>
+    <span>🔥 Combo x<span id="cr-combo">0</span></span>
+  </div>
+
+  <div class="cr-slots" id="cr-slots">
+    <div class="cr-slot empty" id="cr-slot-0"></div>
+    <div class="cr-slot empty" id="cr-slot-1"></div>
+    <div class="cr-slot empty" id="cr-slot-2"></div>
+  </div>
+
+  <div class="cr-overlay" id="cr-start-overlay">
+    <div class="cr-card">
+      <div class="cr-modal-emoji">🍳</div>
+      <div class="cr-modal-title">Cooking Restaurant Rush</div>
+      <p class="cr-modal-sub">3 customers order at once! Solve each order's math "recipe" before their patience runs out. Serve as many as you can in 60 seconds!</p>
+      <button class="cr-btn cr-btn-primary" id="cr-start-btn">Open the Kitchen!</button>
+    </div>
+  </div>
+
+  <div class="cr-overlay hidden" id="cr-end-overlay">
+    <div class="cr-card">
+      <div class="cr-modal-emoji" id="cr-end-emoji">🏆</div>
+      <div class="cr-modal-title" id="cr-end-title">Rush Complete!</div>
+      <div class="cr-modal-sub" id="cr-end-sub"></div>
+      <div class="cr-modal-bonus" id="cr-end-bonus"></div>
+      <button class="cr-btn cr-btn-primary" id="cr-play-again-btn">Play Again</button>
+      <a href="../" class="cr-btn cr-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="cr-overlay hidden" id="cr-signedout-overlay">
+    <div class="cr-card">
+      <div class="cr-modal-emoji">🍳</div>
+      <p class="cr-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="cr-btn cr-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
