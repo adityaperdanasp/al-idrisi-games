@@ -2392,6 +2392,32 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // BOSS RUSH ARENA (boss-rush/) — one-time-per-round bonus scaled by how
+  // many of the 4 bosses were defeated and how much HP was left at the
+  // end (clearing the gauntlet with HP to spare is the top tier).
+  // =====================================================================
+  function bossRushBonusFor(bossesDefeated, totalBosses, hpRemaining, hpMax) {
+    if (bossesDefeated >= totalBosses && hpRemaining >= hpMax * 0.5) return { coins: 20, gems: 2 };
+    if (bossesDefeated >= totalBosses) return { coins: 14, gems: 1 };
+    if (bossesDefeated >= 2) return { coins: 6, gems: 0 };
+    if (bossesDefeated >= 1) return { coins: 2, gems: 0 };
+    return null;
+  }
+  async function awardBossRushBonus(bossesDefeated, totalBosses, hpRemaining, hpMax) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = bossRushBonusFor(bossesDefeated, totalBosses, hpRemaining, hpMax);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -2438,6 +2464,7 @@
     awardQuizShowBonus,
     awardMonsterBattleBonus,
     getCityBuilder, awardCityBuilderBricks, placeCityBuilding, awardCityBuilderBonus,
+    awardBossRushBonus,
     db: aigDb
   };
 })();

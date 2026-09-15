@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Boss Rush Arena — BrainBox</title>
+<meta name="theme-color" content="#2b0f1a">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  .hidden { display: none !important; }
+  html, body { margin: 0; min-height: 100%; background: radial-gradient(circle at 50% 0%, #4a1626 0%, #2b0f1a 65%); font-family: "Nunito", sans-serif; color: #ffe9e9; }
+  .br-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .br-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .br-back { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.1); color: #ffe9e9; font-size: 1.05rem; display: grid; place-items: center; text-decoration: none; flex: none; }
+  .br-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #FF6B4A; }
+
+  .br-boss-counter { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .82rem; color: #ffb199; padding: 0 14px 10px; letter-spacing: .02em; }
+
+  .br-arena { padding: 4px 14px 8px; }
+  .br-fighter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .br-fighter-row.boss { flex-direction: row-reverse; }
+  .br-fighter-emoji { font-size: 2.8rem; flex: none; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)); transition: transform .15s ease; }
+  .br-fighter-emoji.hit { animation: brHit .35s ease; }
+  .br-fighter-emoji.special { animation: brSpecial .5s ease; }
+  @keyframes brHit { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 50% { transform: translateX(8px); } 75% { transform: translateX(-4px); } }
+  @keyframes brSpecial { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+  .br-hp-wrap { flex: 1; }
+  .br-hp-name { font-weight: 800; font-size: .78rem; color: #ffe9e9; margin-bottom: 3px; }
+  .br-hp-bar { height: 13px; border-radius: 100px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .br-hp-fill { height: 100%; background: linear-gradient(90deg,#3F8F5F,#66c98a); border-radius: 100px; transition: width .4s ease; }
+  .br-hp-fill.low { background: linear-gradient(90deg,#d64545,#f08a6c); }
+  .br-hp-text { font-size: .68rem; font-weight: 700; color: #ffb199; margin-top: 2px; text-align: right; }
+
+  .br-combo { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; color: #FFD166; min-height: 1.3em; margin-bottom: 4px; }
+  .br-log { text-align: center; font-weight: 700; font-size: .82rem; color: #ffcfc2; min-height: 1.3em; margin-bottom: 6px; }
+
+  .br-q-card { margin: 0 16px 16px; background: rgba(255,255,255,.06); border-radius: 18px; padding: 18px; text-align: center; box-shadow: 0 0 0 1.5px rgba(255,107,74,.25); }
+  .br-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; margin-bottom: 16px; }
+  .br-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .br-q-btn { border: 2px solid rgba(255,107,74,.35); background: rgba(255,255,255,.04); border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .92rem; color: #ffe9e9; cursor: pointer; }
+  .br-q-btn:disabled { cursor: default; }
+  .br-q-btn.correct { border-color: #3F8F5F; background: rgba(63,143,95,.35); }
+  .br-q-btn.wrong { border-color: #D64545; background: rgba(214,69,69,.3); }
+  .br-q-card.hidden { display: none; }
+
+  .br-overlay { position: fixed; inset: 0; background: rgba(20,5,10,.82); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .br-overlay.hidden { display: none; }
+  .br-card { background: #38121f; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+  .br-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .br-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; color: #FF6B4A; }
+  .br-modal-sub { font-weight: 700; color: #ffcfc2; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+  .br-modal-bonus { font-weight: 800; color: #FF6B4A; margin-bottom: 16px; min-height: 1.2em; }
+  .br-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .br-btn-primary { background: #FF6B4A; color: #2b0f1a; }
+  .br-btn-secondary { background: rgba(255,255,255,.1); color: #ffe9e9; }
+</style>
+</head>
+<body>
+
+<div class="br-page" id="br-page">
+  <div class="br-topbar">
+    <a href="../" class="br-back">←</a>
+    <div class="br-title">🥊 Boss Rush Arena</div>
+  </div>
+
+  <div class="br-boss-counter" id="br-boss-counter">BOSS 1 / 4</div>
+
+  <div class="br-arena">
+    <div class="br-fighter-row boss">
+      <div class="br-fighter-emoji" id="br-boss-emoji">👹</div>
+      <div class="br-hp-wrap">
+        <div class="br-hp-name" id="br-boss-name">Boss</div>
+        <div class="br-hp-bar"><div class="br-hp-fill" id="br-boss-hp-fill"></div></div>
+        <div class="br-hp-text" id="br-boss-hp-text"></div>
+      </div>
+    </div>
+    <div class="br-fighter-row">
+      <div class="br-fighter-emoji" id="br-player-emoji">🥋</div>
+      <div class="br-hp-wrap">
+        <div class="br-hp-name">You</div>
+        <div class="br-hp-bar"><div class="br-hp-fill" id="br-player-hp-fill"></div></div>
+        <div class="br-hp-text" id="br-player-hp-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="br-combo" id="br-combo"></div>
+  <div class="br-log" id="br-log"></div>
+
+  <div class="br-q-card hidden" id="br-q-card">
+    <div class="br-q-prompt" id="br-q-prompt"></div>
+    <div class="br-q-grid" id="br-q-grid"></div>
+  </div>
+
+  <div class="br-overlay" id="br-start-overlay">
+    <div class="br-card">
+      <div class="br-modal-emoji">🥊</div>
+      <div class="br-modal-title">Boss Rush Arena</div>
+      <p class="br-modal-sub">Answer correctly to attack -- get 3 in a row for a SPECIAL MOVE! Answer wrong and the boss hits back. Survive all 4 bosses in a row!</p>
+      <button class="br-btn br-btn-primary" id="br-start-btn">Enter the Arena!</button>
+    </div>
+  </div>
+
+  <div class="br-overlay hidden" id="br-end-overlay">
+    <div class="br-card">
+      <div class="br-modal-emoji" id="br-end-emoji">🏆</div>
+      <div class="br-modal-title" id="br-end-title">Victory!</div>
+      <div class="br-modal-sub" id="br-end-sub"></div>
+      <div class="br-modal-bonus" id="br-end-bonus"></div>
+      <button class="br-btn br-btn-primary" id="br-play-again-btn">Play Again</button>
+      <a href="../" class="br-btn br-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="br-overlay hidden" id="br-signedout-overlay">
+    <div class="br-card">
+      <div class="br-modal-emoji">🥊</div>
+      <p class="br-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="br-btn br-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

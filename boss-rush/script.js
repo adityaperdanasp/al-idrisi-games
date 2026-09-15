@@ -1,0 +1,203 @@
+/* =================================================================
+   Boss Rush Arena — fighting-game style gauntlet of 4 bosses fought
+   back-to-back (player HP carries over between bosses, only a small
+   partial heal on each win -- true "rush", not a fresh full-HP fight
+   every time). Correct answer = you attack (base damage + combo
+   bonus); every 3rd correct answer IN A ROW is a flashy Special Move
+   with bonus damage. Wrong answer resets the combo and the boss
+   attacks back.
+   ================================================================= */
+
+const player = window.AIGPlayer && AIGPlayer.getPlayer();
+if (!player || player.role === "parent") {
+  document.getElementById("br-signedout-overlay").classList.remove("hidden");
+  document.getElementById("br-start-overlay").classList.add("hidden");
+} else {
+  initBossRush();
+}
+
+function initBossRush() {
+  const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const BOSSES = [
+    { emoji: "👹", name: "Ogre", hp: 25, atk: 5 },
+    { emoji: "🐺", name: "Werewolf", hp: 35, atk: 7 },
+    { emoji: "🧟", name: "Zombie King", hp: 45, atk: 9 },
+    { emoji: "🐲", name: "Dragon Lord", hp: 60, atk: 12 }
+  ];
+  const PLAYER_HP_MAX = 40;
+  const BASE_DAMAGE = 6;
+  const COMBO_SPECIAL_EVERY = 3;
+  const SPECIAL_BONUS_DAMAGE = 15;
+  const HEAL_PER_BOSS_WIN = 8;
+
+  const state = { bossIndex: 0, playerHp: PLAYER_HP_MAX, boss: null, combo: 0, bossesDefeated: 0 };
+
+  function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = rand(0, i); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+  function difficultyForBoss(i) { return i === 0 ? "easy" : i <= 2 ? "medium" : "hard"; }
+
+  function buildMc(q) {
+    if (q.prompt.startsWith("Compare")) {
+      return { prompt: q.prompt, options: shuffle(["<", "=", ">"]), correctLabel: q.answer };
+    }
+    const m = String(q.answer).trim().match(/^(-?[\d,]+(?:\.\d+)?)(\s+[a-zA-Z]+)?$/);
+    const correctNum = Number(m[1].replace(/,/g, ""));
+    const suffix = m[2] || "";
+    const options = new Set([correctNum]);
+    let guard = 0;
+    while (options.size < 4 && guard++ < 40) {
+      const magnitude = Math.max(1, Math.round(Math.abs(correctNum) * (0.1 + Math.random() * 0.3)));
+      const cand = correctNum + magnitude * (Math.random() < 0.5 ? -1 : 1);
+      if (cand >= 0 && cand !== correctNum) options.add(cand);
+    }
+    let bump = 1;
+    while (options.size < 4) options.add(correctNum + bump++);
+    return {
+      prompt: q.prompt,
+      options: shuffle([...options]).map(n => n.toLocaleString("en-US") + suffix),
+      correctLabel: correctNum.toLocaleString("en-US") + suffix
+    };
+  }
+
+  function rollQuestion(difficulty) {
+    const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
+    const raw = MATHVILLE_GENERATORS[key](difficulty);
+    return { key, ...buildMc(raw) };
+  }
+
+  function renderArena() {
+    document.getElementById("br-boss-counter").textContent = `BOSS ${state.bossIndex + 1} / ${BOSSES.length}`;
+    document.getElementById("br-boss-emoji").textContent = state.boss.emoji;
+    document.getElementById("br-boss-name").textContent = state.boss.name;
+    const bossPct = Math.max(0, Math.round((state.boss.hp / state.boss.maxHp) * 100));
+    const bossFill = document.getElementById("br-boss-hp-fill");
+    bossFill.style.width = bossPct + "%";
+    bossFill.classList.toggle("low", bossPct <= 30);
+    document.getElementById("br-boss-hp-text").textContent = `${Math.max(0, state.boss.hp)} / ${state.boss.maxHp} HP`;
+
+    const playerPct = Math.max(0, Math.round((state.playerHp / PLAYER_HP_MAX) * 100));
+    const playerFill = document.getElementById("br-player-hp-fill");
+    playerFill.style.width = playerPct + "%";
+    playerFill.classList.toggle("low", playerPct <= 30);
+    document.getElementById("br-player-hp-text").textContent = `${Math.max(0, state.playerHp)} / ${PLAYER_HP_MAX} HP`;
+
+    document.getElementById("br-combo").textContent = state.combo > 0 ? `🔥 Combo x${state.combo}` : "";
+  }
+
+  function showQuestion(q, onAnswer) {
+    document.getElementById("br-q-prompt").textContent = q.prompt;
+    const grid = document.getElementById("br-q-grid");
+    grid.innerHTML = "";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "br-q-btn";
+      btn.type = "button";
+      btn.textContent = opt;
+      btn.addEventListener("click", () => onAnswer(btn, opt));
+      grid.appendChild(btn);
+    });
+    document.getElementById("br-q-card").classList.remove("hidden");
+  }
+
+  function lockQuestion(q, pickedBtn, isCorrect) {
+    document.querySelectorAll("#br-q-grid .br-q-btn").forEach(b => {
+      b.disabled = true;
+      if (b.textContent === q.correctLabel) b.classList.add("correct");
+      else if (b === pickedBtn) b.classList.add("wrong");
+    });
+  }
+
+  function startBoss(index) {
+    state.bossIndex = index;
+    const base = BOSSES[index];
+    state.boss = { ...base, maxHp: base.hp };
+    state.combo = 0;
+    document.getElementById("br-log").textContent = `${base.name} appears!`;
+    renderArena();
+    setTimeout(startRound, 900);
+  }
+
+  function startRound() {
+    const q = rollQuestion(difficultyForBoss(state.bossIndex));
+    showQuestion(q, (btn, opt) => handleAnswer(btn, opt, q));
+  }
+
+  function handleAnswer(btn, opt, q) {
+    const isCorrect = opt === q.correctLabel;
+    lockQuestion(q, btn, isCorrect);
+    if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("boss-rush", q.key, isCorrect);
+
+    if (isCorrect) {
+      state.combo++;
+      const isSpecial = state.combo % COMBO_SPECIAL_EVERY === 0;
+      const damage = BASE_DAMAGE + (state.combo - 1) + (isSpecial ? SPECIAL_BONUS_DAMAGE : 0);
+      state.boss.hp -= damage;
+      document.getElementById("br-boss-emoji").classList.add(isSpecial ? "special" : "hit");
+      document.getElementById("br-log").textContent = isSpecial
+        ? `⭐ SPECIAL MOVE! ${damage} damage to ${state.boss.name}!`
+        : `You hit ${state.boss.name} for ${damage}!`;
+    } else {
+      state.combo = 0;
+      state.playerHp -= state.boss.atk;
+      document.getElementById("br-player-emoji").classList.add("hit");
+      document.getElementById("br-log").textContent = `${state.boss.name} struck back for ${state.boss.atk}!`;
+    }
+
+    setTimeout(() => {
+      document.getElementById("br-boss-emoji").classList.remove("hit", "special");
+      document.getElementById("br-player-emoji").classList.remove("hit");
+      document.getElementById("br-q-card").classList.add("hidden");
+      renderArena();
+
+      if (state.boss.hp <= 0) {
+        state.bossesDefeated++;
+        if (state.bossesDefeated >= BOSSES.length) { finishGame(true); return; }
+        state.playerHp = Math.min(PLAYER_HP_MAX, state.playerHp + HEAL_PER_BOSS_WIN);
+        document.getElementById("br-log").textContent = `${state.boss.name} defeated! +${HEAL_PER_BOSS_WIN} HP`;
+        setTimeout(() => startBoss(state.bossIndex + 1), 1300);
+        return;
+      }
+
+      if (state.playerHp <= 0) { finishGame(false); return; }
+
+      startRound();
+    }, 900);
+  }
+
+  function finishGame(won) {
+    document.getElementById("br-q-card").classList.add("hidden");
+    const defeated = state.bossesDefeated;
+    const emoji = won ? "🏆" : defeated >= 2 ? "🙂" : "💪";
+    document.getElementById("br-end-emoji").textContent = emoji;
+    document.getElementById("br-end-title").textContent = won ? "Arena Cleared!" : "Knocked Out!";
+    document.getElementById("br-end-sub").textContent = won
+      ? `You defeated all ${BOSSES.length} bosses with ${Math.max(0, state.playerHp)} HP to spare!`
+      : `You defeated ${defeated} boss${defeated === 1 ? "" : "es"} before falling. Try again!`;
+    const bonusEl = document.getElementById("br-end-bonus");
+    bonusEl.textContent = "";
+    if (window.AIGLeaderboard) {
+      AIGLeaderboard.awardBossRushBonus(defeated, BOSSES.length, Math.max(0, state.playerHp), PLAYER_HP_MAX).then(result => {
+        if (result && result.bonus) {
+          bonusEl.textContent = `Bonus: 🪙${result.bonus.coins || 0}${result.bonus.gems ? ` 💎${result.bonus.gems}` : ""}`;
+        }
+      }).catch(() => {});
+    }
+    document.getElementById("br-end-overlay").classList.remove("hidden");
+  }
+
+  function startGame() {
+    state.playerHp = PLAYER_HP_MAX;
+    state.bossesDefeated = 0;
+    document.getElementById("br-start-overlay").classList.add("hidden");
+    document.getElementById("br-end-overlay").classList.add("hidden");
+    document.getElementById("br-log").textContent = "";
+    startBoss(0);
+  }
+
+  document.getElementById("br-start-btn").addEventListener("click", startGame);
+  document.getElementById("br-play-again-btn").addEventListener("click", startGame);
+}
