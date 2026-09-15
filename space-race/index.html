@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Space Race — BrainBox</title>
+<meta name="theme-color" content="#050817">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  .hidden { display: none !important; }
+  html, body { margin: 0; min-height: 100%; background: radial-gradient(circle at 50% 10%, #1a1f4a 0%, #050817 70%); font-family: "Nunito", sans-serif; color: #e6ecff; }
+  .sr-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .sr-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .sr-back { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.1); color: #e6ecff; font-size: 1.05rem; display: grid; place-items: center; text-decoration: none; flex: none; }
+  .sr-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #7FDBFF; }
+
+  .sr-hud { display: flex; justify-content: center; gap: 14px; padding: 0 14px 10px; font-weight: 800; font-size: .85rem; color: #a8b8ff; }
+
+  .sr-track { position: relative; height: 220px; margin: 0 14px 14px; background: linear-gradient(180deg, #050817 0%, #10163a 100%); border-radius: 16px; overflow: hidden; box-shadow: 0 0 0 1.5px rgba(127,219,255,.2); }
+  .sr-star { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; opacity: .7; }
+  .sr-rocket { position: absolute; left: 50%; bottom: 4%; font-size: 2.2rem; transform: translateX(-50%); transition: bottom .5s ease; }
+  .sr-rocket.boosting { animation: srBoost .4s ease; }
+  @keyframes srBoost { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.25); } 100% { transform: translateX(-50%) scale(1); } }
+  .sr-finish-line { position: absolute; top: 4%; left: 0; right: 0; height: 3px; background: repeating-linear-gradient(90deg,#fff 0 8px,#050817 8px 16px); }
+
+  .sr-boost-toast { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; min-height: 1.4em; color: #FFD166; }
+
+  .sr-q-card { margin: 0 16px 16px; background: rgba(255,255,255,.06); border-radius: 18px; padding: 18px; text-align: center; box-shadow: 0 0 0 1.5px rgba(127,219,255,.25); }
+  .sr-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; margin-bottom: 16px; }
+  .sr-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sr-q-btn { border: 2px solid rgba(127,219,255,.35); background: rgba(255,255,255,.04); border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .92rem; color: #e6ecff; cursor: pointer; }
+  .sr-q-btn:disabled { cursor: default; }
+  .sr-q-btn.correct { border-color: #3F8F5F; background: rgba(63,143,95,.35); }
+  .sr-q-btn.wrong { border-color: #D64545; background: rgba(214,69,69,.3); }
+
+  .sr-overlay { position: fixed; inset: 0; background: rgba(2,4,12,.85); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .sr-overlay.hidden { display: none; }
+  .sr-card { background: #10163a; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+  .sr-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .sr-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; color: #7FDBFF; }
+  .sr-modal-sub { font-weight: 700; color: #b8c4ea; margin-bottom: 14px; font-size: .9rem; line-height: 1.5; }
+  .sr-modal-bonus { font-weight: 800; color: #7FDBFF; margin-bottom: 16px; min-height: 1.2em; }
+  .sr-leaderboard { text-align: left; background: rgba(255,255,255,.05); border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; font-size: .82rem; }
+  .sr-leaderboard-row { display: flex; justify-content: space-between; padding: 3px 0; font-weight: 700; }
+  .sr-leaderboard-row.me { color: #FFD166; }
+  .sr-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .sr-btn-primary { background: #7FDBFF; color: #050817; }
+  .sr-btn-secondary { background: rgba(255,255,255,.1); color: #e6ecff; }
+</style>
+</head>
+<body>
+
+<div class="sr-page" id="sr-page">
+  <div class="sr-topbar">
+    <a href="../" class="sr-back">←</a>
+    <div class="sr-title">🚀 Space Race</div>
+  </div>
+
+  <div class="sr-hud">
+    <span>❓ Question <span id="sr-q-count">1</span> / 12</span>
+    <span>📏 Distance: <span id="sr-distance">0</span> km</span>
+  </div>
+
+  <div class="sr-track" id="sr-track">
+    <div class="sr-finish-line"></div>
+    <div class="sr-rocket" id="sr-rocket">🚀</div>
+  </div>
+  <div class="sr-boost-toast" id="sr-boost-toast"></div>
+
+  <div class="sr-q-card" id="sr-q-card">
+    <div class="sr-q-prompt" id="sr-q-prompt"></div>
+    <div class="sr-q-grid" id="sr-q-grid"></div>
+  </div>
+
+  <div class="sr-overlay" id="sr-start-overlay">
+    <div class="sr-card">
+      <div class="sr-modal-emoji">🚀</div>
+      <div class="sr-modal-title">Space Race</div>
+      <p class="sr-modal-sub">Answer fast for a bigger boost! 12 questions, then see how far your rocket flew compared to your best and the class leaderboard.</p>
+      <button class="sr-btn sr-btn-primary" id="sr-start-btn">Launch!</button>
+    </div>
+  </div>
+
+  <div class="sr-overlay hidden" id="sr-end-overlay">
+    <div class="sr-card">
+      <div class="sr-modal-emoji" id="sr-end-emoji">🏆</div>
+      <div class="sr-modal-title" id="sr-end-title">Touchdown!</div>
+      <div class="sr-modal-sub" id="sr-end-sub"></div>
+      <div class="sr-leaderboard hidden" id="sr-leaderboard"></div>
+      <div class="sr-modal-bonus" id="sr-end-bonus"></div>
+      <button class="sr-btn sr-btn-primary" id="sr-play-again-btn">Play Again</button>
+      <a href="../" class="sr-btn sr-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="sr-overlay hidden" id="sr-signedout-overlay">
+    <div class="sr-card">
+      <div class="sr-modal-emoji">🚀</div>
+      <p class="sr-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="sr-btn sr-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

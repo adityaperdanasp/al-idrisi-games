@@ -1455,6 +1455,8 @@ body {
 .sc-game-card.cookingrush .sc-game-icon { background: transparent; }
 .sc-game-card.parkourrun { background: #0e1a26; transform: rotate(-0.6deg); }
 .sc-game-card.parkourrun .sc-game-icon { background: transparent; }
+.sc-game-card.spacerace { background: #10163a; transform: rotate(0.6deg); }
+.sc-game-card.spacerace .sc-game-icon { background: transparent; }
 
 /* ---------- Ninja Runner card: decorative side-view ninja jog loop ---------- */
 .sc-card-runner { position: absolute; left: 0; right: 0; bottom: 6px; height: 22px; overflow: hidden; pointer-events: none; }
@@ -1544,6 +1546,8 @@ body {
 .sc-game-card.cookingrush .sc-game-sub { color: #8a5a2e; }
 .sc-game-card.parkourrun .sc-game-title { color: #5FE1C7; }
 .sc-game-card.parkourrun .sc-game-sub { color: #9fd0e8; }
+.sc-game-card.spacerace .sc-game-title { color: #7FDBFF; }
+.sc-game-card.spacerace .sc-game-sub { color: #a8b8ff; }
 
 /* ---------- "Who's actually playing?" step (student vs their parent) ---------- */
 .sc-whois-overlay {

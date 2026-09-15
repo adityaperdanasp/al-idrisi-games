@@ -2494,6 +2494,58 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // SPACE RACE (space-race/) — solo distance-accumulation game (NOT
+  // real-time multiplayer racing, which Math Race already owns). Stores
+  // a personal-best distance at players/{id}/spaceRace/{bestDistance,
+  // name} -- `name` is duplicated onto the record itself (same pattern
+  // as the Weekly Leaderboard's `w.name`) so the cross-player read below
+  // doesn't need a second lookup per row.
+  // =====================================================================
+  async function submitSpaceRaceDistance(distance) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/spaceRace`);
+    const snap = await ref.get();
+    const current = snap.exists() ? snap.val() : { bestDistance: 0 };
+    const isNewBest = distance > (current.bestDistance || 0);
+    const bestDistance = isNewBest ? distance : (current.bestDistance || 0);
+    if (isNewBest) await ref.set({ bestDistance, name: player.name });
+    return { ok: true, isNewBest, bestDistance };
+  }
+
+  async function getSpaceRaceLeaderboard() {
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return [];
+    const all = snap.val();
+    return Object.entries(all)
+      .map(([id, data]) => ({ id, name: (data.spaceRace && data.spaceRace.name) || id, bestDistance: (data.spaceRace && data.spaceRace.bestDistance) || 0 }))
+      .filter(r => r.bestDistance > 0)
+      .sort((a, b) => b.bestDistance - a.bestDistance)
+      .slice(0, 20);
+  }
+
+  function spaceRaceBonusFor(distance) {
+    if (distance >= 450) return { coins: 18, gems: 2 };
+    if (distance >= 300) return { coins: 10, gems: 1 };
+    if (distance >= 150) return { coins: 5, gems: 0 };
+    if (distance >= 1) return { coins: 2, gems: 0 };
+    return null;
+  }
+  async function awardSpaceRaceBonus(distance) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = spaceRaceBonusFor(distance);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -2544,6 +2596,7 @@
     awardDanceBattleBonus,
     awardCookingRushBonus,
     awardParkourRunBonus,
+    submitSpaceRaceDistance, getSpaceRaceLeaderboard, awardSpaceRaceBonus,
     db: aigDb
   };
 })();
