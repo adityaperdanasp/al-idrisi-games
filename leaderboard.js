@@ -2418,6 +2418,31 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // DANCE BATTLE (dance-battle/) — one-time-per-round bonus scaled by
+  // final rhythm score and which tempo tier was reached by round's end.
+  // =====================================================================
+  function danceBattleBonusFor(score, tierIndex, totalTiers) {
+    if (tierIndex >= totalTiers - 1 && score >= 2000) return { coins: 18, gems: 2 };
+    if (score >= 1500) return { coins: 10, gems: 1 };
+    if (score >= 800) return { coins: 5, gems: 0 };
+    if (score >= 200) return { coins: 2, gems: 0 };
+    return null;
+  }
+  async function awardDanceBattleBonus(score, tierIndex, totalTiers) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = danceBattleBonusFor(score, tierIndex, totalTiers);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -2465,6 +2490,7 @@
     awardMonsterBattleBonus,
     getCityBuilder, awardCityBuilderBricks, placeCityBuilding, awardCityBuilderBonus,
     awardBossRushBonus,
+    awardDanceBattleBonus,
     db: aigDb
   };
 })();

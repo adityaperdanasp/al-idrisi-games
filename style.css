@@ -1449,6 +1449,8 @@ body {
 .sc-game-card.citybuilder .sc-game-icon { background: transparent; }
 .sc-game-card.bossrush { background: #2b0f1a; transform: rotate(0.6deg); }
 .sc-game-card.bossrush .sc-game-icon { background: transparent; }
+.sc-game-card.dancebattle { background: #1a0e33; transform: rotate(-0.6deg); }
+.sc-game-card.dancebattle .sc-game-icon { background: transparent; }
 
 /* ---------- Ninja Runner card: decorative side-view ninja jog loop ---------- */
 .sc-card-runner { position: absolute; left: 0; right: 0; bottom: 6px; height: 22px; overflow: hidden; pointer-events: none; }
@@ -1532,6 +1534,8 @@ body {
 .sc-game-card.citybuilder .sc-game-sub { color: #7a4a2b; }
 .sc-game-card.bossrush .sc-game-title { color: #FF6B4A; }
 .sc-game-card.bossrush .sc-game-sub { color: #ffb199; }
+.sc-game-card.dancebattle .sc-game-title { color: #FF3EA5; }
+.sc-game-card.dancebattle .sc-game-sub { color: #7ee6ff; }
 
 /* ---------- "Who's actually playing?" step (student vs their parent) ---------- */
 .sc-whois-overlay {

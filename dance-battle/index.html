@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Dance Battle — BrainBox</title>
+<meta name="theme-color" content="#1a0e33">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  .hidden { display: none !important; }
+  html, body { margin: 0; min-height: 100%; background: radial-gradient(circle at 50% 0%, #3a1a5e 0%, #1a0e33 65%); font-family: "Nunito", sans-serif; color: #f5e9ff; }
+  .db-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+
+  .db-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .db-back { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.1); color: #f5e9ff; font-size: 1.05rem; display: grid; place-items: center; text-decoration: none; flex: none; }
+  .db-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #FF3EA5; }
+
+  .db-hud { display: flex; justify-content: center; gap: 14px; padding: 0 14px 6px; font-weight: 800; font-size: .85rem; color: #7ee6ff; }
+  .db-segment-label { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .82rem; color: #ffb3e0; padding: 0 14px 14px; }
+
+  .db-stage { display: grid; place-items: center; padding: 10px 14px 6px; position: relative; height: 190px; }
+  .db-beat-target { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #FF3EA5; display: grid; place-items: center; font-size: 2rem; box-shadow: 0 0 18px rgba(255,62,165,.5); }
+  .db-beat-pulse { position: absolute; width: 90px; height: 90px; border-radius: 50%; border: 3px solid #7ee6ff; opacity: 0; }
+  .db-beat-pulse.animating { animation-name: dbPulse; animation-timing-function: linear; animation-fill-mode: forwards; }
+  @keyframes dbPulse { 0% { transform: scale(2.4); opacity: .15; } 90% { opacity: .9; } 100% { transform: scale(1); opacity: 1; } }
+
+  .db-feedback { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; min-height: 1.4em; color: #FFD166; }
+
+  .db-tap-btn { display: block; margin: 6px auto 16px; width: 160px; border: none; border-radius: 100px; padding: 16px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; cursor: pointer; background: #FF3EA5; color: #1a0e33; }
+  .db-tap-btn:disabled { opacity: .3; cursor: default; }
+
+  .db-q-card { margin: 0 16px 16px; background: rgba(255,255,255,.06); border-radius: 18px; padding: 18px; text-align: center; box-shadow: 0 0 0 1.5px rgba(255,62,165,.25); }
+  .db-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; margin-bottom: 16px; }
+  .db-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .db-q-btn { border: 2px solid rgba(255,62,165,.35); background: rgba(255,255,255,.04); border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .92rem; color: #f5e9ff; cursor: pointer; }
+  .db-q-btn:disabled { cursor: default; }
+  .db-q-btn.correct { border-color: #3F8F5F; background: rgba(63,143,95,.35); }
+  .db-q-btn.wrong { border-color: #D64545; background: rgba(214,69,69,.3); }
+  .db-q-label { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; color: #7ee6ff; padding: 6px 14px; }
+
+  .db-overlay { position: fixed; inset: 0; background: rgba(10,5,25,.82); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .db-overlay.hidden { display: none; }
+  .db-card { background: #26123f; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+  .db-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .db-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; color: #FF3EA5; }
+  .db-modal-sub { font-weight: 700; color: #d8c6ea; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+  .db-modal-bonus { font-weight: 800; color: #FF3EA5; margin-bottom: 16px; min-height: 1.2em; }
+  .db-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .db-btn-primary { background: #FF3EA5; color: #1a0e33; }
+  .db-btn-secondary { background: rgba(255,255,255,.1); color: #f5e9ff; }
+</style>
+</head>
+<body>
+
+<div class="db-page" id="db-page">
+  <div class="db-topbar">
+    <a href="../" class="db-back">←</a>
+    <div class="db-title">💃 Dance Battle</div>
+  </div>
+
+  <div class="db-hud">
+    <span>⭐ Score: <span id="db-score">0</span></span>
+    <span>🔥 Combo x<span id="db-combo">0</span></span>
+  </div>
+  <div class="db-segment-label" id="db-segment-label">Segment 1 / 5 · 🎵 Slow</div>
+
+  <div class="db-stage">
+    <div class="db-beat-pulse" id="db-beat-pulse"></div>
+    <div class="db-beat-target">🎵</div>
+  </div>
+  <div class="db-feedback" id="db-feedback"></div>
+  <button class="db-tap-btn" id="db-tap-btn" type="button" disabled>TAP!</button>
+
+  <div class="db-q-label hidden" id="db-q-label">Answer to unlock the next tempo!</div>
+  <div class="db-q-card hidden" id="db-q-card">
+    <div class="db-q-prompt" id="db-q-prompt"></div>
+    <div class="db-q-grid" id="db-q-grid"></div>
+  </div>
+
+  <div class="db-overlay" id="db-start-overlay">
+    <div class="db-card">
+      <div class="db-modal-emoji">💃</div>
+      <div class="db-modal-title">Dance Battle</div>
+      <p class="db-modal-sub">Tap TAP! right when the ring lands on the target for Perfect timing. Answer a quick question between songs to unlock a faster tempo!</p>
+      <button class="db-btn db-btn-primary" id="db-start-btn">Start Dancing!</button>
+    </div>
+  </div>
+
+  <div class="db-overlay hidden" id="db-end-overlay">
+    <div class="db-card">
+      <div class="db-modal-emoji" id="db-end-emoji">🏆</div>
+      <div class="db-modal-title" id="db-end-title">Dance Complete!</div>
+      <div class="db-modal-sub" id="db-end-sub"></div>
+      <div class="db-modal-bonus" id="db-end-bonus"></div>
+      <button class="db-btn db-btn-primary" id="db-play-again-btn">Play Again</button>
+      <a href="../" class="db-btn db-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="db-overlay hidden" id="db-signedout-overlay">
+    <div class="db-card">
+      <div class="db-modal-emoji">💃</div>
+      <p class="db-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="db-btn db-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
