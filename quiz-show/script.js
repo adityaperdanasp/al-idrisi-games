@@ -20,8 +20,14 @@ function initQuizShow() {
   const PRIZE_LADDER = [10, 20, 30, 50, 75, 100, 150, 200, 300, 500];
   const CHECKPOINT_INDICES = [4]; // 0-indexed -- rung 5 (index 4) is the only mid-game safe haven
   const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
-  const CATEGORY_LABELS = { "addition-subtraction-add": "Addition", "addition-subtraction-sub": "Subtraction", multiplication: "Multiplication", division: "Division", measurement: "Measurement", rounding: "Rounding" };
-  const WHEEL_COLORS = ["#8c2f6b", "#2f4c8c", "#3f7a4e", "#a85a1f", "#6b3f9b", "#b8342f"];
+  // The wheel has 2 extra slices (Language, Science) beyond the 6 math
+  // GEN_KEYS, so it spins the SAME way it always did but can now land on
+  // a mixed-subject question too -- SLICE_KEYS (not GEN_KEYS) is what
+  // renderWheel/spinWheelTo iterate over.
+  const SLICE_KEYS = [...GEN_KEYS, "lang", "sci"];
+  const CATEGORY_LABELS = { "addition-subtraction-add": "Addition", "addition-subtraction-sub": "Subtract", multiplication: "Multiply", division: "Division", measurement: "Measure", rounding: "Rounding", lang: "Language", sci: "Science" };
+  const WHEEL_COLORS = ["#8c2f6b", "#2f4c8c", "#3f7a4e", "#a85a1f", "#6b3f9b", "#b8342f", "#1f6b5e", "#2f8ca8"];
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
 
   const state = { qIndex: 0, prizeIndex: -1, lastCheckpointIndex: -1, hint5050Used: false, skipUsed: false, pickedBtn: null, currentQ: null };
 
@@ -60,10 +66,10 @@ function initQuizShow() {
   function renderWheel() {
     const wheel = document.getElementById("qs-wheel");
     wheel.innerHTML = "";
-    const n = GEN_KEYS.length;
+    const n = SLICE_KEYS.length;
     const sliceDeg = 360 / n;
-    wheel.style.background = `conic-gradient(${GEN_KEYS.map((k, i) => `${WHEEL_COLORS[i]} ${i * sliceDeg}deg ${(i + 1) * sliceDeg}deg`).join(",")})`;
-    GEN_KEYS.forEach((k, i) => {
+    wheel.style.background = `conic-gradient(${SLICE_KEYS.map((k, i) => `${WHEEL_COLORS[i]} ${i * sliceDeg}deg ${(i + 1) * sliceDeg}deg`).join(",")})`;
+    SLICE_KEYS.forEach((k, i) => {
       const label = document.createElement("div");
       label.className = "qs-wheel-slice";
       label.style.transform = `rotate(${i * sliceDeg + sliceDeg / 2}deg)`;
@@ -74,7 +80,7 @@ function initQuizShow() {
 
   function spinWheelTo(targetKeyIndex, onDone) {
     const wheel = document.getElementById("qs-wheel");
-    const n = GEN_KEYS.length;
+    const n = SLICE_KEYS.length;
     const sliceDeg = 360 / n;
     // Land the CENTER of the target slice under the top pointer (0deg) --
     // spin several full turns first purely for visual drama.
@@ -101,18 +107,33 @@ function initQuizShow() {
     document.getElementById("qs-prize-value").textContent = `$${state.prizeIndex >= 0 ? PRIZE_LADDER[state.prizeIndex] : 0}`;
   }
 
-  function rollQuestion() {
-    const keyIndex = rand(0, GEN_KEYS.length - 1);
-    const key = GEN_KEYS[keyIndex];
+  function rollMathAtSlice(sliceIndex) {
+    const key = GEN_KEYS[sliceIndex];
     const raw = MATHVILLE_GENERATORS[key](difficultyForIndex(state.qIndex));
-    return { keyIndex, key, ...buildMc(raw) };
+    return { sliceIndex, key, ...buildMc(raw) };
+  }
+
+  // Picks which of the 8 wheel slices to land on, THEN builds that
+  // slice's question -- the wheel always lands on the category the next
+  // question actually belongs to, math or not. Falls back to a random
+  // math slice if the Language/Science pool isn't ready or came back
+  // empty, so a slow/offline fetch never blocks the wheel.
+  function rollQuestion() {
+    const sliceIndex = rand(0, SLICE_KEYS.length - 1);
+    const sliceKey = SLICE_KEYS[sliceIndex];
+    if (sliceKey === "lang" || sliceKey === "sci") {
+      const pick = window.AIGQuestionPools && (sliceKey === "lang" ? window.AIGQuestionPools.pickLanguage() : window.AIGQuestionPools.pickScience());
+      if (pick) return { sliceIndex, key: sliceKey === "lang" ? "language" : "science", ...pick };
+      return rollMathAtSlice(rand(0, GEN_KEYS.length - 1));
+    }
+    return rollMathAtSlice(sliceIndex);
   }
 
   function startRound() {
     document.getElementById("qs-q-card").classList.add("hidden");
     const q = rollQuestion();
     state.currentQ = q;
-    spinWheelTo(q.keyIndex, () => showQuestion(q));
+    spinWheelTo(q.sliceIndex, () => showQuestion(q));
   }
 
   function showQuestion(q) {

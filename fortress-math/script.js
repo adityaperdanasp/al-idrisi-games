@@ -18,6 +18,7 @@ if (!player || player.role === "parent") {
 }
 
 function initFortressMath() {
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
   const TOWER_SLOTS_X = [22, 42, 62, 82]; // % positions along the path
   const BUILD_QUESTIONS = TOWER_SLOTS_X.length;
@@ -87,10 +88,14 @@ function initFortressMath() {
     };
   }
 
-  function rollQuestion() {
+  function rollMathQuestion() {
     const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
     const raw = MATHVILLE_GENERATORS[key]("medium");
     return { key, ...buildMc(raw) };
+  }
+
+  function rollQuestion() {
+    return window.AIGQuestionPools ? window.AIGQuestionPools.rollMixed(() => rollMathQuestion()) : rollMathQuestion();
   }
 
   function renderSlots() {

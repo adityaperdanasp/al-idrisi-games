@@ -6,6 +6,14 @@
    FOUND (not every flip -- a mismatch isn't really a "wrong answer" the
    way a quiz question is, it's just part of the puzzle), same as every
    other game's per-answer coin/gem/streak trickle.
+
+   ~35% of pairs are Language/Science "question -> short answer" pairs
+   instead of an arithmetic fact, via AIGQuestionPools.pickShortLanguage/
+   pickShortScience (question-pools.js) -- filtered to prompts/answers
+   short enough to fit a small fixed-size tile, since most azkacraft/
+   azkauniverse MC prompts are a full sentence, too long otherwise.
+   Falls back to an arithmetic fact whenever a short pick isn't
+   available (pools not ready yet, or none short enough left unused).
    ================================================================= */
 
 const player = window.AIGPlayer && AIGPlayer.getPlayer();
@@ -17,7 +25,11 @@ if (!player || player.role === "parent") {
 }
 
 function initMemoryMatch() {
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const PAIR_COUNT = 8;
+  const MIXED_PAIR_CHANCE = 0.35;
+  const MAX_PROMPT_LEN = 48;
+  const MAX_ANSWER_LEN = 12;
   const MISMATCH_FLIP_BACK_MS = 800;
 
   const grid = document.getElementById("mm-grid");
@@ -53,24 +65,39 @@ function initMemoryMatch() {
     const a = rand(20, 60), b = rand(5, a - 1); return { expr: `${a} - ${b}`, value: a - b };
   }
 
+  // Rolls one Language or Science pair (question -> short answer) via the
+  // shared cross-game pool, filtered to fit a small tile. Returns null if
+  // the pool isn't ready or has no unused entry short enough -- caller
+  // falls back to an arithmetic fact.
+  function tryMixedFact() {
+    if (!window.AIGQuestionPools) return null;
+    const isLang = Math.random() < 0.5;
+    const pick = isLang
+      ? window.AIGQuestionPools.pickShortLanguage(MAX_PROMPT_LEN, MAX_ANSWER_LEN)
+      : window.AIGQuestionPools.pickShortScience(MAX_PROMPT_LEN, MAX_ANSWER_LEN);
+    return pick ? { expr: pick.prompt, value: pick.correctLabel, long: true } : null;
+  }
+
   // Keeps rolling facts until PAIR_COUNT distinct VALUES are collected --
   // without this, two different expressions could share the same value
   // (e.g. "6 x 7" and "84 / 2" both = 42), making the match ambiguous
-  // (which "42" card goes with which expression?).
+  // (which "42" card goes with which expression?). Values are compared
+  // as strings since a mixed pair's value is text ("Mars"), not a number.
   function buildDeck() {
     const usedValues = new Set();
     const facts = [];
     let guard = 0;
     while (facts.length < PAIR_COUNT && guard++ < 500) {
-      const f = randomFact();
-      if (usedValues.has(f.value)) continue;
-      usedValues.add(f.value);
+      const f = (Math.random() < MIXED_PAIR_CHANCE && tryMixedFact()) || randomFact();
+      const valueKey = String(f.value);
+      if (usedValues.has(valueKey)) continue;
+      usedValues.add(valueKey);
       facts.push(f);
     }
     const cards = [];
     facts.forEach((f, i) => {
-      cards.push({ id: "e" + i, pairId: i, text: f.expr });
-      cards.push({ id: "v" + i, pairId: i, text: String(f.value) });
+      cards.push({ id: "e" + i, pairId: i, text: f.expr, long: f.long || f.expr.length > 12 });
+      cards.push({ id: "v" + i, pairId: i, text: String(f.value), long: false });
     });
     return shuffle(cards);
   }
@@ -84,7 +111,7 @@ function initMemoryMatch() {
       el.innerHTML = `
         <div class="mm-card-inner">
           <div class="mm-card-face mm-card-back">🧠</div>
-          <div class="mm-card-face mm-card-front">${card.text}</div>
+          <div class="mm-card-face mm-card-front${card.long ? " long-text" : ""}">${card.text}</div>
         </div>`;
       el.addEventListener("click", () => onCardClick(card, el));
       grid.appendChild(el);

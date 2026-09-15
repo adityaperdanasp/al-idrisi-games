@@ -28,6 +28,7 @@ if (!player || player.role === "parent") {
 }
 
 async function initCityBuilder() {
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   let city = { bricks: 0, totalEarned: 0, grid: {} };
   const roundState = { qIndex: 0, correctCount: 0, streak: 0, bricksThisRound: 0, activePlot: null };
 
@@ -62,10 +63,14 @@ async function initCityBuilder() {
     };
   }
 
-  function rollQuestion(difficulty) {
+  function rollMathQuestion(difficulty) {
     const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
     const raw = MATHVILLE_GENERATORS[key](difficulty);
     return { key, ...buildMc(raw) };
+  }
+
+  function rollQuestion(difficulty) {
+    return window.AIGQuestionPools ? window.AIGQuestionPools.rollMixed(() => rollMathQuestion(difficulty)) : rollMathQuestion(difficulty);
   }
 
   function renderHud() {

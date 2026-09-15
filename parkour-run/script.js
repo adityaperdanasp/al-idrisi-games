@@ -28,6 +28,7 @@ if (!player || player.role === "parent") {
 }
 
 function initParkourRun() {
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const state = { obstacleIndex: 0, lives: START_LIVES, cleared: 0, gateCount: 0, lastActionType: null, lastActionAt: 0, resolveTimer: null, running: false };
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -61,10 +62,14 @@ function initParkourRun() {
     };
   }
 
-  function rollQuestion(difficulty) {
+  function rollMathQuestion(difficulty) {
     const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
     const raw = MATHVILLE_GENERATORS[key](difficulty);
     return { key, ...buildMc(raw) };
+  }
+
+  function rollQuestion(difficulty) {
+    return window.AIGQuestionPools ? window.AIGQuestionPools.rollMixed(() => rollMathQuestion(difficulty)) : rollMathQuestion(difficulty);
   }
 
   function renderHud() {

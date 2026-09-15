@@ -25,6 +25,7 @@ if (!player || player.role === "parent") {
 }
 
 function initCookingRush() {
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const state = { timeLeftMs: 0, served: 0, missed: 0, combo: 0, slots: [], tickHandle: null, running: false };
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -57,10 +58,14 @@ function initCookingRush() {
     };
   }
 
-  function rollQuestion() {
+  function rollMathQuestion() {
     const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
     const raw = MATHVILLE_GENERATORS[key]("medium");
     return { key, ...buildMc(raw) };
+  }
+
+  function rollQuestion() {
+    return window.AIGQuestionPools ? window.AIGQuestionPools.rollMixed(() => rollMathQuestion()) : rollMathQuestion();
   }
 
   function renderHud() {

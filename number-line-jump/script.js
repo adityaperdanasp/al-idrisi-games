@@ -15,6 +15,7 @@ if (!player || player.role === "parent") {
 }
 
 function initNumberLineJump() {
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const ROUND_SIZE = 10;
   const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "rounding"];
   // Bounds the number line can use -- picked per-question as the smallest
@@ -72,11 +73,15 @@ function initNumberLineJump() {
     }
   }
 
-  function rollQuestion() {
+  function rollMathQuestion() {
     const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
     const raw = MATHVILLE_GENERATORS[key]("medium");
     const answer = Number(String(raw.answer).replace(/,/g, ""));
     return { key, prompt: raw.prompt, answer };
+  }
+
+  function rollQuestion() {
+    return window.AIGQuestionPools ? window.AIGQuestionPools.rollMixed(() => rollMathQuestion()) : rollMathQuestion();
   }
 
   function resetTrackVisuals() {

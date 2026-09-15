@@ -26,7 +26,8 @@
   .mm-card.flipped .mm-card-inner, .mm-card.matched .mm-card-inner { transform: rotateY(180deg); }
   .mm-card-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 4px; }
   .mm-card-back { background: linear-gradient(135deg, #9B59D0, #6B3F9B); color: #fff; font-size: 1.4rem; box-shadow: 0 3px 0 rgba(0,0,0,.1); }
-  .mm-card-front { background: #fff; transform: rotateY(180deg); font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .92rem; color: #3d2e22; box-shadow: 0 3px 0 rgba(0,0,0,.06); border: 2px solid #f1ede6; word-break: break-word; }
+  .mm-card-front { background: #fff; transform: rotateY(180deg); font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .92rem; color: #3d2e22; box-shadow: 0 3px 0 rgba(0,0,0,.06); border: 2px solid #f1ede6; word-break: break-word; overflow: hidden; }
+  .mm-card-front.long-text { font-size: .56rem; line-height: 1.15; font-weight: 700; }
   .mm-card.matched .mm-card-front { background: #eaf7ee; border-color: #3F8F5F; color: #2f6b3a; }
   .mm-card.mismatch .mm-card-front { background: #fdeaea; border-color: #D64545; }
   .mm-card.hidden { visibility: hidden; }
@@ -90,6 +91,7 @@
 <script src="../player.js"></script>
 <script src="../firebase.js"></script>
 <script src="../leaderboard.js"></script>
+<script src="../question-pools.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

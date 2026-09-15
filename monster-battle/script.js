@@ -16,6 +16,7 @@ if (!player || player.role === "parent") {
 }
 
 function initMonsterBattle() {
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const CATCH_ROUNDS = 5;
   const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
   const WILD_MONSTERS = ["🐲", "🦖", "🐉", "🦕", "🐊", "🦎", "🐸", "🐙", "🦑", "🐍"];
@@ -64,10 +65,14 @@ function initMonsterBattle() {
     };
   }
 
-  function rollQuestion(difficulty) {
+  function rollMathQuestion(difficulty) {
     const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
     const raw = MATHVILLE_GENERATORS[key](difficulty);
     return { key, ...buildMc(raw) };
+  }
+
+  function rollQuestion(difficulty) {
+    return window.AIGQuestionPools ? window.AIGQuestionPools.rollMixed(() => rollMathQuestion(difficulty)) : rollMathQuestion(difficulty);
   }
 
   function showQuestion(q, onAnswer) {

@@ -28,6 +28,7 @@ if (!player || player.role === "parent") {
 }
 
 function initSpaceRace() {
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const state = { qIndex: 0, distance: 0, qStart: 0 };
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -61,10 +62,14 @@ function initSpaceRace() {
     };
   }
 
-  function rollQuestion(difficulty) {
+  function rollMathQuestion(difficulty) {
     const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
     const raw = MATHVILLE_GENERATORS[key](difficulty);
     return { key, ...buildMc(raw) };
+  }
+
+  function rollQuestion(difficulty) {
+    return window.AIGQuestionPools ? window.AIGQuestionPools.rollMixed(() => rollMathQuestion(difficulty)) : rollMathQuestion(difficulty);
   }
 
   function spawnStars() {

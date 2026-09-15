@@ -15,6 +15,7 @@ if (!player || player.role === "parent") {
 }
 
 function initTreasureDig() {
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const DEPTH_TOTAL = 10;
   const ENERGY_MAX = 3;
   const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
@@ -69,10 +70,14 @@ function initTreasureDig() {
     };
   }
 
-  function rollQuestion(depth) {
+  function rollMathQuestion(depth) {
     const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
     const raw = MATHVILLE_GENERATORS[key](difficultyForDepth(depth));
     return { key, ...buildMc(raw) };
+  }
+
+  function rollQuestion(depth) {
+    return window.AIGQuestionPools ? window.AIGQuestionPools.rollMixed(() => rollMathQuestion(depth)) : rollMathQuestion(depth);
   }
 
   // Treasure chance AND loot value both scale with depth -- shallow

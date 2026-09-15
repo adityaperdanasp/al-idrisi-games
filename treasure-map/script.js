@@ -32,6 +32,7 @@ if (!player || player.role === "parent") {
 }
 
 function initTreasureMap() {
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const state = { found: [], activeLandmark: null };
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -64,10 +65,14 @@ function initTreasureMap() {
     };
   }
 
-  function rollQuestion(difficulty) {
+  function rollMathQuestion(difficulty) {
     const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
     const raw = MATHVILLE_GENERATORS[key](difficulty);
     return { key, ...buildMc(raw) };
+  }
+
+  function rollQuestion(difficulty) {
+    return window.AIGQuestionPools ? window.AIGQuestionPools.rollMixed(() => rollMathQuestion(difficulty)) : rollMathQuestion(difficulty);
   }
 
   function renderHud() {

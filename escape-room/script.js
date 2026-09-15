@@ -16,6 +16,7 @@ if (!player || player.role === "parent") {
 }
 
 function initEscapeRoom() {
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const ROOM_COUNT = 6;
   const COMBO_NEEDED = 2;
   const GAME_DURATION_SEC = 300;
@@ -73,10 +74,14 @@ function initEscapeRoom() {
     };
   }
 
-  function rollQuestion(room) {
+  function rollMathQuestion(room) {
     const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
     const raw = MATHVILLE_GENERATORS[key](difficultyForRoom(room));
     return { key, ...buildMc(raw) };
+  }
+
+  function rollQuestion(room) {
+    return window.AIGQuestionPools ? window.AIGQuestionPools.rollMixed(() => rollMathQuestion(room)) : rollMathQuestion(room);
   }
 
   function renderRoomTrack() {
