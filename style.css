@@ -117,6 +117,28 @@ body {
     border-radius: 0;
     box-shadow: none;
   }
+
+  /* 7 icon buttons + wallet/player/title/level badges no longer fit one
+     row on a real phone width once enough header badges accumulate --
+     found via a real-device screenshot showing the right-side badges
+     clipped past the card edge. Shrink the icon row so both sides
+     usually still fit on one line; .sc-header's flex-wrap above is the
+     safety net for whatever still doesn't fit (e.g. a long player name). */
+  .sc-header {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .sc-trophy {
+    width: 34px;
+    height: 34px;
+    font-size: 1.05rem;
+    border-radius: 10px;
+  }
+
+  .sc-header-left {
+    gap: 6px;
+  }
 }
 
 .sc-screen {
@@ -326,6 +348,8 @@ body {
 .sc-header {
   padding: 20px 24px 0;
   display: flex;
+  flex-wrap: wrap;
+  row-gap: 8px;
   justify-content: space-between;
   align-items: center;
   position: relative;
@@ -334,6 +358,8 @@ body {
 
 .sc-header-left {
   display: flex;
+  flex-wrap: wrap;
+  row-gap: 8px;
   align-items: center;
   gap: 8px;
 }

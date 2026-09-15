@@ -99,8 +99,9 @@ function initParkourRun() {
 
   function spawnMovementObstacle(type, delayMs) {
     const el = document.getElementById("pk-obstacle");
+    el.className = "pk-obstacle";
+    el.style.opacity = "1";
     el.textContent = OBSTACLE_EMOJI[type];
-    el.classList.remove("hidden");
     el.style.transition = "none";
     el.style.left = "92%";
     void el.offsetWidth;
@@ -131,10 +132,27 @@ function initParkourRun() {
     advanceAfterResolve();
   }
 
-  function askGate() {
+  // A gate is a WALL obstacle -- same lane/slide-in mechanism as jump/
+  // wallrun/slide obstacles (so it feels like part of the same course,
+  // not a separate quiz screen), except it resolves on ANSWERING the
+  // question rather than on a timer. isRetry skips re-sliding the wall
+  // in (it's already parked at the near position from the first try).
+  function askGate(isRetry) {
     document.getElementById("pk-actions").classList.add("hidden");
-    document.getElementById("pk-obstacle").classList.add("hidden");
     document.getElementById("pk-feedback").textContent = "";
+
+    if (!isRetry) {
+      const el = document.getElementById("pk-obstacle");
+      el.className = "pk-obstacle wall";
+      el.style.opacity = "1";
+      el.textContent = "🧱🔒";
+      el.style.transition = "none";
+      el.style.left = "92%";
+      void el.offsetWidth;
+      el.style.transition = `left ${OBSTACLE_MS}ms linear`;
+      el.style.left = "16%";
+    }
+
     const q = rollQuestion(difficultyForGate(state.gateCount));
     document.getElementById("pk-q-prompt").textContent = q.prompt;
     const grid = document.getElementById("pk-q-grid");
@@ -160,19 +178,40 @@ function initParkourRun() {
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("parkour-run", q.key, isCorrect);
     state.gateCount++;
 
+    const runner = document.getElementById("pk-runner");
+    const wallEl = document.getElementById("pk-obstacle");
+
     if (isCorrect) {
       state.cleared++;
       document.getElementById("pk-feedback").textContent = "Gate opened!";
+      setTimeout(() => {
+        document.getElementById("pk-gate-card").classList.add("hidden");
+        clearRunnerPose();
+        runner.classList.add("vaulting");
+        wallEl.style.transition = "opacity .3s ease";
+        wallEl.style.opacity = "0";
+        setTimeout(() => {
+          runner.classList.remove("vaulting");
+          wallEl.classList.add("hidden");
+          wallEl.style.opacity = "1";
+          document.getElementById("pk-actions").classList.remove("hidden");
+          advanceAfterResolve();
+        }, 600);
+      }, 700);
     } else {
       state.lives--;
-      document.getElementById("pk-feedback").textContent = "Gate stayed locked!";
+      runner.classList.add("hit");
+      wallEl.classList.add("shake");
+      document.getElementById("pk-feedback").textContent = "Crash! Try again!";
+      setTimeout(() => {
+        runner.classList.remove("hit");
+        wallEl.classList.remove("shake");
+        document.getElementById("pk-gate-card").classList.add("hidden");
+        renderHud();
+        if (state.lives <= 0) { finishGame(false); return; }
+        askGate(true);
+      }, 900);
     }
-
-    setTimeout(() => {
-      document.getElementById("pk-gate-card").classList.add("hidden");
-      document.getElementById("pk-actions").classList.remove("hidden");
-      advanceAfterResolve();
-    }, 1000);
   }
 
   function advanceAfterResolve() {
@@ -224,8 +263,11 @@ function initParkourRun() {
     state.lastActionAt = 0;
     state.running = true;
     clearRunnerPose();
+    document.getElementById("pk-runner").classList.remove("vaulting");
     document.getElementById("pk-actions").classList.remove("hidden");
-    document.getElementById("pk-obstacle").classList.add("hidden");
+    const obstacleEl = document.getElementById("pk-obstacle");
+    obstacleEl.className = "pk-obstacle hidden";
+    obstacleEl.style.opacity = "1";
     document.getElementById("pk-feedback").textContent = "";
     document.getElementById("pk-start-overlay").classList.add("hidden");
     document.getElementById("pk-end-overlay").classList.add("hidden");

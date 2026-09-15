@@ -29,6 +29,10 @@
   .pk-runner.hit { animation: pkHit .3s ease; }
   @keyframes pkHit { 0%,100% { filter: none; } 50% { filter: brightness(2) hue-rotate(90deg); } }
   .pk-obstacle { position: absolute; right: 6%; bottom: 6px; font-size: 2.4rem; transition: right linear; }
+  .pk-obstacle.shake { animation: pkWallShake .3s ease; }
+  @keyframes pkWallShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-3px); } }
+  .pk-runner.vaulting { animation: pkVault .6s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pkVault { 0% { transform: translateY(0) rotate(0deg); } 45% { transform: translateY(-40px) rotate(-14deg); } 75% { transform: translateY(-40px) rotate(8deg); } 100% { transform: translateY(0) rotate(0deg); } }
 
   .pk-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 14px 14px; }
   .pk-action-btn { border: none; border-radius: 14px; padding: 14px 4px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; cursor: pointer; background: rgba(255,255,255,.08); color: #e6f3ff; }
