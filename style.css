@@ -1445,6 +1445,8 @@ body {
 .sc-game-card.quizshow .sc-game-icon { background: transparent; }
 .sc-game-card.monsterbattle { background: #1b3b2f; transform: rotate(0.6deg); }
 .sc-game-card.monsterbattle .sc-game-icon { background: transparent; }
+.sc-game-card.citybuilder { background: #eaf7d9; transform: rotate(-0.6deg); }
+.sc-game-card.citybuilder .sc-game-icon { background: transparent; }
 
 /* ---------- Ninja Runner card: decorative side-view ninja jog loop ---------- */
 .sc-card-runner { position: absolute; left: 0; right: 0; bottom: 6px; height: 22px; overflow: hidden; pointer-events: none; }
@@ -1524,6 +1526,8 @@ body {
 .sc-game-card.quizshow .sc-game-sub { color: #c9b8e0; }
 .sc-game-card.monsterbattle .sc-game-title { color: #F7A63C; }
 .sc-game-card.monsterbattle .sc-game-sub { color: #9fe0b8; }
+.sc-game-card.citybuilder .sc-game-title { color: #C0533E; }
+.sc-game-card.citybuilder .sc-game-sub { color: #7a4a2b; }
 
 /* ---------- "Who's actually playing?" step (student vs their parent) ---------- */
 .sc-whois-overlay {

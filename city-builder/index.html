@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>City Builder — BrainBox</title>
+<meta name="theme-color" content="#cdeeff">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  .hidden { display: none !important; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #cdeeff 0%, #eaf7d9 55%, #d9f2c4 100%); font-family: "Nunito", sans-serif; color: #2b2b2b; }
+  .cb-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 100px; }
+
+  .cb-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+  .cb-back { width: 34px; height: 34px; border-radius: 50%; background: rgba(0,0,0,.08); color: #2b2b2b; font-size: 1.05rem; display: grid; place-items: center; text-decoration: none; flex: none; }
+  .cb-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #C0533E; }
+
+  .cb-hud { display: flex; justify-content: center; gap: 14px; padding: 4px 14px 12px; font-weight: 800; font-size: .88rem; color: #7a4a2b; }
+
+  .cb-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; padding: 0 14px 14px; }
+  .cb-plot { aspect-ratio: 1; border-radius: 12px; border: 2px dashed rgba(122,74,43,.3); background: rgba(255,255,255,.5); display: grid; place-items: center; font-size: 1.7rem; cursor: pointer; }
+  .cb-plot.filled { border-style: solid; border-color: rgba(122,74,43,.15); background: rgba(255,255,255,.75); }
+
+  .cb-earn-bar { position: fixed; left: 0; right: 0; bottom: 0; max-width: 480px; margin: 0 auto; padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.9); backdrop-filter: blur(6px); box-shadow: 0 -4px 14px rgba(0,0,0,.08); }
+  .cb-earn-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 14px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; cursor: pointer; background: #C0533E; color: #fff; }
+
+  .cb-q-card { margin: 0 16px 16px; background: rgba(255,255,255,.85); border-radius: 18px; padding: 18px; text-align: center; box-shadow: 0 0 0 1.5px rgba(192,83,62,.2); }
+  .cb-round-progress { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .82rem; color: #7a4a2b; padding: 10px 14px 4px; }
+  .cb-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; margin-bottom: 16px; color: #2b2b2b; }
+  .cb-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cb-q-btn { border: 2px solid rgba(192,83,62,.3); background: #fff; border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .92rem; color: #2b2b2b; cursor: pointer; }
+  .cb-q-btn:disabled { cursor: default; }
+  .cb-q-btn.correct { border-color: #3F8F5F; background: rgba(63,143,95,.2); }
+  .cb-q-btn.wrong { border-color: #D64545; background: rgba(214,69,69,.15); }
+  .cb-brick-toast { text-align: center; font-weight: 800; font-size: .85rem; color: #C0533E; min-height: 1.3em; padding: 0 14px; }
+
+  .cb-overlay { position: fixed; inset: 0; background: rgba(30,20,10,.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .cb-card { background: #fffaf2; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.25); }
+  .cb-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .cb-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; color: #C0533E; }
+  .cb-modal-sub { font-weight: 700; color: #6b5240; margin-bottom: 14px; font-size: .9rem; line-height: 1.5; }
+  .cb-modal-bonus { font-weight: 800; color: #C0533E; margin-bottom: 16px; min-height: 1.2em; }
+  .cb-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+  .cb-btn-primary { background: #C0533E; color: #fff; }
+  .cb-btn-secondary { background: rgba(0,0,0,.08); color: #2b2b2b; }
+
+  .cb-build-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; text-align: left; }
+  .cb-build-opt { display: flex; align-items: center; gap: 10px; border: 2px solid rgba(192,83,62,.25); border-radius: 14px; padding: 10px 12px; background: #fff; cursor: pointer; }
+  .cb-build-opt:disabled { opacity: .4; cursor: default; }
+  .cb-build-opt-emoji { font-size: 1.6rem; flex: none; }
+  .cb-build-opt-txt { flex: 1; }
+  .cb-build-opt-name { font-weight: 800; font-size: .9rem; color: #2b2b2b; }
+  .cb-build-opt-cost { font-weight: 700; font-size: .76rem; color: #7a4a2b; }
+</style>
+</head>
+<body>
+
+<div class="cb-page" id="cb-page">
+  <div class="cb-topbar">
+    <a href="../" class="cb-back">←</a>
+    <div class="cb-title">🏗️ City Builder</div>
+  </div>
+
+  <div class="cb-hud">
+    <span>🧱 Bricks: <span id="cb-bricks">0</span></span>
+    <span>🏙️ Lifetime: <span id="cb-total-earned">0</span></span>
+  </div>
+
+  <div class="cb-grid" id="cb-grid"></div>
+
+  <div class="cb-earn-bar">
+    <button class="cb-earn-btn" id="cb-earn-btn" type="button">➕ Earn Bricks (10 Questions)</button>
+  </div>
+
+  <div class="cb-overlay hidden" id="cb-build-overlay">
+    <div class="cb-card">
+      <div class="cb-modal-emoji" id="cb-build-plot-emoji">🧱</div>
+      <div class="cb-modal-title">Build Something</div>
+      <div class="cb-build-list" id="cb-build-list"></div>
+      <button class="cb-btn cb-btn-secondary" id="cb-build-cancel-btn">Cancel</button>
+    </div>
+  </div>
+
+  <div class="cb-overlay hidden" id="cb-round-overlay">
+    <div class="cb-card" style="max-width:400px;">
+      <div class="cb-round-progress" id="cb-round-progress">Question 1 / 10</div>
+      <div class="cb-q-card" id="cb-q-card">
+        <div class="cb-q-prompt" id="cb-q-prompt"></div>
+        <div class="cb-q-grid" id="cb-q-grid"></div>
+      </div>
+      <div class="cb-brick-toast" id="cb-brick-toast"></div>
+    </div>
+  </div>
+
+  <div class="cb-overlay hidden" id="cb-round-end-overlay">
+    <div class="cb-card">
+      <div class="cb-modal-emoji" id="cb-round-end-emoji">🧱</div>
+      <div class="cb-modal-title" id="cb-round-end-title">Bricks Earned!</div>
+      <div class="cb-modal-sub" id="cb-round-end-sub"></div>
+      <div class="cb-modal-bonus" id="cb-round-end-bonus"></div>
+      <button class="cb-btn cb-btn-primary" id="cb-round-end-btn">Back to Town</button>
+    </div>
+  </div>
+
+  <div class="cb-overlay hidden" id="cb-signedout-overlay">
+    <div class="cb-card">
+      <div class="cb-modal-emoji">🏗️</div>
+      <p class="cb-modal-sub">Please sign in from the hub first.</p>
+      <a href="../" class="cb-btn cb-btn-primary">Back to Hub</a>
+    </div>
+  </div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

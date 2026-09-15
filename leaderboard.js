@@ -2314,6 +2314,80 @@
     return { ok: true, bonus };
   }
 
+  // =====================================================================
+  // CITY BUILDER (city-builder/) — the one PM Round 4 game with PERSISTENT
+  // progress: players/{id}/cityBuilder/{bricks, totalEarned, grid}. `bricks`
+  // is spendable, `totalEarned` is lifetime (never decreases, gates which
+  // building types the UI shows as unlocked). `grid` maps plot index
+  // (string) -> buildingId, present only for occupied plots (sparse RTDB
+  // object, not a JS array with holes -- avoids the array/null gotcha).
+  // =====================================================================
+  function cbEmptyCity() { return { bricks: 0, totalEarned: 0, grid: {} }; }
+
+  async function getCityBuilder() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return cbEmptyCity();
+    const snap = await aigDb.ref(`players/${player.id}/cityBuilder`).get();
+    if (!snap.exists()) return cbEmptyCity();
+    const val = snap.val();
+    return { bricks: val.bricks || 0, totalEarned: val.totalEarned || 0, grid: val.grid || {} };
+  }
+
+  // Pure additive grant (bricks earned from a round) -- safe as a
+  // .transaction() since it never aborts, same reasoning as awardCurrency.
+  async function awardCityBuilderBricks(bricksEarned) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/cityBuilder`);
+    await ref.transaction(cur => {
+      const data = cur || cbEmptyCity();
+      data.bricks = (data.bricks || 0) + bricksEarned;
+      data.totalEarned = (data.totalEarned || 0) + bricksEarned;
+      return data;
+    });
+    const snap = await ref.get();
+    return { ok: true, data: snap.exists() ? snap.val() : cbEmptyCity() };
+  }
+
+  // Spends bricks to occupy a plot -- get()-check-set (NOT .transaction()),
+  // same pattern/reasoning as unlockVehicle above (aborting transactions on
+  // this app instance don't retry with the real server value).
+  async function placeCityBuilding(plotIndex, buildingId, cost) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/cityBuilder`);
+    const snap = await ref.get();
+    const data = snap.exists() ? snap.val() : cbEmptyCity();
+    const grid = data.grid || {};
+    if (grid[String(plotIndex)]) return { ok: false, reason: "occupied" };
+    if ((data.bricks || 0) < cost) return { ok: false, reason: "insufficient-bricks" };
+    grid[String(plotIndex)] = buildingId;
+    const newData = { bricks: (data.bricks || 0) - cost, totalEarned: data.totalEarned || 0, grid };
+    await ref.set(newData);
+    return { ok: true, data: newData };
+  }
+
+  function cityBuilderBonusFor(correctCount, totalRounds) {
+    if (correctCount >= totalRounds) return { coins: 15, gems: 1 };
+    if (correctCount >= totalRounds * 0.7) return { coins: 8, gems: 0 };
+    if (correctCount >= totalRounds * 0.4) return { coins: 4, gems: 0 };
+    if (correctCount >= 1) return { coins: 1, gems: 0 };
+    return null;
+  }
+  async function awardCityBuilderBonus(correctCount, totalRounds) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const bonus = cityBuilderBonusFor(correctCount, totalRounds);
+    if (!bonus) return { ok: true, bonus: null };
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + (bonus.coins || 0);
+      wallet.gems = (wallet.gems || 0) + (bonus.gems || 0);
+      return wallet;
+    });
+    return { ok: true, bonus };
+  }
+
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
@@ -2359,6 +2433,7 @@
     awardEscapeRoomBonus,
     awardQuizShowBonus,
     awardMonsterBattleBonus,
+    getCityBuilder, awardCityBuilderBricks, placeCityBuilding, awardCityBuilderBonus,
     db: aigDb
   };
 })();
