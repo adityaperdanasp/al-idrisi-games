@@ -39,6 +39,10 @@ function initMemoryMatch() {
   const hudGems = document.getElementById("mm-hud-gems");
 
   const state = { cards: [], flipped: [], pairsFound: 0, moves: 0, locked: false };
+  // Cosmetic only -- bought/equipped via the hub's Customize > Game FX tab
+  // (leaderboard.js's GAMEPLAY_FX_CATALOGS, type "memorymatch-cardback").
+  const CARDBACK_EMOJI = { default: "🧠", cards: "🎴", star: "🌟", crystal: "🔮" };
+  let cardBackEmoji = "🧠";
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
   function shuffle(arr) {
@@ -110,7 +114,7 @@ function initMemoryMatch() {
       el.dataset.cardId = card.id;
       el.innerHTML = `
         <div class="mm-card-inner">
-          <div class="mm-card-face mm-card-back">🧠</div>
+          <div class="mm-card-face mm-card-back">${cardBackEmoji}</div>
           <div class="mm-card-face mm-card-front${card.long ? " long-text" : ""}">${card.text}</div>
         </div>`;
       el.addEventListener("click", () => onCardClick(card, el));
@@ -183,7 +187,11 @@ function initMemoryMatch() {
     document.getElementById("mm-end-overlay").classList.remove("hidden");
   }
 
-  function startRound() {
+  async function startRound() {
+    if (window.AIGLeaderboard) {
+      const equipped = await AIGLeaderboard.getEquippedCosmetic("memorymatch-cardback", "default");
+      cardBackEmoji = CARDBACK_EMOJI[equipped] || "🧠";
+    }
     state.cards = buildDeck();
     state.flipped = [];
     state.pairsFound = 0;

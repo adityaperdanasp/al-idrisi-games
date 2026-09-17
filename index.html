@@ -888,12 +888,14 @@
         <button class="sc-modal-tab" id="sc-tab-powerups" type="button">⚡ Power-ups</button>
         <button class="sc-modal-tab" id="sc-tab-avatarcolor" type="button">🎨 Avatar</button>
         <button class="sc-modal-tab" id="sc-tab-rewards" type="button">🎁 Rewards</button>
+        <button class="sc-modal-tab" id="sc-tab-fx" type="button">🎮 Game FX</button>
       </div>
       <div class="sc-cosmetic-list" id="sc-frame-list"></div>
       <div class="sc-cosmetic-list" id="sc-sound-list" hidden></div>
       <div class="sc-cosmetic-list" id="sc-powerup-list" hidden></div>
       <div class="sc-avatarcolor-grid" id="sc-avatarcolor-grid" hidden></div>
       <div class="sc-cosmetic-list" id="sc-reward-list" hidden></div>
+      <div class="sc-cosmetic-list" id="sc-fx-list" hidden></div>
     </div>
   </div>
 
@@ -1727,12 +1729,66 @@
     });
   }
 
+  // Gameplay FX -- 6 catalogs (see leaderboard.js's GAMEPLAY_FX_CATALOGS),
+  // one purchase point in the hub for cosmetics that actually show up
+  // INSIDE 6 different games. Grouped under a small label per game so
+  // it doesn't read as one undifferentiated 16-item list.
+  const FX_GROUP_LABEL = {
+    "plane-bullet": "✈️ Plane Mode — Bullet Trail",
+    "drive-nitro": "🚗 Drive Mode — Nitro Flame",
+    "mathrace-finish": "🏆 Math Race — Finish Line",
+    "bossrush-special": "🥊 Boss Rush — Special Move",
+    "ninja-slash": "🥷 Ninja Runner — Slash Effect",
+    "memorymatch-cardback": "🧠 Memory Match — Card Back"
+  };
+  function renderFxList(cos) {
+    const html = Object.entries(FX_GROUP_LABEL).map(([type, label]) => {
+      const catalog = cos.fx[type];
+      const equippedId = cos.equippedFx[type];
+      const items = catalog.map(e => {
+        const isEquipped = equippedId === e.id;
+        const action = !e.owned
+          ? `<button class="sc-quest-claim-btn" data-fx-buy="${type}:${e.id}">${e.cost.coins ? `🪙${e.cost.coins}` : `💎${e.cost.gems}`}</button>`
+          : isEquipped
+            ? `<span class="sc-quest-done-check">✓</span>`
+            : `<button class="sc-quest-claim-btn" data-fx-equip="${type}:${e.id}">Equip</button>`;
+        return `
+          <div class="sc-cosmetic-item">
+            <span class="sc-cosmetic-preview">${e.preview}</span>
+            <span class="sc-cosmetic-name">${e.name}</span>
+            ${action}
+          </div>`;
+      }).join("");
+      return `<div class="sc-fx-group-label">${label}</div>${items}`;
+    }).join("");
+    document.getElementById("sc-fx-list").innerHTML = html;
+
+    document.querySelectorAll("[data-fx-buy]").forEach(btn => {
+      btn.onclick = async () => {
+        const [type, id] = btn.dataset.fxBuy.split(":");
+        const item = cos.fx[type].find(x => x.id === id);
+        btn.disabled = true;
+        const result = await AIGLeaderboard.unlockCosmetic(type, id, item.cost);
+        if (result.ok) { await AIGLeaderboard.equipCosmetic(type, id); renderCustomize(); }
+        else btn.disabled = false;
+      };
+    });
+    document.querySelectorAll("[data-fx-equip]").forEach(btn => {
+      btn.onclick = async () => {
+        const [type, id] = btn.dataset.fxEquip.split(":");
+        await AIGLeaderboard.equipCosmetic(type, id);
+        renderCustomize();
+      };
+    });
+  }
+
   async function renderCustomize() {
     const cos = await AIGLeaderboard.getCosmetics();
     if (!cos) return;
     renderPowerupShop();
     renderAvatarColorPicker();
     renderRewardList();
+    renderFxList(cos);
 
     document.getElementById("sc-frame-list").innerHTML = cos.frames.map(f => {
       const isEquipped = cos.equippedFrame === f.id;
@@ -1808,8 +1864,8 @@
   document.getElementById("sc-customize-close").addEventListener("click", () => {
     document.getElementById("sc-customize-overlay").hidden = true;
   });
-  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups", "avatarcolor", "rewards"];
-  const CUSTOMIZE_TAB_LIST_ID = { frames: "sc-frame-list", sounds: "sc-sound-list", powerups: "sc-powerup-list", avatarcolor: "sc-avatarcolor-grid", rewards: "sc-reward-list" };
+  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups", "avatarcolor", "rewards", "fx"];
+  const CUSTOMIZE_TAB_LIST_ID = { frames: "sc-frame-list", sounds: "sc-sound-list", powerups: "sc-powerup-list", avatarcolor: "sc-avatarcolor-grid", rewards: "sc-reward-list", fx: "sc-fx-list" };
   function switchCustomizeTab(tab) {
     CUSTOMIZE_TABS.forEach(t => {
       document.getElementById(`sc-tab-${t}`).classList.toggle("active", t === tab);
@@ -1821,6 +1877,7 @@
   document.getElementById("sc-tab-powerups").addEventListener("click", () => switchCustomizeTab("powerups"));
   document.getElementById("sc-tab-avatarcolor").addEventListener("click", () => switchCustomizeTab("avatarcolor"));
   document.getElementById("sc-tab-rewards").addEventListener("click", () => switchCustomizeTab("rewards"));
+  document.getElementById("sc-tab-fx").addEventListener("click", () => switchCustomizeTab("fx"));
 
   // Real-world reward ledger -- redeems from the SAME coins/gems wallet
   // as vehicle skins/power-ups. The catalog itself is set by a parent

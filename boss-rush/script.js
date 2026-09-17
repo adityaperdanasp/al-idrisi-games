@@ -32,6 +32,10 @@ function initBossRush() {
   const HEAL_PER_BOSS_WIN = 8;
 
   const state = { bossIndex: 0, playerHp: PLAYER_HP_MAX, boss: null, combo: 0, bossesDefeated: 0 };
+  // Cosmetic only -- bought/equipped via the hub's Customize > Game FX tab
+  // (leaderboard.js's GAMEPLAY_FX_CATALOGS, type "bossrush-special").
+  const SPECIAL_FX_EMOJI = { default: "✨", lightning: "⚡", fire: "🔥", ice: "❄️" };
+  let specialFxEmoji = "✨";
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
   function shuffle(arr) {
@@ -142,6 +146,13 @@ function initBossRush() {
       const damage = BASE_DAMAGE + (state.combo - 1) + (isSpecial ? SPECIAL_BONUS_DAMAGE : 0);
       state.boss.hp -= damage;
       document.getElementById("br-boss-emoji").classList.add(isSpecial ? "special" : "hit");
+      if (isSpecial) {
+        const fx = document.getElementById("br-special-fx");
+        fx.textContent = specialFxEmoji;
+        fx.classList.remove("firing");
+        void fx.offsetWidth;
+        fx.classList.add("firing");
+      }
       document.getElementById("br-log").textContent = isSpecial
         ? `⭐ SPECIAL MOVE! ${damage} damage to ${state.boss.name}!`
         : `You hit ${state.boss.name} for ${damage}!`;
@@ -194,7 +205,11 @@ function initBossRush() {
     document.getElementById("br-end-overlay").classList.remove("hidden");
   }
 
-  function startGame() {
+  async function startGame() {
+    if (window.AIGLeaderboard) {
+      const equipped = await AIGLeaderboard.getEquippedCosmetic("bossrush-special", "default");
+      specialFxEmoji = SPECIAL_FX_EMOJI[equipped] || "✨";
+    }
     state.playerHp = PLAYER_HP_MAX;
     state.bossesDefeated = 0;
     document.getElementById("br-start-overlay").classList.add("hidden");

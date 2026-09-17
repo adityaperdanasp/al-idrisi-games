@@ -969,6 +969,10 @@ let driveState = null;
 let driveJoyVec = { x: 0, y: 0 }; // normalized -1..1, magnitude = joystick deflection
 let driveAimVec = { x: 0, y: 0 }; // right-thumb stick, same convention as driveJoyVec
 let driveBoosting = false; // held down = true, drives nitro drain/regen each frame
+// Cosmetic only -- bought/equipped via the hub's Customize > Game FX tab
+// (leaderboard.js's GAMEPLAY_FX_CATALOGS, type "drive-nitro"). Empty
+// string means the default orange flame (no extra class needed).
+let driveNitroFxClass = "";
 // Score + bite count survive a side-trip into a chapter (city collision
 // routes there and back) — only a *fresh* Drive Mode entry resets them.
 let driveSession = null;
@@ -977,6 +981,11 @@ let driveSession = null;
 // false/omitted for a brand-new session from the topbar button.
 function goToDrive(resume) {
   if (!resume || !driveSession) driveSession = { score: 0, bites: 0 };
+  if (window.AIGLeaderboard) {
+    AIGLeaderboard.getEquippedCosmetic("drive-nitro", "default").then(id => {
+      driveNitroFxClass = id !== "default" ? "fx-" + id : "";
+    }).catch(() => {});
+  }
   // Hard difficulty gets a 2nd dino from a different starting corner.
   // Each dino tracks its own water "wet" progress independently (dousing
   // one doesn't affect the other), but bite immunity is car-wide (see
@@ -1207,6 +1216,7 @@ function startDriveLoop() {
 }
 
 function driveNitroTick() {
+  const wasBoostingActively = driveBoosting && driveState.nitroFuel > 0;
   if (driveBoosting && driveState.nitroFuel > 0) {
     driveState.nitroFuel = Math.max(0, driveState.nitroFuel - DRIVE_NITRO_DRAIN_PER_MS * DRIVE_FRAME_MS);
   } else if (!driveBoosting) {
@@ -1214,6 +1224,10 @@ function driveNitroTick() {
   }
   $("drive-nitro-fill").style.height = driveState.nitroFuel + "%";
   $("drive-nitro-btn").classList.toggle("empty", driveState.nitroFuel <= 0);
+  const flame = $("drive-nitro-flame");
+  if (flame) {
+    flame.className = "drive-nitro-flame" + (driveNitroFxClass ? " " + driveNitroFxClass : "") + (wasBoostingActively ? " active" : "");
+  }
 }
 
 // Streams water in the aim-stick's direction whenever it's deflected past
@@ -2189,6 +2203,10 @@ const PLANE_WIN_XP = 20;
 
 let planeJoyVec = { x: 0, y: 0 };
 let planeState = null;
+// Cosmetic only -- bought/equipped via the hub's Customize > Game FX tab
+// (leaderboard.js's GAMEPLAY_FX_CATALOGS, type "plane-bullet"). Empty
+// string means the default bullet look (no extra class needed).
+let planeBulletFxClass = "";
 
 // `is2p` is passed only by p2pStartGame() once the DataChannel is open.
 // Everything role-specific keys off planeState.is2p / p2p.role from there
@@ -2197,6 +2215,11 @@ function launchPlaneMode(is2p) {
   if (window.AIGBgm && AIGBgm.playPlaneTrack) AIGBgm.playPlaneTrack();
   applyVehicleSkin("plane");
   showScreen("screen-plane");
+  if (window.AIGLeaderboard) {
+    AIGLeaderboard.getEquippedCosmetic("plane-bullet", "default").then(id => {
+      planeBulletFxClass = id !== "default" ? "fx-" + id : "";
+    }).catch(() => {});
+  }
   planeState = {
     is2p: !!is2p,
     down: false,              // 2P: out of lives but still spectating (see p2pLocalDown)
@@ -2312,7 +2335,7 @@ function planePxDist(ax, ay, bx, by) {
 function spawnPlaneBulletAt(x, y, angleDeg = 0) {
   const id = "b" + (planeState.nextBulletId++);
   const el = document.createElement("div");
-  el.className = "plane-bullet";
+  el.className = "plane-bullet" + (planeBulletFxClass ? " " + planeBulletFxClass : "");
   $("plane-world").appendChild(el);
   const rad = (angleDeg * Math.PI) / 180;
   const vx = Math.sin(rad) * PLANE_BULLET_SPEED;
@@ -6435,6 +6458,10 @@ const NINJA_DIFFS = ["easy", "medium", "hard"];
 const NINJA_SUBJECTS = { math: "MATH", lang: "LANG & ARTS", sci: "SCIENCE" };
 let ninjaState = null;
 let ninjaGhost = null; // {score, checkpoints} of the player's best-ever run, fetched fresh each launch -- see launchNinjaRunner/ninjaAdvance
+// Cosmetic only -- bought/equipped via the hub's Customize > Game FX tab
+// (leaderboard.js's GAMEPLAY_FX_CATALOGS, type "ninja-slash"). Empty
+// string means the default kunai look (no extra class needed).
+let ninjaSlashFxClass = "";
 
 function launchNinjaRunner() {
   ensurePlaneQuestionPools();
@@ -6462,6 +6489,9 @@ function launchNinjaRunner() {
   ninjaGhost = null;
   if (window.AIGLeaderboard) {
     AIGLeaderboard.getNinjaGhost().then(g => { ninjaGhost = g; }).catch(() => {});
+    AIGLeaderboard.getEquippedCosmetic("ninja-slash", "default").then(id => {
+      ninjaSlashFxClass = id !== "default" ? "fx-" + id : "";
+    }).catch(() => {});
   }
   // Brief head start before the very first obstacle -- see
   // NINJA_FIRST_OBSTACLE_DELAY_MS. Tracked on ninjaState.laneTimer like any
@@ -6740,7 +6770,7 @@ function ninjaSlashEnemy(removeEnemy) {
   setTimeout(() => runner.classList.remove("throwing"), 200);
 
   const kunai = document.createElement("div");
-  kunai.className = "ninja-kunai-fx";
+  kunai.className = "ninja-kunai-fx" + (ninjaSlashFxClass ? " " + ninjaSlashFxClass : "");
   $("ninja-run-lane").appendChild(kunai);
   setTimeout(() => kunai.remove(), 200);
 
@@ -6752,7 +6782,7 @@ function ninjaSlashEnemy(removeEnemy) {
   // the throw instead of resolving instantly.
   setTimeout(() => {
     const impact = document.createElement("div");
-    impact.className = "ninja-kunai-impact";
+    impact.className = "ninja-kunai-impact" + (ninjaSlashFxClass ? " " + ninjaSlashFxClass : "");
     $("ninja-run-lane").appendChild(impact);
     setTimeout(() => impact.remove(), 250);
 

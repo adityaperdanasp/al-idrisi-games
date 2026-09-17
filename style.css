@@ -1138,6 +1138,14 @@ body {
   align-items: center;
   gap: 12px;
 }
+.sc-fx-group-label {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #7a5a2e;
+  margin: 14px 0 6px;
+}
+.sc-fx-group-label:first-child { margin-top: 0; }
 .sc-cosmetic-preview {
   width: 32px;
   height: 32px;

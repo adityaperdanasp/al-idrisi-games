@@ -1101,6 +1101,75 @@
     { id: "magic", name: "Magic Sparkle", cost: { gems: 2 }, notes: [{ f: 988, d: 70 }, { f: 1175, d: 70 }, { f: 1568, d: 70 }, { f: 1976, d: 180 }] }
   ];
 
+  // =====================================================================
+  // GAMEPLAY FX — cosmetic reskins for 6 existing games' signature visual
+  // moments (bullet trail, nitro flame, race finish, boss special-move
+  // flash, ninja slash, memory-match card back). Bought/equipped through
+  // the SAME generic unlockCosmetic(type,id,cost)/equipCosmetic(type,id)
+  // pair frames/sounds already use above -- each catalog below is just a
+  // new `type` string sharing that one mechanism, no new backend needed.
+  // Purely visual: none of these change scoring, difficulty, or timing
+  // in the game they reskin.
+  // =====================================================================
+  const PLANE_BULLET_EFFECTS = [
+    { id: "default", name: "Default Blaster", cost: null, preview: "🔹" },
+    { id: "rainbow", name: "Rainbow Trail", cost: { coins: 20 }, preview: "🌈" },
+    { id: "fire", name: "Fire Trail", cost: { coins: 25 }, preview: "🔥" },
+    { id: "star", name: "Star Trail", cost: { gems: 2 }, preview: "⭐" }
+  ];
+  const DRIVE_NITRO_EFFECTS = [
+    { id: "default", name: "Default Flame", cost: null, preview: "🔸" },
+    { id: "blue", name: "Blue Flame", cost: { coins: 20 }, preview: "🔵" },
+    { id: "rainbow", name: "Rainbow Flame", cost: { coins: 25 }, preview: "🌈" },
+    { id: "rocket", name: "Rocket Flame", cost: { gems: 2 }, preview: "🚀" }
+  ];
+  // "default" is the confetti burst Math Race already always played on a
+  // win (unchanged, still free) -- the paid tiers are distinct variations
+  // of the same canvas-confetti call (different colors/shapes/spread),
+  // not a downgrade of what free players already had.
+  const MATHRACE_FINISH_EFFECTS = [
+    { id: "default", name: "Confetti Burst", cost: null, preview: "🎊" },
+    { id: "fireworks", name: "Fireworks", cost: { coins: 20 }, preview: "🎆" },
+    { id: "streamers", name: "Streamers", cost: { coins: 25 }, preview: "🎉" },
+    { id: "rainbow", name: "Rainbow Mega Burst", cost: { gems: 2 }, preview: "🌈" }
+  ];
+  const BOSSRUSH_SPECIAL_EFFECTS = [
+    { id: "default", name: "Default Flash", cost: null, preview: "✨" },
+    { id: "lightning", name: "Lightning Strike", cost: { coins: 20 }, preview: "⚡" },
+    { id: "fire", name: "Fire Burst", cost: { coins: 25 }, preview: "🔥" },
+    { id: "ice", name: "Ice Shatter", cost: { gems: 2 }, preview: "❄️" }
+  ];
+  const NINJA_SLASH_EFFECTS = [
+    { id: "default", name: "Default Slash", cost: null, preview: "⚔️" },
+    { id: "fire", name: "Fire Slash", cost: { coins: 20 }, preview: "🔥" },
+    { id: "lightning", name: "Lightning Slash", cost: { coins: 25 }, preview: "⚡" },
+    { id: "rainbow", name: "Rainbow Slash", cost: { gems: 2 }, preview: "🌈" }
+  ];
+  const MEMORYMATCH_CARDBACKS = [
+    { id: "default", name: "Brain", cost: null, preview: "🧠" },
+    { id: "cards", name: "Cards", cost: { coins: 15 }, preview: "🎴" },
+    { id: "star", name: "Star", cost: { coins: 20 }, preview: "🌟" },
+    { id: "crystal", name: "Crystal", cost: { gems: 2 }, preview: "🔮" }
+  ];
+  const GAMEPLAY_FX_CATALOGS = {
+    "plane-bullet": PLANE_BULLET_EFFECTS,
+    "drive-nitro": DRIVE_NITRO_EFFECTS,
+    "mathrace-finish": MATHRACE_FINISH_EFFECTS,
+    "bossrush-special": BOSSRUSH_SPECIAL_EFFECTS,
+    "ninja-slash": NINJA_SLASH_EFFECTS,
+    "memorymatch-cardback": MEMORYMATCH_CARDBACKS
+  };
+
+  // Lightweight single-type read, for a GAME to find out its own equipped
+  // effect without pulling the whole getCosmetics() bundle (frames +
+  // sounds + all 6 FX catalogs) just to read one value.
+  async function getEquippedCosmetic(type, defaultId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return defaultId;
+    const snap = await aigDb.ref(`players/${player.id}/equipped/${type}`).get();
+    return snap.exists() ? snap.val() : defaultId;
+  }
+
   async function getCosmetics() {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return null;
@@ -1110,11 +1179,24 @@
     ]);
     const owned = ownedSnap.exists() ? ownedSnap.val() : {};
     const equipped = equippedSnap.exists() ? equippedSnap.val() : {};
+    const fx = {};
+    Object.entries(GAMEPLAY_FX_CATALOGS).forEach(([type, catalog]) => {
+      fx[type] = catalog.map(e => ({ ...e, owned: !e.cost || !!(owned[type] && owned[type][e.id]) }));
+    });
     return {
       frames: AVATAR_FRAMES.map(f => ({ ...f, owned: !f.cost || !!(owned.frame && owned.frame[f.id]) })),
       sounds: SOUND_PACKS.map(s => ({ ...s, owned: !s.cost || !!(owned.sound && owned.sound[s.id]) })),
       equippedFrame: equipped.frame || "none",
-      equippedSound: equipped.sound || "classic"
+      equippedSound: equipped.sound || "classic",
+      fx,
+      equippedFx: {
+        "plane-bullet": equipped["plane-bullet"] || "default",
+        "drive-nitro": equipped["drive-nitro"] || "default",
+        "mathrace-finish": equipped["mathrace-finish"] || "default",
+        "bossrush-special": equipped["bossrush-special"] || "default",
+        "ninja-slash": equipped["ninja-slash"] || "default",
+        "memorymatch-cardback": equipped["memorymatch-cardback"] || "default"
+      }
     };
   }
 
@@ -2592,7 +2674,7 @@
     getNinjaGhost, saveNinjaGhost,
     getBattlePass, claimBattlePassTier,
     getCollection,
-    getCosmetics, unlockCosmetic, equipCosmetic,
+    getCosmetics, unlockCosmetic, equipCosmetic, getEquippedCosmetic,
     getAvatarColor, setAvatarColor,
     getRewardCatalog, redeemReward,
     getMathvilleTheme, setMathvilleTheme,

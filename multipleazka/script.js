@@ -1735,8 +1735,17 @@ function loseSoloRace() {
 /* =================================================================
    10a. WIN CELEBRATION — confetti burst + synthesized cheer, ~3s
    ================================================================= */
-function celebrateWin() {
-  burstConfetti();
+async function celebrateWin() {
+  // Cosmetic only -- bought/equipped via the hub's Customize > Game FX tab
+  // (leaderboard.js's GAMEPLAY_FX_CATALOGS, type "mathrace-finish"). Every
+  // tier reuses the same canvas-confetti call, just different colors/
+  // shapes/spread -- "default" is exactly what already played before this
+  // feature existed, never a downgrade for a player who hasn't bought one.
+  let finishFx = "default";
+  if (window.AIGLeaderboard) {
+    try { finishFx = await AIGLeaderboard.getEquippedCosmetic("mathrace-finish", "default"); } catch (e) {}
+  }
+  burstConfetti(finishFx);
   playCheerSound();
   playFinishCheer();   // applause + "Yeah!" — replaces the old spoken win line
 
@@ -1851,13 +1860,45 @@ function playYeahShout() {
 // Fires repeated confetti bursts from both sides for 3 seconds, plus one
 // big burst from the center right away. Uses the canvas-confetti CDN
 // library; silently does nothing if it failed to load.
-function burstConfetti() {
+function burstConfetti(effectId) {
   if (typeof confetti !== "function") return;
-
-  confetti({ particleCount: 90, spread: 100, origin: { y: 0.4 } });
-
   const duration = 3000;
   const end = Date.now() + duration;
+
+  if (effectId === "fireworks") {
+    // Repeated pops from random points across the screen, higher velocity
+    // + gravity than the default corner-streams -- reads as fireworks
+    // popping rather than confetti raining down.
+    (function frame() {
+      confetti({ particleCount: 30, spread: 360, startVelocity: 45, gravity: 1.1, origin: { x: Math.random(), y: Math.random() * 0.5 } });
+      if (Date.now() < end) setTimeout(frame, 350);
+    })();
+    return;
+  }
+  if (effectId === "streamers") {
+    // Bigger, squarer particles falling from top-center, narrow spread --
+    // reads as ribbon streamers rather than confetti dust.
+    confetti({ particleCount: 60, spread: 40, startVelocity: 35, scalar: 1.6, shapes: ["square"], origin: { y: 0.1 } });
+    const streamEnd = Date.now() + duration;
+    (function frame() {
+      confetti({ particleCount: 6, angle: 90, spread: 30, scalar: 1.4, shapes: ["square"], origin: { x: 0.5, y: 0 } });
+      if (Date.now() < streamEnd) requestAnimationFrame(frame);
+    })();
+    return;
+  }
+  if (effectId === "rainbow") {
+    const RAINBOW = ["#ff3ea5", "#ff6b1a", "#ffd166", "#3F8F5F", "#7ee6ff", "#6b3f9b"];
+    confetti({ particleCount: 160, spread: 130, startVelocity: 40, colors: RAINBOW, origin: { y: 0.4 } });
+    (function frame() {
+      confetti({ particleCount: 8, angle: 60, spread: 70, colors: RAINBOW, origin: { x: 0 } });
+      confetti({ particleCount: 8, angle: 120, spread: 70, colors: RAINBOW, origin: { x: 1 } });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    })();
+    return;
+  }
+
+  // "default" -- unchanged from before this feature existed.
+  confetti({ particleCount: 90, spread: 100, origin: { y: 0.4 } });
   (function frame() {
     confetti({ particleCount: 4, angle: 60, spread: 60, origin: { x: 0 } });
     confetti({ particleCount: 4, angle: 120, spread: 60, origin: { x: 1 } });

@@ -318,6 +318,29 @@ button { font-family: inherit; }
   50% { filter: drop-shadow(0 0 8px var(--bad)) brightness(1.3); }
 }
 
+/* Nitro flame cosmetic (bought via hub Customize > Game FX, "drive-nitro")
+   -- the car sprite is always drawn nose-up (never rotates, see
+   goToDrive's rotate(0deg) comment), so the "back" of the car is always
+   the bottom edge -- no rotation math needed to place this. */
+.drive-car-sprite { position: relative; }
+.drive-nitro-flame {
+  position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%) scale(0);
+  width: 10px; height: 16px;
+  background: linear-gradient(180deg, #ffd166, #E4572E);
+  border-radius: 0 0 6px 6px;
+  opacity: 0;
+  transition: opacity .1s ease;
+  pointer-events: none;
+}
+.drive-nitro-flame.active { opacity: 1; animation: driveNitroFlicker .15s ease-in-out infinite alternate; }
+@keyframes driveNitroFlicker {
+  0% { transform: translateX(-50%) scale(1) scaleY(1); }
+  100% { transform: translateX(-50%) scale(1) scaleY(1.3); }
+}
+.drive-nitro-flame.fx-blue { background: linear-gradient(180deg, #7ee6ff, #2f6bff); }
+.drive-nitro-flame.fx-rainbow { background: linear-gradient(180deg, #ff3ea5, #ffd166, #7ee6ff); }
+.drive-nitro-flame.fx-rocket { background: linear-gradient(180deg, #fff, #ff6b1a, #ff3ea5); width: 12px; height: 20px; }
+
 /* MOCKUP ONLY — Bo riding in the windshield + tap hint, mirrors the
    hub landing page's Bo avatar + "RAWR!"-style popup. */
 .drive-bo-face {
@@ -1175,6 +1198,11 @@ button { font-family: inherit; }
   border-radius: 3px; box-shadow: 0 0 6px rgba(255,217,61,.8);
   z-index: 4;
 }
+/* Bullet trail cosmetics (bought via hub Customize > Game FX,
+   "plane-bullet") -- purely recolors the same bullet, no new shape. */
+.plane-bullet.fx-rainbow { background: linear-gradient(180deg, #ff3ea5, #ffd166, #7ee6ff); box-shadow: 0 0 8px rgba(255,255,255,.8); }
+.plane-bullet.fx-fire { background: linear-gradient(180deg, #fff, #ff6b1a); box-shadow: 0 0 8px rgba(255,107,26,.85); }
+.plane-bullet.fx-star { background: linear-gradient(180deg, #fff, #7ee6ff); box-shadow: 0 0 8px rgba(126,230,255,.9); }
 
 .plane-enemy {
   position: absolute; width: 30px; height: 30px; margin-left: -15px; margin-top: -15px;
@@ -1538,6 +1566,15 @@ button { font-family: inherit; }
   animation: ninjaKunaiImpact .22s ease-out forwards;
   z-index: 6;
 }
+
+/* Slash FX cosmetics (bought via hub Customize > Game FX, "ninja-slash")
+   -- purely recolors the same kunai fly/impact, no new shape/timing. */
+.ninja-kunai-fx.fx-fire { background: linear-gradient(90deg, #ff6b1a, #ffd166); box-shadow: 0 0 8px 2px rgba(255,107,26,.8); }
+.ninja-kunai-fx.fx-lightning { background: linear-gradient(90deg, #7ee6ff, #fff); box-shadow: 0 0 8px 2px rgba(126,230,255,.9); }
+.ninja-kunai-fx.fx-rainbow { background: linear-gradient(90deg, #ff3ea5, #ffd166, #7ee6ff); box-shadow: 0 0 8px 2px rgba(255,255,255,.7); }
+.ninja-kunai-impact.fx-fire { background: radial-gradient(circle, #ff6b1a, transparent 70%); }
+.ninja-kunai-impact.fx-lightning { background: radial-gradient(circle, #7ee6ff, transparent 70%); }
+.ninja-kunai-impact.fx-rainbow { background: radial-gradient(circle, #ff3ea5, transparent 70%); }
 @keyframes ninjaKunaiImpact {
   0% { transform: scale(0); opacity: 1; }
   60% { transform: scale(1.4); opacity: 1; }
