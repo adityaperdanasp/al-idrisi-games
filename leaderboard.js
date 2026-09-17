@@ -928,6 +928,55 @@
     return { owned: snap.exists() ? snap.val() : {}, pool: CARD_POOL };
   }
 
+  // Boss Rush Arena (per-chapter MathVille bosses AND the standalone
+  // boss-rush/ game both write here via claimBossWin) has no getter to
+  // just COUNT how many have been beaten -- claimBossWin only ever
+  // checks one chapter/game key at a time. Needed for the Achievement
+  // Wall's "Boss Slayer" tiers below.
+  async function getBossWinsCount() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return 0;
+    const snap = await aigDb.ref(`players/${player.id}/bossWins`).get();
+    return snap.exists() ? Object.keys(snap.val()).length : 0;
+  }
+
+  // =====================================================================
+  // ACHIEVEMENT WALL -- a kid-facing badge collection, distinct from
+  // Parent Portal's "Achievements" snapshot (that one is a progress
+  // readout FOR PARENTS; this is a game-y checklist FOR THE KID) and
+  // from the Collection overlay's rank ladder (that's the 7 Title/Rank
+  // tiers only; this pulls together several different systems -- title,
+  // streak, collection, boss wins, season pass -- into one wall). Pure
+  // aggregation of reads that already exist elsewhere; zero new writes.
+  // =====================================================================
+  async function getAchievements() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return [];
+    const [title, streak, collection, battlePass, wallet, bossWins] = await Promise.all([
+      getTitle(), getStreak(), getCollection(), getBattlePass(), getWallet(), getBossWinsCount()
+    ]);
+    const totalCorrect = title ? title.count : 0;
+    const ownedCount = Object.keys(collection.owned || {}).length;
+    const list = TITLE_TIERS.map(t => ({
+      id: `title-${t.min}`,
+      emoji: t.emoji,
+      name: t.name,
+      desc: `${t.min} lifetime correct answers`,
+      owned: totalCorrect >= t.min
+    }));
+    list.push(
+      { id: "streak-7", emoji: "🔥", name: "Week Warrior", desc: "7-day play streak", owned: (streak.bestStreak || 0) >= 7 },
+      { id: "streak-30", emoji: "🔥🔥", name: "Unstoppable", desc: "30-day play streak", owned: (streak.bestStreak || 0) >= 30 },
+      { id: "collect-half", emoji: "🎴", name: "Collector", desc: `Own 12 of ${collection.pool.length} cards`, owned: ownedCount >= 12 },
+      { id: "collect-all", emoji: "🎴✨", name: "Master Collector", desc: `Own all ${collection.pool.length} cards`, owned: ownedCount >= collection.pool.length },
+      { id: "boss-1", emoji: "⚔️", name: "Boss Slayer", desc: "Beat a boss challenge", owned: bossWins >= 1 },
+      { id: "boss-5", emoji: "⚔️👑", name: "Boss Champion", desc: "Beat 5 boss challenges", owned: bossWins >= 5 },
+      { id: "season-full", emoji: "🎫", name: "Season Trailblazer", desc: `Reach tier ${BATTLEPASS_TIER_COUNT} of the Season Pass`, owned: battlePass.tiers.filter(t => t.reached).length >= BATTLEPASS_TIER_COUNT },
+      { id: "saver", emoji: "💰", name: "Saver", desc: "Save up 100 coins", owned: (wallet.coins || 0) >= 100 }
+    );
+    return list;
+  }
+
   // =====================================================================
   // VIRTUAL PET — a small companion (players/{id}/pet: {feedCount}) that
   // grows through stages the more it's fed. Deliberately NO hunger/decay
@@ -1094,6 +1143,21 @@
     { id: "fire", name: "Fire Ring", cost: { gems: 3 } }
   ];
 
+  // Avatar Builder, second layer on top of the existing free color
+  // picker: a face sticker shown on the avatar chip instead of the
+  // player's initial letter. Same generic unlockCosmetic/equipCosmetic
+  // pair as frames/sounds above, type "face" -- "default" (the initial
+  // letter) stays free, matching how "none"/"classic" work for frames/sounds.
+  const AVATAR_FACES = [
+    { id: "default", name: "Initial", cost: null, preview: null },
+    { id: "smile", name: "Smiley", cost: { coins: 10 }, preview: "😀" },
+    { id: "cool", name: "Cool", cost: { coins: 15 }, preview: "😎" },
+    { id: "star", name: "Star-Struck", cost: { coins: 15 }, preview: "🤩" },
+    { id: "party", name: "Party", cost: { coins: 20 }, preview: "🥳" },
+    { id: "unicorn", name: "Unicorn", cost: { gems: 2 }, preview: "🦄" },
+    { id: "cat", name: "Cat", cost: { gems: 2 }, preview: "🐱" }
+  ];
+
   const SOUND_PACKS = [
     { id: "classic", name: "Classic Chime", cost: null, notes: [{ f: 523, d: 120 }, { f: 659, d: 120 }, { f: 784, d: 200 }] },
     { id: "arcade", name: "Arcade Blip", cost: { coins: 15 }, notes: [{ f: 440, d: 80 }, { f: 660, d: 80 }, { f: 880, d: 80 }, { f: 1320, d: 160 }] },
@@ -1186,8 +1250,10 @@
     return {
       frames: AVATAR_FRAMES.map(f => ({ ...f, owned: !f.cost || !!(owned.frame && owned.frame[f.id]) })),
       sounds: SOUND_PACKS.map(s => ({ ...s, owned: !s.cost || !!(owned.sound && owned.sound[s.id]) })),
+      faces: AVATAR_FACES.map(fc => ({ ...fc, owned: !fc.cost || !!(owned.face && owned.face[fc.id]) })),
       equippedFrame: equipped.frame || "none",
       equippedSound: equipped.sound || "classic",
+      equippedFace: equipped.face || "default",
       fx,
       equippedFx: {
         "plane-bullet": equipped["plane-bullet"] || "default",
@@ -2512,6 +2578,42 @@
   }
 
   // =====================================================================
+  // BOSS RUSH ARENA — DAILY CHALLENGE: a bonus ON TOP of the per-run
+  // awardBossRushBonus above, once per calendar day, for clearing the
+  // full 4-boss gauntlet. Distinct from MathVille's separate "Weekly
+  // Boss Rush" (a cross-chapter gauntlet gated weekly) -- this one is
+  // scoped to the standalone boss-rush/ game and resets daily. Same
+  // get-check-set gate pattern as claimBossWin/claimWeeklyBossRush; the
+  // wallet credit itself uses .transaction() like awardBossRushBonus
+  // above since it's a pure increment (never aborts, so immune to the
+  // null-cache abort bug documented on unlockVehicle()).
+  // =====================================================================
+  const BOSS_RUSH_DAILY_REWARD = { coins: 15, gems: 1 };
+
+  async function getBossRushDailyStatus() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { claimed: true, reward: BOSS_RUSH_DAILY_REWARD };
+    const snap = await aigDb.ref(`players/${player.id}/bossRushDailyWins/${todayKey()}`).get();
+    return { claimed: snap.exists() && snap.val() === true, reward: BOSS_RUSH_DAILY_REWARD };
+  }
+
+  async function claimBossRushDaily() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const winRef = aigDb.ref(`players/${player.id}/bossRushDailyWins/${todayKey()}`);
+    const winSnap = await winRef.get();
+    if (winSnap.exists() && winSnap.val()) return { ok: true, alreadyClaimed: true };
+    await winRef.set(true);
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + BOSS_RUSH_DAILY_REWARD.coins;
+      wallet.gems = (wallet.gems || 0) + BOSS_RUSH_DAILY_REWARD.gems;
+      return wallet;
+    });
+    return { ok: true, alreadyClaimed: false, reward: BOSS_RUSH_DAILY_REWARD };
+  }
+
+  // =====================================================================
   // DANCE BATTLE (dance-battle/) — one-time-per-round bonus scaled by
   // final rhythm score and which tempo tier was reached by round's end.
   // =====================================================================
@@ -2712,6 +2814,8 @@
     awardMonsterBattleBonus,
     getCityBuilder, awardCityBuilderBricks, placeCityBuilding, awardCityBuilderBonus,
     awardBossRushBonus,
+    getBossRushDailyStatus, claimBossRushDaily,
+    getBossWinsCount, getAchievements,
     awardDanceBattleBonus,
     awardCookingRushBonus,
     awardParkourRunBonus,

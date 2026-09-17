@@ -454,6 +454,61 @@ body {
 }
 .sc-level-badge[hidden] { display: none; }
 
+.sc-weekly-champion-badge {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 0.68rem;
+  color: #8a6300;
+  background: linear-gradient(135deg, #ffe9a8, #ffd35c);
+  padding: 4px 12px;
+  border-radius: 100px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
+}
+.sc-weekly-champion-badge[hidden] { display: none; }
+
+.sc-levelup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(30, 20, 10, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: sc-levelup-fade-in 0.25s ease;
+}
+@keyframes sc-levelup-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.sc-levelup-card {
+  background: linear-gradient(160deg, #fff6df, #ffe6a8);
+  border-radius: 24px;
+  padding: 32px 28px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  max-width: 320px;
+  animation: sc-levelup-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes sc-levelup-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.sc-levelup-emoji { font-size: 3.2rem; margin-bottom: 6px; }
+.sc-levelup-title {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: #8a6300;
+  margin-bottom: 6px;
+}
+.sc-levelup-sub {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #a8791f;
+}
+
 .sc-header-right {
   display: flex;
   flex-direction: row;
@@ -1087,6 +1142,39 @@ body {
   text-align: center;
 }
 
+.sc-achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.sc-achievement-tile {
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 12px 8px;
+  background: #fff;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+.sc-achievement-tile.locked { opacity: 0.45; }
+.sc-achievement-tile.owned { background: linear-gradient(135deg, #fdf6e5, #f6e3b4); }
+.sc-achievement-emoji { font-size: 1.6rem; }
+.sc-achievement-name {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 0.7rem;
+  color: #7a5a2e;
+}
+.sc-achievement-desc {
+  font-family: "Nunito", sans-serif;
+  font-weight: 600;
+  font-size: 0.6rem;
+  color: #9a8360;
+}
+
 .sc-modal-tabs {
   display: flex;
   gap: 8px;
@@ -1146,6 +1234,15 @@ body {
   margin: 14px 0 6px;
 }
 .sc-fx-group-label:first-child { margin-top: 0; }
+.sc-avatar-section-label {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #7a5a2e;
+  margin: 14px 0 6px;
+}
+.sc-avatar-section-label:first-child { margin-top: 0; }
+.sc-avatarface-grid { display: flex; flex-direction: column; gap: 10px; }
 .sc-cosmetic-preview {
   width: 32px;
   height: 32px;

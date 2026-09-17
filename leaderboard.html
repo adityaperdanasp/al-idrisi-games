@@ -74,7 +74,7 @@
     });
   }
 
-  function render(data, scoreKey, scoreLabel) {
+  function render(data, scoreKey, scoreLabel, crownForFirst) {
     scoreKey = scoreKey || "timesPlayed";
     scoreLabel = scoreLabel || "plays";
     const me = window.AIGPlayer && AIGPlayer.getPlayer();
@@ -114,6 +114,7 @@
       }
       slot.className = "lb-p-slot " + slotClass[slotIdx];
       slot.innerHTML =
+        (slotIdx === 1 && crownForFirst ? `<div class="lb-p-crown">👑</div>` : "") +
         `<div class="lb-p-avatar" style="background:${colorFor(e.id)};">${initials(e.name)}</div>` +
         `<div class="lb-p-name">${e.name}</div>` +
         `<div class="lb-p-score">${e[scoreKey] || 0} ${scoreLabel}</div>` +
@@ -165,7 +166,7 @@
     const { ranking } = await AIGLeaderboard.getWeeklyLeaderboard();
     const data = {};
     ranking.forEach(r => { data[r.id] = r; });
-    render(data, "correct", "correct");
+    render(data, "correct", "correct", true);
   }
 
   async function loadSpeedRound() {

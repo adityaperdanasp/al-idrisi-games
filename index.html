@@ -240,6 +240,7 @@
           <button class="sc-trophy" id="sc-customize-btn" title="Customize" type="button">🎨</button>
           <button class="sc-trophy" id="sc-recap-btn" title="Weekly Recap" type="button">📜</button>
           <button class="sc-trophy" id="sc-journal-btn" title="Mistake Journal" type="button">📔</button>
+          <button class="sc-trophy" id="sc-achievements-btn" title="Achievements" type="button">🏅</button>
           <a href="profile/" class="sc-trophy" title="My Profile">🌟</a>
         </div>
         <div class="sc-header-right">
@@ -255,6 +256,7 @@
           </button>
           <div class="sc-player-title" id="sc-player-title" hidden></div>
           <div class="sc-level-badge" id="sc-level-badge" hidden></div>
+          <div class="sc-weekly-champion-badge" id="sc-weekly-champion-badge" hidden>👑 This Week's Champion!</div>
         </div>
       </div>
 
@@ -874,6 +876,23 @@
     </div>
   </div>
 
+  <!-- Achievement Wall -- distinct from the Collection overlay's rank
+       ladder above (title tiers only) and from Parent Portal's
+       "Achievements" snapshot (that one's for parents). This is a
+       broader kid-facing badge checklist pulling together several
+       systems at once: title, streak, collection, boss wins, season
+       pass, wallet. See getAchievements() in leaderboard.js. -->
+  <div id="sc-achievements-overlay" class="sc-modal-overlay" hidden>
+    <div class="sc-modal-card">
+      <div class="sc-modal-header">
+        <span class="sc-modal-title">🏅 Achievements</span>
+        <button class="sc-modal-close" id="sc-achievements-close" type="button">✕</button>
+      </div>
+      <div class="sc-modal-sub" id="sc-achievements-count"></div>
+      <div class="sc-achievements-grid" id="sc-achievements-grid"></div>
+    </div>
+  </div>
+
   <!-- Customize -- avatar frames + sound packs, bought with the same
        coins/gems wallet as vehicle skins. -->
   <div id="sc-customize-overlay" class="sc-modal-overlay" hidden>
@@ -893,7 +912,12 @@
       <div class="sc-cosmetic-list" id="sc-frame-list"></div>
       <div class="sc-cosmetic-list" id="sc-sound-list" hidden></div>
       <div class="sc-cosmetic-list" id="sc-powerup-list" hidden></div>
-      <div class="sc-avatarcolor-grid" id="sc-avatarcolor-grid" hidden></div>
+      <div id="sc-avatarcolor-grid" hidden>
+        <div class="sc-avatar-section-label">Color</div>
+        <div class="sc-avatarcolor-grid" id="sc-avatarcolor-swatches"></div>
+        <div class="sc-avatar-section-label">Face</div>
+        <div class="sc-avatarface-grid" id="sc-avatarface-grid"></div>
+      </div>
       <div class="sc-cosmetic-list" id="sc-reward-list" hidden></div>
       <div class="sc-cosmetic-list" id="sc-fx-list" hidden></div>
     </div>
@@ -1122,7 +1146,12 @@
     renderDailyPanel(current);
     renderBattlePass(current);
     if (current.role !== "parent" && window.AIGLeaderboard) {
-      AIGLeaderboard.getCosmetics().then(cos => { if (cos) applyEquippedFrame(cos.equippedFrame); });
+      AIGLeaderboard.getCosmetics().then(cos => {
+        if (!cos) return;
+        applyEquippedFrame(cos.equippedFrame);
+        const faceObj = cos.faces.find(f => f.id === cos.equippedFace);
+        applyEquippedFace(faceObj ? faceObj.preview : null);
+      });
       const bonus = AIGLeaderboard.getBonusHourInfo();
       document.getElementById("sc-bonus-hour-banner").hidden = !bonus.active;
       // Live so it updates the instant a coin/gem is earned elsewhere in
@@ -1146,7 +1175,9 @@
         el.textContent = `⭐ Lv.${lvl.level}`;
         el.title = `${lvl.xpIntoLevel}/${lvl.xpForNextLevel} XP to next level`;
         el.hidden = false;
+        checkLevelUpFanfare(current.id, lvl.level);
       });
+      renderWeeklyChampionBadge(current.id);
       renderBeatYesterday();
       renderMysteryBox();
       renderSeasonalEvent();
@@ -1302,6 +1333,50 @@
     body.innerHTML = `
       <p class="sc-goal-desc">${goal.achieved ? "🎉 Goal reached!" : `${goal.progress}/${goal.target} correct answers this week`}</p>
       <div class="sc-goal-track"><div class="sc-goal-fill" style="width:${pct}%"></div></div>`;
+  }
+
+  // Level-Up Fanfare -- a celebration moment on TOP of the existing
+  // "⭐ Lv.N" pill (added separately, see getPlayerLevel() in
+  // leaderboard.js), which only ever displayed the current level
+  // silently with no feedback the moment it actually increased. Detected
+  // client-side (localStorage, per player id) rather than server-side
+  // since getPlayerLevel() has no "did this just cross a level" signal
+  // of its own -- comparing the last-seen level here is enough and needs
+  // no new Firebase write. The very first load for a player never fires
+  // this (lastSeen starts unset/0, and level is never 0), so a fresh
+  // sign-up doesn't get a false "level up".
+  function checkLevelUpFanfare(playerId, level) {
+    const key = `aig_last_level_${playerId}`;
+    const lastSeen = parseInt(localStorage.getItem(key) || "0", 10);
+    localStorage.setItem(key, String(level));
+    if (!lastSeen || level <= lastSeen) return;
+    const overlay = document.createElement("div");
+    overlay.className = "sc-levelup-overlay";
+    overlay.innerHTML = `
+      <div class="sc-levelup-card">
+        <div class="sc-levelup-emoji">⭐</div>
+        <div class="sc-levelup-title">Level Up!</div>
+        <div class="sc-levelup-sub">You reached Level ${level}!</div>
+      </div>`;
+    document.body.appendChild(overlay);
+    // Guarded the same way the Virtual Pet's level-up already is: the
+    // hub doesn't load canvas-confetti (only MathVille/Math Race do),
+    // so this is a silent no-op here rather than a missing-library error.
+    if (window.confetti) confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
+    overlay.addEventListener("click", () => overlay.remove());
+    setTimeout(() => overlay.remove(), 3500);
+  }
+
+  // Weekly Champion Crown -- flags the current #1 spot on the "This
+  // Week" leaderboard (leaderboard.html already shows the crown on the
+  // podium itself; this mirrors it on the hub so the champion sees it
+  // without having to open the leaderboard page at all).
+  async function renderWeeklyChampionBadge(playerId) {
+    const badge = document.getElementById("sc-weekly-champion-badge");
+    if (!window.AIGLeaderboard) { badge.hidden = true; return; }
+    const { ranking } = await AIGLeaderboard.getWeeklyLeaderboard();
+    const isChampion = ranking.length > 0 && ranking[0].correct > 0 && ranking[0].id === playerId;
+    badge.hidden = !isChampion;
   }
 
   async function renderBeatYesterday() {
@@ -1595,6 +1670,27 @@
     document.getElementById("sc-collection-overlay").hidden = true;
   });
 
+  // Achievement Wall -------------------------------------------------------
+  async function renderAchievements() {
+    if (!window.AIGLeaderboard || !AIGLeaderboard.getAchievements) return;
+    const list = await AIGLeaderboard.getAchievements();
+    const ownedCount = list.filter(a => a.owned).length;
+    document.getElementById("sc-achievements-count").textContent = `${ownedCount}/${list.length} unlocked`;
+    document.getElementById("sc-achievements-grid").innerHTML = list.map(a => `
+      <div class="sc-achievement-tile ${a.owned ? "owned" : "locked"}" title="${a.desc}">
+        <span class="sc-achievement-emoji">${a.owned ? a.emoji : "🔒"}</span>
+        <span class="sc-achievement-name">${a.name}</span>
+        <span class="sc-achievement-desc">${a.desc}</span>
+      </div>`).join("");
+  }
+  document.getElementById("sc-achievements-btn").addEventListener("click", () => {
+    document.getElementById("sc-achievements-overlay").hidden = false;
+    renderAchievements();
+  });
+  document.getElementById("sc-achievements-close").addEventListener("click", () => {
+    document.getElementById("sc-achievements-overlay").hidden = true;
+  });
+
   // Weekly Recap ------------------------------------------------------------
   async function renderRecap() {
     const recap = await AIGLeaderboard.getWeeklyRecap();
@@ -1708,6 +1804,21 @@
     avatar.className = "sc-player-avatar" + (frameId && frameId !== "none" ? ` frame-${frameId}` : "");
   }
 
+  // Avatar Builder: the "face" slot shows an emoji sticker instead of the
+  // initial letter scColorFor()'s caller sets by default. `preview` is
+  // the equipped face's emoji (or null/undefined for "default", which
+  // falls back to the initial letter -- same free/no-op semantics as
+  // frame "none").
+  function applyEquippedFace(preview) {
+    const avatar = document.getElementById("sc-player-avatar");
+    if (preview) {
+      avatar.textContent = preview;
+      return;
+    }
+    const current = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (current) avatar.textContent = current.name[0].toUpperCase();
+  }
+
   async function renderPowerupShop() {
     const [powerups, defs] = await Promise.all([
       AIGLeaderboard.getPowerups(),
@@ -1787,6 +1898,7 @@
     if (!cos) return;
     renderPowerupShop();
     renderAvatarColorPicker();
+    renderAvatarFacePicker(cos);
     renderRewardList();
     renderFxList(cos);
 
@@ -1927,7 +2039,7 @@
   // with their own pick, persisted via AIGLeaderboard.setAvatarColor.
   async function renderAvatarColorPicker() {
     const current = await AIGLeaderboard.getAvatarColor();
-    const grid = document.getElementById("sc-avatarcolor-grid");
+    const grid = document.getElementById("sc-avatarcolor-swatches");
     grid.innerHTML = SC_STUDENT_PALETTE.map(c => `
       <button class="sc-avatarcolor-swatch${c === current ? " selected" : ""}" type="button" data-color="${c}" style="background:${c}"></button>
     `).join("");
@@ -1936,6 +2048,46 @@
         await AIGLeaderboard.setAvatarColor(btn.dataset.color);
         document.getElementById("sc-player-avatar").style.background = btn.dataset.color;
         renderAvatarColorPicker();
+      };
+    });
+  }
+
+  // Avatar Builder, second layer: face stickers shown INSTEAD of the
+  // initial letter -- a paid cosmetic (type "face") through the SAME
+  // generic unlockCosmetic/equipCosmetic pair frames/sounds/Game FX
+  // already use, just surfaced in the same "🎨 Avatar" tab as the free
+  // color picker above since together they're what "building" a look
+  // means here (no separate hair/accessory layers -- kept to what the
+  // existing avatar chip shape can actually show).
+  async function renderAvatarFacePicker(cos) {
+    const grid = document.getElementById("sc-avatarface-grid");
+    grid.innerHTML = cos.faces.map(f => {
+      const isEquipped = cos.equippedFace === f.id;
+      const priceLabel = !f.cost ? "" : f.cost.coins ? `🪙${f.cost.coins}` : `💎${f.cost.gems}`;
+      return `
+        <div class="sc-cosmetic-item">
+          <span class="sc-cosmetic-preview">${f.preview || "🔤"}</span>
+          <span class="sc-cosmetic-name">${f.name}</span>
+          ${isEquipped
+            ? `<span class="sc-cosmetic-equipped">Equipped</span>`
+            : f.owned
+              ? `<button class="sc-quest-claim-btn" data-face-equip="${f.id}">Equip</button>`
+              : `<button class="sc-quest-claim-btn" data-face-buy="${f.id}">${priceLabel}</button>`}
+        </div>`;
+    }).join("");
+    grid.querySelectorAll("[data-face-buy]").forEach(btn => {
+      btn.onclick = async () => {
+        const face = cos.faces.find(f => f.id === btn.dataset.faceBuy);
+        const result = await AIGLeaderboard.unlockCosmetic("face", face.id, face.cost);
+        if (result.ok) { await AIGLeaderboard.equipCosmetic("face", face.id); applyEquippedFace(face.preview); renderCustomize(); }
+      };
+    });
+    grid.querySelectorAll("[data-face-equip]").forEach(btn => {
+      btn.onclick = async () => {
+        const face = cos.faces.find(f => f.id === btn.dataset.faceEquip);
+        await AIGLeaderboard.equipCosmetic("face", face.id);
+        applyEquippedFace(face.preview);
+        renderCustomize();
       };
     });
   }

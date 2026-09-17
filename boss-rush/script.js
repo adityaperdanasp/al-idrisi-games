@@ -18,6 +18,11 @@ if (!player || player.role === "parent") {
 
 function initBossRush() {
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
+  if (window.AIGLeaderboard) {
+    AIGLeaderboard.getBossRushDailyStatus().then(status => {
+      document.getElementById("br-daily-banner").classList.toggle("hidden", status.claimed);
+    }).catch(() => {});
+  }
   const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
   const BOSSES = [
     { emoji: "👹", name: "Ogre", hp: 25, atk: 5 },
@@ -194,14 +199,36 @@ function initBossRush() {
       ? `You defeated all ${BOSSES.length} bosses with ${Math.max(0, state.playerHp)} HP to spare!`
       : `You defeated ${defeated} boss${defeated === 1 ? "" : "es"} before falling. Try again!`;
     const bonusEl = document.getElementById("br-end-bonus");
+    const dailyEl = document.getElementById("br-daily-bonus-note");
     bonusEl.textContent = "";
+    dailyEl.textContent = "";
     if (window.AIGLeaderboard) {
       AIGLeaderboard.awardBossRushBonus(defeated, BOSSES.length, Math.max(0, state.playerHp), PLAYER_HP_MAX).then(result => {
         if (result && result.bonus) {
           bonusEl.textContent = `Bonus: 🪙${result.bonus.coins || 0}${result.bonus.gems ? ` 💎${result.bonus.gems}` : ""}`;
         }
       }).catch(() => {});
+      if (won) {
+        AIGLeaderboard.claimBossRushDaily().then(result => {
+          if (result && result.ok && !result.alreadyClaimed && result.reward) {
+            dailyEl.textContent = `🎯 Daily Challenge bonus: 🪙${result.reward.coins} 💎${result.reward.gems}!`;
+            document.getElementById("br-daily-banner").classList.add("hidden");
+          }
+        }).catch(() => {});
+      }
     }
+    const shareBtn = document.getElementById("br-share-btn");
+    shareBtn.classList.toggle("hidden", !window.AIGShareCard);
+    shareBtn.onclick = () => {
+      const player = window.AIGPlayer && AIGPlayer.getPlayer();
+      window.AIGShareCard.openPreview({
+        emoji: won ? "🏆" : "💪",
+        title: "Boss Rush Arena",
+        name: player ? player.name : "",
+        lines: [won ? `Cleared all ${BOSSES.length} bosses!` : `Defeated ${defeated}/${BOSSES.length} bosses`],
+        accent: "#FF6B4A"
+      });
+    };
     document.getElementById("br-end-overlay").classList.remove("hidden");
   }
 

@@ -5212,6 +5212,19 @@ function showReward(stars) {
   $("btn-reward-boss").onclick = () => launchBossChallenge(state.chapterId);
   $("btn-reward-certificate").classList.toggle("hidden", stars < 3);
   $("btn-reward-certificate").onclick = () => launchCertificate(state.chapterId, null);
+  $("btn-reward-share").classList.remove("hidden");
+  $("btn-reward-share").onclick = () => {
+    const sharePlayer = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (window.AIGShareCard) {
+      window.AIGShareCard.openPreview({
+        emoji: stars === 3 ? "🌟" : "🏆",
+        title: meta.location,
+        name: sharePlayer ? sharePlayer.name : "",
+        lines: ["★".repeat(stars) + "☆".repeat(3 - stars), `+${xp} XP`],
+        accent: "#C1793E"
+      });
+    }
+  };
   saveChapterProgress(state.chapterId, stars, xp);
   updateXpBadge();
   showScreen("screen-reward");
@@ -6281,6 +6294,7 @@ function mvRenderReward(game) {
   $("btn-reward-continue").classList.remove("hidden");
   $("btn-reward-boss").classList.add("hidden"); // Boss Challenge is solo-only, never shown on the MP results screen
   $("btn-reward-certificate").classList.add("hidden"); // certificate deep-link assumes a single solo state.chapterId, same reasoning
+  $("btn-reward-share").classList.add("hidden"); // Share card is solo-only, same reasoning
 
   const wrap = $("mp-results");
   wrap.classList.remove("hidden");

@@ -236,6 +236,19 @@ body {
   animation: lb-glow 1.8s ease-in-out infinite;
 }
 
+.lb-p-crown {
+  font-size: 1.5rem;
+  line-height: 1;
+  margin-bottom: 2px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+  animation: lb-crown-bob 1.6s ease-in-out infinite;
+}
+
+@keyframes lb-crown-bob {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-4px) rotate(4deg); }
+}
+
 /* ---------- your position + list ---------- */
 .lb-you {
   margin: 0 14px 10px;

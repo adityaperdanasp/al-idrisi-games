@@ -61,6 +61,9 @@
   .br-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
   .br-btn-primary { background: #FF6B4A; color: #2b0f1a; }
   .br-btn-secondary { background: rgba(255,255,255,.1); color: #ffe9e9; }
+
+  .br-daily-banner { background: rgba(255,209,102,.14); border: 1.5px solid rgba(255,209,102,.4); border-radius: 14px; padding: 10px 12px; font-weight: 800; font-size: .82rem; color: #FFD166; margin-bottom: 16px; line-height: 1.4; }
+  .br-daily-bonus-note { font-weight: 800; color: #FFD166; margin-bottom: 4px; min-height: 1.2em; font-size: .9rem; }
 </style>
 </head>
 <body>
@@ -106,6 +109,7 @@
       <div class="br-modal-emoji">🥊</div>
       <div class="br-modal-title">Boss Rush Arena</div>
       <p class="br-modal-sub">Answer correctly to attack -- get 3 in a row for a SPECIAL MOVE! Answer wrong and the boss hits back. Survive all 4 bosses in a row!</p>
+      <div class="br-daily-banner hidden" id="br-daily-banner">🎯 Daily Challenge: clear the whole gauntlet today for a bonus 🪙15 💎1!</div>
       <button class="br-btn br-btn-primary" id="br-start-btn">Enter the Arena!</button>
     </div>
   </div>
@@ -116,6 +120,8 @@
       <div class="br-modal-title" id="br-end-title">Victory!</div>
       <div class="br-modal-sub" id="br-end-sub"></div>
       <div class="br-modal-bonus" id="br-end-bonus"></div>
+      <div class="br-daily-bonus-note" id="br-daily-bonus-note"></div>
+      <button class="br-btn br-btn-secondary hidden" id="br-share-btn">📸 Share My Score</button>
       <button class="br-btn br-btn-primary" id="br-play-again-btn">Play Again</button>
       <a href="../" class="br-btn br-btn-secondary">Back to Hub</a>
     </div>
@@ -135,6 +141,7 @@
 <script src="../leaderboard.js"></script>
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
+<script src="../share-card.js?v=1"></script>
 <script src="script.js"></script>
 </body>
 </html>
