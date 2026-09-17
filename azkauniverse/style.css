@@ -1114,6 +1114,39 @@ button:focus-visible {
 .stars-row { font-size: 2.4rem; margin: 14px 0; color: var(--star-empty); letter-spacing: 6px; }
 .stars-row .filled { color: var(--star-filled); }
 
+/* Star Tier -- see the matching comment in mathville/script.js. The
+   default filled-star color here is already a gold/yellow tone
+   (--star-filled), so tier-gold adds a brightening shine animation on
+   top of a slightly richer gold, not just a color swap, so the upgrade
+   still reads as distinct from the default. */
+.stars-row.tier-silver .filled, .quest-node-stars .tier-silver, .path-node-stars .tier-silver {
+  color: #b8c0cc;
+  text-shadow: 0 0 6px rgba(184, 192, 204, 0.7);
+}
+.stars-row.tier-gold .filled, .quest-node-stars .tier-gold, .path-node-stars .tier-gold {
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.9);
+  animation: sq-gold-shine 1.6s ease-in-out infinite;
+}
+@keyframes sq-gold-shine {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.4); }
+}
+.star-tier-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 10px 18px;
+  border-radius: 100px;
+  z-index: 999;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+.star-tier-toast.silver { background: linear-gradient(135deg, #eef1f5, #cdd5e0); color: #445; }
+.star-tier-toast.gold { background: linear-gradient(135deg, #fff6df, #ffe6a8); color: #8a6300; }
+
 .reward-xp {
   font-weight: 700;
   font-size: 1.2rem;

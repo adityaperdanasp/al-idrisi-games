@@ -339,6 +339,11 @@
       <div class="sc-bonus-hour-banner" id="sc-bonus-hour-banner" hidden>⚡ Bonus Hour! Double coins right now!</div>
       <div class="sc-bonus-hour-banner" id="sc-weekend-bonus-banner" hidden>🎉 Weekend Bonus! Double coins all weekend!</div>
 
+      <div class="sc-newfeature-banner" id="sc-startier-banner" hidden>
+        <span>🆕 New! Replay a chapter you've already 3-starred in MathVille, Language & Arts, or SolarQuest to earn Silver 🥈 stars — then Gold 🥇!</span>
+        <button id="sc-startier-banner-close" type="button" aria-label="Dismiss">✕</button>
+      </div>
+
       <div class="sc-smart-card" id="sc-seasonal-card" hidden>
         <span class="sc-smart-text" id="sc-seasonal-text"></span>
         <button class="sc-quest-claim-btn" id="sc-seasonal-claim-btn">Claim</button>
@@ -1190,8 +1195,22 @@
       const weekendBonus = AIGLeaderboard.getWeekendBonusInfo();
       document.getElementById("sc-weekend-bonus-banner").hidden = !weekendBonus.active;
       renderSmartPracticeAndDiagnostic();
+      renderStarTierBanner();
     }
   }
+
+  // Star Tier announcement -- a one-time banner telling kids about the new
+  // replay-for-silver/gold-stars feature (see mathville/azkacraft/
+  // azkauniverse's starTierClass()). Dismissible, never shows again once
+  // closed, same localStorage-flag convention as aig_bo_chat_hint_seen.
+  function renderStarTierBanner() {
+    const banner = document.getElementById("sc-startier-banner");
+    banner.hidden = !!localStorage.getItem("aig_startier_banner_seen");
+  }
+  document.getElementById("sc-startier-banner-close").addEventListener("click", () => {
+    localStorage.setItem("aig_startier_banner_seen", "1");
+    document.getElementById("sc-startier-banner").hidden = true;
+  });
 
   async function renderPet() {
     const status = await AIGLeaderboard.getPetStatus();

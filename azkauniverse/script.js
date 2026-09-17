@@ -189,11 +189,15 @@ function mergeSQProgress(local, cloud) {
   const merged = { xp: Math.max(local.xp || 0, cloud.xp || 0), levels: {} };
   const ids = new Set([...Object.keys(local.levels || {}), ...Object.keys(cloud.levels || {})]);
   ids.forEach(id => {
-    const l = (local.levels || {})[id] || { completed: false, stars: 0 };
-    const c = (cloud.levels || {})[id] || { completed: false, stars: 0 };
+    const l = (local.levels || {})[id] || { completed: false, stars: 0, perfectCount: 0 };
+    const c = (cloud.levels || {})[id] || { completed: false, stars: 0, perfectCount: 0 };
     merged.levels[id] = {
       completed: !!(l.completed || c.completed),
-      stars: Math.max(l.stars || 0, c.stars || 0)
+      stars: Math.max(l.stars || 0, c.stars || 0),
+      // Star Tier -- see the matching comment in mathville/script.js.
+      // Merged the same max-of-both-sides way as stars so syncing across
+      // devices never loses tier progress either.
+      perfectCount: Math.max(l.perfectCount || 0, c.perfectCount || 0)
     };
   });
   return merged;
@@ -426,12 +430,32 @@ function isLevelUnlocked(index) {
   return true; // every chapter is open from the start — no sequential lock
 }
 
-function starsMarkup(count) {
+// Star Tier -- see the matching function in mathville/script.js for the
+// full rationale. Same semantics: replaying a level you've already
+// 3-starred and getting ANOTHER perfect round upgrades the star color,
+// capped at gold.
+function starTierClass(stars, perfectCount) {
+  if (stars < 3) return "";
+  if ((perfectCount || 0) >= 3) return "tier-gold";
+  if ((perfectCount || 0) >= 2) return "tier-silver";
+  return "";
+}
+function showStarTierToast(perfectCount) {
+  const isGold = perfectCount >= 3;
+  const toast = document.createElement("div");
+  toast.className = "star-tier-toast" + (isGold ? " gold" : " silver");
+  toast.textContent = isGold ? "🥇 Gold Stars unlocked!" : "🥈 Silver Stars unlocked!";
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2600);
+}
+
+function starsMarkup(count, perfectCount) {
   let out = "";
   for (let i = 0; i < 3; i++) {
     out += i < count ? "★" : `<span class="empty">★</span>`;
   }
-  return out;
+  const tier = starTierClass(count, perfectCount);
+  return tier ? `<span class="${tier}">${out}</span>` : out;
 }
 
 function renderQuestMap(container, { lockable, onSelect }) {
@@ -445,7 +469,7 @@ function renderQuestMap(container, { lockable, onSelect }) {
       <span class="quest-node-icon">${level.emoji}</span>
       <span class="quest-node-body">
         <span class="quest-node-name">${level.name}</span>
-        <span class="quest-node-stars">${lockable ? starsMarkup(levelProgress ? levelProgress.stars : 0) : "Tap to pick this topic"}</span>
+        <span class="quest-node-stars">${lockable ? starsMarkup(levelProgress ? levelProgress.stars : 0, levelProgress ? levelProgress.perfectCount : 0) : "Tap to pick this topic"}</span>
       </span>
       ${lockable && !unlocked ? '<span class="quest-node-lock">🔒</span>' : ""}
     `;
@@ -615,6 +639,7 @@ function renderQuestPathMap(container) {
     const unlocked = unlockedFlags[i];
     const lp = progress.levels[level.id];
     const stars = lp ? lp.stars : 0;
+    const perfectCount = lp ? lp.perfectCount : 0;
     const completed = !!(lp && lp.completed);
     const isCurrent = unlocked && !completed;
 
@@ -635,7 +660,7 @@ function renderQuestPathMap(container) {
         ${unlocked ? "" : '<span class="path-lock-chip">🔒</span>'}
       </span>
       <span class="path-node-name">${level.name}</span>
-      <span class="path-node-stars">${starsMarkup(stars)}</span>
+      <span class="path-node-stars">${starsMarkup(stars, perfectCount)}</span>
       <span class="path-node-meta">${meta}</span>
     `;
     if (unlocked) {
@@ -987,12 +1012,15 @@ function finishLevel() {
 
   if (state.mode === "solo") {
     progress.xp += xpEarned;
-    const existing = progress.levels[state.levelId] || { stars: 0, completed: false };
+    const existing = progress.levels[state.levelId] || { stars: 0, completed: false, perfectCount: 0 };
     const newStars = Math.max(existing.stars, stars);
     const isNewBadge = existing.stars < 3 && newStars === 3;
+    const prevPerfect = existing.perfectCount || 0;
+    const perfectCount = stars === 3 ? Math.min(3, prevPerfect + 1) : prevPerfect;
     progress.levels[state.levelId] = {
       completed: true,
-      stars: newStars
+      stars: newStars,
+      perfectCount
     };
     saveProgress(progress);
     refreshXpBadge();
@@ -1001,7 +1029,8 @@ function finishLevel() {
       if (level) showBadgeToast(level.emoji, level.name);
     }
 
-    showBrainRest(() => showReward(stars, xpEarned, "screen-solo-map"));
+    const tierUp = perfectCount > prevPerfect && perfectCount >= 2;
+    showBrainRest(() => showReward(stars, xpEarned, "screen-solo-map", perfectCount, tierUp));
   } else {
     state.mp.finished = true;
     window.SQFirebase.updateMyProgress(state.mp.code, state.mp.role, {
@@ -1517,12 +1546,14 @@ function playMeowChorus() {
 /* =================================================================
    10. REWARD SCREEN
    ================================================================= */
-function showReward(stars, xp, returnScreenId) {
+function showReward(stars, xp, returnScreenId, perfectCount, tierUp) {
   const level = questionsData.levels[state.levelIndex];
   $("reward-level-name").textContent = level.name;
   $("reward-xp").textContent = xp;
 
   const starsRow = $("reward-stars");
+  const tierClass = starTierClass(stars, perfectCount);
+  starsRow.className = "stars-row" + (tierClass ? " " + tierClass : "");
   starsRow.innerHTML = "";
   for (let i = 0; i < 3; i++) {
     const span = document.createElement("span");
@@ -1530,6 +1561,7 @@ function showReward(stars, xp, returnScreenId) {
     span.textContent = "★";
     starsRow.appendChild(span);
   }
+  if (tierUp) showStarTierToast(perfectCount);
 
   $("btn-reward-continue").onclick = () => {
     if (returnScreenId === "screen-solo-map") openSoloMap();

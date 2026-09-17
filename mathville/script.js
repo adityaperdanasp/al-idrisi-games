@@ -392,9 +392,25 @@ function saveProgressToStorage() {
   localStorage.setItem("mathville.progress", JSON.stringify(PROGRESS));
 }
 
+// Star Tier -- replaying a chapter you've ALREADY 3-starred and getting
+// another perfect 3-star round upgrades the star color (black -> silver ->
+// gold), capped at gold. perfectCount only ever increments on a genuine
+// NEW 3-star result (checked against the `stars` param for THIS attempt,
+// not the all-time-max `existing.stars`), so replaying with fewer than 3
+// stars never advances it. Purely a replay-value/mastery incentive on top
+// of the existing stars field -- stars itself still behaves exactly as
+// before (max-of-all-attempts, drives the ★/☆ count).
+function starTierClass(stars, perfectCount) {
+  if (stars < 3) return "";
+  if ((perfectCount || 0) >= 3) return "tier-gold";
+  if ((perfectCount || 0) >= 2) return "tier-silver";
+  return "";
+}
 function saveChapterProgress(chapterId, stars, xp) {
-  const existing = PROGRESS.chapters[chapterId] || { stars: 0, completed: false };
-  PROGRESS.chapters[chapterId] = { stars: Math.max(existing.stars, stars), completed: true };
+  const existing = PROGRESS.chapters[chapterId] || { stars: 0, completed: false, perfectCount: 0 };
+  const prevPerfect = existing.perfectCount || 0;
+  const perfectCount = stars === 3 ? Math.min(3, prevPerfect + 1) : prevPerfect;
+  PROGRESS.chapters[chapterId] = { stars: Math.max(existing.stars, stars), completed: true, perfectCount };
   PROGRESS.xpTotal = (PROGRESS.xpTotal || 0) + xp;
   saveProgressToStorage();
   if (window.AIGLeaderboard) {
@@ -407,6 +423,16 @@ function saveChapterProgress(chapterId, stars, xp) {
     // wiped out.
     AIGLeaderboard.setProgress("mathville", { chapters: PROGRESS.chapters, xpTotal: PROGRESS.xpTotal, planeHighScore: PROGRESS.planeHighScore, ninjaHighScore: PROGRESS.ninjaHighScore });
   }
+  return { perfectCount, tierUp: perfectCount > prevPerfect && perfectCount >= 2 };
+}
+
+function showStarTierToast(perfectCount) {
+  const isGold = perfectCount >= 3;
+  const toast = document.createElement("div");
+  toast.className = "star-tier-toast" + (isGold ? " gold" : " silver");
+  toast.textContent = isGold ? "🥇 Gold Stars unlocked!" : "🥈 Silver Stars unlocked!";
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2600);
 }
 
 function updateXpBadge() {
@@ -497,7 +523,7 @@ function renderTownMap() {
         ${prog.completed ? '<span class="map-stop-check">✓</span>' : ""}
       </div>
       <div class="map-stop-title">${ch.title}</div>
-      ${prog.completed ? `<div class="map-stop-stars">${"★".repeat(prog.stars)}${"☆".repeat(3 - prog.stars)}</div>` : ""}
+      ${prog.completed ? `<div class="map-stop-stars${starTierClass(prog.stars, prog.perfectCount) ? " " + starTierClass(prog.stars, prog.perfectCount) : ""}">${"★".repeat(prog.stars)}${"☆".repeat(3 - prog.stars)}</div>` : ""}
     `;
     stop.addEventListener("click", () => mvWalkTo(i, () => goToIntro(ch.id, false)));
     wrap.appendChild(stop);
@@ -5201,9 +5227,12 @@ function showTriviaFact() {
 
 function showReward(stars) {
   const meta = CHAPTER_META[state.chapterId];
-  $("reward-title").textContent = `Nice work in ${meta.location}!`;
-  $("reward-stars").textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
   const xp = stars * 10;
+  const progressResult = saveChapterProgress(state.chapterId, stars, xp);
+  $("reward-title").textContent = `Nice work in ${meta.location}!`;
+  $("reward-stars").className = "reward-stars" + (starTierClass(stars, progressResult.perfectCount) ? " " + starTierClass(stars, progressResult.perfectCount) : "");
+  $("reward-stars").textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
+  if (progressResult.tierUp) showStarTierToast(progressResult.perfectCount);
   $("reward-xp").textContent = `+${xp} XP`;
   showTriviaFact();
   $("mp-results").classList.add("hidden");
@@ -5225,7 +5254,6 @@ function showReward(stars) {
       });
     }
   };
-  saveChapterProgress(state.chapterId, stars, xp);
   updateXpBadge();
   showScreen("screen-reward");
   loadAiHint();
@@ -6289,6 +6317,10 @@ function mvRenderReward(game) {
 
   showScreen("screen-reward");
   $("reward-title").textContent = `Nice work in ${CHAPTER_META[game.currentChapterId].location}!`;
+  // Star Tier is solo-only (see showReward()) -- reset any tier-silver/gold
+  // class a PRIOR solo round may have left on this shared element, same
+  // reasoning as hiding btn-reward-boss/certificate/share below.
+  $("reward-stars").className = "reward-stars";
   $("reward-stars").textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
   $("reward-xp").textContent = `+${stars * 10} XP`;
   $("btn-reward-continue").classList.remove("hidden");

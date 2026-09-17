@@ -924,6 +924,34 @@ body {
   animation: sc-flame-pulse 1.6s ease-in-out infinite;
 }
 
+.sc-newfeature-banner {
+  margin: 14px 24px 0;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(90deg, #dfe9ff, #e8dbff);
+  border-radius: 18px;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #3d2e22;
+  line-height: 1.4;
+}
+.sc-newfeature-banner[hidden] { display: none; }
+.sc-newfeature-banner span { flex: 1; }
+.sc-newfeature-banner button {
+  flex: none;
+  border: none;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-weight: 800;
+  color: #3d2e22;
+  cursor: pointer;
+}
+
 .sc-recap-card { max-width: 320px; text-align: center; }
 .sc-recap-body { display: flex; flex-direction: column; gap: 14px; margin: 16px 0; }
 .sc-recap-row {

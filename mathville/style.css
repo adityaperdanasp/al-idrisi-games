@@ -926,6 +926,38 @@ button { font-family: inherit; }
 /* ---------- Reward ---------- */
 .reward-title { text-align: center; font: 800 22px "Baloo 2", sans-serif; margin-top: 20px; }
 .reward-stars { text-align: center; font-size: 40px; letter-spacing: 8px; color: var(--gold); margin: 12px 0; }
+
+/* Star Tier -- replaying an already-3-starred chapter for another perfect
+   round upgrades the star color, capped at gold. Colors are hardcoded
+   (not the themeable --gold var) so the upgrade reads the same regardless
+   of which of the 4 world-theme skins is active. */
+.map-stop-stars.tier-silver, .reward-stars.tier-silver {
+  color: #b8c0cc;
+  text-shadow: 0 0 6px rgba(184, 192, 204, 0.7);
+}
+.map-stop-stars.tier-gold, .reward-stars.tier-gold {
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+  animation: star-tier-gold-shine 1.6s ease-in-out infinite;
+}
+@keyframes star-tier-gold-shine {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.4); }
+}
+.star-tier-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font: 800 14px "Baloo 2", sans-serif;
+  padding: 10px 18px;
+  border-radius: 100px;
+  z-index: 50;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  animation: driveToastPop 0.3s ease-out;
+}
+.star-tier-toast.silver { background: linear-gradient(135deg, #eef1f5, #cdd5e0); color: #445; }
+.star-tier-toast.gold { background: linear-gradient(135deg, #fff6df, #ffe6a8); color: #8a6300; }
 .reward-xp { text-align: center; font: 700 15px "Fredoka", sans-serif; color: var(--wood-dark); margin-bottom: 12px; }
 .trivia-card {
   display: flex; align-items: center; gap: 10px; background: var(--cream);

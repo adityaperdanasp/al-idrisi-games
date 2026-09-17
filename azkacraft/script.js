@@ -224,12 +224,16 @@ function mergeProgress(local, cloud) {
   };
   const ids = new Set([...Object.keys(local.chapters || {}), ...Object.keys(cloud.chapters || {})]);
   ids.forEach(id => {
-    const l = (local.chapters || {})[id] || { stars: 0, completed: false, xp: 0 };
-    const c = (cloud.chapters || {})[id] || { stars: 0, completed: false, xp: 0 };
+    const l = (local.chapters || {})[id] || { stars: 0, completed: false, xp: 0, perfectCount: 0 };
+    const c = (cloud.chapters || {})[id] || { stars: 0, completed: false, xp: 0, perfectCount: 0 };
     merged.chapters[id] = {
       stars: Math.max(l.stars || 0, c.stars || 0),
       completed: !!(l.completed || c.completed),
-      xp: Math.max(l.xp || 0, c.xp || 0)
+      xp: Math.max(l.xp || 0, c.xp || 0),
+      // Star Tier -- see the matching comment on saveChapterProgress()
+      // below. Merged the same max-of-both-sides way as stars/xp so
+      // syncing across devices never loses tier progress either.
+      perfectCount: Math.max(l.perfectCount || 0, c.perfectCount || 0)
     };
   });
   return merged;
@@ -288,7 +292,7 @@ function renderBookshelf() {
           <div class="timeline-title">Ch. ${chapter.id}: ${chapter.title}</div>
           <div class="timeline-meta">
             <span class="timeline-subject" style="color:${style.color};background:${style.color}22">${chapter.topic}</span>
-            <span class="timeline-stars">${starsDisplay}</span>
+            <span class="timeline-stars${starTierClass(chStats.stars, chStats.perfectCount) ? " " + starTierClass(chStats.stars, chStats.perfectCount) : ""}">${starsDisplay}</span>
           </div>
         </div>
       </button>
@@ -753,22 +757,46 @@ function handleSentenceAnswer(q, target) {
 
 /* ---------------------------- Finishing a chapter ---------------------------- */
 
+// Star Tier -- see the matching function in mathville/script.js for the
+// full rationale. Same semantics here: replaying a chapter you've already
+// 3-starred and getting ANOTHER perfect round upgrades the star color,
+// capped at gold.
+function starTierClass(stars, perfectCount) {
+  if (stars < 3) return "";
+  if ((perfectCount || 0) >= 3) return "tier-gold";
+  if ((perfectCount || 0) >= 2) return "tier-silver";
+  return "";
+}
+function showStarTierToast(perfectCount) {
+  const isGold = perfectCount >= 3;
+  const toast = document.createElement("div");
+  toast.className = "star-tier-toast" + (isGold ? " gold" : " silver");
+  toast.textContent = isGold ? "🥇 Gold Stars unlocked!" : "🥈 Silver Stars unlocked!";
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2600);
+}
+
 function finishChapter() {
   if (window.AIGLeaderboard) AIGLeaderboard.recordPlay("language-arts");
   const pct = session.correctCount / session.order.length;
   const stars = pct >= 0.9 ? 3 : pct >= 0.7 ? 2 : 1;
   const xpEarned = session.score;
 
-  const existing = PROGRESS.chapters[session.chapter.id] || { stars: 0 };
+  const existing = PROGRESS.chapters[session.chapter.id] || { stars: 0, perfectCount: 0 };
   const isNewSticker = !existing.completed;
+  const prevPerfect = existing.perfectCount || 0;
+  const perfectCount = stars === 3 ? Math.min(3, prevPerfect + 1) : prevPerfect;
   PROGRESS.chapters[session.chapter.id] = {
     stars: Math.max(stars, existing.stars),
     completed: true,
-    xp: xpEarned
+    xp: xpEarned,
+    perfectCount
   };
   PROGRESS.xpTotal += xpEarned;
   if (isNewSticker) {
     showStickerToast(STICKER_EMOJI[session.chapter.stickerId] || "✨", session.chapter.title);
+  } else if (perfectCount > prevPerfect && perfectCount >= 2) {
+    showStarTierToast(perfectCount);
   }
   if (session.chapter.id === PROGRESS.unlockedChapter && PROGRESS.unlockedChapter < QUESTION_BANK.chapters.length) {
     PROGRESS.unlockedChapter++;

@@ -632,6 +632,28 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
 .timeline-subject { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
 .timeline-stars { font-size: 12px; letter-spacing: 1px; }
 
+/* Star Tier -- see the matching comment in mathville/style.css. Colors
+   hardcoded (not theme-derived) so the upgrade reads consistently. */
+.timeline-stars.tier-silver { color: #8a95a6; text-shadow: 0 0 4px rgba(138, 149, 166, 0.6); }
+.timeline-stars.tier-gold { color: #c99400; text-shadow: 0 0 5px rgba(201, 148, 0, 0.6); animation: star-tier-gold-shine 1.6s ease-in-out infinite; }
+@keyframes star-tier-gold-shine {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.4); }
+}
+.star-tier-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font: 800 14px var(--font);
+  padding: 10px 18px;
+  border-radius: 100px;
+  z-index: 999;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+.star-tier-toast.silver { background: linear-gradient(135deg, #eef1f5, #cdd5e0); color: #445; }
+.star-tier-toast.gold { background: linear-gradient(135deg, #fff6df, #ffe6a8); color: #8a6300; }
+
 /* Page flip transition */
 .page-flip {
   animation: pageFlip 0.5s ease;
