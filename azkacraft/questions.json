@@ -2369,6 +2369,171 @@
           "prompt": "🐝 Spelling Bee: What word means \"the day of the week right after Sunday\"? Spell it correctly.",
           "answer": "Monday",
           "spellingBee": true
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"to think something is true\"?",
+          "options": [
+            "beleive",
+            "believe",
+            "belive",
+            "beleve"
+          ],
+          "answer": "believe"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"very pretty\"?",
+          "options": [
+            "beautifull",
+            "beutiful",
+            "beautiful",
+            "byootiful"
+          ],
+          "answer": "beautiful"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the day you were born, celebrated every year?",
+          "options": [
+            "birthday",
+            "berthday",
+            "birthdai",
+            "birthdya"
+          ],
+          "answer": "birthday"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the first meal of the day?",
+          "options": [
+            "brekfast",
+            "breackfast",
+            "breakfeast",
+            "breakfast"
+          ],
+          "answer": "breakfast"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the past tense of \"catch\"?",
+          "options": [
+            "cought",
+            "caught",
+            "cawt",
+            "caugt"
+          ],
+          "answer": "caught"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the second month of the year?",
+          "options": [
+            "Febuary",
+            "February",
+            "Feburary",
+            "Februray"
+          ],
+          "answer": "February"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the number 40?",
+          "options": [
+            "fourty",
+            "forty",
+            "fortey",
+            "fordy"
+          ],
+          "answer": "forty"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"to give an answer without being sure\"?",
+          "options": [
+            "gess",
+            "guess",
+            "gues",
+            "guesse"
+          ],
+          "answer": "guess"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"how tall something is\"?",
+          "options": [
+            "hight",
+            "height",
+            "heighth",
+            "hieght"
+          ],
+          "answer": "height"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"understanding gained through learning\"?",
+          "options": [
+            "knowlege",
+            "knowledge",
+            "knollege",
+            "nowledge"
+          ],
+          "answer": "knowledge"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"needed or required\"?",
+          "options": [
+            "neccessary",
+            "necessary",
+            "neccesary",
+            "necesary"
+          ],
+          "answer": "necessary"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"something unexpected\"?",
+          "options": [
+            "suprise",
+            "surprise",
+            "surprize",
+            "suprize"
+          ],
+          "answer": "surprise"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"how hot or cold something is\"?",
+          "options": [
+            "temperture",
+            "temperature",
+            "temprature",
+            "tempreture"
+          ],
+          "answer": "temperature"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the object used to keep dry in the rain?",
+          "options": [
+            "umberella",
+            "umbrella",
+            "umbrela",
+            "umbrelle"
+          ],
+          "answer": "umbrella"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct spelling of the word meaning \"the condition of the sky, like sun or rain\"?",
+          "options": [
+            "wether",
+            "weather",
+            "weathere",
+            "wheather"
+          ],
+          "answer": "weather"
         }
       ]
     },
@@ -3115,6 +3280,171 @@
               "right": "messy"
             }
           ]
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The knight was very brave before the battle.\" What is the antonym of 'brave'?",
+          "options": [
+            "cowardly",
+            "strong",
+            "kind",
+            "tall"
+          ],
+          "answer": "cowardly"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The river was wide near the town.\" What is the antonym of 'wide'?",
+          "options": [
+            "long",
+            "narrow",
+            "deep",
+            "calm"
+          ],
+          "answer": "narrow"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The rope was strong enough to hold the boat.\" What is the antonym of 'strong'?",
+          "options": [
+            "heavy",
+            "thick",
+            "weak",
+            "short"
+          ],
+          "answer": "weak"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"They found an ancient pot in the cave.\" What is the antonym of 'ancient'?",
+          "options": [
+            "modern",
+            "broken",
+            "small",
+            "dusty"
+          ],
+          "answer": "modern"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"Grandpa is always generous with his time.\" What is the antonym of 'generous'?",
+          "options": [
+            "kind",
+            "stingy",
+            "busy",
+            "patient"
+          ],
+          "answer": "stingy"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The nurse was gentle with the patient.\" What is the antonym of 'gentle'?",
+          "options": [
+            "rough",
+            "careful",
+            "quiet",
+            "slow"
+          ],
+          "answer": "rough"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The old bicycle was cheap at the market.\" What is the antonym of 'cheap'?",
+          "options": [
+            "expensive",
+            "broken",
+            "shiny",
+            "heavy"
+          ],
+          "answer": "expensive"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The library was quiet during the exam.\" What is the antonym of 'quiet'?",
+          "options": [
+            "loud",
+            "empty",
+            "cold",
+            "bright"
+          ],
+          "answer": "loud"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"My socks were wet after the rain.\" What is the antonym of 'wet'?",
+          "options": [
+            "dry",
+            "cold",
+            "muddy",
+            "torn"
+          ],
+          "answer": "dry"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The soup was hot when it arrived.\" What is the antonym of 'hot'?",
+          "options": [
+            "cold",
+            "spicy",
+            "sweet",
+            "thick"
+          ],
+          "answer": "cold"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"We arrived early for the concert.\" What is the antonym of 'early'?",
+          "options": [
+            "late",
+            "quickly",
+            "tired",
+            "excited"
+          ],
+          "answer": "late"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The family in the story was very rich.\" What is the antonym of 'rich'?",
+          "options": [
+            "poor",
+            "famous",
+            "kind",
+            "old"
+          ],
+          "answer": "poor"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"Be careful, that knife is sharp.\" What is the antonym of 'sharp'?",
+          "options": [
+            "blunt",
+            "shiny",
+            "heavy",
+            "cold"
+          ],
+          "answer": "blunt"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The waiter was very polite to the customers.\" What is the antonym of 'polite'?",
+          "options": [
+            "rude",
+            "quick",
+            "tired",
+            "quiet"
+          ],
+          "answer": "rude"
+        },
+        {
+          "type": "mc",
+          "prompt": "\"The dancer moved in a clumsy way.\" What is the antonym of 'clumsy'?",
+          "options": [
+            "graceful",
+            "funny",
+            "slow",
+            "small"
+          ],
+          "answer": "graceful"
         }
       ]
     },
@@ -3964,6 +4294,171 @@
             "before kindness"
           ],
           "answer": "the state of being kind"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'ex-' means...",
+          "options": [
+            "out of or former",
+            "again",
+            "not",
+            "before"
+          ],
+          "answer": "out of or former"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'extra-' means...",
+          "options": [
+            "beyond or more than",
+            "half",
+            "together",
+            "under"
+          ],
+          "answer": "beyond or more than"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'im-' means...",
+          "options": [
+            "not",
+            "under",
+            "many",
+            "again"
+          ],
+          "answer": "not"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-ify' means...",
+          "options": [
+            "to make",
+            "full of",
+            "without",
+            "most"
+          ],
+          "answer": "to make"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-ize' means...",
+          "options": [
+            "to make",
+            "a person who",
+            "small",
+            "state of"
+          ],
+          "answer": "to make"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-ship' means...",
+          "options": [
+            "state or condition of",
+            "full of",
+            "again",
+            "not"
+          ],
+          "answer": "state or condition of"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-cian' means...",
+          "options": [
+            "a person who does or plays something",
+            "small",
+            "without",
+            "most"
+          ],
+          "answer": "a person who does or plays something"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-let' means...",
+          "options": [
+            "small",
+            "large",
+            "again",
+            "before"
+          ],
+          "answer": "small"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-some' means...",
+          "options": [
+            "tending to be or causing",
+            "not",
+            "most",
+            "without"
+          ],
+          "answer": "tending to be or causing"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'exhale' mean, based on its prefix 'ex-'?",
+          "options": [
+            "to breathe out",
+            "to breathe in",
+            "to hold your breath",
+            "to breathe loudly"
+          ],
+          "answer": "to breathe out"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'simplify' mean, based on its suffix '-ify'?",
+          "options": [
+            "to make something simple",
+            "to make something complex",
+            "to study something simple",
+            "full of simple things"
+          ],
+          "answer": "to make something simple"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'friendship' mean, based on its suffix '-ship'?",
+          "options": [
+            "the state of being friends",
+            "a person who is friendly",
+            "full of friends",
+            "without any friends"
+          ],
+          "answer": "the state of being friends"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'magician' mean, based on its suffix '-cian'?",
+          "options": [
+            "a person who performs magic",
+            "something full of magic",
+            "a small piece of magic",
+            "the state of being magic"
+          ],
+          "answer": "a person who performs magic"
+        },
+        {
+          "type": "mc",
+          "prompt": "What does the word 'extraordinary' mean, based on its prefix 'extra-'?",
+          "options": [
+            "beyond what is ordinary",
+            "not ordinary at all",
+            "before anything ordinary",
+            "half as ordinary"
+          ],
+          "answer": "beyond what is ordinary"
+        },
+        {
+          "type": "mc",
+          "prompt": "The prefix 'il-' means...",
+          "options": [
+            "not",
+            "half",
+            "beyond",
+            "small"
+          ],
+          "answer": "not"
         }
       ]
     },
@@ -4594,6 +5089,171 @@
               "right": "let us"
             }
           ]
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"she will\"?",
+          "options": [
+            "she'l",
+            "she'll",
+            "shel'l",
+            "she'lls"
+          ],
+          "answer": "she'll"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"we will\"?",
+          "options": [
+            "we'l",
+            "well",
+            "we'll",
+            "wee'll"
+          ],
+          "answer": "we'll"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"it is\"?",
+          "options": [
+            "its",
+            "it's",
+            "it,s",
+            "its'"
+          ],
+          "answer": "it's"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"is not\"?",
+          "options": [
+            "isnt",
+            "isn't",
+            "is'nt",
+            "isn,t"
+          ],
+          "answer": "isn't"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"are not\"?",
+          "options": [
+            "arent",
+            "aren't",
+            "are'nt",
+            "arn't"
+          ],
+          "answer": "aren't"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"was not\"?",
+          "options": [
+            "wasnt",
+            "wasn't",
+            "was'nt",
+            "wasn,t"
+          ],
+          "answer": "wasn't"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"have not\"?",
+          "options": [
+            "havent",
+            "haven't",
+            "have'nt",
+            "havn't"
+          ],
+          "answer": "haven't"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"did not\"?",
+          "options": [
+            "didnt",
+            "didn't",
+            "did'nt",
+            "didn,t"
+          ],
+          "answer": "didn't"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"could not\"?",
+          "options": [
+            "couldnt",
+            "couldn't",
+            "could'nt",
+            "coudn't"
+          ],
+          "answer": "couldn't"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"would not\"?",
+          "options": [
+            "wouldnt",
+            "wouldn't",
+            "would'nt",
+            "woudn't"
+          ],
+          "answer": "wouldn't"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"should not\"?",
+          "options": [
+            "shouldnt",
+            "shouldn't",
+            "should'nt",
+            "shoudn't"
+          ],
+          "answer": "shouldn't"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"she is\"?",
+          "options": [
+            "shes",
+            "she's",
+            "she,s",
+            "she's'"
+          ],
+          "answer": "she's"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"we have\"?",
+          "options": [
+            "weve",
+            "we've",
+            "we'v",
+            "we,ve"
+          ],
+          "answer": "we've"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"I have\"?",
+          "options": [
+            "Ive",
+            "I've",
+            "I'v",
+            "I,ve"
+          ],
+          "answer": "I've"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which is the correct contraction for \"let us\"?",
+          "options": [
+            "lets",
+            "let's",
+            "let,s",
+            "lets'"
+          ],
+          "answer": "let's"
         }
       ]
     },
@@ -5063,6 +5723,171 @@
             "Lucas Cannot believe school starts on Sunday."
           ],
           "answer": "Lucas cannot believe school starts on Sunday."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "zara plays soccer every Saturday morning",
+            "Zara plays soccer every Saturday morning.",
+            "Zara Plays soccer every saturday morning.",
+            "Zara plays Soccer every Saturday Morning."
+          ],
+          "answer": "Zara plays soccer every Saturday morning."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "kenji is traveling to japan in december.",
+            "Kenji is traveling to Japan in December.",
+            "Kenji is traveling to Japan in december",
+            "Kenji Is Traveling To Japan In December."
+          ],
+          "answer": "Kenji is traveling to Japan in December."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence needs a question mark at the end?",
+          "options": [
+            "Amara loves painting pictures",
+            "Where did Diego put his backpack",
+            "The train arrives at noon",
+            "Priya baked cookies for the party"
+          ],
+          "answer": "Where did Diego put his backpack"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "mateo and fatima are studying for the math test.",
+            "Mateo and Fatima are studying for the math test.",
+            "Mateo and Fatima Are Studying For The Math Test.",
+            "Mateo and fatima are studying for the Math test"
+          ],
+          "answer": "Mateo and Fatima are studying for the math test."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "Ravi visited the grand canyon last April.",
+            "ravi visited the Grand Canyon last april",
+            "Ravi visited the Grand Canyon last April.",
+            "Ravi Visited the Grand Canyon Last April"
+          ],
+          "answer": "Ravi visited the Grand Canyon last April."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "elena said the concert on friday was wonderful.",
+            "Elena said the concert on Friday was wonderful.",
+            "Elena Said the concert on Friday was wonderful.",
+            "Elena said the Concert on Friday was Wonderful"
+          ],
+          "answer": "Elena said the concert on Friday was wonderful."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "why is omar late for school today?",
+            "Why is Omar late for school today",
+            "Why is Omar late for school today?",
+            "Why is omar Late for School Today?"
+          ],
+          "answer": "Why is Omar late for school today?"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "Nadia and Theo are visiting egypt next winter.",
+            "nadia and theo are visiting Egypt next winter",
+            "Nadia and Theo are visiting Egypt next winter.",
+            "Nadia And Theo Are Visiting Egypt Next Winter."
+          ],
+          "answer": "Nadia and Theo are visiting Egypt next winter."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence needs a question mark at the end?",
+          "options": [
+            "Ines finished her homework early",
+            "How far is it to the beach",
+            "The dog barked at the mail carrier",
+            "Kofi plays the drums in the band"
+          ],
+          "answer": "How far is it to the beach"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "aisha likes to visit the library on wednesdays.",
+            "Aisha likes to visit the Library on wednesdays",
+            "Aisha likes to visit the library on Wednesdays.",
+            "Aisha Likes To Visit The Library On Wednesdays."
+          ],
+          "answer": "Aisha likes to visit the library on Wednesdays."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "the teacher said the trip to rome was unforgettable.",
+            "The teacher said the trip to Rome was unforgettable.",
+            "The Teacher said the trip to Rome was Unforgettable",
+            "The teacher said the trip to rome was unforgettable"
+          ],
+          "answer": "The teacher said the trip to Rome was unforgettable."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "what time does the movie start on saturday?",
+            "What time does the movie start on Saturday",
+            "What time does the movie start on Saturday?",
+            "What Time Does The Movie Start On Saturday?"
+          ],
+          "answer": "What time does the movie start on Saturday?"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "diego and priya are best friends from mexico.",
+            "Diego and Priya are best friends from Mexico.",
+            "Diego and priya are best friends from Mexico",
+            "Diego And Priya Are Best Friends From Mexico."
+          ],
+          "answer": "Diego and Priya are best friends from Mexico."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence uses capital letters and punctuation correctly?",
+          "options": [
+            "fatima cannot wait for summer vacation in july.",
+            "Fatima cannot wait for summer vacation in July.",
+            "Fatima Cannot Wait For Summer Vacation In July.",
+            "Fatima cannot wait for summer vacation in july"
+          ],
+          "answer": "Fatima cannot wait for summer vacation in July."
+        },
+        {
+          "type": "mc",
+          "prompt": "Which sentence needs a question mark at the end?",
+          "options": [
+            "Mateo scored the winning goal",
+            "When does the museum open",
+            "Elena packed her suitcase for the trip",
+            "The bakery sells fresh bread every morning"
+          ],
+          "answer": "When does the museum open"
         }
       ]
     },

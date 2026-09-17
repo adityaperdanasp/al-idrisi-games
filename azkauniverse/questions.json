@@ -619,6 +619,171 @@
           ],
           "answer": 0,
           "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "What do we call a star system that has two stars orbiting each other?",
+          "options": [
+            "Binary star system",
+            "Nebula",
+            "Solar system",
+            "Star cluster"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What color are the COOLEST stars?",
+          "options": [
+            "Red",
+            "Blue",
+            "White",
+            "Yellow"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the name for an extremely dense object with gravity so strong that not even light can escape it?",
+          "options": [
+            "Black hole",
+            "White dwarf",
+            "Neutron star",
+            "Red giant"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is our Sun's stage classified as right now?",
+          "options": [
+            "Main sequence star",
+            "Red giant",
+            "White dwarf",
+            "Protostar"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "During most of a star's life, what is happening in its core?",
+          "options": [
+            "Hydrogen is fusing into helium",
+            "Helium is fusing into carbon",
+            "Oxygen is fusing into iron",
+            "Carbon is fusing into hydrogen"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is a group of stars that appears to form a picture in the night sky called?",
+          "options": [
+            "Constellation",
+            "Galaxy",
+            "Nebula",
+            "Meteor shower"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is a spinning neutron star that sends out beams of light like a lighthouse called?",
+          "options": [
+            "Pulsar",
+            "Quasar",
+            "Comet",
+            "Asteroid"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the unit astronomers use to measure huge distances between stars?",
+          "options": [
+            "Light-year",
+            "Kilometer",
+            "Mile",
+            "Meter"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Which is generally true about VERY massive stars compared to the Sun?",
+          "options": [
+            "They burn through their fuel much faster",
+            "They live much longer than the Sun",
+            "They never explode",
+            "They stay the same size forever"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What do astronomers call the true brightness of a star, based on its actual energy output?",
+          "options": [
+            "Luminosity",
+            "Density",
+            "Gravity",
+            "Velocity"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is a huge collection of billions of stars, gas, and dust called?",
+          "options": [
+            "Galaxy",
+            "Nebula",
+            "Solar system",
+            "Constellation"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What galaxy is our solar system part of?",
+          "options": [
+            "The Milky Way",
+            "Andromeda",
+            "The Sombrero Galaxy",
+            "The Whirlpool Galaxy"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Which layer of the Sun can we see directly from Earth?",
+          "options": [
+            "Photosphere",
+            "Corona",
+            "Core",
+            "Chromosphere"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "About how long is the Sun expected to remain a main-sequence star, from when it formed?",
+          "options": [
+            "About 10 billion years",
+            "About 10 million years",
+            "About 10 thousand years",
+            "About 10 years"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What do we call the outer, wispy atmosphere of the Sun that becomes visible during a solar eclipse?",
+          "options": [
+            "Corona",
+            "Core",
+            "Nebula",
+            "Photosphere"
+          ],
+          "answer": 0
         }
       ],
       "funFacts": [
@@ -1253,6 +1418,171 @@
           ],
           "answer": 0,
           "labExperiment": true
+        },
+        {
+          "type": "mc",
+          "question": "What is a substance made of only ONE type of atom called?",
+          "options": [
+            "Element",
+            "Compound",
+            "Mixture",
+            "Molecule"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is a substance made of TWO OR MORE different elements chemically joined called?",
+          "options": [
+            "Compound",
+            "Element",
+            "Isotope",
+            "Atom"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the chemical symbol for the element Oxygen?",
+          "options": [
+            "O",
+            "Ox",
+            "O2",
+            "Og"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the chemical symbol for the element Hydrogen?",
+          "options": [
+            "H",
+            "He",
+            "Hy",
+            "Hg"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Which group of elements is known for rarely reacting with other elements?",
+          "options": [
+            "Noble gases",
+            "Metals",
+            "Halogens",
+            "Alkali metals"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What do we call electrons found in the OUTERMOST shell of an atom?",
+          "options": [
+            "Valence electrons",
+            "Core electrons",
+            "Free electrons",
+            "Ionic electrons"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "According to the law of conservation of mass, what happens to atoms during a chemical reaction?",
+          "options": [
+            "They are rearranged, not created or destroyed",
+            "New atoms are always created",
+            "Atoms disappear completely",
+            "Atoms turn into energy"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the region around the nucleus where electrons are most likely to be found called?",
+          "options": [
+            "Electron cloud",
+            "Nucleus core",
+            "Orbit ring",
+            "Atomic shell wall"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What are atoms with the same number of protons but a DIFFERENT number of neutrons called?",
+          "options": [
+            "Isotopes",
+            "Ions",
+            "Compounds",
+            "Molecules"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What tiny particle inside the nucleus has almost no charge at all?",
+          "options": [
+            "Neutron",
+            "Proton",
+            "Electron",
+            "Ion"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "In a neutral atom, what is true about the number of protons and electrons?",
+          "options": [
+            "They are equal",
+            "Protons are always more",
+            "Electrons are always more",
+            "There is no relationship"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What scientific model describes electrons orbiting the nucleus in fixed energy levels, like planets around the Sun?",
+          "options": [
+            "The Bohr model",
+            "The Big Bang model",
+            "The Wave model",
+            "The Cell model"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What do we call the smallest part of a compound that still has the properties of that compound?",
+          "options": [
+            "Molecule",
+            "Atom",
+            "Proton",
+            "Isotope"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Which state of matter has atoms that are packed tightly together and barely move?",
+          "options": [
+            "Solid",
+            "Liquid",
+            "Gas",
+            "Plasma"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What holds electrons in orbit around the nucleus?",
+          "options": [
+            "The attraction between opposite charges",
+            "Gravity alone",
+            "Magnetism from outside",
+            "Friction"
+          ],
+          "answer": 0
         }
       ],
       "funFacts": [
@@ -1769,6 +2099,171 @@
           "type": "flashcard",
           "front": "If Earth didn't rotate at all, what would happen?",
           "back": "One side of Earth would always face the Sun (endless scorching day) and the other side would always face away (endless freezing night)!"
+        },
+        {
+          "type": "mc",
+          "question": "About how many degrees is Earth's axis tilted?",
+          "options": [
+            "About 23.5 degrees",
+            "About 90 degrees",
+            "About 45 degrees",
+            "0 degrees"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Why does the Sun appear to move across the sky during the day?",
+          "options": [
+            "Because Earth is rotating, not because the Sun is moving",
+            "Because the Sun orbits Earth",
+            "Because the Sun is falling",
+            "Because clouds push it"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the shortest day of the year in the Northern Hemisphere called?",
+          "options": [
+            "Winter solstice",
+            "Summer solstice",
+            "Spring equinox",
+            "Fall equinox"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the longest day of the year in the Northern Hemisphere called?",
+          "options": [
+            "Summer solstice",
+            "Winter solstice",
+            "Spring equinox",
+            "Fall equinox"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Why do the Northern and Southern Hemispheres have OPPOSITE seasons at the same time?",
+          "options": [
+            "Because Earth's tilted axis points one hemisphere more toward the Sun",
+            "Because they orbit the Sun separately",
+            "Because the Sun moves closer to one side",
+            "Because of ocean currents only"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What causes different regions of Earth to have different local times (time zones)?",
+          "options": [
+            "Earth rotating means the Sun reaches different places at different moments",
+            "Every country picks its own random time",
+            "The Sun moves around Earth",
+            "Earth's revolution around the Sun"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Roughly how many time zones does Earth have?",
+          "options": [
+            "24",
+            "12",
+            "7",
+            "365"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is it called when the Moon passes between the Sun and Earth, blocking sunlight?",
+          "options": [
+            "A solar eclipse",
+            "A lunar eclipse",
+            "An equinox",
+            "A solstice"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Which of these takes LONGER: Earth's rotation or Earth's revolution?",
+          "options": [
+            "Earth's revolution",
+            "Earth's rotation",
+            "They take the same amount of time",
+            "Neither takes any time"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What do we call one full day-and-night cycle on Earth?",
+          "options": [
+            "A solar day",
+            "A solar year",
+            "A lunar month",
+            "A season"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "In the Southern Hemisphere, what season is it usually in December?",
+          "options": [
+            "Summer",
+            "Winter",
+            "Spring",
+            "Fall"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What happens to the length of daytime as summer approaches in the Northern Hemisphere?",
+          "options": [
+            "Daytime gets longer",
+            "Daytime gets shorter",
+            "Daytime stays exactly the same",
+            "Daytime disappears completely"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Which of these best describes Earth's shape, which affects how sunlight spreads across it?",
+          "options": [
+            "A slightly flattened sphere",
+            "A perfect flat disk",
+            "A perfect cube",
+            "A cone"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many hours' difference is there typically between adjacent time zones?",
+          "options": [
+            "1 hour",
+            "24 hours",
+            "30 minutes",
+            "12 hours"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What can you watch at night to notice that Earth is rotating, as they slowly shift position?",
+          "options": [
+            "The stars",
+            "The clouds",
+            "The Moon's craters",
+            "Nothing changes"
+          ],
+          "answer": 0
         }
       ],
       "funFacts": [
@@ -2428,6 +2923,171 @@
           "type": "flashcard",
           "front": "Why is a globe more accurate than a flat map?",
           "back": "Earth is round, so a flat map has to stretch or distort some areas to show a round surface on paper — a globe keeps shapes and sizes true to life."
+        },
+        {
+          "type": "mc",
+          "question": "How many continents are there on Earth?",
+          "options": [
+            "7",
+            "5",
+            "6",
+            "9"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many oceans are there on Earth?",
+          "options": [
+            "5",
+            "3",
+            "4",
+            "7"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the name of the LARGEST ocean on Earth?",
+          "options": [
+            "The Pacific Ocean",
+            "The Atlantic Ocean",
+            "The Indian Ocean",
+            "The Southern Ocean"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What do we call the distance north or south of the equator, measured in degrees?",
+          "options": [
+            "Latitude",
+            "Longitude",
+            "Altitude",
+            "Attitude"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What do we call the distance east or west of the Prime Meridian, measured in degrees?",
+          "options": [
+            "Longitude",
+            "Latitude",
+            "Altitude",
+            "Elevation"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What does the scale on a map help you figure out?",
+          "options": [
+            "Real-world distances",
+            "The weather",
+            "The population",
+            "The time zone"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What type of map shows countries, states, and borders?",
+          "options": [
+            "A political map",
+            "A physical map",
+            "A weather map",
+            "A road-only map"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What type of map shows mountains, rivers, and other natural features?",
+          "options": [
+            "A physical map",
+            "A political map",
+            "A population map",
+            "A time zone map"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What are North, South, East, and West called on a compass?",
+          "options": [
+            "Cardinal directions",
+            "Intercardinal directions",
+            "Longitude lines",
+            "Latitude lines"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What are Northeast, Northwest, Southeast, and Southwest called on a compass?",
+          "options": [
+            "Intercardinal directions",
+            "Cardinal directions",
+            "Meridian directions",
+            "Tropic directions"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Which point on Earth is at 90 degrees North latitude?",
+          "options": [
+            "The North Pole",
+            "The South Pole",
+            "The Equator",
+            "The Prime Meridian"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Which point on Earth is at 90 degrees South latitude?",
+          "options": [
+            "The South Pole",
+            "The North Pole",
+            "The Equator",
+            "The Prime Meridian"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What tool uses satellites to help you find your exact location on Earth?",
+          "options": [
+            "GPS",
+            "A compass rose",
+            "A globe",
+            "A map legend"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the name of the imaginary line at about 23.5 degrees North latitude?",
+          "options": [
+            "The Tropic of Cancer",
+            "The Tropic of Capricorn",
+            "The Equator",
+            "The Prime Meridian"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the name of the imaginary line at about 23.5 degrees South latitude?",
+          "options": [
+            "The Tropic of Capricorn",
+            "The Tropic of Cancer",
+            "The Equator",
+            "The Arctic Circle"
+          ],
+          "answer": 0
         }
       ],
       "funFacts": [
@@ -3038,6 +3698,171 @@
           "type": "flashcard",
           "front": "Is 12:00 p.m. morning or afternoon?",
           "back": "Neither exactly — 12:00 p.m. is noon, the exact middle of the day! 12:00 a.m. is midnight, the exact start of a new day."
+        },
+        {
+          "type": "mc",
+          "question": "How many seconds are in one minute?",
+          "options": [
+            "60",
+            "100",
+            "30",
+            "50"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many days are in one week?",
+          "options": [
+            "7",
+            "5",
+            "10",
+            "30"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many weeks are in one year (approximately)?",
+          "options": [
+            "52",
+            "12",
+            "24",
+            "100"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many months are in one year?",
+          "options": [
+            "12",
+            "10",
+            "24",
+            "4"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many days does April have?",
+          "options": [
+            "30",
+            "31",
+            "28",
+            "29"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many days does a normal (non-leap) February have?",
+          "options": [
+            "28",
+            "29",
+            "30",
+            "31"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many days does a leap year have?",
+          "options": [
+            "366",
+            "365",
+            "364",
+            "360"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What time is NOON on the 24-hour clock?",
+          "options": [
+            "12:00",
+            "00:00",
+            "24:00",
+            "10:00"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "A movie starts at 2:15 p.m. and ends at 4:00 p.m. How long is the movie?",
+          "options": [
+            "1 hour 45 minutes",
+            "2 hours 15 minutes",
+            "1 hour 30 minutes",
+            "2 hours"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "A train leaves at 09:50 and arrives at 11:20. How long is the journey?",
+          "options": [
+            "1 hour 30 minutes",
+            "1 hour 20 minutes",
+            "2 hours 30 minutes",
+            "30 minutes"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many minutes are in a quarter of an hour?",
+          "options": [
+            "15",
+            "30",
+            "45",
+            "10"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many minutes are in half an hour?",
+          "options": [
+            "30",
+            "15",
+            "45",
+            "60"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What does the phrase 'quarter to 5' mean on a clock?",
+          "options": [
+            "4:45",
+            "5:15",
+            "4:15",
+            "5:45"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What does the phrase 'quarter past 5' mean on a clock?",
+          "options": [
+            "5:15",
+            "4:45",
+            "5:45",
+            "4:15"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many hours are there between 6:00 a.m. and 6:00 p.m.?",
+          "options": [
+            "12 hours",
+            "6 hours",
+            "24 hours",
+            "18 hours"
+          ],
+          "answer": 0
         }
       ],
       "funFacts": [
