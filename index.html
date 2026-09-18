@@ -358,6 +358,34 @@
         <span class="sc-smart-text" id="sc-beat-yesterday-text"></span>
       </div>
 
+      <div class="sc-smart-card sc-comeback-card" id="sc-comeback-card" hidden>
+        <span class="sc-smart-text" id="sc-comeback-text"></span>
+        <button class="sc-quest-claim-btn" id="sc-comeback-claim-btn">Claim</button>
+      </div>
+
+      <div class="sc-smart-card" id="sc-mistake-review-card" hidden>
+        <span class="sc-smart-text" id="sc-mistake-review-text"></span>
+        <button class="sc-quest-claim-btn" id="sc-mistake-review-btn">Review Now</button>
+      </div>
+
+      <div class="sc-subject-streaks" id="sc-subject-streaks" hidden>
+        <div class="sc-subject-streak-item">
+          <span class="sc-subject-streak-emoji">🔢</span>
+          <span class="sc-subject-streak-label">Math</span>
+          <span class="sc-subject-streak-count" id="sc-streak-math">0</span>
+        </div>
+        <div class="sc-subject-streak-item">
+          <span class="sc-subject-streak-emoji">📖</span>
+          <span class="sc-subject-streak-label">Language</span>
+          <span class="sc-subject-streak-count" id="sc-streak-language">0</span>
+        </div>
+        <div class="sc-subject-streak-item">
+          <span class="sc-subject-streak-emoji">🪐</span>
+          <span class="sc-subject-streak-label">Science</span>
+          <span class="sc-subject-streak-count" id="sc-streak-science">0</span>
+        </div>
+      </div>
+
       <div class="sc-smart-card" id="sc-mysterybox-card" hidden>
         <span class="sc-smart-text">🎁 Daily Mystery Box — spin for a surprise!</span>
         <button class="sc-quest-claim-btn" id="sc-mysterybox-btn">🪙10</button>
@@ -1184,6 +1212,9 @@
       });
       renderWeeklyChampionBadge(current.id);
       renderBeatYesterday();
+      renderComebackBonus();
+      renderMistakeReviewReminder();
+      renderSubjectStreaks();
       renderMysteryBox();
       renderSeasonalEvent();
       renderPerfectWeek();
@@ -1407,6 +1438,47 @@
       ? `🎉 You've beaten yesterday! ${cmp.today} correct today vs ${cmp.yesterday} yesterday.`
       : `📊 ${cmp.today} correct today so far — yesterday you got ${cmp.yesterday}. Keep going!`;
     card.hidden = false;
+  }
+
+  async function renderComebackBonus() {
+    const status = await AIGLeaderboard.getComebackBonusStatus();
+    const card = document.getElementById("sc-comeback-card");
+    if (!status.available) { card.hidden = true; return; }
+    document.getElementById("sc-comeback-text").textContent =
+      `👋 Welcome back! It's been ${status.daysSince} days — here's a little something.`;
+    document.getElementById("sc-comeback-claim-btn").textContent =
+      `🪙${status.reward.coins} 💎${status.reward.gems}`;
+    card.hidden = false;
+  }
+  document.getElementById("sc-comeback-claim-btn").addEventListener("click", async () => {
+    const btn = document.getElementById("sc-comeback-claim-btn");
+    btn.disabled = true;
+    const result = await AIGLeaderboard.claimComebackBonus();
+    if (result.ok) document.getElementById("sc-comeback-card").hidden = true;
+    else btn.disabled = false;
+  });
+
+  async function renderMistakeReviewReminder() {
+    const count = await AIGLeaderboard.getUnreviewedMistakeCount();
+    const card = document.getElementById("sc-mistake-review-card");
+    if (!count) { card.hidden = true; return; }
+    document.getElementById("sc-mistake-review-text").textContent =
+      `📔 You have ${count} mistake${count === 1 ? "" : "s"} to review.`;
+    card.hidden = false;
+  }
+  document.getElementById("sc-mistake-review-btn").addEventListener("click", () => {
+    document.getElementById("sc-journal-overlay").hidden = false;
+    renderMistakeJournal();
+  });
+
+  async function renderSubjectStreaks() {
+    const streaks = await AIGLeaderboard.getSubjectStreaks();
+    const wrap = document.getElementById("sc-subject-streaks");
+    if (!streaks || (!streaks.math && !streaks.language && !streaks.science)) { wrap.hidden = true; return; }
+    document.getElementById("sc-streak-math").textContent = streaks.math;
+    document.getElementById("sc-streak-language").textContent = streaks.language;
+    document.getElementById("sc-streak-science").textContent = streaks.science;
+    wrap.hidden = false;
   }
 
   async function renderMysteryBox() {

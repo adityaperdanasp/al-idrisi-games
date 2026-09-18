@@ -1484,6 +1484,105 @@
   }
 
   // =====================================================================
+  // COMEBACK BONUS — a bigger one-time bonus for a kid who returns after
+  // being away 3+ days, read from the streak record's existing
+  // lastPlayDate (no new tracking needed). Distinct from the login
+  // Streak, which rewards CONSECUTIVE days -- this specifically
+  // re-engages a LAPSED player rather than an already-active one. Gated
+  // to once per day via get-check-set, same pattern as claimBossWin.
+  // =====================================================================
+  const COMEBACK_BONUS_REWARD = { coins: 25, gems: 2 };
+  const COMEBACK_MIN_DAYS_AWAY = 3;
+
+  async function getComebackBonusStatus() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { available: false };
+    const [streakSnap, claimSnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/streak`).get(),
+      aigDb.ref(`players/${player.id}/comebackBonus/${todayKey()}`).get()
+    ]);
+    if (claimSnap.exists() && claimSnap.val()) return { available: false };
+    if (!streakSnap.exists() || !streakSnap.val().lastPlayDate) return { available: false };
+    const lastPlay = new Date(streakSnap.val().lastPlayDate + "T00:00:00Z");
+    const daysSince = Math.floor((Date.now() - lastPlay.getTime()) / 86400000);
+    return { available: daysSince >= COMEBACK_MIN_DAYS_AWAY, daysSince, reward: COMEBACK_BONUS_REWARD };
+  }
+
+  async function claimComebackBonus() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const claimRef = aigDb.ref(`players/${player.id}/comebackBonus/${todayKey()}`);
+    const claimSnap = await claimRef.get();
+    if (claimSnap.exists() && claimSnap.val()) return { ok: true, alreadyClaimed: true };
+    await claimRef.set(true);
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + COMEBACK_BONUS_REWARD.coins;
+      wallet.gems = (wallet.gems || 0) + COMEBACK_BONUS_REWARD.gems;
+      return wallet;
+    });
+    return { ok: true, alreadyClaimed: false, reward: COMEBACK_BONUS_REWARD };
+  }
+
+  // =====================================================================
+  // PRACTICE STREAK PER SUBJECT — separate from the login Streak above:
+  // "how many days in a row have you gotten at least one question right
+  // in THIS subject specifically", encouraging a weak subject to get
+  // practiced regularly rather than always playing the favorite game.
+  // Pure read/aggregation over players/{id}/dailyStats (already written
+  // by touchDailyStats on every answer) -- zero new writes.
+  // =====================================================================
+  const SUBJECT_GAMES = {
+    math: ["mathville", "multipleazka"],
+    language: ["language-arts"],
+    science: ["solarquest"]
+  };
+
+  function dayHasSubjectActivity(dailyStats, dateKey, games) {
+    const day = dailyStats[dateKey];
+    if (!day || !day.games) return false;
+    return games.some(g => day.games[g]);
+  }
+
+  async function getSubjectStreaks() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { math: 0, language: 0, science: 0 };
+    const snap = await aigDb.ref(`players/${player.id}/dailyStats`).get();
+    const dailyStats = snap.exists() ? snap.val() : {};
+    const result = {};
+    Object.entries(SUBJECT_GAMES).forEach(([subject, games]) => {
+      let streak = 0;
+      const cursor = new Date();
+      // If today has no activity yet for this subject, start checking
+      // from yesterday instead -- otherwise an in-progress streak would
+      // show as broken every day before the kid has played yet today.
+      if (!dayHasSubjectActivity(dailyStats, todayKey(), games)) {
+        cursor.setUTCDate(cursor.getUTCDate() - 1);
+      }
+      while (true) {
+        const key = cursor.toISOString().slice(0, 10);
+        if (!dayHasSubjectActivity(dailyStats, key, games)) break;
+        streak++;
+        cursor.setUTCDate(cursor.getUTCDate() - 1);
+      }
+      result[subject] = streak;
+    });
+    return result;
+  }
+
+  // =====================================================================
+  // MISTAKE REVIEW REMINDER — the existing Mistake Journal (logMistake/
+  // getMistakeJournal/markMistakeReviewed above) is a passive log with
+  // no nudge to actually go back and look at it. This just counts
+  // unreviewed entries so the hub can show "N mistakes to review" and
+  // link into the same journal overlay that already exists.
+  // =====================================================================
+  async function getUnreviewedMistakeCount() {
+    const entries = await getMistakeJournal();
+    return entries.filter(m => !m.reviewed).length;
+  }
+
+  // =====================================================================
   // MYSTERY BOX — one paid spin per calendar day (10 coins), always
   // gives SOMETHING back (never a true "loss" -- this is for kids, not
   // a real gambling mechanic). Same get-check-set wallet pattern as
@@ -2781,7 +2880,10 @@
     getRewardCatalog, redeemReward,
     getMathvilleTheme, setMathvilleTheme,
     logMistake, getMistakeJournal, markMistakeReviewed,
+    getUnreviewedMistakeCount,
     getDailyComparison,
+    getComebackBonusStatus, claimComebackBonus,
+    getSubjectStreaks,
     getMysteryBoxStatus, openMysteryBox,
     getPlayerLevel,
     getWeekPlayProgress, getMostImproved,

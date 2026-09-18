@@ -902,6 +902,26 @@ body {
   gap: 12px;
   flex-wrap: wrap;
 }
+.sc-comeback-card { background: linear-gradient(90deg, #fff0e0, #ffe0d6); }
+
+.sc-subject-streaks {
+  margin: 12px 24px 0;
+  display: flex;
+  gap: 10px;
+}
+.sc-subject-streaks[hidden] { display: none; }
+.sc-subject-streak-item {
+  flex: 1;
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px 6px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
+  text-align: center;
+  font-family: "Nunito", sans-serif;
+}
+.sc-subject-streak-emoji { display: block; font-size: 1.2rem; }
+.sc-subject-streak-label { display: block; font-size: 0.62rem; font-weight: 700; color: #7a5a2e; margin-top: 2px; }
+.sc-subject-streak-count { display: block; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; color: #3d2e22; }
 .sc-smart-text {
   flex: 1;
   min-width: 180px;
