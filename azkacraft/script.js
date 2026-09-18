@@ -683,15 +683,34 @@ function renderFlashcard(q, area) {
 }
 
 /* ----- Passage (reading-comprehension intro, self-check like flashcard) ----- */
+// Reading Buddy narration -- browser SpeechSynthesis (zero new assets to
+// source/license), for a kid who struggles to read the passage alone.
+// Cancels any in-flight utterance first so tapping again (or leaving the
+// screen) never leaves overlapping/orphaned speech running.
+function speakPassage(title, body) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  // body is rendered via innerHTML (it contains real <p> tags for
+  // paragraph breaks) -- strip markup before speaking, or the tags get
+  // read/mangled literally instead of just adding a pause.
+  const plainBody = body.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const utter = new SpeechSynthesisUtterance(`${title}. ${plainBody}`);
+  utter.rate = 0.92;
+  utter.pitch = 1.05;
+  window.speechSynthesis.speak(utter);
+}
 function renderPassage(q, area) {
   area.innerHTML = `
     <div class="passage-card">
       <div class="passage-title">${q.title}</div>
+      <button type="button" id="passage-read-btn" class="passage-read-btn">🔊 Read to Me</button>
       <div class="passage-body">${q.body}</div>
       <button id="passage-continue" class="btn btn-primary">I've read it — let's go! →</button>
     </div>
   `;
+  document.getElementById("passage-read-btn").addEventListener("click", () => speakPassage(q.title, q.body));
   document.getElementById("passage-continue").addEventListener("click", () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
     session.score += 5;
     session.correctCount++;
     nextQuestion(300);

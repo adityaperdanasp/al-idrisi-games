@@ -828,6 +828,37 @@ const INTRO_DEMOS = {
   }
 };
 
+// Renders an INTRO_DEMOS entry into ANY container -- extracted from
+// goToIntro's original inline version so the SAME step-by-step visual
+// can also power Ask Bo's Visual Walkthrough in the AI hint card (see
+// loadAiHint()) without duplicating the render logic in two places.
+function renderDemoInto(container, demo) {
+  container.innerHTML = "";
+  container.classList.toggle("intro-demo-row-steps", demo.type === "steps");
+  container.classList.toggle("intro-demo-row-mono", !!demo.mono);
+  if (demo.type === "steps") {
+    demo.lines.forEach((line, i) => {
+      const lineEl = document.createElement("div");
+      lineEl.className = "intro-demo-step" + (i === demo.lines.length - 1 ? " intro-demo-step-final" : "");
+      lineEl.textContent = line;
+      container.appendChild(lineEl);
+    });
+  } else {
+    demo.cells.forEach(cell => {
+      const cellEl = document.createElement("div");
+      cellEl.className = "intro-demo-cell";
+      cellEl.innerHTML = `<div class="intro-demo-digit">${cell.d}</div><div class="intro-demo-place">${cell.place}</div>`;
+      container.appendChild(cellEl);
+      if (cell.sep) {
+        const dot = document.createElement("div");
+        dot.className = "intro-demo-sep";
+        dot.textContent = ".";
+        container.appendChild(dot);
+      }
+    });
+  }
+}
+
 function goToIntro(chapterId, isMp) {
   const chapterData = MATHVILLE_BANK.chapters.find(c => c.id === chapterId);
   const meta = CHAPTER_META[chapterId];
@@ -842,31 +873,7 @@ function goToIntro(chapterId, isMp) {
   $("intro-demo").classList.toggle("hidden", !demo);
   if (demo) {
     $("intro-demo-label").textContent = demo.label;
-    const row = $("intro-demo-row");
-    row.innerHTML = "";
-    row.classList.toggle("intro-demo-row-steps", demo.type === "steps");
-    row.classList.toggle("intro-demo-row-mono", !!demo.mono);
-    if (demo.type === "steps") {
-      demo.lines.forEach((line, i) => {
-        const lineEl = document.createElement("div");
-        lineEl.className = "intro-demo-step" + (i === demo.lines.length - 1 ? " intro-demo-step-final" : "");
-        lineEl.textContent = line;
-        row.appendChild(lineEl);
-      });
-    } else {
-      demo.cells.forEach(cell => {
-        const cellEl = document.createElement("div");
-        cellEl.className = "intro-demo-cell";
-        cellEl.innerHTML = `<div class="intro-demo-digit">${cell.d}</div><div class="intro-demo-place">${cell.place}</div>`;
-        row.appendChild(cellEl);
-        if (cell.sep) {
-          const dot = document.createElement("div");
-          dot.className = "intro-demo-sep";
-          dot.textContent = ".";
-          row.appendChild(dot);
-        }
-      });
-    }
+    renderDemoInto($("intro-demo-row"), demo);
   }
 
   showScreen("screen-intro");
@@ -5867,6 +5874,39 @@ async function loadAiHint() {
   form.classList.add("hidden");
   card.classList.remove("hidden");
   card.classList.remove("chat-open");
+
+  // Ask Bo -- Visual Walkthrough: the same step-by-step demo shown on
+  // this chapter's intro screen (see renderDemoInto/INTRO_DEMOS), now
+  // also reachable from the hint card after a wrong answer -- a visual
+  // reinforcement of the METHOD alongside Bo's text hint, for a kid who
+  // doesn't process text explanations well. Uses the chapter's general
+  // worked example, not the kid's own numbers (INTRO_DEMOS is static
+  // content, not generated per-question).
+  const visualBtn = $("ai-hint-visual-btn");
+  const visualLabel = $("ai-hint-visual-label");
+  const visualDemo = $("ai-hint-visual-demo");
+  const demo = aiHintMissed ? INTRO_DEMOS[state.chapterId] : null;
+  visualBtn.classList.toggle("hidden", !demo);
+  visualLabel.classList.add("hidden");
+  visualDemo.classList.add("hidden");
+  if (demo) {
+    visualBtn.textContent = "📐 Show me how";
+    visualBtn.onclick = e => {
+      e.stopPropagation();
+      const showing = !visualDemo.classList.contains("hidden");
+      if (showing) {
+        visualLabel.classList.add("hidden");
+        visualDemo.classList.add("hidden");
+        visualBtn.textContent = "📐 Show me how";
+      } else {
+        visualLabel.textContent = demo.label;
+        visualLabel.classList.remove("hidden");
+        renderDemoInto(visualDemo, demo);
+        visualDemo.classList.remove("hidden");
+        visualBtn.textContent = "📐 Hide";
+      }
+    };
+  }
 
   if (!aiHintMissed) {
     appendAiHintMessage(BO_CONGRATS_MESSAGES[Math.floor(Math.random() * BO_CONGRATS_MESSAGES.length)], "ai");

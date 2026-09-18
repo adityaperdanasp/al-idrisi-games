@@ -902,6 +902,16 @@ body {
   gap: 12px;
   flex-wrap: wrap;
 }
+/* Pre-existing bug found while testing Batch 4 (Avatar Outfit of the
+   Day): .sc-smart-card's own `display: flex` outranks the browser's
+   native [hidden]{display:none} rule (author-origin beats user-agent-
+   origin regardless of specificity/order), so EVERY card reusing this
+   class -- not just new ones -- rendered as a blank flex row with just
+   its button visible whenever it was supposed to be hidden. Confirmed
+   via computed-style checks on several pre-existing cards (Beat
+   Yesterday, Perfect Week), not only ones added this batch. Fixed at
+   the shared class so every current and future .sc-smart-card benefits. */
+.sc-smart-card[hidden] { display: none; }
 .sc-comeback-card { background: linear-gradient(90deg, #fff0e0, #ffe0d6); }
 
 .sc-subject-streaks {

@@ -858,6 +858,20 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
   margin-bottom: 14px;
   text-align: center;
 }
+.passage-read-btn {
+  display: block;
+  margin: 0 auto 14px;
+  border: none;
+  border-radius: 100px;
+  padding: 8px 18px;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 0.85rem;
+  background: var(--brand-light, #eef1f8);
+  color: var(--brand);
+  cursor: pointer;
+}
+.passage-read-btn:active { transform: scale(0.96); }
 .passage-body {
   max-height: 46vh;
   overflow-y: auto;

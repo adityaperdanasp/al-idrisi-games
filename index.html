@@ -368,6 +368,11 @@
         <button class="sc-quest-claim-btn" id="sc-themeday-claim-btn" hidden>Claim</button>
       </div>
 
+      <div class="sc-smart-card" id="sc-outfit-card" hidden>
+        <span class="sc-smart-text" id="sc-outfit-text">👗 Today's Outfit</span>
+        <button class="sc-quest-claim-btn" id="sc-outfit-wear-btn">Wear it!</button>
+      </div>
+
       <div class="sc-smart-card" id="sc-mistake-review-card" hidden>
         <span class="sc-smart-text" id="sc-mistake-review-text"></span>
         <button class="sc-quest-claim-btn" id="sc-mistake-review-btn">Review Now</button>
@@ -1260,6 +1265,7 @@
       renderBeatYesterday();
       renderComebackBonus();
       renderThemeDay();
+      renderOutfitOfDay();
       renderMistakeReviewReminder();
       renderSubjectStreaks();
       renderMysteryBox();
@@ -1523,6 +1529,53 @@
     const result = await AIGLeaderboard.claimThemeDayBonus();
     if (result.ok) document.getElementById("sc-themeday-card").hidden = true;
     else btn.disabled = false;
+  });
+
+  // Avatar Outfit of the Day -- a lightweight daily ritual: a new combo
+  // (frame + face + color) suggested each day, seeded from the date so
+  // it's the SAME suggestion all day but changes tomorrow. Only ever
+  // suggests cosmetics the kid ALREADY OWNS (no purchase involved) --
+  // "wear it" just re-equips what they have in a fresh combo, purely
+  // for the fun of a daily surprise. Hidden entirely if they don't own
+  // enough frames/faces yet to make a combo worth suggesting, or if
+  // today's pick happens to match what they're already wearing.
+  function seedFromDateKey(key) {
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  }
+  let outfitOfDayPick = null;
+  async function renderOutfitOfDay() {
+    const cos = await AIGLeaderboard.getCosmetics();
+    const card = document.getElementById("sc-outfit-card");
+    if (!cos) { card.hidden = true; return; }
+    const ownedFrames = cos.frames.filter(f => f.owned);
+    const ownedFaces = cos.faces.filter(f => f.owned);
+    if (ownedFrames.length < 2 && ownedFaces.length < 2) { card.hidden = true; return; }
+    const seed = seedFromDateKey(new Date().toISOString().slice(0, 10));
+    const frame = ownedFrames.length ? ownedFrames[seed % ownedFrames.length] : null;
+    const face = ownedFaces.length ? ownedFaces[Math.floor(seed / 7) % ownedFaces.length] : null;
+    const color = SC_STUDENT_PALETTE[Math.floor(seed / 13) % SC_STUDENT_PALETTE.length];
+    const alreadyWearing = cos.equippedFrame === (frame ? frame.id : "none") && cos.equippedFace === (face ? face.id : "default");
+    if (alreadyWearing) { card.hidden = true; return; }
+    outfitOfDayPick = { frame, face, color };
+    const parts = [];
+    if (frame) parts.push(frame.name);
+    if (face) parts.push(face.preview + " face");
+    document.getElementById("sc-outfit-text").textContent = `👗 Today's Outfit: ${parts.join(" + ")}!`;
+    card.hidden = false;
+  }
+  document.getElementById("sc-outfit-wear-btn").addEventListener("click", async () => {
+    if (!outfitOfDayPick) return;
+    const btn = document.getElementById("sc-outfit-wear-btn");
+    btn.disabled = true;
+    const { frame, face, color } = outfitOfDayPick;
+    if (frame) { await AIGLeaderboard.equipCosmetic("frame", frame.id); applyEquippedFrame(frame.id); }
+    if (face) { await AIGLeaderboard.equipCosmetic("face", face.id); applyEquippedFace(face.preview); }
+    await AIGLeaderboard.setAvatarColor(color);
+    document.getElementById("sc-player-avatar").style.background = color;
+    document.getElementById("sc-outfit-card").hidden = true;
+    btn.disabled = false;
   });
 
   async function renderMistakeReviewReminder() {
