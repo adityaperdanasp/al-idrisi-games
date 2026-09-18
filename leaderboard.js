@@ -325,7 +325,15 @@
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return;
     const bonusMult = (isBonusHourNow() || isWeekendNow()) ? 2 : 1;
-    const coinGain = Math.max(1, Math.round(1 * (comboMultiplier || 1) * bonusMult));
+    const streakMult = streakMultiplierFor(cachedStreakCount);
+    // Math.ceil (not round) so any active multiplier ALWAYS visibly adds
+    // at least +1 coin over the no-bonus baseline -- with a 1-coin base
+    // reward, round(1 * 1.2) rounds right back down to 1, which would
+    // make the Streak Multiplier invisible on the single most common
+    // case (one correct answer, no combo, not Bonus Hour). Rounding in
+    // the player's favor here only ever gives MORE coins than round()
+    // would, never fewer.
+    const coinGain = Math.max(1, Math.ceil(1 * (comboMultiplier || 1) * bonusMult * streakMult));
     aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
       const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
       wallet.coins = (wallet.coins || 0) + coinGain;
@@ -483,6 +491,33 @@
     const newCount = data.lastPlayDate === yesterday ? (data.count || 0) + 1 : 1;
     const newBest = Math.max(data.bestStreak || 0, newCount);
     await ref.set({ count: newCount, lastPlayDate: today, bestStreak: newBest });
+    cachedStreakCount = newCount;
+  }
+
+  // ---- Streak Multiplier -- makes the login streak (already tracked
+  // above) ALSO boost coin earning, not just a number on the hub. Cached
+  // synchronously here (populated by touchStreak/getStreak, both of
+  // which already run at least once per session) so awardCurrency()
+  // below can read it on every single correct answer without an extra
+  // Firebase round-trip per question. Worst case, a fresh page load
+  // that hasn't resolved either read yet uses the 0-default (no bonus)
+  // for its first answer or two -- eventual consistency, not a bug.
+  let cachedStreakCount = 0;
+  function streakMultiplierFor(count) {
+    if (count >= 14) return 2;
+    if (count >= 7) return 1.5;
+    if (count >= 3) return 1.2;
+    return 1;
+  }
+  // Refreshes the cache too (every hub load and every hub Today-panel
+  // re-render calls this to show the badge), so the hub is also the
+  // most reliable place the cache gets warmed for whichever game the
+  // kid opens next.
+  async function getStreakMultiplierInfo() {
+    const streak = await getStreak();
+    const count = streak.count || 0;
+    cachedStreakCount = count;
+    return { count, multiplier: streakMultiplierFor(count) };
   }
 
   // Monday (UTC) of the current week, as YYYY-MM-DD -- the key both the
@@ -541,7 +576,9 @@
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return { count: 0, bestStreak: 0 };
     const snap = await aigDb.ref(`players/${player.id}/streak`).get();
-    return snap.exists() ? snap.val() : { count: 0, bestStreak: 0 };
+    const result = snap.exists() ? snap.val() : { count: 0, bestStreak: 0 };
+    cachedStreakCount = result.count || 0; // keeps awardCurrency's synchronous read fresh -- see streakMultiplierFor
+    return result;
   }
 
   // 3 fixed quest TYPES (accuracy volume / breadth across games / raw
@@ -3259,7 +3296,7 @@
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
     getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
-    getStreak, getDailyQuests, claimDailyQuest, claimDailyBonus, getQuestLabel,
+    getStreak, getStreakMultiplierInfo, getDailyQuests, claimDailyQuest, claimDailyBonus, getQuestLabel,
     claimBossWin,
     getWeeklyBossRushStatus, claimWeeklyBossRush,
     getNinjaGhost, saveNinjaGhost,

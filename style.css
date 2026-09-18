@@ -705,6 +705,18 @@ body {
   color: #8a7a6a;
 }
 
+.sc-streak-mult-badge {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 0.72rem;
+  color: #fff;
+  background: #f0b429;
+  padding: 2px 8px;
+  border-radius: 100px;
+  margin-left: 2px;
+}
+.sc-streak-mult-badge[hidden] { display: none; }
+
 .sc-quest-list {
   display: flex;
   flex-direction: column;

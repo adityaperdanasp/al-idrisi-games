@@ -454,6 +454,7 @@
           <span class="sc-streak-flame">🔥</span>
           <span class="sc-streak-count" id="sc-streak-count">0</span>
           <span class="sc-streak-label">day streak</span>
+          <span class="sc-streak-mult-badge" id="sc-streak-mult-badge" hidden></span>
         </div>
         <div class="sc-quest-list" id="sc-quest-list"></div>
         <div class="sc-daily-bonus-claim" id="sc-daily-bonus-claim" hidden>
@@ -1779,6 +1780,13 @@
 
     const streak = await AIGLeaderboard.getStreak();
     document.getElementById("sc-streak-count").textContent = streak.count || 0;
+    // Streak Multiplier -- the login streak above now also boosts coin
+    // earning (see leaderboard.js's streakMultiplierFor), shown here as
+    // a small "×1.2 coins" badge so it's not an invisible bonus.
+    const multInfo = await AIGLeaderboard.getStreakMultiplierInfo();
+    const multBadge = document.getElementById("sc-streak-mult-badge");
+    multBadge.hidden = multInfo.multiplier <= 1;
+    multBadge.textContent = `🪙×${multInfo.multiplier}`;
 
     const state = await AIGLeaderboard.getDailyQuests();
     const list = document.getElementById("sc-quest-list");
