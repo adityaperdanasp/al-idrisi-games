@@ -363,6 +363,11 @@
         <button class="sc-quest-claim-btn" id="sc-comeback-claim-btn">Claim</button>
       </div>
 
+      <div class="sc-smart-card" id="sc-themeday-card" hidden>
+        <span class="sc-smart-text" id="sc-themeday-text"></span>
+        <button class="sc-quest-claim-btn" id="sc-themeday-claim-btn" hidden>Claim</button>
+      </div>
+
       <div class="sc-smart-card" id="sc-mistake-review-card" hidden>
         <span class="sc-smart-text" id="sc-mistake-review-text"></span>
         <button class="sc-quest-claim-btn" id="sc-mistake-review-btn">Review Now</button>
@@ -1254,6 +1259,7 @@
       renderWeeklyChampionBadge(current.id);
       renderBeatYesterday();
       renderComebackBonus();
+      renderThemeDay();
       renderMistakeReviewReminder();
       renderSubjectStreaks();
       renderMysteryBox();
@@ -1496,6 +1502,26 @@
     btn.disabled = true;
     const result = await AIGLeaderboard.claimComebackBonus();
     if (result.ok) document.getElementById("sc-comeback-card").hidden = true;
+    else btn.disabled = false;
+  });
+
+  async function renderThemeDay() {
+    const status = await AIGLeaderboard.getThemeDayBonusStatus();
+    const card = document.getElementById("sc-themeday-card");
+    const btn = document.getElementById("sc-themeday-claim-btn");
+    if (status.claimed) { card.hidden = true; return; }
+    document.getElementById("sc-themeday-text").textContent = status.eligible
+      ? `${status.emoji} ${status.label}! You played today's subject — claim your bonus.`
+      : `${status.emoji} Today is ${status.label}! Play a ${status.subject} game for a bonus.`;
+    btn.hidden = !status.eligible;
+    if (status.eligible) btn.textContent = `🪙${status.reward.coins}`;
+    card.hidden = false;
+  }
+  document.getElementById("sc-themeday-claim-btn").addEventListener("click", async () => {
+    const btn = document.getElementById("sc-themeday-claim-btn");
+    btn.disabled = true;
+    const result = await AIGLeaderboard.claimThemeDayBonus();
+    if (result.ok) document.getElementById("sc-themeday-card").hidden = true;
     else btn.disabled = false;
   });
 

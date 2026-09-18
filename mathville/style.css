@@ -194,6 +194,17 @@ button { font-family: inherit; }
   flex-direction: column; align-items: center;
   justify-content: center; text-align: center; margin-bottom: 2px;
 }
+.boss-of-week-banner {
+  background: linear-gradient(90deg, #fff6df, #ffe6a8);
+  color: #8a6300;
+  font: 700 12px "Fredoka", sans-serif;
+  padding: 8px 14px;
+  border-radius: 100px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+.boss-of-week-banner[hidden] { display: none; }
+
 .theme-toggle { display: flex; background: var(--cream); border-radius: 20px; padding: 3px; gap: 2px; flex: none; }
 .theme-btn {
   padding: 7px 16px; border: none; border-radius: 16px; background: transparent;
@@ -959,6 +970,7 @@ button { font-family: inherit; }
 .star-tier-toast.silver { background: linear-gradient(135deg, #eef1f5, #cdd5e0); color: #445; }
 .star-tier-toast.gold { background: linear-gradient(135deg, #fff6df, #ffe6a8); color: #8a6300; }
 .reward-xp { text-align: center; font: 700 15px "Fredoka", sans-serif; color: var(--wood-dark); margin-bottom: 12px; }
+.reward-personal-best { text-align: center; font: 700 12px "Fredoka", sans-serif; color: var(--ink-soft); margin: -6px 0 12px; }
 .trivia-card {
   display: flex; align-items: center; gap: 10px; background: var(--cream);
   border-radius: 14px; padding: 12px 14px; margin: 0 0 14px;

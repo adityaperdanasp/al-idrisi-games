@@ -490,7 +490,19 @@ function setMathvilleTheme(t) {
 $("theme-btn-boy").addEventListener("click", () => setMathvilleTheme("boy"));
 $("theme-btn-girl").addEventListener("click", () => setMathvilleTheme("girl"));
 
+async function renderBossOfWeekBanner() {
+  const banner = $("boss-of-week-banner");
+  if (!window.AIGLeaderboard || !banner) return;
+  const chapterIds = MATHVILLE_BANK.chapters.map(c => c.id);
+  const status = await AIGLeaderboard.getWeeklyFeaturedBossStatus(chapterIds);
+  const chapter = MATHVILLE_BANK.chapters.find(c => c.id === status.featuredChapterId);
+  if (!chapter) { banner.hidden = true; return; }
+  $("boss-of-week-name").textContent = chapter.title;
+  banner.hidden = false;
+}
+
 function renderTownMap() {
+  renderBossOfWeekBanner();
   const wrap = $("town-map-inner");
   wrap.innerHTML = "";
   wrap.style.height = MAP_HEIGHT + "px";
@@ -869,6 +881,13 @@ function goToIntro(chapterId, isMp) {
     state.isChallenge = false;
     state.isCoop = false;
     state.combo = 0;
+    // Personal Best Tracker -- solo rounds only (isMp/Boss/Challenge/Coop
+    // all use their own timing context, not a fair "personal best"
+    // comparison against a normal practice round). See showReward().
+    if (!isMp) {
+      state.roundStartTime = Date.now();
+      state.bestComboThisRound = 0;
+    }
     state.difficultyTier = "hard";
     state.difficultyStreak = 0;
     state.steps = isMp ? state.mp.game.roundQuestions : buildRound(chapterId);
@@ -4831,6 +4850,7 @@ function submitAnswer(isCorrect, prompt, answerForHint) {
       state.combo = (state.combo || 0) + 1;
       comboMultiplier = comboMultiplierFor(state.combo);
       if (state.combo >= 2) showComboBadge(state.combo, comboMultiplier);
+      state.bestComboThisRound = Math.max(state.bestComboThisRound || 0, state.combo);
     } else {
       state.combo = 0;
     }
@@ -5225,6 +5245,31 @@ function showTriviaFact() {
   $("trivia-card").classList.remove("hidden");
 }
 
+// Personal Best Tracker -- fastest completion time + best combo streak
+// per chapter, a skill/speed metric distinct from stars/tier. Guarded
+// on state.roundStartTime being set (only true for solo normal rounds,
+// see goToIntro()) so Boss Challenge/Family Challenge/Co-op/MP rounds
+// (which never set it) silently skip this rather than submitting a
+// meaningless or crashing comparison.
+async function renderPersonalBest(chapterId) {
+  const el = $("reward-personal-best");
+  if (!window.AIGLeaderboard || !state.roundStartTime) { el.hidden = true; return; }
+  const timeSec = Math.max(1, Math.round((Date.now() - state.roundStartTime) / 1000));
+  const bestCombo = state.bestComboThisRound || 0;
+  try {
+    const result = await AIGLeaderboard.submitPersonalBest(chapterId, timeSec, bestCombo);
+    if (!result.ok) { el.hidden = true; return; }
+    const parts = [`⏱️ ${result.timeSec}s`, `🔥 combo ${result.bestCombo}`];
+    const badges = [];
+    if (result.newTimeRecord) badges.push("New best time!");
+    if (result.newComboRecord) badges.push("New best combo!");
+    el.textContent = `Your best: ${parts.join(" · ")}${badges.length ? " — " + badges.join(" ") : ""}`;
+    el.hidden = false;
+  } catch (e) {
+    el.hidden = true;
+  }
+}
+
 function showReward(stars) {
   const meta = CHAPTER_META[state.chapterId];
   const xp = stars * 10;
@@ -5234,6 +5279,7 @@ function showReward(stars) {
   $("reward-stars").textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
   if (progressResult.tierUp) showStarTierToast(progressResult.perfectCount);
   $("reward-xp").textContent = `+${xp} XP`;
+  renderPersonalBest(state.chapterId);
   showTriviaFact();
   $("mp-results").classList.add("hidden");
   $("btn-reward-continue").classList.remove("hidden");
@@ -5431,6 +5477,21 @@ async function finishBossRound(won) {
       $("boss-result-title").textContent = isWeekly ? "Weekly Boss Rush Cleared!" : "Boss Defeated!";
       const cardNote = result.newCard ? " — plus a new collectible card! 📚" : "";
       $("boss-result-sub").textContent = `+${reward.coins} 🪙  +${reward.gems} 💎${cardNote}`;
+    }
+    // Boss of the Week -- an extra bonus ON TOP of the above if this
+    // chapter happens to be the one featured this week (see
+    // getWeeklyFeaturedBossStatus in leaderboard.js). Solo per-chapter
+    // Boss Challenge only, not the separate cross-chapter Weekly Boss
+    // Rush above.
+    if (!isWeekly) {
+      const chapterIds = MATHVILLE_BANK.chapters.map(c => c.id);
+      const featuredStatus = await AIGLeaderboard.getWeeklyFeaturedBossStatus(chapterIds);
+      if (chapterId === featuredStatus.featuredChapterId) {
+        const bonusResult = await AIGLeaderboard.claimWeeklyFeaturedBoss();
+        if (bonusResult.ok && !bonusResult.alreadyClaimed) {
+          $("boss-result-sub").textContent += ` 👑 Boss of the Week bonus: +${bonusResult.reward.coins} 🪙 +${bonusResult.reward.gems} 💎!`;
+        }
+      }
     }
   } catch (e) {
     $("boss-result-title").textContent = isWeekly ? "Weekly Boss Rush Cleared!" : "Boss Defeated!";

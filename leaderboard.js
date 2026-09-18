@@ -696,6 +696,129 @@
   }
 
   // =====================================================================
+  // BOSS OF THE WEEK -- one of MathVille's per-chapter Boss Challenges
+  // is deterministically "featured" each week (hash of weekKey() over
+  // the chapter id list, passed in by the caller since the chapter list
+  // itself lives in mathville's own questions.js, not here), with an
+  // extra bonus ON TOP OF the normal claimBossWin reward for beating
+  // THAT specific chapter's boss this week. Distinct from the separate
+  // "Weekly Boss Rush" above (a single cross-chapter 10-question
+  // gauntlet) -- this rotates which of the existing 10 individual
+  // per-chapter bosses is worth extra, steering replay traffic around
+  // rather than adding a new fight mode.
+  // =====================================================================
+  const WEEKLY_FEATURED_BOSS_REWARD = { coins: 20, gems: 2 };
+
+  function weeklyFeaturedChapterId(chapterIds) {
+    const wk = weekKey();
+    let h = 0;
+    for (let i = 0; i < wk.length; i++) h = (h * 31 + wk.charCodeAt(i)) | 0;
+    return chapterIds[Math.abs(h) % chapterIds.length];
+  }
+
+  async function getWeeklyFeaturedBossStatus(chapterIds) {
+    const featuredChapterId = weeklyFeaturedChapterId(chapterIds);
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { featuredChapterId, claimed: true, reward: WEEKLY_FEATURED_BOSS_REWARD };
+    const snap = await aigDb.ref(`players/${player.id}/weeklyFeaturedBossWins/${weekKey()}`).get();
+    return { featuredChapterId, claimed: snap.exists() && snap.val() === true, reward: WEEKLY_FEATURED_BOSS_REWARD };
+  }
+
+  async function claimWeeklyFeaturedBoss() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/weeklyFeaturedBossWins/${weekKey()}`);
+    const snap = await ref.get();
+    if (snap.exists() && snap.val()) return { ok: true, alreadyClaimed: true };
+    await ref.set(true);
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + WEEKLY_FEATURED_BOSS_REWARD.coins;
+      wallet.gems = (wallet.gems || 0) + WEEKLY_FEATURED_BOSS_REWARD.gems;
+      return wallet;
+    });
+    return { ok: true, alreadyClaimed: false, reward: WEEKLY_FEATURED_BOSS_REWARD };
+  }
+
+  // =====================================================================
+  // WEEKLY THEME DAY -- a fixed day-of-week -> subject mapping (no
+  // Firebase state needed for the mapping itself, purely derived from
+  // the clock), with a small one-time daily bonus for playing that
+  // day's themed subject at least once. Reuses dailyStats (already
+  // populated by touchDailyStats on every answer) to check eligibility.
+  // =====================================================================
+  const THEME_DAY_SUBJECTS = ["science", "math", "language", "science", "math", "language", "math"]; // Sun..Sat
+  const THEME_DAY_INFO = {
+    math: { emoji: "🔢", label: "Math Day", games: ["mathville", "multipleazka"] },
+    language: { emoji: "📖", label: "Language Day", games: ["language-arts"] },
+    science: { emoji: "🪐", label: "Science Day", games: ["solarquest"] }
+  };
+  const THEME_DAY_REWARD = { coins: 10 };
+
+  function getThemeDayInfo() {
+    const subject = THEME_DAY_SUBJECTS[new Date().getUTCDay()];
+    return { subject, ...THEME_DAY_INFO[subject] };
+  }
+
+  async function getThemeDayBonusStatus() {
+    const info = getThemeDayInfo();
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ...info, eligible: false, claimed: true, reward: THEME_DAY_REWARD };
+    const [claimSnap, dailySnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/themeDayBonus/${todayKey()}`).get(),
+      aigDb.ref(`players/${player.id}/dailyStats/${todayKey()}`).get()
+    ]);
+    const claimed = claimSnap.exists() && claimSnap.val() === true;
+    const dailyGames = dailySnap.exists() ? (dailySnap.val().games || {}) : {};
+    const eligible = info.games.some(g => dailyGames[g]);
+    return { ...info, eligible, claimed, reward: THEME_DAY_REWARD };
+  }
+
+  async function claimThemeDayBonus() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const status = await getThemeDayBonusStatus();
+    if (!status.eligible || status.claimed) return { ok: false, reason: "not-eligible" };
+    const ref = aigDb.ref(`players/${player.id}/themeDayBonus/${todayKey()}`);
+    const snap = await ref.get();
+    if (snap.exists() && snap.val()) return { ok: true, alreadyClaimed: true };
+    await ref.set(true);
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + THEME_DAY_REWARD.coins;
+      return wallet;
+    });
+    return { ok: true, alreadyClaimed: false, reward: THEME_DAY_REWARD };
+  }
+
+  // =====================================================================
+  // PERSONAL BEST TRACKER -- fastest completion time + best combo streak
+  // per MathVille chapter, distinct from stars/tier (a skill/speed
+  // metric, not a score metric). Written once per solo round from
+  // showReward() with the round's elapsed time + state.bestComboThisRound.
+  // =====================================================================
+  async function getPersonalBest(chapterId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`players/${player.id}/personalBest/${chapterId}`).get();
+    return snap.exists() ? snap.val() : null;
+  }
+
+  async function submitPersonalBest(chapterId, timeSec, bestCombo) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/personalBest/${chapterId}`);
+    const snap = await ref.get();
+    const existing = snap.exists() ? snap.val() : null;
+    const finalTimeSec = existing ? Math.min(existing.timeSec, timeSec) : timeSec;
+    const finalBestCombo = existing ? Math.max(existing.bestCombo || 0, bestCombo) : bestCombo;
+    const newTimeRecord = !existing || timeSec < existing.timeSec;
+    const newComboRecord = !existing || bestCombo > (existing.bestCombo || 0);
+    await ref.set({ timeSec: finalTimeSec, bestCombo: finalBestCombo });
+    return { ok: true, newTimeRecord, newComboRecord, timeSec: finalTimeSec, bestCombo: finalBestCombo };
+  }
+
+  // =====================================================================
   // WEEKLY BOSS RUSH — one-time-per-calendar-week reward, same
   // {gameId}:{chapterId}-style get-check-set pattern as claimBossWin
   // above, keyed by weekKey() instead so it resets naturally every
@@ -3057,6 +3180,9 @@
     getBossWinsCount, getAchievements,
     giftCard,
     postTradeOffer, getOpenTradeOffers, getMyTradeOffers, cancelTradeOffer, acceptTradeOffer,
+    getWeeklyFeaturedBossStatus, claimWeeklyFeaturedBoss,
+    getThemeDayInfo, getThemeDayBonusStatus, claimThemeDayBonus,
+    getPersonalBest, submitPersonalBest,
     awardDanceBattleBonus,
     awardCookingRushBonus,
     awardParkourRunBonus,
