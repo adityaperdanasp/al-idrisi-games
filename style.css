@@ -364,6 +364,39 @@ body {
   gap: 8px;
 }
 
+.sc-more-menu-wrap { position: relative; }
+.sc-more-menu {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  z-index: 30;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 180px;
+}
+.sc-more-menu[hidden] { display: none; }
+.sc-more-item {
+  display: block;
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #3d2e22;
+  text-decoration: none;
+  cursor: pointer;
+  width: 100%;
+}
+.sc-more-item:active { background: #f6e3b4; }
+
 .sc-trophy {
   width: 42px;
   height: 42px;
@@ -913,6 +946,40 @@ body {
    the shared class so every current and future .sc-smart-card benefits. */
 .sc-smart-card[hidden] { display: none; }
 .sc-comeback-card { background: linear-gradient(90deg, #fff0e0, #ffe0d6); }
+
+/* "Today" panel -- consolidates what used to be ~12 separate full-width
+   white cards into ONE panel with compact rows. Each row keeps its
+   original class (.sc-smart-card/.sc-goal-card/.sc-subject-streaks) and
+   original render logic untouched (see setupTodayPanelObserver() in
+   index.html) -- only the OUTER spacing/background/shadow is reset here
+   so they read as rows of one list instead of stacked separate cards. */
+.sc-today-panel {
+  margin: 12px 24px 0;
+  padding: 4px 16px 4px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.05);
+}
+.sc-today-panel[hidden] { display: none; }
+.sc-today-panel-title {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #7a5a2e;
+  padding: 12px 0 6px;
+}
+.sc-today-items > .sc-smart-card,
+.sc-today-items > .sc-subject-streaks,
+.sc-today-items > .sc-goal-card {
+  margin: 0;
+  padding: 10px 0;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  border-bottom: 1px solid #f1e6d2;
+}
+.sc-today-items > *:last-child { border-bottom: none; }
+.sc-today-items > .sc-comeback-card { background: none; }
 
 .sc-subject-streaks {
   margin: 12px 24px 0;
