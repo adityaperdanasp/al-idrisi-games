@@ -784,6 +784,171 @@
             "Photosphere"
           ],
           "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What force pulls the gas and dust together to form a star?",
+          "options": [
+            "Gravity",
+            "Magnetism",
+            "Friction",
+            "Wind"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What keeps a star from collapsing under its own gravity while it shines?",
+          "options": [
+            "Nuclear fusion pushing outward",
+            "Its magnetic field",
+            "Its spin",
+            "Cold gas pressure"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What do we call a star that has used up its hydrogen fuel and expanded?",
+          "options": [
+            "Protostar",
+            "Blue dwarf",
+            "Red giant",
+            "Nebula"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "What is left behind after a Sun-sized star sheds its outer layers?",
+          "options": [
+            "Neutron star",
+            "Black hole",
+            "White dwarf",
+            "Nebula"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "What happens when a massive star runs out of fuel?",
+          "options": [
+            "It explodes as a supernova",
+            "It becomes a comet",
+            "It quietly fades away",
+            "It turns into a planet"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What can a supernova leave behind if the star was extremely massive?",
+          "options": [
+            "A comet",
+            "A black hole",
+            "An asteroid belt",
+            "A moon"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "What is our Sun's stage of life right now?",
+          "options": [
+            "Protostar",
+            "Red giant",
+            "Main sequence star",
+            "White dwarf"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "Which is generally true about bigger stars compared to smaller ones?",
+          "options": [
+            "They burn fuel slower and live longer",
+            "They never explode",
+            "They stay protostars forever",
+            "They burn fuel faster and live shorter lives"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "What is a neutron star made mostly of?",
+          "options": [
+            "Liquid gold",
+            "Rock and metal",
+            "Frozen hydrogen",
+            "Tightly packed neutrons"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "What do astronomers call the earliest, still-forming stage of a star?",
+          "options": [
+            "Protostar",
+            "Supernova",
+            "Red giant",
+            "White dwarf"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What eventually happens to a white dwarf over an extremely long time?",
+          "options": [
+            "It grows into a red giant",
+            "It cools and dims",
+            "It suddenly explodes",
+            "It turns into a nebula"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "Which element does a young star mostly fuse in its core?",
+          "options": [
+            "Carbon",
+            "Hydrogen",
+            "Oxygen",
+            "Iron"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "What can the material blown out by a supernova eventually help form?",
+          "options": [
+            "Only comets",
+            "Only black holes",
+            "Nothing, it disappears",
+            "New stars and planets"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "Roughly how does our Sun's size compare to Earth?",
+          "options": [
+            "About the same size",
+            "Smaller than Earth",
+            "Smaller than the Moon",
+            "Much bigger than Earth"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "What is a nebula mostly made of?",
+          "options": [
+            "Liquid metal",
+            "Ice only",
+            "Gas and dust",
+            "Solid rock"
+          ],
+          "answer": 2
         }
       ],
       "funFacts": [
@@ -1583,6 +1748,138 @@
             "Friction"
           ],
           "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "Where are protons and neutrons found in an atom?",
+          "options": [
+            "Only in gases",
+            "Spread evenly everywhere",
+            "In the nucleus",
+            "Orbiting far outside"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "Where are electrons usually found in an atom?",
+          "options": [
+            "Fused with protons",
+            "Orbiting around the nucleus",
+            "In the nucleus",
+            "Outside the atom entirely"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "What determines which element an atom is?",
+          "options": [
+            "The size of the nucleus",
+            "The number of electrons only",
+            "The number of protons",
+            "The color of the atom"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "What is the smallest unit of an element that still has that element's properties?",
+          "options": [
+            "An atom",
+            "A crystal",
+            "A molecule",
+            "A cell"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What do we call atoms of the same element with different numbers of neutrons?",
+          "options": [
+            "Molecules",
+            "Isotopes",
+            "Compounds",
+            "Ions"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "What is formed when two or more atoms bond together?",
+          "options": [
+            "A molecule",
+            "An electron",
+            "A proton",
+            "A nucleus"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "In a neutral atom, how does the number of electrons compare to the number of protons?",
+          "options": [
+            "They are equal",
+            "There is no relationship",
+            "There are always more electrons",
+            "There are always more protons"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the central part of an atom called?",
+          "options": [
+            "The orbit",
+            "The core shell",
+            "The nucleus",
+            "The shell"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "Which particle is the lightest?",
+          "options": [
+            "Neutron",
+            "They all weigh the same",
+            "Proton",
+            "Electron"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "What tool do scientists use to arrange elements by their properties?",
+          "options": [
+            "A telescope",
+            "A star chart",
+            "The periodic table",
+            "A microscope slide"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "What happens to an atom that loses an electron?",
+          "options": [
+            "It becomes a positive ion",
+            "It becomes a negative ion",
+            "It stays neutral",
+            "It turns into a different element"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What holds electrons close to the nucleus?",
+          "options": [
+            "Friction",
+            "Magnetism from outside",
+            "Gravity alone",
+            "The attraction between opposite charges"
+          ],
+          "answer": 3
         }
       ],
       "funFacts": [
@@ -2264,6 +2561,149 @@
             "Nothing changes"
           ],
           "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How long does it take Earth to complete one full rotation on its axis?",
+          "options": [
+            "24 hours",
+            "1 hour",
+            "1 year",
+            "1 month"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What does Earth's rotation on its axis cause?",
+          "options": [
+            "The seasons",
+            "Day and night",
+            "Earthquakes",
+            "Ocean tides only"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "What mainly causes the four seasons on Earth?",
+          "options": [
+            "Earth's tilted axis as it orbits the Sun",
+            "Clouds blocking the Sun",
+            "Earth spinning faster in summer",
+            "The Moon's phases"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "When it is nighttime where you live, what is happening on the opposite side of Earth?",
+          "options": [
+            "It is always sunset there",
+            "It is daytime there",
+            "Nothing changes there",
+            "It is also nighttime"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "Which direction does Earth rotate, as seen from above the North Pole?",
+          "options": [
+            "It doesn't rotate",
+            "Clockwise (east to west)",
+            "It changes direction every day",
+            "Counterclockwise (west to east)"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "What is Earth's imaginary spinning line called?",
+          "options": [
+            "Orbit",
+            "Axis",
+            "Equator",
+            "Meridian"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "During summer in the Northern Hemisphere, how is that half of Earth tilted?",
+          "options": [
+            "Sideways to the Sun",
+            "It isn't tilted at all",
+            "Away from the Sun",
+            "Toward the Sun"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "What word describes Earth's path around the Sun?",
+          "options": [
+            "Eclipse",
+            "Orbit",
+            "Rotation",
+            "Axis"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "Which is a 'rotation' and which is a 'revolution'? Earth spinning on its axis once a day is a...",
+          "options": [
+            "Revolution",
+            "Eclipse",
+            "Orbit reversal",
+            "Rotation"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "What would happen to day and night if Earth stopped rotating?",
+          "options": [
+            "It would always be sunset everywhere",
+            "One side would have endless day, the other endless night",
+            "Nothing would change",
+            "The Moon would disappear"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "Why do we NOT feel Earth spinning?",
+          "options": [
+            "Earth doesn't actually spin",
+            "Gravity cancels out the spin",
+            "We are moving at the same steady speed as everything around us",
+            "We are too small to feel it"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "Which hemisphere has summer when the Southern Hemisphere has winter?",
+          "options": [
+            "Northern Hemisphere",
+            "Both at once",
+            "It depends on the Moon",
+            "Neither"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is one full spin of Earth on its axis called?",
+          "options": [
+            "A tilt",
+            "A revolution",
+            "An eclipse",
+            "A rotation"
+          ],
+          "answer": 3
         }
       ],
       "funFacts": [
@@ -3088,6 +3528,171 @@
             "The Arctic Circle"
           ],
           "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What imaginary line divides Earth into the Northern and Southern Hemispheres?",
+          "options": [
+            "The North Pole",
+            "The Equator",
+            "The Prime Meridian",
+            "The International Date Line"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "What imaginary line divides Earth into the Eastern and Western Hemispheres?",
+          "options": [
+            "The Equator",
+            "The Arctic Circle",
+            "The Tropic of Cancer",
+            "The Prime Meridian"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "What do lines of latitude measure?",
+          "options": [
+            "Distance from the North Pole only",
+            "Height above sea level",
+            "Distance north or south of the Equator",
+            "Distance east or west of the Prime Meridian"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "What do lines of longitude measure?",
+          "options": [
+            "Ocean depth",
+            "Distance north or south of the Equator",
+            "Distance east or west of the Prime Meridian",
+            "Temperature"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "What shape is a globe, unlike a flat map?",
+          "options": [
+            "A square",
+            "A cylinder",
+            "A cone",
+            "A sphere"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "Why can flat maps sometimes distort the size or shape of countries?",
+          "options": [
+            "Because countries actually change shape",
+            "Because mapmakers make mistakes on purpose",
+            "Because maps are always wrong",
+            "Because a round Earth can't be perfectly flattened"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "What is the name for the compass direction that points toward the North Pole?",
+          "options": [
+            "West",
+            "South",
+            "East",
+            "North"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "What tool on a map helps you understand distance, like '1 inch = 100 miles'?",
+          "options": [
+            "A map scale",
+            "A legend key only",
+            "A compass rose",
+            "A grid line"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the map feature that explains what symbols and colors mean?",
+          "options": [
+            "The latitude line",
+            "The legend (or key)",
+            "The scale",
+            "The compass rose"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "What do we call the set of horizontal and vertical lines used to locate places on a map?",
+          "options": [
+            "A hemisphere",
+            "A scale",
+            "A grid",
+            "A legend"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "Which continent is located entirely in the Southern Hemisphere?",
+          "options": [
+            "Antarctica",
+            "Europe",
+            "North America",
+            "Asia"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What are the four main directions on a compass rose called?",
+          "options": [
+            "Grid directions",
+            "Scale directions",
+            "Ordinal directions",
+            "Cardinal directions"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "What is the imaginary line at 0 degrees latitude called?",
+          "options": [
+            "The Equator",
+            "The Prime Meridian",
+            "The Tropic of Capricorn",
+            "The Arctic Circle"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is the imaginary line at 0 degrees longitude called?",
+          "options": [
+            "The Antarctic Circle",
+            "The Equator",
+            "The Tropic of Cancer",
+            "The Prime Meridian"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "Which is more accurate for showing the true shapes and sizes of continents?",
+          "options": [
+            "A globe",
+            "Both are equally accurate",
+            "Neither is accurate",
+            "A flat map"
+          ],
+          "answer": 0
         }
       ],
       "funFacts": [
@@ -3863,6 +4468,160 @@
             "18 hours"
           ],
           "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many hours are in one day?",
+          "options": [
+            "12",
+            "60",
+            "24",
+            "365"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "How many days are in a standard (non-leap) year?",
+          "options": [
+            "365",
+            "300",
+            "400",
+            "360"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "How many minutes are in one hour?",
+          "options": [
+            "24",
+            "30",
+            "60",
+            "100"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "Why do we have a leap year every 4 years?",
+          "options": [
+            "To match the seasons exactly by chance",
+            "Calendars need an extra day for fun",
+            "To make up for Earth's orbit taking a little more than 365 days",
+            "Because the Moon is closer that year"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "How many days does February have in a leap year?",
+          "options": [
+            "28",
+            "29",
+            "31",
+            "30"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "Why are there different time zones around the world?",
+          "options": [
+            "Because the Moon changes time zones",
+            "Because Earth rotates and different places face the Sun at different times",
+            "Because clocks run at different speeds",
+            "Because every country picks a random time"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "If it is noon where you live, is it daytime or nighttime on the exact opposite side of Earth?",
+          "options": [
+            "Sunset",
+            "Nighttime",
+            "Sunrise",
+            "Daytime"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "What do we call the imaginary line where the date changes when you cross it?",
+          "options": [
+            "The Tropic Line",
+            "The Prime Meridian",
+            "The Equator",
+            "The International Date Line"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "How many months are in a year?",
+          "options": [
+            "52",
+            "12",
+            "10",
+            "24"
+          ],
+          "answer": 1
+        },
+        {
+          "type": "mc",
+          "question": "How many weeks are roughly in a year?",
+          "options": [
+            "About 100",
+            "About 365",
+            "About 52",
+            "About 12"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "What causes one full year to pass?",
+          "options": [
+            "Earth completing one spin on its axis",
+            "The Moon completing one orbit around Earth",
+            "The Sun moving around Earth",
+            "Earth completing one orbit around the Sun"
+          ],
+          "answer": 3
+        },
+        {
+          "type": "mc",
+          "question": "What is a decade?",
+          "options": [
+            "10 years",
+            "100 years",
+            "1 year",
+            "1,000 years"
+          ],
+          "answer": 0
+        },
+        {
+          "type": "mc",
+          "question": "What is a century?",
+          "options": [
+            "10 years",
+            "50 years",
+            "100 years",
+            "1,000 years"
+          ],
+          "answer": 2
+        },
+        {
+          "type": "mc",
+          "question": "About how many days are in one month on average?",
+          "options": [
+            "About 60",
+            "About 24",
+            "About 30",
+            "About 7"
+          ],
+          "answer": 2
         }
       ],
       "funFacts": [

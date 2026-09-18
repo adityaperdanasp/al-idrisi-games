@@ -3445,6 +3445,171 @@
             "small"
           ],
           "answer": "graceful"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'ancient'?",
+          "options": [
+            "modern",
+            "old",
+            "quiet",
+            "large"
+          ],
+          "answer": "modern"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'generous'?",
+          "options": [
+            "kind",
+            "selfish",
+            "happy",
+            "tall"
+          ],
+          "answer": "selfish"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'permit'?",
+          "options": [
+            "forbid",
+            "allow",
+            "start",
+            "finish"
+          ],
+          "answer": "forbid"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'gentle'?",
+          "options": [
+            "soft",
+            "rough",
+            "fast",
+            "quiet"
+          ],
+          "answer": "rough"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'victory'?",
+          "options": [
+            "prize",
+            "defeat",
+            "battle",
+            "team"
+          ],
+          "answer": "defeat"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'humble'?",
+          "options": [
+            "proud",
+            "shy",
+            "kind",
+            "quiet"
+          ],
+          "answer": "proud"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'genuine'?",
+          "options": [
+            "fake",
+            "real",
+            "shiny",
+            "old"
+          ],
+          "answer": "fake"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'expand'?",
+          "options": [
+            "grow",
+            "shrink",
+            "stretch",
+            "build"
+          ],
+          "answer": "shrink"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'reveal'?",
+          "options": [
+            "show",
+            "hide",
+            "explain",
+            "shout"
+          ],
+          "answer": "hide"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'ancient history'? Which word means 'recent'?",
+          "options": [
+            "ancient",
+            "current",
+            "distant",
+            "past"
+          ],
+          "answer": "current"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'harsh'?",
+          "options": [
+            "mild",
+            "loud",
+            "strict",
+            "cold"
+          ],
+          "answer": "mild"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'permanent'?",
+          "options": [
+            "forever",
+            "temporary",
+            "solid",
+            "strong"
+          ],
+          "answer": "temporary"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'clumsy'?",
+          "options": [
+            "graceful",
+            "messy",
+            "loud",
+            "slow"
+          ],
+          "answer": "graceful"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'urban'?",
+          "options": [
+            "rural",
+            "busy",
+            "modern",
+            "crowded"
+          ],
+          "answer": "rural"
+        },
+        {
+          "type": "mc",
+          "prompt": "What is the opposite of 'sufficient'?",
+          "options": [
+            "enough",
+            "insufficient",
+            "plenty",
+            "extra"
+          ],
+          "answer": "insufficient"
         }
       ]
     },
@@ -4459,6 +4624,83 @@
             "small"
           ],
           "answer": "not"
+        },
+        {
+          "type": "mc",
+          "prompt": "The suffix '-er' (as in 'teacher') usually means...",
+          "options": [
+            "one who does something",
+            "without",
+            "again",
+            "before"
+          ],
+          "answer": "one who does something"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which word means 'to freeze again'?",
+          "options": [
+            "unfreeze",
+            "refreeze",
+            "prefreeze",
+            "misfreeze"
+          ],
+          "answer": "refreeze"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which word means 'not happy'?",
+          "options": [
+            "rehappy",
+            "misHappy",
+            "unhappy",
+            "prehappy"
+          ],
+          "answer": "unhappy"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which word means 'full of joy'?",
+          "options": [
+            "joyless",
+            "joyful",
+            "joyable",
+            "misjoy"
+          ],
+          "answer": "joyful"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which word means 'without care'?",
+          "options": [
+            "careful",
+            "careless",
+            "precare",
+            "recare"
+          ],
+          "answer": "careless"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which word means 'to read wrongly'?",
+          "options": [
+            "reread",
+            "unread",
+            "misread",
+            "preread"
+          ],
+          "answer": "misread"
+        },
+        {
+          "type": "mc",
+          "prompt": "Which word means 'before school'?",
+          "options": [
+            "postschool",
+            "preschool",
+            "subschool",
+            "interschool"
+          ],
+          "answer": "preschool"
         }
       ]
     },
@@ -5254,6 +5496,61 @@
             "lets'"
           ],
           "answer": "let's"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"They're\" is short for...",
+          "answer": "they are"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"Who's\" is short for...",
+          "answer": "who is"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"We'd\" is short for...",
+          "answer": "we would"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"It'll\" is short for...",
+          "answer": "it will"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"She's\" is short for...",
+          "answer": "she is"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"They'll\" is short for...",
+          "answer": "they will"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"I'd\" is short for...",
+          "answer": "I would"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"Aren't\" is short for...",
+          "answer": "are not"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"You're\" is short for...",
+          "answer": "you are"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"He'll\" is short for...",
+          "answer": "he will"
+        },
+        {
+          "type": "fill",
+          "prompt": "\"Wasn't\" is short for...",
+          "answer": "was not"
         }
       ]
     },
@@ -5888,6 +6185,81 @@
             "The bakery sells fresh bread every morning"
           ],
           "answer": "When does the museum open"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"yuki and noah went to the library on saturday\"",
+          "answer": "Yuki and Noah went to the library on Saturday."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"did leo bring his umbrella today\"",
+          "answer": "Did Leo bring his umbrella today?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"wow that mountain is huge\"",
+          "answer": "Wow, that mountain is huge!"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"mei lives in tokyo but sara lives in paris\"",
+          "answer": "Mei lives in Tokyo but Sara lives in Paris."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"can omar and lily come to the party\"",
+          "answer": "Can Omar and Lily come to the party?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"the teacher said good morning class\"",
+          "answer": "The teacher said, \"Good morning, class.\""
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"ben and mia visited the museum on friday\"",
+          "answer": "Ben and Mia visited the museum on Friday."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"where did you put my pencil case\"",
+          "answer": "Where did you put my pencil case?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"stop right there shouted the guard\"",
+          "answer": "\"Stop right there!\" shouted the guard."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"aiko has a cat named momo\"",
+          "answer": "Aiko has a cat named Momo."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"is the meeting on monday or tuesday\"",
+          "answer": "Is the meeting on Monday or Tuesday?"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"what a fantastic goal that was\"",
+          "answer": "What a fantastic goal that was!"
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"dani and theo are best friends\"",
+          "answer": "Dani and Theo are best friends."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"the trip to egypt starts in july\"",
+          "answer": "The trip to Egypt starts in July."
+        },
+        {
+          "type": "fill",
+          "prompt": "Rewrite correctly with capitals and punctuation: \"careful the floor is wet\"",
+          "answer": "Careful, the floor is wet!"
         }
       ]
     },
