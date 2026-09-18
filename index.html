@@ -1021,6 +1021,7 @@
         <button class="sc-modal-tab" id="sc-tab-avatarcolor" type="button">🎨 Avatar</button>
         <button class="sc-modal-tab" id="sc-tab-rewards" type="button">🎁 Rewards</button>
         <button class="sc-modal-tab" id="sc-tab-fx" type="button">🎮 Game FX</button>
+        <button class="sc-modal-tab" id="sc-tab-upgrades" type="button">🚀 Upgrades</button>
       </div>
       <div class="sc-cosmetic-list" id="sc-frame-list"></div>
       <div class="sc-cosmetic-list" id="sc-sound-list" hidden></div>
@@ -1033,6 +1034,12 @@
       </div>
       <div class="sc-cosmetic-list" id="sc-reward-list" hidden></div>
       <div class="sc-cosmetic-list" id="sc-fx-list" hidden></div>
+      <!-- Upgrades -- permanent gameplay-affecting purchases (Water Gun
+           range, Nitro tank, Plane shield/rapid-fire, Ninja extra life,
+           Boss Rush starting HP), distinct from the consumable Power-ups
+           tab above. See leaderboard.js's UPGRADE_CATALOG / getUpgrades /
+           unlockUpgrade. -->
+      <div class="sc-cosmetic-list" id="sc-upgrade-list" hidden></div>
     </div>
   </div>
 
@@ -2323,10 +2330,46 @@
     });
   }
 
+  // Upgrades -- permanent gameplay-affecting purchases, one-time (unlike
+  // Power-ups above which are consumable stock). Each item is a flat
+  // boolean own/don't-own, no equip step, so once bought the card just
+  // shows a checkmark forever.
+  async function renderUpgradeShop() {
+    const [owned, defs] = await Promise.all([
+      AIGLeaderboard.getUpgrades(),
+      Promise.resolve(AIGLeaderboard.getUpgradeDefs())
+    ]);
+    document.getElementById("sc-upgrade-list").innerHTML = Object.entries(defs).map(([id, def]) => {
+      const isOwned = !!owned[id];
+      const action = isOwned
+        ? `<span class="sc-quest-done-check">✓</span>`
+        : `<button class="sc-quest-claim-btn" data-upgrade-buy="${id}">${def.cost.coins ? `🪙${def.cost.coins}` : `💎${def.cost.gems}`}</button>`;
+      return `
+        <div class="sc-cosmetic-item">
+          <span class="sc-cosmetic-preview">${def.emoji}</span>
+          <span class="sc-cosmetic-name">${def.name}<br><span class="sc-powerup-owned">${def.desc}</span></span>
+          ${action}
+        </div>`;
+    }).join("");
+    document.querySelectorAll("[data-upgrade-buy]").forEach(btn => {
+      btn.onclick = async () => {
+        btn.disabled = true;
+        const result = await AIGLeaderboard.unlockUpgrade(btn.dataset.upgradeBuy);
+        // Purchased here (the hub), consumed in mathville/script.js's own
+        // ownedUpgrades cache -- that page re-fetches fresh via
+        // refreshOwnedUpgrades() on its own next load, so nothing to sync
+        // here beyond re-rendering this shop's own checkmark.
+        if (result.ok) renderUpgradeShop();
+        else btn.disabled = false;
+      };
+    });
+  }
+
   async function renderCustomize() {
     const cos = await AIGLeaderboard.getCosmetics();
     if (!cos) return;
     renderPowerupShop();
+    renderUpgradeShop();
     renderAvatarColorPicker();
     renderAvatarFacePicker(cos);
     renderRewardList();
@@ -2406,8 +2449,8 @@
   document.getElementById("sc-customize-close").addEventListener("click", () => {
     document.getElementById("sc-customize-overlay").hidden = true;
   });
-  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups", "avatarcolor", "rewards", "fx"];
-  const CUSTOMIZE_TAB_LIST_ID = { frames: "sc-frame-list", sounds: "sc-sound-list", powerups: "sc-powerup-list", avatarcolor: "sc-avatarcolor-grid", rewards: "sc-reward-list", fx: "sc-fx-list" };
+  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups", "avatarcolor", "rewards", "fx", "upgrades"];
+  const CUSTOMIZE_TAB_LIST_ID = { frames: "sc-frame-list", sounds: "sc-sound-list", powerups: "sc-powerup-list", avatarcolor: "sc-avatarcolor-grid", rewards: "sc-reward-list", fx: "sc-fx-list", upgrades: "sc-upgrade-list" };
   function switchCustomizeTab(tab) {
     CUSTOMIZE_TABS.forEach(t => {
       document.getElementById(`sc-tab-${t}`).classList.toggle("active", t === tab);
@@ -2420,6 +2463,7 @@
   document.getElementById("sc-tab-avatarcolor").addEventListener("click", () => switchCustomizeTab("avatarcolor"));
   document.getElementById("sc-tab-rewards").addEventListener("click", () => switchCustomizeTab("rewards"));
   document.getElementById("sc-tab-fx").addEventListener("click", () => switchCustomizeTab("fx"));
+  document.getElementById("sc-tab-upgrades").addEventListener("click", () => switchCustomizeTab("upgrades"));
 
   // Real-world reward ledger -- redeems from the SAME coins/gems wallet
   // as vehicle skins/power-ups. The catalog itself is set by a parent

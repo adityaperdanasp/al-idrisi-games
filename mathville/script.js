@@ -24,6 +24,19 @@ const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPl
 const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().id) || "guest";
 if (window.AIGLeaderboard) AIGLeaderboard.startSession("mathville");
 
+// Cached ownership of gameplay-affecting Upgrades (leaderboard.js's
+// UPGRADE_CATALOG, bought from the hub's Customize overlay) -- fetched
+// once at load and refreshed after any purchase (see refreshOwnedUpgrades
+// below), so Drive Mode/Plane Mode/Ninja Runner/Boss Rush can read it
+// SYNCHRONOUSLY at the moment each mode starts instead of every launch
+// function needing to become async just for this one lookup.
+let ownedUpgrades = {};
+function refreshOwnedUpgrades() {
+  if (!window.AIGLeaderboard) return Promise.resolve();
+  return AIGLeaderboard.getUpgrades().then(u => { ownedUpgrades = u || {}; }).catch(() => {});
+}
+refreshOwnedUpgrades();
+
 // Theme (dark mode + world skins) -- see style.css's [data-theme] blocks
 // for the actual palettes. Applied as early as possible (before first
 // paint would be ideal, but this still runs before the DOM is visible to
@@ -1063,6 +1076,12 @@ function goToDrive(resume) {
     carImmuneUntil: 0,
     nitroFuel: 100,
     water: { streamMsLeft: DRIVE_WATER_MAX_STREAM_MS, coolUntil: 0 },
+    // Upgrades (see leaderboard.js's UPGRADE_CATALOG) -- read from the
+    // ownedUpgrades cache once per run so the frame loop below never
+    // needs to check ownership itself.
+    waterRangePx: DRIVE_WATER_RANGE_PX * (ownedUpgrades["drive-watergun-range"] ? 1.3 : 1),
+    nitroDrainPerMs: DRIVE_NITRO_DRAIN_PER_MS * (ownedUpgrades["drive-nitro-tank"] ? 0.65 : 1),
+    nitroRegenPerMs: DRIVE_NITRO_REGEN_PER_MS * (ownedUpgrades["drive-nitro-tank"] ? 1.5 : 1),
     cities: [], obstacles: [], rafId: null, paused: false, worldRect: null, ended: false
   };
   // The world must be visible (display:block, not display:none) before
@@ -1277,9 +1296,9 @@ function startDriveLoop() {
 function driveNitroTick() {
   const wasBoostingActively = driveBoosting && driveState.nitroFuel > 0;
   if (driveBoosting && driveState.nitroFuel > 0) {
-    driveState.nitroFuel = Math.max(0, driveState.nitroFuel - DRIVE_NITRO_DRAIN_PER_MS * DRIVE_FRAME_MS);
+    driveState.nitroFuel = Math.max(0, driveState.nitroFuel - driveState.nitroDrainPerMs * DRIVE_FRAME_MS);
   } else if (!driveBoosting) {
-    driveState.nitroFuel = Math.min(100, driveState.nitroFuel + DRIVE_NITRO_REGEN_PER_MS * DRIVE_FRAME_MS);
+    driveState.nitroFuel = Math.min(100, driveState.nitroFuel + driveState.nitroRegenPerMs * DRIVE_FRAME_MS);
   }
   $("drive-nitro-fill").style.height = driveState.nitroFuel + "%";
   $("drive-nitro-btn").classList.toggle("empty", driveState.nitroFuel <= 0);
@@ -1315,6 +1334,10 @@ function driveWaterTick() {
     stream.style.transform = `rotate(${(aimAngle * 180 / Math.PI) - 90}deg)`;
     stream.style.left = driveState.x + "%";
     stream.style.top = driveState.y + "%";
+    // Visual length follows the Water Gun Range+ upgrade (base length is
+    // set in style.css's .drive-water-stream, matching the un-upgraded
+    // DRIVE_WATER_RANGE_PX) -- only overridden here when it differs.
+    stream.style.borderBottomWidth = driveState.waterRangePx + "px";
 
     water.streamMsLeft = Math.max(0, water.streamMsLeft - DRIVE_FRAME_MS);
     if (water.streamMsLeft <= 0) water.coolUntil = now + DRIVE_WATER_COOLDOWN_MS;
@@ -1324,7 +1347,7 @@ function driveWaterTick() {
       const distPx = drivePxDist(driveState.x, driveState.y, d.x, d.y);
       const angleToDino = Math.atan2(dy, dx);
       const angleDiff = Math.abs(Math.atan2(Math.sin(angleToDino - aimAngle), Math.cos(angleToDino - aimAngle)));
-      const inCone = distPx <= DRIVE_WATER_RANGE_PX && angleDiff <= DRIVE_WATER_CONE_RAD;
+      const inCone = distPx <= driveState.waterRangePx && angleDiff <= DRIVE_WATER_CONE_RAD;
       if (inCone) {
         d.wetMs = Math.min(DRIVE_WATER_WET_NEEDED_MS, d.wetMs + DRIVE_FRAME_MS);
         if (d.wetMs >= DRIVE_WATER_WET_NEEDED_MS) {
@@ -2295,7 +2318,15 @@ function launchPlaneMode(is2p) {
     bossThresholdStep: PLANE_BOSS_THRESHOLD_STEP, // grows each boss kill -- see handleBossDefeat
     questionIntervalMs: PLANE_QUESTION_INTERVAL_MS,
     score: 0,
-    lives: PLANE_MAX_LIVES,
+    // Upgrades (see leaderboard.js's UPGRADE_CATALOG): Shield Booster adds
+    // 1 starting life (maxLives, not the PLANE_MAX_LIVES constant, is what
+    // updatePlaneLives()/finishPlaneRespawn()/the "heal" power-up all cap
+    // against below); Rapid-Fire Core permanently shortens the base fire
+    // interval (separate from the temporary "rapid" power-up buff, which
+    // still applies its own faster interval on top when active).
+    maxLives: PLANE_MAX_LIVES + (ownedUpgrades["plane-shield-start"] ? 1 : 0),
+    baseFireIntervalMs: ownedUpgrades["plane-rapidfire-core"] ? Math.round(PLANE_FIRE_INTERVAL_MS * 0.8) : PLANE_FIRE_INTERVAL_MS,
+    lives: PLANE_MAX_LIVES + (ownedUpgrades["plane-shield-start"] ? 1 : 0),
     respawnsUsed: 0,
     respawnCorrectCount: 0,
     invulnUntil: 0,
@@ -2377,7 +2408,7 @@ function updatePlaneBestHud() {
 }
 
 function updatePlaneLives() {
-  $("plane-lives").textContent = "❤️".repeat(planeState.lives) + "🖤".repeat(PLANE_MAX_LIVES - planeState.lives);
+  $("plane-lives").textContent = "❤️".repeat(planeState.lives) + "🖤".repeat(planeState.maxLives - planeState.lives);
 }
 
 function planePxDist(ax, ay, bx, by) {
@@ -2604,7 +2635,7 @@ function rollPlaneRespawnQuestion() {
 // reappears, then resume the round right where it left off.
 function finishPlaneRespawn() {
   planeState.respawnsUsed += 1;
-  planeState.lives = PLANE_MAX_LIVES;
+  planeState.lives = planeState.maxLives;
   updatePlaneLives();
   planeState.invulnUntil = performance.now() + PLANE_HIT_INVULN_MS;
   $("plane-respawn-overlay").classList.add("hidden");
@@ -2631,7 +2662,7 @@ function applyPlanePowerup(type) {
   } else if (type === "shield") {
     planeState.shieldUntil = now + PLANE_SHIELD_DURATION_MS;
   } else if (type === "heal") {
-    planeState.lives = Math.min(PLANE_MAX_LIVES, planeState.lives + 1);
+    planeState.lives = Math.min(planeState.maxLives, planeState.lives + 1);
     updatePlaneLives();
   } else if (type === "wingmen") {
     planeState.wingmenUntil = now + PLANE_WINGMEN_DURATION_MS;
@@ -3815,7 +3846,7 @@ function startPlaneLoop() {
 
       // Auto-fire -- rapid-fire power-up halves the interval while active.
       // A downed 2P pilot is a spectator: still on screen, no longer shooting.
-      const fireInterval = now < planeState.rapidUntil ? PLANE_RAPID_FIRE_INTERVAL_MS : PLANE_FIRE_INTERVAL_MS;
+      const fireInterval = now < planeState.rapidUntil ? PLANE_RAPID_FIRE_INTERVAL_MS : planeState.baseFireIntervalMs;
       if (!planeState.down && now - planeState.lastFireAt > fireInterval) {
         planeState.lastFireAt = now;
         spawnPlaneBullet();
@@ -6730,7 +6761,9 @@ function launchNinjaRunner() {
   ninjaState = {
     qnum: 1, score: 0, streak: 0, hardCorrectCount: 0, wrongLog: [], ended: false, laneTimer: null,
     pendingBoss: false, inBoss: false, bossHp: 0, bossesDefeated: 0,
-    lives: NINJA_START_LIVES, totalAnswered: 0, myCheckpoints: [], isNewHighScoreRun: false
+    // Extra Life Charm upgrade (leaderboard.js's UPGRADE_CATALOG) adds 1
+    // starting life, capped by NINJA_MAX_LIVES (5) same as any in-round gain.
+    lives: Math.min(NINJA_MAX_LIVES, NINJA_START_LIVES + (ownedUpgrades["ninja-extra-life"] ? 1 : 0)), totalAnswered: 0, myCheckpoints: [], isNewHighScoreRun: false
   };
   $("ninja-streak").classList.add("hidden");
   $("ninja-boss-hp").classList.add("hidden");

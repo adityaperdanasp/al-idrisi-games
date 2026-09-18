@@ -1393,18 +1393,28 @@ body {
   display: flex;
   gap: 8px;
   margin-bottom: 14px;
+  /* Customize alone now has 7 tabs -- flex:1 on each .sc-modal-tab can't
+     shrink below its text's intrinsic width (the classic min-width:auto
+     flex gotcha), so past ~5-6 tabs they'd overflow the card and get
+     silently clipped instead of wrapping. Scroll horizontally instead of
+     trying to force everything to fit at an unreadable font size. */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.sc-modal-tabs::-webkit-scrollbar { display: none; }
 .sc-modal-tab {
-  flex: 1;
+  flex: 0 0 auto;
   border: none;
   background: #f1ede6;
   color: #8a7a6a;
   font-family: "Baloo 2", sans-serif;
   font-weight: 700;
   font-size: 0.78rem;
-  padding: 9px 6px;
+  padding: 9px 12px;
   border-radius: 100px;
   cursor: pointer;
+  white-space: nowrap;
 }
 .sc-modal-tab.active { background: #3d2e22; color: #fff; }
 

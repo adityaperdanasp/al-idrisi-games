@@ -30,7 +30,12 @@ function initBossRush() {
     { emoji: "🧟", name: "Zombie King", hp: 45, atk: 9 },
     { emoji: "🐲", name: "Dragon Lord", hp: 60, atk: 12 }
   ];
-  const PLAYER_HP_MAX = 40;
+  const PLAYER_HP_BASE = 40;
+  // Boss Rush Starting Heal upgrade (leaderboard.js's UPGRADE_CATALOG,
+  // bought from the hub's Customize > Upgrades tab) -- re-checked at the
+  // start of every game via startGame(), not just once at page load, so
+  // buying it in another tab takes effect the very next run.
+  let PLAYER_HP_MAX = PLAYER_HP_BASE;
   const BASE_DAMAGE = 6;
   const COMBO_SPECIAL_EVERY = 3;
   const SPECIAL_BONUS_DAMAGE = 15;
@@ -236,6 +241,8 @@ function initBossRush() {
     if (window.AIGLeaderboard) {
       const equipped = await AIGLeaderboard.getEquippedCosmetic("bossrush-special", "default");
       specialFxEmoji = SPECIAL_FX_EMOJI[equipped] || "✨";
+      const upgrades = await AIGLeaderboard.getUpgrades().catch(() => ({}));
+      PLAYER_HP_MAX = PLAYER_HP_BASE + (upgrades["bossrush-extra-hp"] ? 10 : 0);
     }
     state.playerHp = PLAYER_HP_MAX;
     state.bossesDefeated = 0;

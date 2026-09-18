@@ -2315,6 +2315,61 @@
   }
 
   // =====================================================================
+  // UPGRADES — permanent, one-time purchases with real gameplay effects
+  // inside a specific game mode (not cosmetic, and not consumed on use
+  // like POWER-UPS above). Bought with the same coins/gems wallet.
+  // Stored as booleans at players/{id}/upgrades/{id} -- nested under
+  // `players`, no rules change. Each game mode reads ownership once via
+  // getUpgrades() at launch (see mathville/script.js's ownedUpgrades
+  // cache) rather than re-fetching mid-round.
+  // =====================================================================
+  const UPGRADE_CATALOG = {
+    "drive-watergun-range": { name: "Water Gun Range+", emoji: "💦", cost: { coins: 60 }, desc: "Hose reaches ~30% farther in Drive Mode." },
+    "drive-nitro-tank": { name: "Nitro Tank+", emoji: "🔋", cost: { coins: 60 }, desc: "Nitro drains slower & refills faster in Drive Mode." },
+    "plane-shield-start": { name: "Shield Booster", emoji: "🛡️", cost: { coins: 80 }, desc: "Start Plane Mode with 1 extra life." },
+    "plane-rapidfire-core": { name: "Rapid-Fire Core", emoji: "🔫", cost: { gems: 3 }, desc: "Permanently fire faster in Plane Mode." },
+    "ninja-extra-life": { name: "Extra Life Charm", emoji: "❤️", cost: { coins: 80 }, desc: "Start Ninja Runner with 1 extra life." },
+    "bossrush-extra-hp": { name: "Starting Heal", emoji: "💚", cost: { gems: 3 }, desc: "Start Boss Rush Arena with +10 max HP." }
+  };
+
+  function getUpgradeDefs() { return UPGRADE_CATALOG; }
+
+  async function getUpgrades() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return {};
+    const snap = await aigDb.ref(`players/${player.id}/upgrades`).get();
+    return snap.exists() ? snap.val() : {};
+  }
+
+  // Same get-check-set pattern as unlockVehicle/buyPowerup above -- see
+  // the wallet-transaction gotcha documented near unlockVehicle for why
+  // this isn't a .transaction() on the wallet.
+  async function unlockUpgrade(id) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const def = UPGRADE_CATALOG[id];
+    if (!def) return { ok: false };
+    const ownedRef = aigDb.ref(`players/${player.id}/upgrades/${id}`);
+    const ownedSnap = await ownedRef.get();
+    if (ownedSnap.exists() && ownedSnap.val()) return { ok: true, alreadyOwned: true };
+    const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+    const walletSnap = await walletRef.get();
+    const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    const coinsCost = def.cost.coins || 0;
+    const gemsCost = def.cost.gems || 0;
+    if ((wallet.coins || 0) < coinsCost || (wallet.gems || 0) < gemsCost) {
+      return { ok: false, reason: "insufficient-funds" };
+    }
+    await walletRef.set({
+      ...wallet,
+      coins: Math.max(0, (wallet.coins || 0) - coinsCost),
+      gems: Math.max(0, (wallet.gems || 0) - gemsCost)
+    });
+    await ownedRef.set(true);
+    return { ok: true };
+  }
+
+  // =====================================================================
   // SPEED ROUND — a personal best score, plus its own cross-player
   // leaderboard (separate from the per-game all-time and weekly ones in
   // leaderboard.html). Stored at players/{id}/speedRoundBest = {score,
@@ -3184,6 +3239,7 @@
     getTitle, getTitleTiers,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
     getPowerupDefs, getPowerups, buyPowerup, usePowerup,
+    getUpgradeDefs, getUpgrades, unlockUpgrade,
     submitSpeedRoundScore, getSpeedRoundLeaderboard,
     getMasteryMap, getSmartPractice,
     submitDiagnosticResult, getDiagnosticResult,
