@@ -2116,6 +2116,36 @@
   }
 
   // =====================================================================
+  // END-OF-MONTH REPORT -- a bigger-cadence sibling to Weekly Recap
+  // above, for a monthly "celebration" moment rather than a weekly
+  // check-in. Reuses the Season Pass's existing SP counter (1 SP = 1
+  // correct answer, ALREADY reset every calendar month at the same
+  // seasonKey() boundary this needs) instead of re-aggregating
+  // dailyStats by hand -- zero new writes or new monthly counters.
+  // =====================================================================
+  async function getMonthlyReport() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const [battlePass, streak, wallet, collection, title, achievements] = await Promise.all([
+      getBattlePass(), getStreak(), getWallet(), getCollection(), getTitle(), getAchievements()
+    ]);
+    const monthLabel = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    return {
+      monthLabel,
+      monthlyCorrect: battlePass.sp,
+      streak: streak.count || 0,
+      bestStreak: streak.bestStreak || 0,
+      coins: wallet.coins || 0,
+      gems: wallet.gems || 0,
+      cardsOwned: Object.keys(collection.owned).length,
+      cardsTotal: collection.pool.length,
+      title,
+      achievementsUnlocked: achievements.filter(a => a.owned).length,
+      achievementsTotal: achievements.length
+    };
+  }
+
+  // =====================================================================
   // TITLES / RANK — a lifetime "how far along are you" badge, derived
   // purely from a running total of correct answers (cross-game, never
   // resets, unlike daily/weekly/season counters above). Nothing to claim
@@ -3150,7 +3180,7 @@
     getPersonalGoal, setPersonalGoal,
     submitNickname, getNickname,
     getClassGoalProgress,
-    getWeeklyLeaderboard, getWeeklyRecap, getBonusHourInfo, getWeekendBonusInfo,
+    getWeeklyLeaderboard, getWeeklyRecap, getMonthlyReport, getBonusHourInfo, getWeekendBonusInfo,
     getTitle, getTitleTiers,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
     getPowerupDefs, getPowerups, buyPowerup, usePowerup,

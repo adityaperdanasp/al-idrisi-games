@@ -373,9 +373,27 @@
       </div>
     </div>
     <div class="boss-of-week-banner" id="boss-of-week-banner" hidden>👑 Boss of the Week: <span id="boss-of-week-name"></span> — beat its Boss Challenge for a bonus!</div>
+    <button type="button" class="certwall-link" id="btn-open-certwall">🖼️ My Certificates</button>
     <div id="town-map" class="town-map">
       <div id="town-map-inner" class="town-map-inner"></div>
     </div>
+  </section>
+
+  <!-- ===============================================================
+       CERTIFICATE WALL — a gallery of every chapter certificate earned
+       (3 stars), reusing the existing single-certificate screen
+       (screen-certificate/launchCertificate) to actually display one --
+       this screen is just a browsable index into it.
+       =============================================================== -->
+  <section id="screen-certificate-wall" class="screen">
+    <div class="map-header">
+      <div>
+        <h2 class="title-lg">My Certificates</h2>
+        <p class="subtitle-sm">Every chapter you've mastered with 3 stars!</p>
+      </div>
+    </div>
+    <button class="btn boss-challenge-btn" id="btn-certwall-back">Back to Map</button>
+    <div id="certwall-grid" class="certwall-grid"></div>
   </section>
 
   <!-- ===============================================================
@@ -840,11 +858,45 @@
     <div class="challenge-mode-toggle">
       <button class="challenge-mode-btn active" id="challenge-mode-compete" type="button" data-mode="compete">🤝 Compete</button>
       <button class="challenge-mode-btn" id="challenge-mode-coop" type="button" data-mode="coop">🧑‍🤝‍🧑 Co-op</button>
+      <button class="challenge-mode-btn" id="challenge-mode-duet" type="button" data-mode="duet">👯 Duet</button>
     </div>
     <div class="challenge-sub" id="challenge-mode-desc">Take turns! <span id="challenge-p1-name">Player 1</span> goes first, then pass the device to someone else — same 6 questions, whoever gets more right wins.</div>
     <input class="challenge-name-input hidden" id="challenge-coop-p2-name" placeholder="Player 2's name" maxlength="20" autocomplete="off">
     <button class="btn btn-primary btn-cta" id="btn-challenge-start">Start!</button>
     <button class="btn boss-challenge-btn" id="btn-challenge-cancel">Back to Map</button>
+  </section>
+
+  <!-- DUET CO-OP -- 2 players, SAME device, SIMULTANEOUS answering (not
+       alternating turns like Co-op above, and not compare-scores-after
+       like Family Challenge). Both players see the SAME question and
+       each tap an answer in their OWN half of the screen at the same
+       time; a question only counts as "won together" if BOTH are
+       right. Fully separate state/screens from the shared round engine
+       (no isBoss/isChallenge/isCoop involved at all) -- same reasoning
+       as Plane Mode/Ninja Runner being 100% standalone code. -->
+  <section id="screen-duet" class="screen">
+    <div class="duet-progress" id="duet-progress"></div>
+    <div class="duet-prompt" id="duet-prompt"></div>
+    <div class="duet-players">
+      <div class="duet-player-panel">
+        <div class="duet-player-label">Player 1</div>
+        <div class="duet-options" id="duet-p1-options"></div>
+      </div>
+      <div class="duet-player-panel">
+        <div class="duet-player-label">Player 2</div>
+        <div class="duet-options" id="duet-p2-options"></div>
+      </div>
+    </div>
+    <div class="duet-result hidden" id="duet-result"></div>
+    <button class="btn boss-challenge-btn" id="btn-duet-exit">Back to Map</button>
+  </section>
+
+  <section id="screen-duet-result" class="screen">
+    <div class="challenge-emoji">👯</div>
+    <div class="challenge-title">Duet Complete!</div>
+    <div class="challenge-sub" id="duet-final-score"></div>
+    <button class="btn btn-primary btn-cta" id="btn-duet-again">Play Again</button>
+    <button class="btn boss-challenge-btn" id="btn-duet-result-back">Back to Map</button>
   </section>
 
   <!-- Co-op turn gate -- shown BETWEEN questions (not a full screen swap,
@@ -1080,6 +1132,6 @@
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
-<script src="script.js?v=125"></script>
+<script src="script.js?v=126"></script>
 </body>
 </html>

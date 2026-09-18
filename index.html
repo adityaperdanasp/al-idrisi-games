@@ -1012,12 +1012,22 @@
   <div id="sc-recap-overlay" class="sc-modal-overlay" hidden>
     <div class="sc-modal-card sc-recap-card">
       <div class="sc-modal-header">
-        <span class="sc-modal-title">📜 Weekly Recap</span>
+        <span class="sc-modal-title" id="sc-recap-title">📜 Weekly Recap</span>
         <button class="sc-modal-close" id="sc-recap-close" type="button">✕</button>
       </div>
-      <div class="sc-recap-body" id="sc-recap-body"></div>
-      <div class="sc-journey-title">🕰️ My Journey</div>
-      <div class="sc-journey-timeline" id="sc-journey-timeline"></div>
+      <div class="sc-modal-tabs">
+        <button class="sc-modal-tab active" id="sc-recap-tab-week" type="button">This Week</button>
+        <button class="sc-modal-tab" id="sc-recap-tab-month" type="button">This Month</button>
+      </div>
+      <div id="sc-recap-week-panel">
+        <div class="sc-recap-body" id="sc-recap-body"></div>
+        <div class="sc-journey-title">🕰️ My Journey</div>
+        <div class="sc-journey-timeline" id="sc-journey-timeline"></div>
+      </div>
+      <div id="sc-recap-month-panel" hidden>
+        <div class="sc-month-title" id="sc-month-title"></div>
+        <div class="sc-month-stats" id="sc-month-stats"></div>
+      </div>
       <div class="sc-recap-hint">📸 Screenshot me to show your family!</div>
       <a href="report-card/" class="sc-footer-link" style="display:block;text-align:center;margin-top:12px;">🗒️ Want a printable version? →</a>
     </div>
@@ -1227,6 +1237,7 @@
     }
 
     checkParentMessage(current.id);
+    checkParentVoiceNote(current.id);
     renderDailyPanel(current);
     renderBattlePass(current);
     if (current.role !== "parent" && window.AIGLeaderboard) {
@@ -2078,6 +2089,49 @@
       <div class="sc-journey-row"><span class="sc-journey-dot">${r.emoji}</span><span>${r.text}</span></div>
     `).join("");
   }
+
+  // End-of-Month Report -- a bigger-cadence sibling tab in the SAME
+  // overlay Weekly Recap already uses (rather than a new header icon,
+  // which was already getting crowded), for a monthly "celebration"
+  // moment. Each stat row gets a staggered fade/pop-in, same spirit as
+  // the hub's personalized greeting word-by-word animation, to feel
+  // more like an occasion than a plain list.
+  document.getElementById("sc-recap-tab-week").addEventListener("click", () => {
+    document.getElementById("sc-recap-tab-week").classList.add("active");
+    document.getElementById("sc-recap-tab-month").classList.remove("active");
+    document.getElementById("sc-recap-week-panel").hidden = false;
+    document.getElementById("sc-recap-month-panel").hidden = true;
+    document.getElementById("sc-recap-title").textContent = "📜 Weekly Recap";
+  });
+  document.getElementById("sc-recap-tab-month").addEventListener("click", () => {
+    document.getElementById("sc-recap-tab-month").classList.add("active");
+    document.getElementById("sc-recap-tab-week").classList.remove("active");
+    document.getElementById("sc-recap-month-panel").hidden = false;
+    document.getElementById("sc-recap-week-panel").hidden = true;
+    document.getElementById("sc-recap-title").textContent = "📊 Month in Review";
+    renderMonthReport();
+  });
+  async function renderMonthReport() {
+    const report = await AIGLeaderboard.getMonthlyReport();
+    const titleEl = document.getElementById("sc-month-title");
+    const statsEl = document.getElementById("sc-month-stats");
+    if (!report) { titleEl.textContent = ""; statsEl.innerHTML = ""; return; }
+    titleEl.textContent = report.monthLabel;
+    const rows = [
+      { emoji: "🎯", text: `${report.monthlyCorrect} correct answers this month` },
+      { emoji: "🔥", text: `${report.streak}-day streak (best ever: ${report.bestStreak})` },
+      { emoji: "🪙", text: `${report.coins} coins · 💎 ${report.gems} gems saved up` },
+      { emoji: "📚", text: `${report.cardsOwned}/${report.cardsTotal} cards collected` },
+      { emoji: "🏅", text: `${report.achievementsUnlocked}/${report.achievementsTotal} achievements unlocked` },
+      { emoji: report.title ? report.title.emoji : "⭐", text: report.title ? `Rank: ${report.title.name}` : "" }
+    ].filter(r => r.text);
+    statsEl.innerHTML = rows.map((r, i) => `
+      <div class="sc-month-row" style="animation-delay:${i * 0.12}s">
+        <span class="sc-month-emoji">${r.emoji}</span><span>${r.text}</span>
+      </div>
+    `).join("");
+  }
+
   document.getElementById("sc-journal-btn").addEventListener("click", () => {
     document.getElementById("sc-journal-overlay").hidden = false;
     renderMistakeJournal();
@@ -2119,6 +2173,7 @@
 
   document.getElementById("sc-recap-btn").addEventListener("click", () => {
     document.getElementById("sc-recap-overlay").hidden = false;
+    document.getElementById("sc-recap-tab-week").click();
     renderRecap();
   });
   document.getElementById("sc-recap-close").addEventListener("click", () => {
@@ -2455,6 +2510,22 @@
         aigDb.ref(`players/${childId}/parentMessage/read`).set(true).catch(() => {});
       };
     } catch (e) { /* offline or no message yet -- landing screen already shown regardless */ }
+  }
+
+  // Parent Voice Note -- same one-way, single-active-item pattern as
+  // checkParentMessage above, just audio. Plays once (marks itself
+  // played so it doesn't repeat next sign-in), fire-and-forget same as
+  // the text message. Autoplay works here because this only ever runs
+  // right after Sign In, which is itself a user gesture/click.
+  async function checkParentVoiceNote(childId) {
+    try {
+      const snap = await aigDb.ref(`players/${childId}/parentVoiceNote`).get();
+      const note = snap.exists() ? snap.val() : null;
+      if (!note || note.played) return;
+      const audio = new Audio(note.dataUrl);
+      audio.play().catch(() => {}); // best-effort -- a blocked autoplay just means silence, never an error to the kid
+      aigDb.ref(`players/${childId}/parentVoiceNote/played`).set(true).catch(() => {});
+    } catch (e) { /* offline or no cheer yet -- landing screen already shown regardless */ }
   }
 
   // MOCKUP ONLY — placeholder open/close, not wired to AI yet. The

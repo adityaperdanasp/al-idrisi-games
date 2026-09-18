@@ -159,11 +159,17 @@
     const topicStats = player.topicStats || {};
     const assignedTopics = player.assignedTopics || [];
     const parentMessage = player.parentMessage || null;
+    const parentVoiceNote = player.parentVoiceNote || null;
 
     // ---- Last sent message preview ----
     const lastMsgEl = document.getElementById("p-msg-last");
     lastMsgEl.textContent = parentMessage
       ? `Last sent ${new Date(parentMessage.sentAt).toLocaleDateString()}${parentMessage.read ? " · seen" : " · not seen yet"}: "${parentMessage.text}"`
+      : "";
+
+    // ---- Last recorded cheer preview ----
+    document.getElementById("p-voice-last").textContent = parentVoiceNote
+      ? `Last recorded ${new Date(parentVoiceNote.recordedAt).toLocaleDateString()}${parentVoiceNote.played ? " · played for them" : " · not played yet"}`
       : "";
 
     // ---- Header ----
@@ -477,6 +483,103 @@
     } finally {
       btn.disabled = false;
       btn.textContent = "Send Message";
+    }
+  });
+
+  // ---- Parent Voice Note: record (max 10s, MediaRecorder) -> preview
+  // -> save as a base64 data URL directly on players/{childId}/
+  // parentVoiceNote. A short clip stays small enough as text that this
+  // avoids needing Firebase Storage -- nests under the already-open
+  // `players` path like everything else in this app, no new
+  // infrastructure or rules change.
+  const VOICE_MAX_MS = 10000;
+  let voiceRecorder = null;
+  let voiceChunks = [];
+  let voiceTimerInterval = null;
+  let recordedVoiceDataUrl = null;
+
+  async function startVoiceRecording() {
+    const note = document.getElementById("p-voice-note");
+    note.textContent = "";
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      note.textContent = "Voice recording isn't supported on this browser.";
+      return;
+    }
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      note.textContent = "Couldn't access the microphone — check permissions and try again.";
+      return;
+    }
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
+    voiceRecorder = new MediaRecorder(stream, { mimeType });
+    voiceChunks = [];
+    voiceRecorder.ondataavailable = e => { if (e.data.size > 0) voiceChunks.push(e.data); };
+    voiceRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(voiceChunks, { type: mimeType });
+      const reader = new FileReader();
+      reader.onload = () => {
+        recordedVoiceDataUrl = reader.result;
+        const preview = document.getElementById("p-voice-preview");
+        preview.src = recordedVoiceDataUrl;
+        preview.hidden = false;
+        document.getElementById("p-voice-save-btn").hidden = false;
+      };
+      reader.readAsDataURL(blob);
+    };
+    voiceRecorder.start();
+
+    const btn = document.getElementById("p-voice-record-btn");
+    const timerEl = document.getElementById("p-voice-timer");
+    btn.textContent = "⏹️ Stop";
+    timerEl.hidden = false;
+    document.getElementById("p-voice-preview").hidden = true;
+    document.getElementById("p-voice-save-btn").hidden = true;
+    const startedAt = Date.now();
+    voiceTimerInterval = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const remaining = Math.max(0, Math.ceil((VOICE_MAX_MS - elapsed) / 1000));
+      timerEl.textContent = `${remaining}s`;
+      if (elapsed >= VOICE_MAX_MS) stopVoiceRecording();
+    }, 200);
+  }
+
+  function stopVoiceRecording() {
+    clearInterval(voiceTimerInterval);
+    document.getElementById("p-voice-timer").hidden = true;
+    document.getElementById("p-voice-record-btn").textContent = "🔴 Record";
+    if (voiceRecorder && voiceRecorder.state !== "inactive") voiceRecorder.stop();
+  }
+
+  document.getElementById("p-voice-record-btn").addEventListener("click", () => {
+    if (voiceRecorder && voiceRecorder.state === "recording") stopVoiceRecording();
+    else startVoiceRecording();
+  });
+
+  document.getElementById("p-voice-save-btn").addEventListener("click", async () => {
+    if (!recordedVoiceDataUrl) return;
+    const btn = document.getElementById("p-voice-save-btn");
+    const note = document.getElementById("p-voice-note");
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+    try {
+      // Overwrites any previous cheer on purpose -- single active item,
+      // same reasoning as parentMessage above.
+      await aigDb.ref(`players/${childId}/parentVoiceNote`).set({
+        dataUrl: recordedVoiceDataUrl, recordedAt: Date.now(), played: false
+      });
+      note.textContent = "Saved! They'll hear it next time they open the app. ✓";
+      note.classList.add("visible");
+      document.getElementById("p-voice-last").textContent = `Last recorded ${new Date().toLocaleDateString()} · not played yet`;
+      setTimeout(() => note.classList.remove("visible"), 3000);
+    } catch (e) {
+      note.textContent = "Couldn't save — the recording might be too long. Try again with a shorter cheer.";
+      note.classList.add("visible");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Save Cheer";
     }
   });
 

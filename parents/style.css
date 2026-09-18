@@ -52,6 +52,12 @@
 .p-msg-input:focus { outline: none; border-color: #9b6fd1; }
 .p-msg-last { font-size: 0.72rem; color: #b3a3c9; margin: 8px 0 0; }
 
+/* ---- Record a Cheer (Parent Voice Note) ---- */
+.p-voice-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.p-voice-controls .p-save-btn { width: auto; flex: 1; }
+.p-voice-timer { font: 800 0.9rem "Baloo 2", sans-serif; color: #a13a3a; flex: none; }
+.p-voice-preview { width: 100%; margin-bottom: 10px; }
+
 /* ---- Assign: picked box + topic grid (same recipe as MathVille's
    Focus Round overlay) ---- */
 .p-picked {

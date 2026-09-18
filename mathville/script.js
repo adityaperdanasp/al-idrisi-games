@@ -273,7 +273,9 @@ $("btn-home").addEventListener("click", () => { window.location.href = "../"; })
 $("btn-map").addEventListener("click", goToMap);
 $("btn-challenge").addEventListener("click", launchChallengeMode);
 $("btn-challenge-start").addEventListener("click", () => {
-  if (challengeSetupMode === "coop") {
+  if (challengeSetupMode === "duet") {
+    launchDuetCoop();
+  } else if (challengeSetupMode === "coop") {
     const p2 = $("challenge-coop-p2-name").value.trim() || "Player 2";
     launchCoopRound(p2);
   } else {
@@ -285,9 +287,13 @@ let challengeSetupMode = "compete";
 function setChallengeSetupMode(mode) {
   challengeSetupMode = mode;
   const isCoop = mode === "coop";
-  $("challenge-mode-compete").classList.toggle("active", !isCoop);
+  const isDuet = mode === "duet";
+  $("challenge-mode-compete").classList.toggle("active", mode === "compete");
   $("challenge-mode-coop").classList.toggle("active", isCoop);
-  $("challenge-mode-desc").textContent = isCoop
+  $("challenge-mode-duet").classList.toggle("active", isDuet);
+  $("challenge-mode-desc").textContent = isDuet
+    ? "Sit side by side! You BOTH answer the SAME question at the same time, each on your own half of the screen -- no passing the device. A question only counts if you're BOTH right."
+    : isCoop
     ? "Work together! You and a partner take turns on the SAME 6-question round -- one shared team score, not a competition."
     : `Take turns! ${state.challenge ? state.challenge.player1Name : CHILD_NAME} goes first, then pass the device to someone else — same 6 questions, whoever gets more right wins.`;
   $("challenge-coop-p2-name").classList.toggle("hidden", !isCoop);
@@ -295,6 +301,7 @@ function setChallengeSetupMode(mode) {
 }
 $("challenge-mode-compete").addEventListener("click", () => setChallengeSetupMode("compete"));
 $("challenge-mode-coop").addEventListener("click", () => setChallengeSetupMode("coop"));
+$("challenge-mode-duet").addEventListener("click", () => setChallengeSetupMode("duet"));
 $("btn-coop-turn-ready").addEventListener("click", () => {
   $("coop-turn-gate").classList.add("hidden");
   renderStep();
@@ -5632,6 +5639,79 @@ function finishCoopRound() {
 }
 
 /* =================================================================
+   DUET CO-OP — 2 players, same device, SIMULTANEOUS answering (see the
+   markup comment in index.html for why this is distinct from Co-op
+   Challenge above). 100% separate state/screens from the shared round
+   engine, same reasoning as Plane Mode/Ninja Runner. Multiple-choice
+   only (reuses rollDriveQuestion/buildQuickMc, the same easy-tier
+   generator Drive Mode's quiz pit-stops already use) to avoid needing
+   to replicate the typein/tap/match UI variants for a simultaneous
+   2-panel layout. Neither panel's answers touch Firebase stats -- same
+   reasoning as Family Challenge/Co-op above (a shared guest session,
+   not a real account's own practice).
+   ================================================================= */
+const DUET_QUESTION_COUNT = 5;
+let duetState = null;
+
+function launchDuetCoop() {
+  if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
+  duetState = { qIndex: 0, wonTogether: 0, p1Answer: null, p2Answer: null, questions: [] };
+  for (let i = 0; i < DUET_QUESTION_COUNT; i++) {
+    duetState.questions.push(buildQuickMc(rollDriveQuestion("easy")));
+  }
+  showScreen("screen-duet");
+  renderDuetQuestion();
+}
+
+function renderDuetQuestion() {
+  const q = duetState.questions[duetState.qIndex];
+  duetState.p1Answer = null;
+  duetState.p2Answer = null;
+  $("duet-progress").textContent = `Question ${duetState.qIndex + 1} / ${DUET_QUESTION_COUNT}`;
+  $("duet-prompt").textContent = q.prompt;
+  $("duet-result").classList.add("hidden");
+  [["duet-p1-options", 0], ["duet-p2-options", 1]].forEach(([id, playerIdx]) => {
+    const wrap = $(id);
+    wrap.innerHTML = q.options.map(opt => `<button type="button" class="duet-opt-btn" data-opt="${opt}">${opt}</button>`).join("");
+    wrap.querySelectorAll("[data-opt]").forEach(btn => {
+      btn.addEventListener("click", () => handleDuetAnswer(playerIdx, btn, q, wrap));
+    });
+  });
+}
+
+function handleDuetAnswer(playerIdx, btn, q, wrap) {
+  if (duetState.p1Answer !== null && playerIdx === 0) return; // already answered, ignore extra taps
+  if (duetState.p2Answer !== null && playerIdx === 1) return;
+  wrap.querySelectorAll(".duet-opt-btn").forEach(b => (b.disabled = true));
+  const isCorrect = btn.dataset.opt === q.correctLabel;
+  btn.classList.add(isCorrect ? "correct" : "wrong");
+  if (playerIdx === 0) duetState.p1Answer = isCorrect;
+  else duetState.p2Answer = isCorrect;
+  if (duetState.p1Answer !== null && duetState.p2Answer !== null) finishDuetQuestion(q);
+}
+
+function finishDuetQuestion(q) {
+  const bothCorrect = duetState.p1Answer && duetState.p2Answer;
+  if (bothCorrect) duetState.wonTogether++;
+  const result = $("duet-result");
+  result.textContent = bothCorrect ? "🎉 You got it together!" : `Not quite — the answer was ${q.correctLabel}.`;
+  result.classList.remove("hidden");
+  setTimeout(() => {
+    duetState.qIndex++;
+    if (duetState.qIndex >= DUET_QUESTION_COUNT) finishDuetCoop();
+    else renderDuetQuestion();
+  }, 1400);
+}
+
+function finishDuetCoop() {
+  $("duet-final-score").textContent = `You got ${duetState.wonTogether}/${DUET_QUESTION_COUNT} together!`;
+  showScreen("screen-duet-result");
+}
+$("btn-duet-exit").addEventListener("click", goToMap);
+$("btn-duet-result-back").addEventListener("click", goToMap);
+$("btn-duet-again").addEventListener("click", launchDuetCoop);
+
+/* =================================================================
    SPEED ROUND — 60 seconds, answer as many quick multiple-choice
    questions as possible. Reuses rollDriveQuestion()/buildQuickMc() (the
    same quick-quiz generator Drive Mode's obstacle pop-quiz and Ninja
@@ -5821,6 +5901,38 @@ function launchWorksheet(chapterId, forName) {
   $("worksheet-answers").innerHTML = questions.map(q => `<li>${q.answer}</li>`).join("");
   showScreen("screen-worksheet");
 }
+
+// Certificate Wall -- a browsable gallery of every chapter certificate
+// earned so far, reusing the existing single-certificate screen to
+// actually display one (this screen is just an index into it, not a
+// separate rendering path). "Back to Map" always returns to the Town
+// Map from an opened certificate (unchanged, pre-existing behavior) --
+// a kid arriving via the wall goes wall -> certificate -> map, skipping
+// back through the wall itself, accepted as a minor rough edge to keep
+// scope to a straightforward index page.
+function renderCertificateWall() {
+  const grid = $("certwall-grid");
+  const earned = MATHVILLE_BANK.chapters.filter(c => (PROGRESS.chapters[c.id] || {}).stars === 3);
+  if (!earned.length) {
+    grid.innerHTML = `<p class="subtitle-sm">No certificates yet — get 3 stars on a chapter to earn your first one!</p>`;
+    return;
+  }
+  grid.innerHTML = earned.map(c => `
+    <button type="button" class="certwall-tile" data-chapter-id="${c.id}">
+      <span class="certwall-icon">${CHAPTER_META[c.id].icon}</span>
+      <span class="certwall-title">${c.title}</span>
+    </button>
+  `).join("");
+  grid.querySelectorAll("[data-chapter-id]").forEach(btn => {
+    btn.addEventListener("click", () => launchCertificate(btn.dataset.chapterId, null));
+  });
+}
+function goToCertificateWall() {
+  renderCertificateWall();
+  showScreen("screen-certificate-wall");
+}
+$("btn-open-certwall").addEventListener("click", goToCertificateWall);
+$("btn-certwall-back").addEventListener("click", goToMap);
 
 function launchCertificate(chapterId, forName) {
   const chapterData = MATHVILLE_BANK.chapters.find(c => c.id === chapterId);

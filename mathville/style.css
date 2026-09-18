@@ -1014,6 +1014,38 @@ button { font-family: inherit; }
 .worksheet-answer-page .worksheet-questions li { margin-bottom: 8px; }
 
 .certificate-page { display: flex; justify-content: center; }
+
+.certwall-link {
+  display: block;
+  margin: 0 auto 10px;
+  border: none;
+  background: none;
+  color: var(--wood-dark);
+  font: 700 12px "Fredoka", sans-serif;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.certwall-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+.certwall-tile {
+  border: none;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08);
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.certwall-tile:active { transform: scale(0.96); }
+.certwall-icon { font-size: 1.8rem; }
+.certwall-title { font: 700 11px "Fredoka", sans-serif; color: var(--ink); text-align: center; }
 .certificate-border {
   border: 6px double #C1793E; border-radius: 16px; padding: 40px 30px; text-align: center;
   background: #fffaf0; max-width: 380px; width: 100%;
@@ -1123,6 +1155,27 @@ button { font-family: inherit; }
 }
 .challenge-mode-btn.active { background: var(--wood); color: #fff; }
 .challenge-scoreboard { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 20px; }
+
+.duet-progress { text-align: center; font: 700 12px "Fredoka", sans-serif; color: var(--ink-soft); margin-top: 8px; }
+.duet-prompt { text-align: center; font: 800 20px "Baloo 2", sans-serif; color: var(--ink); margin: 10px 0 18px; }
+.duet-players { display: flex; gap: 12px; }
+.duet-player-panel {
+  flex: 1; background: var(--card); border-radius: 16px; padding: 12px;
+  box-shadow: inset 0 0 0 2px var(--taupe);
+}
+.duet-player-label { text-align: center; font: 800 13px "Fredoka", sans-serif; color: var(--wood-dark); margin-bottom: 10px; }
+.duet-options { display: flex; flex-direction: column; gap: 8px; }
+.duet-opt-btn {
+  border: 2px solid var(--taupe); background: var(--cream); color: var(--ink);
+  font: 700 14px "Fredoka", sans-serif; padding: 10px 6px; border-radius: 12px; cursor: pointer;
+}
+.duet-opt-btn:disabled { cursor: default; }
+.duet-opt-btn.correct { background: #d7f0d0; border-color: #6fbf5a; }
+.duet-opt-btn.wrong { background: #f6d6d6; border-color: #d96a6a; }
+.duet-result {
+  text-align: center; font: 800 15px "Baloo 2", sans-serif; color: var(--wood-dark);
+  margin: 18px 0 10px;
+}
 .challenge-score-row {
   display: flex; justify-content: space-between; align-items: center;
   background: var(--card); border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(59,42,26,.08);

@@ -71,6 +71,29 @@
         <p class="p-msg-last" id="p-msg-last"></p>
       </div>
 
+      <!-- ---- Parent Voice Note: same one-way, single-active-item
+           pattern as Send a Message above, just audio instead of text.
+           Recorded client-side (MediaRecorder), stored as a base64 data
+           URL directly on players/{childId}/parentVoiceNote (a short
+           ~10s clip is small enough as text that this doesn't need
+           Firebase Storage -- keeps this feature nested under the
+           already-open `players` path like everything else in this
+           app, no new infrastructure). Plays once next time the child
+           opens the hub (index.html's checkParentVoiceNote), then marks
+           itself played so it doesn't repeat. ---- -->
+      <div class="p-section">
+        <div class="p-section-title">🎤 Record a Cheer</div>
+        <p class="p-section-desc">Record a short voice message (max 10 seconds) — plays as a surprise from you next time they open the app.</p>
+        <div class="p-voice-controls">
+          <button class="p-save-btn" id="p-voice-record-btn" type="button">🔴 Record</button>
+          <span class="p-voice-timer" id="p-voice-timer" hidden></span>
+        </div>
+        <audio id="p-voice-preview" class="p-voice-preview" controls hidden></audio>
+        <button class="p-save-btn" id="p-voice-save-btn" type="button" hidden>Save Cheer</button>
+        <p class="p-save-note" id="p-voice-note"></p>
+        <p class="p-msg-last" id="p-voice-last"></p>
+      </div>
+
       <!-- ---- Assign section ---- -->
       <div class="p-section">
         <div class="p-section-title">🎯 This Week's Focus</div>

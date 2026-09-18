@@ -1017,6 +1017,36 @@ body {
 }
 .sc-journey-dot { font-size: 1.1rem; }
 
+.sc-month-title {
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #6b3f9b;
+  text-align: center;
+  margin-bottom: 14px;
+}
+.sc-month-stats { display: flex; flex-direction: column; gap: 10px; }
+.sc-month-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(90deg, #fdf6e5, #f6e3b4);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #3d2e22;
+  text-align: left;
+  opacity: 0;
+  animation: sc-month-row-in 0.5s ease forwards;
+}
+@keyframes sc-month-row-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.sc-month-emoji { font-size: 1.3rem; }
+
 /* ---------- Hidden easter egg (tap Bo 10x) ---------- */
 .sc-egg-overlay {
   position: fixed;
