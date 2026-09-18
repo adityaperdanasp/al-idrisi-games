@@ -563,6 +563,11 @@ async function showVehicleSelectGrid(onDone) {
 
   $("vehicle-wallet-coins").textContent = wallet.coins || 0;
   $("vehicle-wallet-gems").textContent = wallet.gems || 0;
+  // Coin Multiplier badge -- see leaderboard.js's isCoinMultiplierActive
+  // (same Bonus Hour/Weekend Double check the hub's own banner uses),
+  // surfaced here too since this is the one screen in Math Race that
+  // already shows the wallet.
+  $("vehicle-wallet-multiplier").hidden = noLeaderboard || !AIGLeaderboard.isCoinMultiplierActive();
 
   document.querySelectorAll(".vehicle-opt").forEach(btn => {
     const vehicle = btn.dataset.vehicle;

@@ -38,6 +38,17 @@ let multiplayer = null;     // { role, code, unsubscribe }
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (window.AIGLeaderboard) AIGLeaderboard.startSession("language-arts");
+  // Coin Multiplier badge -- Bonus Hour/Weekend Double coins, same check
+  // the hub's own banner uses. Checked on load and re-checked every
+  // minute since Bonus Hour is date+hour based and can turn on/off
+  // mid-session; both checks are pure local-clock math, no Firebase read.
+  if (window.AIGLeaderboard) {
+    const updateCoinMultBadge = () => {
+      document.getElementById("coin-mult-badge").hidden = !AIGLeaderboard.isCoinMultiplierActive();
+    };
+    updateCoinMultBadge();
+    setInterval(updateCoinMultBadge, 60000);
+  }
   initTheme();
   wireNavigation();
   wireMultiplayerSetup();

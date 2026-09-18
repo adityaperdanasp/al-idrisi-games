@@ -302,6 +302,16 @@
     return { active: isWeekendNow() };
   }
 
+  // Convenience combined check -- awardCurrency() above already ORs these
+  // two together for the actual coin math; this is the same OR exposed
+  // for UI badges so each game doesn't need to import/call both and OR
+  // them itself. Used by the small in-game "🪙×2" HUD badge (see each
+  // game's script.js) -- separate from the hub's own Bonus Hour/Weekend
+  // banners, which stay as they are.
+  function isCoinMultiplierActive() {
+    return isBonusHourNow() || isWeekendNow();
+  }
+
   // +1 coin per correct answer (x2 during Bonus Hour, further scaled by an
   // optional combo multiplier from the caller -- see recordTopicAttempt),
   // no matter which game. Every ~15th correct answer (tracked via a
@@ -3235,7 +3245,7 @@
     getPersonalGoal, setPersonalGoal,
     submitNickname, getNickname,
     getClassGoalProgress,
-    getWeeklyLeaderboard, getWeeklyRecap, getMonthlyReport, getBonusHourInfo, getWeekendBonusInfo,
+    getWeeklyLeaderboard, getWeeklyRecap, getMonthlyReport, getBonusHourInfo, getWeekendBonusInfo, isCoinMultiplierActive,
     getTitle, getTitleTiers,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
     getPowerupDefs, getPowerups, buyPowerup, usePowerup,

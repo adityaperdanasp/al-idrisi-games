@@ -470,6 +470,19 @@ if (window.AIGLeaderboard) {
   });
 }
 
+// Coin Multiplier badge -- Bonus Hour/Weekend Double XP were previously
+// only announced via a hub banner a kid might not have seen that day;
+// this makes the x2 visible right next to the wallet WHILE playing.
+// Checked on load and re-checked every minute (Bonus Hour is date+hour
+// based, so it can turn on/off mid-session) -- no extra Firebase read,
+// both checks are pure local-clock math.
+function updateCoinMultiplierBadge() {
+  if (!window.AIGLeaderboard) return;
+  $("wallet-multiplier-badge").hidden = !AIGLeaderboard.isCoinMultiplierActive();
+}
+updateCoinMultiplierBadge();
+setInterval(updateCoinMultiplierBadge, 60000);
+
 /* Mode select (Landing screen) */
 $("btn-mode-solo").addEventListener("click", () => {
   state.mode = "solo";

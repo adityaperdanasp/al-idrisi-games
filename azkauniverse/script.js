@@ -28,6 +28,19 @@ const CHILD_NAME = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPl
 const CHILD_ID = (window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().id) || "azka";
 if (window.AIGLeaderboard) AIGLeaderboard.startSession("solarquest");
 
+// Coin Multiplier badge -- Bonus Hour/Weekend Double coins, same check
+// the hub's own banner uses. Checked on load and re-checked every
+// minute since Bonus Hour is date+hour based and can turn on/off
+// mid-session; both checks are pure local-clock math, no Firebase read.
+if (window.AIGLeaderboard) {
+  const updateCoinMultBadge = () => {
+    const el = document.getElementById("coin-mult-badge");
+    if (el) el.hidden = !AIGLeaderboard.isCoinMultiplierActive();
+  };
+  updateCoinMultBadge();
+  setInterval(updateCoinMultBadge, 60000);
+}
+
 // This standalone domain (azkasolar.quest) has no api/ folder or
 // ANTHROPIC_API_KEY of its own -- AI calls go to the hub's endpoint
 // cross-origin instead (hub's api/generate-hint.js and api/bo-chat.js

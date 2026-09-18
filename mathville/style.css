@@ -96,6 +96,13 @@ button { font-family: inherit; }
 }
 .wallet-badge { gap: 4px; margin-right: 8px; }
 .wallet-badge span:nth-child(3) { margin-left: 6px; }
+.wallet-multiplier-badge {
+  margin-left: 4px; background: #ff6b4a; color: #fff; font-weight: 800;
+  font-size: 0.68rem; padding: 1px 6px; border-radius: 100px;
+  animation: walletMultPulse 1.2s ease-in-out infinite;
+}
+.wallet-multiplier-badge[hidden] { display: none; }
+@keyframes walletMultPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
 
 /* ---------- Screens ---------- */
 .screen { display: none; padding: 20px; position: relative; }

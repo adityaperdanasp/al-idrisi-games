@@ -172,6 +172,13 @@ button:focus-visible {
   gap: 6px;
 }
 
+.coin-mult-badge {
+  background: #ff6b4a; color: #fff; font-weight: 800; font-size: 13px;
+  padding: 6px 12px; border-radius: 999px; animation: coinMultPulse 1.2s ease-in-out infinite;
+}
+.coin-mult-badge.hidden, .coin-mult-badge[hidden] { display: none; }
+@keyframes coinMultPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
 /* =================================================================
    MAIN / SCREENS
    ================================================================= */

@@ -771,9 +771,15 @@ h1, h2 { margin: 0 0 8px; }
   75% { transform: translateX(4px); }
 }
 .wallet-hud {
-  display: flex; justify-content: center; gap: 16px; font: 800 14px "Baloo 2", "Fredoka", sans-serif;
+  display: flex; justify-content: center; align-items: center; gap: 16px; font: 800 14px "Baloo 2", "Fredoka", sans-serif;
   color: var(--text); margin: 6px 0 10px;
 }
+.wallet-multiplier-badge {
+  background: #ff6b4a; color: #fff; font-weight: 800; font-size: 12px;
+  padding: 2px 8px; border-radius: 100px; animation: walletMultPulse 1.2s ease-in-out infinite;
+}
+.wallet-multiplier-badge[hidden] { display: none; }
+@keyframes walletMultPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
 .vehicle-opt.active::after {
   content: "✓";
   position: absolute;
