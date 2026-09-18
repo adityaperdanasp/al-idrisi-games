@@ -928,6 +928,143 @@
     return { owned: snap.exists() ? snap.val() : {}, pool: CARD_POOL };
   }
 
+  // Same sanitization the hub's Sign Up/Sign In uses (index.html's
+  // sanitizeNameKey) -- duplicated here rather than shared, same
+  // reasoning as every other cross-file duplication in this codebase
+  // (no shared module between the hub's inline script and this file).
+  function sanitizeNameKeyForLookup(name) {
+    return String(name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+
+  // =====================================================================
+  // STICKER GIFTING -- give ONE owned card to a named classmate,
+  // one-directional (no negotiation, unlike Card Trading below). The
+  // Collection system doesn't track duplicates (awardRandomCard biases
+  // toward cards you DON'T already own, so kids essentially never end
+  // up holding two of the same card) -- so a "gift" here is a genuine
+  // ownership TRANSFER: the giver loses the card, the recipient gains
+  // it. Blocked if the recipient already owns it (no point).
+  // =====================================================================
+  async function giftCard(cardId, toName) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false, reason: "not-eligible" };
+    const toKey = sanitizeNameKeyForLookup(toName);
+    if (!toKey || toKey === player.id) return { ok: false, reason: "invalid-recipient" };
+    const [accountSnap, ownedSnap, recipientOwnedSnap] = await Promise.all([
+      aigDb.ref(`testerAccounts/${toKey}`).get(),
+      aigDb.ref(`players/${player.id}/collection/${cardId}`).get(),
+      aigDb.ref(`players/${toKey}/collection/${cardId}`).get()
+    ]);
+    if (!accountSnap.exists()) return { ok: false, reason: "recipient-not-found" };
+    if (!ownedSnap.exists() || !ownedSnap.val()) return { ok: false, reason: "not-owned" };
+    if (recipientOwnedSnap.exists() && recipientOwnedSnap.val()) return { ok: false, reason: "recipient-already-owns" };
+    await aigDb.ref(`players/${player.id}/collection/${cardId}`).remove();
+    await aigDb.ref(`players/${toKey}/collection/${cardId}`).set(true);
+    return { ok: true, toName: accountSnap.val().name };
+  }
+
+  // =====================================================================
+  // CARD TRADING -- a shared trade board, distinct from Gifting above:
+  // post an owned card wanting a SPECIFIC card back, any classmate can
+  // browse and accept (mutual swap, not one-directional). Nested under
+  // leaderboard/cardTrades (leaderboard/ is already fully open per the
+  // RTDB rules, verified directly before building this -- avoids
+  // needing a rules change for a new top-level path, same trick as
+  // nesting Plane Mode 2P signaling under mathvilleGames/). Re-checks
+  // ownership right before executing the swap (narrow race window
+  // accepted, same trade-off as unlockVehicle/claimDailyQuest above --
+  // this is cosmetic collection cards, not real currency).
+  // =====================================================================
+  function tradeBoardRef() {
+    return aigDb.ref("leaderboard/cardTrades");
+  }
+
+  async function postTradeOffer(offerCardId, wantCardId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false, reason: "not-eligible" };
+    if (offerCardId === wantCardId) return { ok: false, reason: "same-card" };
+    const [ownedSnap, wantOwnedSnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/collection/${offerCardId}`).get(),
+      aigDb.ref(`players/${player.id}/collection/${wantCardId}`).get()
+    ]);
+    if (!ownedSnap.exists() || !ownedSnap.val()) return { ok: false, reason: "not-owned" };
+    if (wantOwnedSnap.exists() && wantOwnedSnap.val()) return { ok: false, reason: "already-owns-wanted" };
+    const ref = tradeBoardRef().push();
+    await ref.set({
+      fromId: player.id,
+      fromName: player.name,
+      offerCardId, wantCardId,
+      status: "open",
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    return { ok: true, id: ref.key };
+  }
+
+  async function getOpenTradeOffers() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    const snap = await tradeBoardRef().get();
+    if (!snap.exists()) return [];
+    return Object.entries(snap.val())
+      .map(([id, o]) => ({ id, ...o }))
+      .filter(o => o.status === "open" && (!player || o.fromId !== player.id))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+
+  async function getMyTradeOffers() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return [];
+    const snap = await tradeBoardRef().get();
+    if (!snap.exists()) return [];
+    return Object.entries(snap.val())
+      .map(([id, o]) => ({ id, ...o }))
+      .filter(o => o.fromId === player.id)
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+
+  async function cancelTradeOffer(offerId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const ref = tradeBoardRef().child(offerId);
+    const snap = await ref.get();
+    if (!snap.exists() || snap.val().fromId !== player.id || snap.val().status !== "open") return { ok: false };
+    await ref.update({ status: "cancelled" });
+    return { ok: true };
+  }
+
+  async function acceptTradeOffer(offerId) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false, reason: "not-eligible" };
+    const ref = tradeBoardRef().child(offerId);
+    const snap = await ref.get();
+    if (!snap.exists()) return { ok: false, reason: "not-found" };
+    const offer = snap.val();
+    if (offer.status !== "open") return { ok: false, reason: "not-open" };
+    if (offer.fromId === player.id) return { ok: false, reason: "cant-accept-own" };
+    const [myWantCardSnap, myOfferCardSnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/collection/${offer.wantCardId}`).get(),
+      aigDb.ref(`players/${player.id}/collection/${offer.offerCardId}`).get()
+    ]);
+    if (!myWantCardSnap.exists() || !myWantCardSnap.val()) return { ok: false, reason: "you-dont-own-wanted-card" };
+    if (myOfferCardSnap.exists() && myOfferCardSnap.val()) return { ok: false, reason: "you-already-own-offered-card" };
+    // Race-safety re-check immediately before executing: the offer must
+    // still be open, and the poster must still actually hold the card
+    // they offered (they could have gifted/traded it away since).
+    const [stillOpenSnap, fromStillOwnsSnap] = await Promise.all([
+      ref.get(),
+      aigDb.ref(`players/${offer.fromId}/collection/${offer.offerCardId}`).get()
+    ]);
+    if (!stillOpenSnap.exists() || stillOpenSnap.val().status !== "open") return { ok: false, reason: "already-taken" };
+    if (!fromStillOwnsSnap.exists() || !fromStillOwnsSnap.val()) return { ok: false, reason: "offer-no-longer-valid" };
+    await Promise.all([
+      aigDb.ref(`players/${offer.fromId}/collection/${offer.offerCardId}`).remove(),
+      aigDb.ref(`players/${offer.fromId}/collection/${offer.wantCardId}`).set(true),
+      aigDb.ref(`players/${player.id}/collection/${offer.wantCardId}`).remove(),
+      aigDb.ref(`players/${player.id}/collection/${offer.offerCardId}`).set(true),
+      ref.update({ status: "completed", toId: player.id, toName: player.name })
+    ]);
+    return { ok: true };
+  }
+
   // Boss Rush Arena (per-chapter MathVille bosses AND the standalone
   // boss-rush/ game both write here via claimBossWin) has no getter to
   // just COUNT how many have been beaten -- claimBossWin only ever
@@ -2918,6 +3055,8 @@
     awardBossRushBonus,
     getBossRushDailyStatus, claimBossRushDaily,
     getBossWinsCount, getAchievements,
+    giftCard,
+    postTradeOffer, getOpenTradeOffers, getMyTradeOffers, cancelTradeOffer, acceptTradeOffer,
     awardDanceBattleBonus,
     awardCookingRushBonus,
     awardParkourRunBonus,

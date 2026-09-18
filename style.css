@@ -1132,6 +1132,61 @@ body {
   margin-bottom: 14px;
 }
 
+.sc-modal-hint {
+  font-family: "Nunito", sans-serif;
+  font-weight: 600;
+  font-size: 0.72rem;
+  color: #9a8360;
+  margin: 0 0 10px;
+}
+
+.sc-card-action-card { max-width: 340px; }
+.sc-card-action-preview {
+  text-align: center;
+  font-size: 3rem;
+  margin-bottom: 8px;
+}
+.sc-gift-name-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 2px solid #f1e6d2;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+.sc-card-action-btn { width: 100%; justify-content: center; margin-bottom: 6px; }
+.sc-card-action-msg {
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #6b3f9b;
+  min-height: 1.2em;
+  text-align: center;
+  margin-bottom: 14px;
+}
+#sc-card-action-gift-section { border-bottom: 2px dashed #f1e6d2; padding-bottom: 14px; margin-bottom: 14px; }
+.sc-card-grid-small { grid-template-columns: repeat(4, 1fr); max-height: 220px; overflow-y: auto; margin-bottom: 10px; }
+
+.sc-trade-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.05);
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.sc-trade-from { flex: none; color: #6b3f9b; }
+.sc-trade-status { flex: 1; text-align: right; color: #9a8360; font-size: 0.7rem; text-transform: capitalize; }
+.sc-trade-row .sc-quest-claim-btn { margin-left: auto; }
+
 .sc-rank-strip {
   display: flex;
   justify-content: space-between;
@@ -1181,6 +1236,10 @@ body {
 .sc-card-tile.locked { opacity: 0.45; }
 .sc-card-tile.owned.rarity-rare { background: #eef3ff; }
 .sc-card-tile.owned.rarity-legendary { background: linear-gradient(135deg, #fdf6e5, #f6e3b4); }
+.sc-card-tile.owned { cursor: pointer; }
+.sc-card-tile.owned:active { transform: scale(0.95); }
+.sc-trade-want-pick { cursor: pointer; opacity: 0.7; }
+.sc-trade-want-pick.selected-want { opacity: 1; box-shadow: 0 0 0 3px #6b3f9b; }
 .sc-card-emoji { font-size: 1.6rem; }
 .sc-card-name {
   font-family: "Nunito", sans-serif;

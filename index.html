@@ -902,10 +902,51 @@
         <span class="sc-modal-title">📚 Collection</span>
         <button class="sc-modal-close" id="sc-collection-close" type="button">✕</button>
       </div>
-      <div class="sc-rank-strip" id="sc-rank-strip"></div>
-      <div class="sc-rank-next" id="sc-rank-next"></div>
-      <div class="sc-modal-sub" id="sc-collection-count"></div>
-      <div class="sc-card-grid" id="sc-card-grid"></div>
+      <div class="sc-modal-tabs">
+        <button class="sc-modal-tab active" id="sc-tab-mycards" type="button">My Cards</button>
+        <button class="sc-modal-tab" id="sc-tab-tradeboard" type="button">🔄 Trade Board</button>
+      </div>
+      <div id="sc-mycards-panel">
+        <div class="sc-rank-strip" id="sc-rank-strip"></div>
+        <div class="sc-rank-next" id="sc-rank-next"></div>
+        <div class="sc-modal-sub" id="sc-collection-count"></div>
+        <p class="sc-modal-hint">Tap a card you own to gift it or post it to the Trade Board.</p>
+        <div class="sc-card-grid" id="sc-card-grid"></div>
+      </div>
+      <div id="sc-tradeboard-panel" hidden>
+        <div class="sc-fx-group-label">My Offers</div>
+        <div id="sc-my-trade-offers"></div>
+        <div class="sc-fx-group-label">Available Trades</div>
+        <div id="sc-open-trade-offers"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card Action -- opened by tapping an OWNED card tile in the
+       Collection overlay above. Two one-directional actions on that
+       specific card: Gift (give it to a named classmate outright) or
+       post it to the Trade Board (want a specific card back). -->
+  <div id="sc-card-action-overlay" class="sc-modal-overlay" hidden>
+    <div class="sc-modal-card sc-card-action-card">
+      <div class="sc-modal-header">
+        <span class="sc-modal-title" id="sc-card-action-title">Card</span>
+        <button class="sc-modal-close" id="sc-card-action-close" type="button">✕</button>
+      </div>
+      <div class="sc-card-action-preview" id="sc-card-action-preview"></div>
+
+      <div id="sc-card-action-gift-section">
+        <p class="sc-modal-hint">🎁 Give this card to a classmate (they must not already own it).</p>
+        <input type="text" id="sc-gift-name-input" class="sc-gift-name-input" placeholder="Friend's name" autocomplete="off" maxlength="40" />
+        <button class="sc-quest-claim-btn sc-card-action-btn" id="sc-gift-send-btn">Send Gift</button>
+        <div class="sc-card-action-msg" id="sc-gift-msg"></div>
+      </div>
+
+      <div id="sc-card-action-trade-section">
+        <p class="sc-modal-hint">🔄 Post this card to the Trade Board -- pick the card you want back:</p>
+        <div class="sc-card-grid sc-card-grid-small" id="sc-trade-want-grid"></div>
+        <button class="sc-quest-claim-btn sc-card-action-btn" id="sc-trade-post-btn" disabled>Post Offer</button>
+        <div class="sc-card-action-msg" id="sc-trade-post-msg"></div>
+      </div>
     </div>
   </div>
 
@@ -1727,12 +1768,147 @@
     document.getElementById("sc-card-grid").innerHTML = coll.pool.map(c => {
       const owned = !!coll.owned[c.id];
       return `
-        <div class="sc-card-tile ${owned ? "owned rarity-" + c.rarity : "locked"}" title="${owned ? c.name : "???"}">
+        <div class="sc-card-tile ${owned ? "owned rarity-" + c.rarity : "locked"}" title="${owned ? c.name : "???"}" ${owned ? `data-card-id="${c.id}"` : ""}>
           <span class="sc-card-emoji">${owned ? c.emoji : "❓"}</span>
           ${owned ? `<span class="sc-card-name">${c.name}</span>` : ""}
         </div>`;
     }).join("");
+    document.querySelectorAll("#sc-card-grid [data-card-id]").forEach(tile => {
+      tile.addEventListener("click", () => openCardActionOverlay(tile.dataset.cardId, coll));
+    });
     renderRankLadder();
+  }
+
+  document.getElementById("sc-tab-mycards").addEventListener("click", () => {
+    document.getElementById("sc-tab-mycards").classList.add("active");
+    document.getElementById("sc-tab-tradeboard").classList.remove("active");
+    document.getElementById("sc-mycards-panel").hidden = false;
+    document.getElementById("sc-tradeboard-panel").hidden = true;
+  });
+  document.getElementById("sc-tab-tradeboard").addEventListener("click", () => {
+    document.getElementById("sc-tab-tradeboard").classList.add("active");
+    document.getElementById("sc-tab-mycards").classList.remove("active");
+    document.getElementById("sc-mycards-panel").hidden = true;
+    document.getElementById("sc-tradeboard-panel").hidden = false;
+    renderTradeBoard();
+  });
+
+  // Card Action overlay -- opened by tapping an owned card, offers
+  // Gift (one-directional) or Post to Trade Board (mutual swap, see
+  // giftCard/postTradeOffer in leaderboard.js).
+  let cardActionCollection = null;
+  async function openCardActionOverlay(cardId, coll) {
+    cardActionCollection = coll;
+    const card = coll.pool.find(c => c.id === cardId);
+    document.getElementById("sc-card-action-title").textContent = card.name;
+    document.getElementById("sc-card-action-preview").textContent = card.emoji;
+    document.getElementById("sc-gift-name-input").value = "";
+    document.getElementById("sc-gift-msg").textContent = "";
+    document.getElementById("sc-trade-post-msg").textContent = "";
+    document.getElementById("sc-trade-post-btn").disabled = true;
+    document.getElementById("sc-trade-post-btn").dataset.wantCardId = "";
+    document.getElementById("sc-trade-post-btn").dataset.offerCardId = cardId;
+    document.getElementById("sc-gift-send-btn").dataset.cardId = cardId;
+
+    const wantGrid = document.getElementById("sc-trade-want-grid");
+    wantGrid.innerHTML = coll.pool.filter(c => c.id !== cardId && !coll.owned[c.id]).map(c => `
+      <div class="sc-card-tile locked sc-trade-want-pick" data-want-id="${c.id}" title="${c.name}">
+        <span class="sc-card-emoji">${c.emoji}</span>
+        <span class="sc-card-name">${c.name}</span>
+      </div>
+    `).join("") || `<p class="sc-modal-hint">You already own every other card!</p>`;
+    wantGrid.querySelectorAll("[data-want-id]").forEach(tile => {
+      tile.addEventListener("click", () => {
+        wantGrid.querySelectorAll("[data-want-id]").forEach(t => t.classList.remove("selected-want"));
+        tile.classList.add("selected-want");
+        document.getElementById("sc-trade-post-btn").dataset.wantCardId = tile.dataset.wantId;
+        document.getElementById("sc-trade-post-btn").disabled = false;
+      });
+    });
+    document.getElementById("sc-card-action-overlay").hidden = false;
+  }
+  document.getElementById("sc-card-action-close").addEventListener("click", () => {
+    document.getElementById("sc-card-action-overlay").hidden = true;
+  });
+  document.getElementById("sc-gift-send-btn").addEventListener("click", async function () {
+    const cardId = this.dataset.cardId;
+    const toName = document.getElementById("sc-gift-name-input").value.trim();
+    const msg = document.getElementById("sc-gift-msg");
+    if (!toName) { msg.textContent = "Type a name first."; return; }
+    this.disabled = true;
+    const result = await AIGLeaderboard.giftCard(cardId, toName);
+    this.disabled = false;
+    if (result.ok) {
+      msg.textContent = `🎉 Sent to ${result.toName}!`;
+      renderCollection();
+      setTimeout(() => { document.getElementById("sc-card-action-overlay").hidden = true; }, 1200);
+    } else {
+      const reasons = {
+        "recipient-not-found": "Couldn't find anyone with that name.",
+        "not-owned": "You don't own this card anymore.",
+        "recipient-already-owns": "They already have this card!",
+        "invalid-recipient": "That's not a valid recipient."
+      };
+      msg.textContent = reasons[result.reason] || "Couldn't send the gift.";
+    }
+  });
+  document.getElementById("sc-trade-post-btn").addEventListener("click", async function () {
+    const offerCardId = this.dataset.offerCardId;
+    const wantCardId = this.dataset.wantCardId;
+    const msg = document.getElementById("sc-trade-post-msg");
+    this.disabled = true;
+    const result = await AIGLeaderboard.postTradeOffer(offerCardId, wantCardId);
+    if (result.ok) {
+      msg.textContent = "🔄 Posted to the Trade Board!";
+      setTimeout(() => { document.getElementById("sc-card-action-overlay").hidden = true; }, 1200);
+    } else {
+      msg.textContent = "Couldn't post that offer.";
+      this.disabled = false;
+    }
+  });
+
+  async function renderTradeBoard() {
+    const coll = await AIGLeaderboard.getCollection();
+    const cardById = id => coll.pool.find(c => c.id === id);
+
+    const mine = await AIGLeaderboard.getMyTradeOffers();
+    document.getElementById("sc-my-trade-offers").innerHTML = mine.length ? mine.map(o => `
+      <div class="sc-trade-row">
+        <span class="sc-card-emoji">${cardById(o.offerCardId).emoji}</span>
+        <span>for</span>
+        <span class="sc-card-emoji">${cardById(o.wantCardId).emoji}</span>
+        <span class="sc-trade-status">${o.status}</span>
+        ${o.status === "open" ? `<button class="sc-quest-claim-btn" data-cancel-offer="${o.id}">Cancel</button>` : ""}
+      </div>
+    `).join("") : `<p class="sc-modal-hint">You haven't posted any trades.</p>`;
+    document.querySelectorAll("[data-cancel-offer]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        await AIGLeaderboard.cancelTradeOffer(btn.dataset.cancelOffer);
+        renderTradeBoard();
+      });
+    });
+
+    const open = await AIGLeaderboard.getOpenTradeOffers();
+    document.getElementById("sc-open-trade-offers").innerHTML = open.length ? open.map(o => {
+      const canAccept = !!coll.owned[o.wantCardId] && !coll.owned[o.offerCardId];
+      return `
+        <div class="sc-trade-row">
+          <span class="sc-trade-from">${o.fromName}</span>
+          <span class="sc-card-emoji">${cardById(o.offerCardId).emoji}</span>
+          <span>for</span>
+          <span class="sc-card-emoji">${cardById(o.wantCardId).emoji}</span>
+          <button class="sc-quest-claim-btn" data-accept-offer="${o.id}" ${canAccept ? "" : "disabled"}>Accept</button>
+        </div>`;
+    }).join("") : `<p class="sc-modal-hint">No open trades right now.</p>`;
+    document.querySelectorAll("[data-accept-offer]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        const result = await AIGLeaderboard.acceptTradeOffer(btn.dataset.acceptOffer);
+        if (result.ok) { renderCollection(); renderTradeBoard(); }
+        else btn.disabled = false;
+      });
+    });
   }
 
   // Rank ladder -- the 7 Title/Rank tiers (see leaderboard.js's
