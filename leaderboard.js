@@ -1301,6 +1301,34 @@
     return { ok: true, feedCount, wallet: newWallet, stage: PET_STAGES[stageIdx], leveledUp: PET_STAGES[stageIdx].min === feedCount };
   }
 
+  // ---- Pet Accessory Shop -- purely cosmetic emoji worn NEXT TO the pet's
+  // stage emoji (e.g. "🦉🎀"), bought with the same wallet as vehicle
+  // skins/frames. Reuses the exact same generic unlockCosmetic(type,id,
+  // cost)/equipCosmetic(type,id) pair everything else under "Customize"
+  // already shares -- type "pet-accessory", zero new backend needed.
+  const PET_ACCESSORIES = [
+    { id: "none", name: "None", cost: null, preview: "" },
+    { id: "bow", name: "Bow", cost: { coins: 15 }, preview: "🎀" },
+    { id: "tophat", name: "Top Hat", cost: { coins: 20 }, preview: "🎩" },
+    { id: "sunglasses", name: "Sunglasses", cost: { coins: 15 }, preview: "🕶️" },
+    { id: "scarf", name: "Scarf", cost: { coins: 20 }, preview: "🧣" },
+    { id: "crown", name: "Crown", cost: { gems: 2 }, preview: "👑" },
+    { id: "sparkle", name: "Sparkle Charm", cost: { gems: 2 }, preview: "✨" }
+  ];
+  async function getPetAccessories() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const [ownedSnap, equippedSnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/ownedCosmetics/pet-accessory`).get(),
+      aigDb.ref(`players/${player.id}/equipped/pet-accessory`).get()
+    ]);
+    const owned = ownedSnap.exists() ? ownedSnap.val() : {};
+    return {
+      accessories: PET_ACCESSORIES.map(a => ({ ...a, owned: !a.cost || !!owned[a.id] })),
+      equipped: equippedSnap.exists() ? equippedSnap.val() : "none"
+    };
+  }
+
   // =====================================================================
   // TEACH BO — the flip side of the AI hint: after getting a question
   // right, the kid explains it back in their own words (the "protege
@@ -3260,7 +3288,7 @@
     submitSpeedRoundScore, getSpeedRoundLeaderboard,
     getMasteryMap, getSmartPractice,
     submitDiagnosticResult, getDiagnosticResult,
-    getPetStatus, feedPet,
+    getPetStatus, feedPet, getPetAccessories,
     getClassmateAccuracy,
     getMilestoneSurprise,
     getTownDecoration, setTownDecoration,

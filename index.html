@@ -1344,7 +1344,7 @@
   });
 
   async function renderPet() {
-    const status = await AIGLeaderboard.getPetStatus();
+    const [status, accessories] = await Promise.all([AIGLeaderboard.getPetStatus(), AIGLeaderboard.getPetAccessories()]);
     const card = document.getElementById("sc-pet-card");
     const body = document.getElementById("sc-pet-body");
     if (!status) { card.hidden = true; return; }
@@ -1352,16 +1352,33 @@
     const nextText = status.next
       ? `<p class="sc-goal-desc">${status.next.min - status.feedCount} more feeding${status.next.min - status.feedCount === 1 ? "" : "s"} until it grows into a ${status.next.name} ${status.next.emoji}!</p>`
       : `<p class="sc-goal-desc">Fully grown! Keep feeding just for fun.</p>`;
+    const equippedAccessory = accessories ? accessories.accessories.find(a => a.id === accessories.equipped) : null;
+    const accessoryEmoji = equippedAccessory ? equippedAccessory.preview : "";
+    // Accessory Shop -- small horizontal chip row, own/locked/equipped
+    // exactly like the Customize overlay's cosmetic items but compact
+    // enough to live inline in this card instead of a whole extra tab.
+    const accessoryRow = accessories ? `
+      <div class="sc-pet-accessory-row">
+        ${accessories.accessories.map(a => {
+          const isEquipped = accessories.equipped === a.id;
+          const label = a.id === "none" ? "🚫" : a.preview;
+          return `<button class="sc-pet-accessory-chip${isEquipped ? " equipped" : ""}${!a.owned ? " locked" : ""}"
+            data-pet-accessory="${a.id}" title="${a.name}${a.cost ? "" : " (free)"}" type="button">
+            ${label}${!a.owned ? `<span class="sc-pet-accessory-cost">${a.cost.coins ? `🪙${a.cost.coins}` : `💎${a.cost.gems}`}</span>` : ""}
+          </button>`;
+        }).join("")}
+      </div>` : "";
     body.innerHTML = `
       <div class="sc-pet-row">
-        <span class="sc-pet-emoji">${status.stage.emoji}</span>
+        <span class="sc-pet-emoji">${status.stage.emoji}${accessoryEmoji}</span>
         <div>
           <p class="sc-pet-name">${status.stage.name}</p>
           <p class="sc-pet-fed">Fed ${status.feedCount} time${status.feedCount === 1 ? "" : "s"}</p>
         </div>
       </div>
       ${nextText}
-      <button class="sc-quest-claim-btn" id="sc-pet-feed-btn">Feed 🪙${status.cost.coins}</button>`;
+      <button class="sc-quest-claim-btn" id="sc-pet-feed-btn">Feed 🪙${status.cost.coins}</button>
+      ${accessoryRow}`;
     document.getElementById("sc-pet-feed-btn").addEventListener("click", async () => {
       const btn = document.getElementById("sc-pet-feed-btn");
       btn.disabled = true;
@@ -1369,6 +1386,19 @@
       if (!result.ok) { btn.disabled = false; return; }
       if (result.leveledUp && window.confetti) confetti({ particleCount: 60, spread: 65, origin: { y: 0.6 } });
       renderPet();
+    });
+    document.querySelectorAll("[data-pet-accessory]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.petAccessory;
+        const acc = accessories.accessories.find(a => a.id === id);
+        if (!acc.owned) {
+          btn.disabled = true;
+          const result = await AIGLeaderboard.unlockCosmetic("pet-accessory", id, acc.cost);
+          if (!result.ok) { btn.disabled = false; return; }
+        }
+        await AIGLeaderboard.equipCosmetic("pet-accessory", id);
+        renderPet();
+      });
     });
   }
 

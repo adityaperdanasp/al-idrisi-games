@@ -652,6 +652,18 @@ body {
 .sc-pet-emoji { font-size: 2.4rem; line-height: 1; }
 .sc-pet-name { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 0.95rem; color: #3d2e22; margin: 0; }
 .sc-pet-fed { font-family: "Nunito", sans-serif; font-weight: 700; font-size: 0.78rem; color: #8a7a6a; margin: 2px 0 0; }
+.sc-pet-accessory-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.sc-pet-accessory-chip {
+  position: relative; border: none; background: #f6efe2; border-radius: 12px;
+  padding: 8px 10px; font-size: 1.1rem; cursor: pointer; line-height: 1;
+  box-shadow: inset 0 0 0 2px transparent;
+}
+.sc-pet-accessory-chip.equipped { box-shadow: inset 0 0 0 2px #f0b429; }
+.sc-pet-accessory-chip.locked { opacity: 0.85; }
+.sc-pet-accessory-cost {
+  display: block; font-family: "Nunito", sans-serif; font-weight: 800; font-size: 0.55rem;
+  color: #b3862a; margin-top: 2px;
+}
 
 .sc-milestone-toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
