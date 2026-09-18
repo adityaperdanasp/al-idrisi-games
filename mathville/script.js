@@ -4675,7 +4675,7 @@ function comboMultiplierFor(combo) {
 // features' own design). Counts cached locally, refreshed from Firebase
 // on round start and after every buy/use so the bar never needs to
 // re-fetch mid-question.
-let powerupCounts = { fiftyFifty: 0, skip: 0, extraTime: 0 };
+let powerupCounts = { fiftyFifty: 0, skip: 0, extraTime: 0, comboShield: 0 };
 async function refreshPowerupCounts() {
   if (window.AIGLeaderboard) {
     try { powerupCounts = await AIGLeaderboard.getPowerups(); }
@@ -4909,6 +4909,19 @@ function submitAnswer(isCorrect, prompt, answerForHint) {
       comboMultiplier = comboMultiplierFor(state.combo);
       if (state.combo >= 2) showComboBadge(state.combo, comboMultiplier);
       state.bestComboThisRound = Math.max(state.bestComboThisRound || 0, state.combo);
+    } else if (state.combo >= 2 && powerupCounts.comboShield > 0) {
+      // Combo Insurance -- auto-consumed, no click needed. Optimistic
+      // local decrement first (mirrors the other 3 powerups' pattern of
+      // trusting the local count, just here there's no button to disable
+      // in between) so 2 wrong answers in the same round can't both
+      // consume a charge before the first usePowerup() resolves.
+      powerupCounts.comboShield -= 1;
+      if (window.AIGLeaderboard) {
+        AIGLeaderboard.usePowerup("comboShield").then(result => {
+          if (result && result.ok) powerupCounts.comboShield = result.remaining;
+        }).catch(() => {});
+      }
+      showAdaptiveToast("🛡️ Combo Insurance saved your streak!");
     } else {
       state.combo = 0;
     }

@@ -2275,17 +2275,24 @@
   const POWERUP_DEFS = {
     fiftyFifty: { name: "50:50", cost: { coins: 8 }, emoji: "➗" },
     skip: { name: "Skip", cost: { coins: 12 }, emoji: "⏭️" },
-    extraTime: { name: "Extra Time (+8s)", cost: { coins: 6 }, emoji: "⏳" }
+    extraTime: { name: "Extra Time (+8s)", cost: { coins: 6 }, emoji: "⏳" },
+    // Combo Insurance -- unlike the 3 above, never clicked manually: it's
+    // auto-consumed by submitAnswer() the moment a wrong answer would
+    // otherwise reset an active MathVille combo streak (state.combo >= 2)
+    // back to 0. Framed as "insurance" because it protects a run already
+    // in progress rather than granting an action, so it stays in this
+    // same consumable-stock system instead of the permanent Upgrades tab.
+    comboShield: { name: "Combo Insurance", cost: { coins: 10 }, emoji: "🛡️" }
   };
 
   function getPowerupDefs() { return POWERUP_DEFS; }
 
   async function getPowerups() {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
-    if (!player || player.role === "parent") return { fiftyFifty: 0, skip: 0, extraTime: 0 };
+    if (!player || player.role === "parent") return { fiftyFifty: 0, skip: 0, extraTime: 0, comboShield: 0 };
     const snap = await aigDb.ref(`players/${player.id}/powerups`).get();
     const data = snap.exists() ? snap.val() : {};
-    return { fiftyFifty: data.fiftyFifty || 0, skip: data.skip || 0, extraTime: data.extraTime || 0 };
+    return { fiftyFifty: data.fiftyFifty || 0, skip: data.skip || 0, extraTime: data.extraTime || 0, comboShield: data.comboShield || 0 };
   }
 
   // Same get-check-set pattern as unlockVehicle/unlockCosmetic above.
