@@ -2012,6 +2012,52 @@
   }
 
   // =====================================================================
+  // EXPLORATION POINTS — SolarQuest's quest-path map ("static games more
+  // playful" this round) already had a decorative starfield but nothing
+  // to actually DO on the map besides tap a level node. These are a
+  // handful of tappable space objects (comet/moon/satellite/asteroid)
+  // scattered between level nodes -- tapping one the FIRST time reveals
+  // a fun fact + a small one-time coin reward; already-discovered ones
+  // stay tappable (kids can re-read the fact) but pay nothing again.
+  // Stored as players/{id}/exploration/{id}: true, nested under the
+  // already-open `players` path, no rules change needed.
+  // =====================================================================
+  const EXPLORATION_REWARD = { coins: 2 };
+  const EXPLORATION_POINTS = {
+    satellite: { emoji: "🛰️", fact: "The International Space Station orbits Earth every 90 minutes -- that's 16 sunrises a day!" },
+    comet: { emoji: "☄️", fact: "A comet's tail always points AWAY from the Sun, no matter which direction the comet is moving." },
+    moon: { emoji: "🌙", fact: "The Moon drifts about 3.8 cm farther from Earth every year -- roughly as fast as fingernails grow." },
+    asteroid: { emoji: "🪨", fact: "Over 1 million asteroids are known in our solar system, mostly clustered in the belt between Mars and Jupiter." }
+  };
+  function getExplorationPoints() { return EXPLORATION_POINTS; }
+
+  async function getDiscoveredExploration() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return {};
+    const snap = await aigDb.ref(`players/${player.id}/exploration`).get();
+    return snap.exists() ? snap.val() : {};
+  }
+
+  // Same get-check-set pattern as unlockVehicle/openMysteryBox above.
+  async function discoverExplorationPoint(id) {
+    const point = EXPLORATION_POINTS[id];
+    if (!point) return { ok: false };
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/exploration/${id}`);
+    const snap = await ref.get();
+    const alreadyFound = snap.exists() && !!snap.val();
+    if (!alreadyFound) {
+      await ref.set(true);
+      const walletRef = aigDb.ref(`players/${player.id}/wallet`);
+      const walletSnap = await walletRef.get();
+      const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+      await walletRef.set({ ...wallet, coins: (wallet.coins || 0) + EXPLORATION_REWARD.coins });
+    }
+    return { ok: true, fact: point.fact, alreadyFound, reward: alreadyFound ? null : EXPLORATION_REWARD };
+  }
+
+  // =====================================================================
   // LEVEL-UP — a numeric level (separate from the 7-tier Title/Rank
   // above), derived from the SAME per-game XP totals Parent Portal
   // already sums for its "Progress by Game" section (players/{id}/
@@ -3371,6 +3417,7 @@
     getComebackBonusStatus, claimComebackBonus,
     getSubjectStreaks,
     getMysteryBoxStatus, openMysteryBox,
+    getExplorationPoints, getDiscoveredExploration, discoverExplorationPoint,
     getPlayerLevel,
     getWeekPlayProgress, getMostImproved,
     getPersonalGoal, setPersonalGoal,

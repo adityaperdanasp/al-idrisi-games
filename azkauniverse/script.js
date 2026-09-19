@@ -586,7 +586,18 @@ function planetSVG(theme) {
   return `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="28" fill="#c9cdea"/></svg>`;
 }
 
-function renderQuestPathMap(container) {
+// Fixed map positions for the 4 Exploration Points (see leaderboard.js's
+// EXPLORATION_POINTS) -- placed at rough midpoints between the 5 level
+// nodes (PATH_NODE_POS y=90/320/560/800/1040), offset in x so they don't
+// sit directly on the ship's path curve or overlap a level node/its label.
+const EXPLORATION_POS = {
+  satellite: { x: 82, y: 200 },
+  comet: { x: 12, y: 440 },
+  moon: { x: 85, y: 680 },
+  asteroid: { x: 10, y: 920 }
+};
+
+async function renderQuestPathMap(container) {
   container.innerHTML = "";
   container.className = "path-map-wrap";
 
@@ -705,8 +716,48 @@ function renderQuestPathMap(container) {
 
   buildPathStarfield($("path-field"));
 
+  // Exploration Points -- tappable space objects scattered between level
+  // nodes (see leaderboard.js's EXPLORATION_POINTS/discoverExplorationPoint).
+  // Purely additive to the map: doesn't touch level unlock/progress logic
+  // at all, just its own small players/{id}/exploration record.
+  if (window.AIGLeaderboard) {
+    const discovered = await AIGLeaderboard.getDiscoveredExploration().catch(() => ({}));
+    const points = AIGLeaderboard.getExplorationPoints();
+    Object.entries(points).forEach(([id, point]) => {
+      const pos = EXPLORATION_POS[id];
+      if (!pos) return;
+      const btn = document.createElement("button");
+      btn.className = "exploration-point" + (discovered[id] ? " found" : "");
+      btn.style.left = pos.x + "%";
+      btn.style.top = pos.y + "px";
+      btn.title = "Explore!";
+      btn.innerHTML = `<span class="exploration-emoji">${point.emoji}</span>`;
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const result = await AIGLeaderboard.discoverExplorationPoint(id);
+        if (!result.ok) return;
+        btn.classList.add("found");
+        showExplorationFact(point.emoji, result.fact, result.reward);
+      });
+      container.appendChild(btn);
+    });
+  }
+
   if (shipNodeIndex === null) shipNodeIndex = defaultShipIndex(unlockedFlags);
   placeShipAt(shipNodeIndex);
+}
+
+function showExplorationFact(emoji, fact, reward) {
+  const toast = document.createElement("div");
+  toast.className = "exploration-toast";
+  toast.innerHTML = `
+    <span class="exploration-toast-emoji">${emoji}</span>
+    <span class="exploration-toast-text">${fact}</span>
+    ${reward ? `<span class="exploration-toast-reward">+${reward.coins} 🪙</span>` : ""}
+  `;
+  document.body.appendChild(toast);
+  toast.addEventListener("click", () => toast.remove());
+  setTimeout(() => toast.remove(), 5000);
 }
 
 /* =================================================================

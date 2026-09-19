@@ -403,6 +403,55 @@ button:focus-visible {
 }
 .dino-bonus-fab:active { animation-play-state: paused; transform: scale(0.92); }
 
+/* Exploration Points -- tappable space objects on the quest path map,
+   same absolute left(%)/top(px) positioning convention as .path-node/
+   .dino-bonus-fab above. */
+.exploration-point {
+  position: absolute;
+  z-index: 4;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: rgba(255,255,255,0.12);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  animation: exploration-point-float 3s ease-in-out infinite;
+}
+.exploration-point.found { opacity: 0.55; animation: none; }
+.exploration-point:active { transform: scale(0.9); }
+@keyframes exploration-point-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.exploration-toast {
+  position: fixed;
+  left: 50%; bottom: 90px; transform: translateX(-50%);
+  max-width: 320px;
+  background: rgba(20, 20, 40, 0.95);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 200;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  cursor: pointer;
+  animation: exploration-toast-in 0.3s ease-out;
+}
+.exploration-toast-emoji { font-size: 24px; flex-shrink: 0; }
+.exploration-toast-text { font-size: 13px; line-height: 1.4; }
+.exploration-toast-reward { font-weight: 800; color: #ffd93d; flex-shrink: 0; white-space: nowrap; }
+@keyframes exploration-toast-in {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
 @keyframes dino-fab-bounce {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   25%      { transform: translateY(-10px) rotate(-6deg); }
