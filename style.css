@@ -1482,6 +1482,18 @@ body {
   margin: 14px 0 6px;
 }
 .sc-fx-group-label:first-child { margin-top: 0; }
+/* Skill Tree (Upgrades tab) -- a left "branch" line connecting a game's
+   nodes, purely visual (no prerequisite logic behind it -- every node
+   is independently purchasable, same as a flat list). */
+.sc-skilltree-branch {
+  border-left: 3px solid #f0dcc4;
+  padding-left: 12px;
+  margin-left: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sc-skilltree-node { position: relative; }
 .sc-avatar-section-label {
   font-family: "Baloo 2", sans-serif;
   font-weight: 800;

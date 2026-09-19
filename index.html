@@ -2406,22 +2406,36 @@
   // Power-ups above which are consumable stock). Each item is a flat
   // boolean own/don't-own, no equip step, so once bought the card just
   // shows a checkmark forever.
+  // Grouped by game into "branches" (leaderboard.js's UPGRADE_CATALOG
+  // `game` tag + getUpgradeGameLabels) -- same flat catalog/purchase
+  // system as before, just presented as a lightweight Skill Tree per
+  // game instead of one undifferentiated list, same idea as the Game FX
+  // tab's per-game grouping above.
   async function renderUpgradeShop() {
-    const [owned, defs] = await Promise.all([
+    const [owned, defs, gameLabels] = await Promise.all([
       AIGLeaderboard.getUpgrades(),
-      Promise.resolve(AIGLeaderboard.getUpgradeDefs())
+      Promise.resolve(AIGLeaderboard.getUpgradeDefs()),
+      Promise.resolve(AIGLeaderboard.getUpgradeGameLabels())
     ]);
-    document.getElementById("sc-upgrade-list").innerHTML = Object.entries(defs).map(([id, def]) => {
-      const isOwned = !!owned[id];
-      const action = isOwned
-        ? `<span class="sc-quest-done-check">✓</span>`
-        : `<button class="sc-quest-claim-btn" data-upgrade-buy="${id}">${def.cost.coins ? `🪙${def.cost.coins}` : `💎${def.cost.gems}`}</button>`;
-      return `
-        <div class="sc-cosmetic-item">
-          <span class="sc-cosmetic-preview">${def.emoji}</span>
-          <span class="sc-cosmetic-name">${def.name}<br><span class="sc-powerup-owned">${def.desc}</span></span>
-          ${action}
-        </div>`;
+    const byGame = {};
+    Object.entries(defs).forEach(([id, def]) => {
+      (byGame[def.game] = byGame[def.game] || []).push([id, def]);
+    });
+    document.getElementById("sc-upgrade-list").innerHTML = Object.entries(gameLabels).map(([game, label]) => {
+      const items = byGame[game] || [];
+      const itemsHtml = items.map(([id, def]) => {
+        const isOwned = !!owned[id];
+        const action = isOwned
+          ? `<span class="sc-quest-done-check">✓</span>`
+          : `<button class="sc-quest-claim-btn" data-upgrade-buy="${id}">${def.cost.coins ? `🪙${def.cost.coins}` : `💎${def.cost.gems}`}</button>`;
+        return `
+          <div class="sc-cosmetic-item sc-skilltree-node">
+            <span class="sc-cosmetic-preview">${def.emoji}</span>
+            <span class="sc-cosmetic-name">${def.name}<br><span class="sc-powerup-owned">${def.desc}</span></span>
+            ${action}
+          </div>`;
+      }).join("");
+      return `<div class="sc-fx-group-label">${label}</div><div class="sc-skilltree-branch">${itemsHtml}</div>`;
     }).join("");
     document.querySelectorAll("[data-upgrade-buy]").forEach(btn => {
       btn.onclick = async () => {

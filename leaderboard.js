@@ -2448,15 +2448,30 @@
   // getUpgrades() at launch (see mathville/script.js's ownedUpgrades
   // cache) rather than re-fetching mid-round.
   // =====================================================================
+  // `game` groups the flat list below into per-game "branches" for the
+  // hub's Upgrades tab (see UPGRADE_GAME_LABELS + renderUpgradeShop in
+  // index.html) -- a lightweight "Skill Tree" presentation over what is
+  // still one flat catalog/purchase system underneath, not a second
+  // backend. Order within a game roughly reflects a natural pick order
+  // (utility before power) but nothing here enforces prerequisites --
+  // every item is independently purchasable, same as before this batch.
   const UPGRADE_CATALOG = {
-    "drive-watergun-range": { name: "Water Gun Range+", emoji: "💦", cost: { coins: 60 }, desc: "Hose reaches ~30% farther in Drive Mode." },
-    "drive-nitro-tank": { name: "Nitro Tank+", emoji: "🔋", cost: { coins: 60 }, desc: "Nitro drains slower & refills faster in Drive Mode." },
-    "plane-shield-start": { name: "Shield Booster", emoji: "🛡️", cost: { coins: 80 }, desc: "Start Plane Mode with 1 extra life." },
-    "plane-rapidfire-core": { name: "Rapid-Fire Core", emoji: "🔫", cost: { gems: 3 }, desc: "Permanently fire faster in Plane Mode." },
-    "ninja-extra-life": { name: "Extra Life Charm", emoji: "❤️", cost: { coins: 80 }, desc: "Start Ninja Runner with 1 extra life." },
-    "bossrush-extra-hp": { name: "Starting Heal", emoji: "💚", cost: { gems: 3 }, desc: "Start Boss Rush Arena with +10 max HP." },
-    "cheer-emoji-pack": { name: "Reaction Pack", emoji: "🎉", cost: { coins: 40 }, desc: "Unlock 4 more emoji reactions in MathVille multiplayer." }
+    "drive-watergun-range": { name: "Water Gun Range+", emoji: "💦", cost: { coins: 60 }, desc: "Hose reaches ~30% farther in Drive Mode.", game: "drive" },
+    "drive-nitro-tank": { name: "Nitro Tank+", emoji: "🔋", cost: { coins: 60 }, desc: "Nitro drains slower & refills faster in Drive Mode.", game: "drive" },
+    "plane-shield-start": { name: "Shield Booster", emoji: "🛡️", cost: { coins: 80 }, desc: "Start Plane Mode with 1 extra life.", game: "plane" },
+    "plane-rapidfire-core": { name: "Rapid-Fire Core", emoji: "🔫", cost: { gems: 3 }, desc: "Permanently fire faster in Plane Mode.", game: "plane" },
+    "ninja-extra-life": { name: "Extra Life Charm", emoji: "❤️", cost: { coins: 80 }, desc: "Start Ninja Runner with 1 extra life.", game: "ninja" },
+    "bossrush-extra-hp": { name: "Starting Heal", emoji: "💚", cost: { gems: 3 }, desc: "Start Boss Rush Arena with +10 max HP.", game: "bossrush" },
+    "cheer-emoji-pack": { name: "Reaction Pack", emoji: "🎉", cost: { coins: 40 }, desc: "Unlock 4 more emoji reactions in MathVille multiplayer.", game: "multiplayer" }
   };
+  const UPGRADE_GAME_LABELS = {
+    drive: "🚗 Drive Mode",
+    plane: "✈️ Plane Mode",
+    ninja: "🥷 Ninja Runner",
+    bossrush: "🥊 Boss Rush Arena",
+    multiplayer: "🤝 Multiplayer"
+  };
+  function getUpgradeGameLabels() { return UPGRADE_GAME_LABELS; }
 
   function getUpgradeDefs() { return UPGRADE_CATALOG; }
 
@@ -3365,7 +3380,7 @@
     getTitle, getTitleTiers,
     submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
     getPowerupDefs, getPowerups, buyPowerup, usePowerup,
-    getUpgradeDefs, getUpgrades, unlockUpgrade,
+    getUpgradeDefs, getUpgradeGameLabels, getUpgrades, unlockUpgrade,
     submitSpeedRoundScore, getSpeedRoundLeaderboard,
     getMasteryMap, getSmartPractice,
     submitDiagnosticResult, getDiagnosticResult,
