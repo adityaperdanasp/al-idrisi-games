@@ -1520,6 +1520,25 @@ button { font-family: inherit; }
 @keyframes ninjaSwordWiggle { 0%, 100% { transform: rotate(-70deg); } 50% { transform: rotate(-50deg); } }
 .ninja-leg { position: absolute; top: 48px; width: 8px; height: 28px; background: #1c2740; border-radius: 4px; transform-origin: top center; z-index: 1; }
 .ninja-leg.l1 { left: 18px; } .ninja-leg.l2 { left: 30px; }
+
+/* Ninja Costume (leaderboard.js's NINJA_COSTUMES, bought from Customize
+   > Costumes) -- recolors the same CSS parts above via a data-costume
+   attribute on #ninja-runner. "default" needs no rule (matches the base
+   colors already set above). */
+.ninja-runner[data-costume="crimson"] .ninja-torso,
+.ninja-runner[data-costume="crimson"] .ninja-leg { background: #a4222b; }
+.ninja-runner[data-costume="crimson"] .ninja-band { background: #f7c548; }
+.ninja-runner[data-costume="crimson"] .ninja-mask { background: #5c1017; }
+
+.ninja-runner[data-costume="shadow"] .ninja-torso,
+.ninja-runner[data-costume="shadow"] .ninja-leg,
+.ninja-runner[data-costume="shadow"] .ninja-mask { background: #0d0d12; }
+.ninja-runner[data-costume="shadow"] .ninja-band { background: #8e44ad; }
+
+.ninja-runner[data-costume="jade"] .ninja-torso,
+.ninja-runner[data-costume="jade"] .ninja-leg { background: #1f7a4d; }
+.ninja-runner[data-costume="jade"] .ninja-band { background: #f4f4f4; }
+.ninja-runner[data-costume="jade"] .ninja-mask { background: #0d3d26; }
 .ninja-runner.running .l1 { animation: ninjaLegA .3s ease-in-out infinite; }
 .ninja-runner.running .l2 { animation: ninjaLegB .3s ease-in-out infinite; }
 @keyframes ninjaLegA { 0%, 100% { transform: rotate(28deg); } 50% { transform: rotate(-28deg); } }

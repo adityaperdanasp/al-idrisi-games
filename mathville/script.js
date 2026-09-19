@@ -6790,6 +6790,14 @@ let ninjaSlashFxClass = "";
 function launchNinjaRunner() {
   ensurePlaneQuestionPools();
   showScreen("screen-ninja");
+  // Ninja Costume (leaderboard.js's NINJA_COSTUMES, bought from the
+  // hub's Customize > Costumes tab) -- recolor is pure CSS, keyed off
+  // this one data attribute (see mathville/style.css).
+  if (window.AIGLeaderboard) {
+    AIGLeaderboard.getEquippedCosmetic("ninja-costume", "default").then(id => {
+      $("ninja-runner").dataset.costume = id;
+    }).catch(() => {});
+  }
   if (window.AIGBgm && AIGBgm.playPlaneTrack) AIGBgm.playPlaneTrack(); // reuse Plane Mode's energetic track (per explicit request instead of new/copyrighted music)
   if (ninjaState && ninjaState.laneTimer) clearTimeout(ninjaState.laneTimer); // a stale timer from a previous run must not fire into this fresh state
   ninjaState = {

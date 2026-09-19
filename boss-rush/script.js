@@ -45,6 +45,7 @@ function initBossRush() {
   // Cosmetic only -- bought/equipped via the hub's Customize > Game FX tab
   // (leaderboard.js's GAMEPLAY_FX_CATALOGS, type "bossrush-special").
   const SPECIAL_FX_EMOJI = { default: "✨", lightning: "⚡", fire: "🔥", ice: "❄️" };
+  const BOSSRUSH_FIGHTER_EMOJI = { default: "🥋", boxer: "🥊", hero: "🦸", dragon: "🐉" };
   let specialFxEmoji = "✨";
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -243,6 +244,12 @@ function initBossRush() {
       specialFxEmoji = SPECIAL_FX_EMOJI[equipped] || "✨";
       const upgrades = await AIGLeaderboard.getUpgrades().catch(() => ({}));
       PLAYER_HP_MAX = PLAYER_HP_BASE + (upgrades["bossrush-extra-hp"] ? 10 : 0);
+      // Fighter costume (leaderboard.js's BOSSRUSH_FIGHTERS, bought from
+      // the hub's Customize > Costumes tab) -- the player here is just
+      // one fixed emoji (no CSS parts to recolor like Ninja Runner), so
+      // this is a straight swap.
+      const fighterId = await AIGLeaderboard.getEquippedCosmetic("bossrush-fighter", "default").catch(() => "default");
+      document.getElementById("br-player-emoji").textContent = BOSSRUSH_FIGHTER_EMOJI[fighterId] || "🥋";
     }
     state.playerHp = PLAYER_HP_MAX;
     state.bossesDefeated = 0;

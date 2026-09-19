@@ -1559,6 +1559,32 @@
     "memorymatch-cardback": MEMORYMATCH_CARDBACKS
   };
 
+  // ---- Costumes -- Ninja Runner and Boss Rush Arena are the 2 newer
+  // game modes that never got a character customization option at all
+  // (unlike Drive/Plane Mode's vehicle skins) -- this is the first one
+  // for either. Same generic unlockCosmetic/equipCosmetic pair as
+  // frames/sounds/FX above, just 2 more `type` strings. Ninja Runner's
+  // costume recolors its existing CSS-built character (torso/band/legs
+  // via a `data-costume` attribute -- see mathville/style.css); Boss
+  // Rush's is a full emoji swap since the fighter there is just one
+  // fixed emoji, no CSS parts to recolor.
+  const NINJA_COSTUMES = [
+    { id: "default", name: "Classic", cost: null, preview: "⚪" },
+    { id: "crimson", name: "Crimson", cost: { coins: 15 }, preview: "🔴" },
+    { id: "shadow", name: "Shadow", cost: { coins: 20 }, preview: "⚫" },
+    { id: "jade", name: "Jade", cost: { gems: 2 }, preview: "🟢" }
+  ];
+  const BOSSRUSH_FIGHTERS = [
+    { id: "default", name: "Classic", cost: null, preview: "🥋" },
+    { id: "boxer", name: "Boxer", cost: { coins: 15 }, preview: "🥊" },
+    { id: "hero", name: "Hero", cost: { coins: 20 }, preview: "🦸" },
+    { id: "dragon", name: "Dragon Warrior", cost: { gems: 2 }, preview: "🐉" }
+  ];
+  const COSTUME_CATALOGS = {
+    "ninja-costume": NINJA_COSTUMES,
+    "bossrush-fighter": BOSSRUSH_FIGHTERS
+  };
+
   // Lightweight single-type read, for a GAME to find out its own equipped
   // effect without pulling the whole getCosmetics() bundle (frames +
   // sounds + all 6 FX catalogs) just to read one value.
@@ -1582,6 +1608,10 @@
     Object.entries(GAMEPLAY_FX_CATALOGS).forEach(([type, catalog]) => {
       fx[type] = catalog.map(e => ({ ...e, owned: !e.cost || !!(owned[type] && owned[type][e.id]) }));
     });
+    const costumes = {};
+    Object.entries(COSTUME_CATALOGS).forEach(([type, catalog]) => {
+      costumes[type] = catalog.map(e => ({ ...e, owned: !e.cost || !!(owned[type] && owned[type][e.id]) }));
+    });
     return {
       frames: AVATAR_FRAMES.map(f => ({ ...f, owned: !f.cost || !!(owned.frame && owned.frame[f.id]) })),
       sounds: SOUND_PACKS.map(s => ({ ...s, owned: !s.cost || !!(owned.sound && owned.sound[s.id]) })),
@@ -1597,6 +1627,11 @@
         "bossrush-special": equipped["bossrush-special"] || "default",
         "ninja-slash": equipped["ninja-slash"] || "default",
         "memorymatch-cardback": equipped["memorymatch-cardback"] || "default"
+      },
+      costumes,
+      equippedCostumes: {
+        "ninja-costume": equipped["ninja-costume"] || "default",
+        "bossrush-fighter": equipped["bossrush-fighter"] || "default"
       }
     };
   }
