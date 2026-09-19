@@ -33,7 +33,15 @@ if (window.AIGLeaderboard) AIGLeaderboard.startSession("mathville");
 let ownedUpgrades = {};
 function refreshOwnedUpgrades() {
   if (!window.AIGLeaderboard) return Promise.resolve();
-  return AIGLeaderboard.getUpgrades().then(u => { ownedUpgrades = u || {}; }).catch(() => {});
+  return AIGLeaderboard.getUpgrades().then(u => {
+    ownedUpgrades = u || {};
+    // Reaction Pack -- unlike the other 6 Upgrades (read once at the
+    // moment a mode launches), this toggles static markup that's always
+    // in the DOM (the MP cheer bar), so it's applied here instead of at
+    // a "launch" call site.
+    const extra = document.getElementById("mp-cheer-extra");
+    if (extra) extra.hidden = !ownedUpgrades["cheer-emoji-pack"];
+  }).catch(() => {});
 }
 refreshOwnedUpgrades();
 

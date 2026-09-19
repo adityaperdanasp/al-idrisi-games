@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=92" />
+<link rel="stylesheet" href="style.css?v=93" />
 </head>
 <body>
 
@@ -718,6 +718,17 @@
       <button class="mp-cheer-btn" type="button" data-cheer="🔥">🔥</button>
       <button class="mp-cheer-btn" type="button" data-cheer="😂">😂</button>
       <button class="mp-cheer-btn" type="button" data-cheer="❤️">❤️</button>
+      <!-- Reaction Pack upgrade (leaderboard.js's UPGRADE_CATALOG,
+           "cheer-emoji-pack") -- these 4 extra buttons already exist in
+           the DOM so the same querySelectorAll(".mp-cheer-btn") listener
+           setup below picks them up automatically; refreshOwnedUpgrades()
+           just toggles this wrapper's hidden attribute based on ownership. -->
+      <span id="mp-cheer-extra" hidden>
+        <button class="mp-cheer-btn" type="button" data-cheer="🎉">🎉</button>
+        <button class="mp-cheer-btn" type="button" data-cheer="😎">😎</button>
+        <button class="mp-cheer-btn" type="button" data-cheer="💯">💯</button>
+        <button class="mp-cheer-btn" type="button" data-cheer="🥳">🥳</button>
+      </span>
     </div>
     <div id="mp-cheer-popup" class="mp-cheer-popup hidden"></div>
 
@@ -1132,6 +1143,6 @@
 <script src="generators.js?v=3"></script>
 <script src="bgm.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
-<script src="script.js?v=129"></script>
+<script src="script.js?v=130"></script>
 </body>
 </html>

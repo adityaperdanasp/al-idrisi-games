@@ -1128,6 +1128,15 @@ button { font-family: inherit; }
   cursor: pointer; box-shadow: 0 1px 3px rgba(59,42,26,.08);
 }
 .mp-cheer-btn:active { transform: scale(0.9); }
+/* Reaction Pack's 4 extra buttons sit inside a wrapper <span> (so the
+   ownership toggle only needs to flip one hidden attribute) -- display:
+   contents lets them join the parent's flex row directly instead of
+   being squeezed into one flex item. The explicit [hidden] override is
+   required: an author-origin `display` value here would otherwise beat
+   the browser's own [hidden]{display:none} rule regardless of hiding it
+   via the attribute (same class of bug documented on .sc-smart-card). */
+#mp-cheer-extra { display: contents; }
+#mp-cheer-extra[hidden] { display: none; }
 .mp-cheer-popup {
   position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
   font-size: 64px; z-index: 50; pointer-events: none;

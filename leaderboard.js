@@ -2454,7 +2454,8 @@
     "plane-shield-start": { name: "Shield Booster", emoji: "🛡️", cost: { coins: 80 }, desc: "Start Plane Mode with 1 extra life." },
     "plane-rapidfire-core": { name: "Rapid-Fire Core", emoji: "🔫", cost: { gems: 3 }, desc: "Permanently fire faster in Plane Mode." },
     "ninja-extra-life": { name: "Extra Life Charm", emoji: "❤️", cost: { coins: 80 }, desc: "Start Ninja Runner with 1 extra life." },
-    "bossrush-extra-hp": { name: "Starting Heal", emoji: "💚", cost: { gems: 3 }, desc: "Start Boss Rush Arena with +10 max HP." }
+    "bossrush-extra-hp": { name: "Starting Heal", emoji: "💚", cost: { gems: 3 }, desc: "Start Boss Rush Arena with +10 max HP." },
+    "cheer-emoji-pack": { name: "Reaction Pack", emoji: "🎉", cost: { coins: 40 }, desc: "Unlock 4 more emoji reactions in MathVille multiplayer." }
   };
 
   function getUpgradeDefs() { return UPGRADE_CATALOG; }
