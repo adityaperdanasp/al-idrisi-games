@@ -169,7 +169,15 @@ const state = {
   streak: 0,             // consecutive correct answers THIS race — resets on any wrong answer
   gameOver: false,
   vehiclePicked: false,   // guards the synced vehicle-select from firing more than once per game
-  lastWrong: null         // most recent missed question this race — feeds the AI Tutor hint (see handleAnswer)
+  lastWrong: null,        // most recent missed question this race — feeds the AI Tutor hint (see handleAnswer)
+  // Power-up Track (Solo only -- see checkPowerupPickup/resetRaceState).
+  // `Ready` flags apply to the very NEXT relevant answer after pickup;
+  // `powerupsCollected` tracks which of the 2 fixed track pickups this
+  // race has already triggered, so passing 33%/66% again (impossible
+  // going forward, but defensive) can't double-collect.
+  powerupBoostReady: false,
+  powerupShieldReady: false,
+  powerupsCollected: { boost: false, shield: false }
 };
 
 // Zeroes every per-race counter. Called at the start of every race —
@@ -184,6 +192,9 @@ function resetRaceState() {
   state.streak = 0;
   state.gameOver = false;
   state.lastWrong = null;
+  state.powerupBoostReady = false;
+  state.powerupShieldReady = false;
+  state.powerupsCollected = { boost: false, shield: false };
   lastQuestionKey = null;
   updateStreakBadge();
   $("finish-overlay").classList.add("hidden");
@@ -813,6 +824,16 @@ function updateLaneLabel(slot, player) {
   if (el.textContent !== text) el.textContent = text;
 }
 
+// Shared travel-range math (car's usable left-position range within a
+// track) -- factored out of updateCar so renderPowerupTrack can place
+// the 2 fixed pickups at the SAME 33%/66% points the car itself will
+// actually pass through, not a naive 0-100% of the track's raw width.
+function trackTravelX(track, car, p) {
+  const startX = 28;
+  const endX = Math.max(startX, track.clientWidth - car.offsetWidth - 40);
+  return startX + (endX - startX) * p;
+}
+
 // Move a car on its track based on that player's progress (0..1).
 function updateCar(slot, player, isMine) {
   if (!player) return;
@@ -826,16 +847,15 @@ function updateCar(slot, player, isMine) {
   car.dataset.vehicle = player.vehicle || "car"; // lets CSS flip rides whose emoji art doesn't face the race direction
 
   // Car travels from just past the START label to just before the finish flag.
-  const startX = 28;
-  const endX = Math.max(startX, track.clientWidth - car.offsetWidth - 40);
-  const leftPx = startX + (endX - startX) * p;
+  const leftPx = trackTravelX(track, car, p);
   car.style.left = leftPx + "px";
   $(slot + "-correct").textContent = player.correct || 0;
 
   // Background scenery scrolls opposite the car, at 60% of its travel
   // distance — a subtle parallax depth cue, only moving as progress does.
   const scenery = track.querySelector(".scenery");
-  if (scenery) scenery.style.transform = `translateX(-${(endX - startX) * p * 0.6}px)`;
+  const travelRange = trackTravelX(track, car, 1) - trackTravelX(track, car, 0);
+  if (scenery) scenery.style.transform = `translateX(-${travelRange * p * 0.6}px)`;
 
   // Nitro boost — visible on every device's view of this lane, fires once.
   if (player.nitroAt && player.nitroAt > lastNitroAt[slot]) {
@@ -848,6 +868,62 @@ function updateCar(slot, player, isMine) {
     spawnSmoke(track, leftPx);
   }
   lastProgress[slot] = p;
+}
+
+// =====================================================================
+// POWER-UP TRACK (Solo only) -- 2 fixed pickups sitting ON the track at
+// 33%/66% progress, complementing the existing streak-based nitro
+// (every 3rd correct answer in a row) with something tied to TRACK
+// POSITION instead: ⚡ doubles the very next correct answer's step,
+// 🛡️ absorbs the very next wrong answer without breaking the current
+// streak. Deliberately solo-only -- multiplayer's progress comes from
+// a Firebase echo (pushProgress/attachGameListener) that would need
+// its own per-player synced pickup state to do this safely, out of
+// scope for what's meant to be a lightweight addition to an existing
+// game rather than a new synced feature.
+// =====================================================================
+const POWERUP_TRACK_POINTS = { boost: 0.33, shield: 0.66 };
+
+function renderPowerupTrack() {
+  if (!state.solo) return;
+  const car = $("car-p1");
+  const track = car.parentElement;
+  Object.entries(POWERUP_TRACK_POINTS).forEach(([id, p]) => {
+    const el = $("powerup-" + id);
+    if (!el) return;
+    el.style.left = trackTravelX(track, car, p) + "px";
+    el.hidden = false;
+    el.classList.remove("collected");
+  });
+}
+
+function showPowerupToast(text) {
+  const toast = document.createElement("div");
+  toast.className = "powerup-toast";
+  toast.textContent = text;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2200);
+}
+
+// Called after state.progress changes on a correct answer (solo only).
+// Fires each pickup's one-time effect exactly once, the moment the car's
+// progress reaches or passes it.
+function checkPowerupPickup() {
+  if (!state.solo) return;
+  if (!state.powerupsCollected.boost && state.progress >= POWERUP_TRACK_POINTS.boost) {
+    state.powerupsCollected.boost = true;
+    state.powerupBoostReady = true;
+    const el = $("powerup-boost");
+    if (el) el.classList.add("collected");
+    showPowerupToast("⚡ Speed Boost! Your next correct answer jumps extra far.");
+  }
+  if (!state.powerupsCollected.shield && state.progress >= POWERUP_TRACK_POINTS.shield) {
+    state.powerupsCollected.shield = true;
+    state.powerupShieldReady = true;
+    const el = $("powerup-shield");
+    if (el) el.classList.add("collected");
+    showPowerupToast("🛡️ Shield! Your next wrong answer won't break your streak.");
+  }
 }
 
 // Drop a quick smoke puff behind a car at the given left position.
@@ -959,6 +1035,12 @@ function stopSoloOpponent() {
    ================================================================= */
 function startRace() {
   showScreen("screen-race");
+  // Positioned here (not resetRaceState()) because showScreen() must run
+  // FIRST -- measuring track.clientWidth before the race screen is
+  // actually visible would return 0 and stack both pickups at the
+  // track's start, same gotcha documented elsewhere in this codebase
+  // for measuring a freshly-shown screen's layout too early.
+  renderPowerupTrack();
   state.answerLocked = false;
   if (window.AIGBgm) AIGBgm.stop();   // silenced for the race; back on after the confetti finishes
 
@@ -1232,8 +1314,16 @@ function handleAnswer(value) {
     const isNitro = state.streak > 0 && state.streak % 3 === 0;
     let stepAmount = STEP[state.role];
     if (isNitro) stepAmount *= 1.5;
+    // ⚡ Speed Boost pickup (Solo only, see checkPowerupPickup) -- stacks
+    // multiplicatively with nitro if both happen to line up.
+    const usedBoost = state.powerupBoostReady;
+    if (usedBoost) {
+      stepAmount *= 2;
+      state.powerupBoostReady = false;
+    }
     state.progress = Math.min(state.progress + stepAmount, 1);
     const raceWon = state.progress >= 1;
+    if (state.solo && !raceWon) checkPowerupPickup();
 
     // Suppress the nitro flare (not the progress bonus) on the winning
     // answer — the win celebration's own sound takes priority there.
@@ -1269,7 +1359,15 @@ function handleAnswer(value) {
   // --- Wrong (or timed out) ---------------------------------------------
   state.wrongAttempts += 1;
   state.raceWrongTotal += 1;
-  state.streak = 0;
+  // 🛡️ Shield pickup (Solo only) -- absorbs just the streak reset, not
+  // the wrong-answer record itself (still counts toward raceWrongTotal/
+  // topicStats as a real miss, same as any other wrong answer).
+  if (state.solo && state.powerupShieldReady) {
+    state.powerupShieldReady = false;
+    showPowerupToast("🛡️ Shield absorbed that miss -- streak safe!");
+  } else {
+    state.streak = 0;
+  }
   updateStreakBadge();
   giveFeedback(false);
   state.lastWrong = {

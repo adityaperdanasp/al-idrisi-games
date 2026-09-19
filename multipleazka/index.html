@@ -190,6 +190,13 @@
       </div>
       <div class="track">
         <div class="scenery" id="scenery-p1"></div>
+        <!-- Power-up Track (Solo only) -- 2 fixed pickups at 33%/66% of
+             the track. Positioned in JS (renderPowerupTrack) using the
+             SAME startX/endX travel-range math as the car itself, since
+             the track isn't a plain 0-100% width due to the car/finish
+             margins. See checkPowerupPickup in script.js. -->
+        <div class="track-powerup" id="powerup-boost" data-powerup="boost" hidden>⚡</div>
+        <div class="track-powerup" id="powerup-shield" data-powerup="shield" hidden>🛡️</div>
         <div class="finish-flag">🏁</div>
         <div class="car" id="car-p1">🏎️</div>
       </div>
