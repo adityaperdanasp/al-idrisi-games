@@ -1514,13 +1514,19 @@
     { id: "default", name: "Default Blaster", cost: null, preview: "🔹" },
     { id: "rainbow", name: "Rainbow Trail", cost: { coins: 20 }, preview: "🌈" },
     { id: "fire", name: "Fire Trail", cost: { coins: 25 }, preview: "🔥" },
-    { id: "star", name: "Star Trail", cost: { gems: 2 }, preview: "⭐" }
+    { id: "star", name: "Star Trail", cost: { gems: 2 }, preview: "⭐" },
+    // Mythic -- a rarer tier above every existing gems item, one per FX
+    // catalog (this round's item 7: a longer-term aspirational goal for
+    // gems specifically, since every catalog previously topped out at
+    // the same 2-gem tier).
+    { id: "mythic", name: "Plasma Trail", cost: { gems: 4 }, preview: "💠" }
   ];
   const DRIVE_NITRO_EFFECTS = [
     { id: "default", name: "Default Flame", cost: null, preview: "🔸" },
     { id: "blue", name: "Blue Flame", cost: { coins: 20 }, preview: "🔵" },
     { id: "rainbow", name: "Rainbow Flame", cost: { coins: 25 }, preview: "🌈" },
-    { id: "rocket", name: "Rocket Flame", cost: { gems: 2 }, preview: "🚀" }
+    { id: "rocket", name: "Rocket Flame", cost: { gems: 2 }, preview: "🚀" },
+    { id: "mythic", name: "Inferno Flame", cost: { gems: 4 }, preview: "🌋" }
   ];
   // Ground Trail -- unlike the nitro flame above (only visible while
   // actively boosting), this drops a mark behind the car during ANY
@@ -1541,7 +1547,8 @@
     { id: "default", name: "Confetti Burst", cost: null, preview: "🎊" },
     { id: "fireworks", name: "Fireworks", cost: { coins: 20 }, preview: "🎆" },
     { id: "streamers", name: "Streamers", cost: { coins: 25 }, preview: "🎉" },
-    { id: "rainbow", name: "Rainbow Mega Burst", cost: { gems: 2 }, preview: "🌈" }
+    { id: "rainbow", name: "Rainbow Mega Burst", cost: { gems: 2 }, preview: "🌈" },
+    { id: "mythic", name: "Legendary Fireworks", cost: { gems: 4 }, preview: "🎇" }
   ];
   // Victory Emote -- a personal animation on the win-screen's own emoji
   // (separate from the confetti particles above, which are the SCREEN's
@@ -1557,19 +1564,22 @@
     { id: "default", name: "Default Flash", cost: null, preview: "✨" },
     { id: "lightning", name: "Lightning Strike", cost: { coins: 20 }, preview: "⚡" },
     { id: "fire", name: "Fire Burst", cost: { coins: 25 }, preview: "🔥" },
-    { id: "ice", name: "Ice Shatter", cost: { gems: 2 }, preview: "❄️" }
+    { id: "ice", name: "Ice Shatter", cost: { gems: 2 }, preview: "❄️" },
+    { id: "mythic", name: "Meteor Strike", cost: { gems: 4 }, preview: "☄️" }
   ];
   const NINJA_SLASH_EFFECTS = [
     { id: "default", name: "Default Slash", cost: null, preview: "⚔️" },
     { id: "fire", name: "Fire Slash", cost: { coins: 20 }, preview: "🔥" },
     { id: "lightning", name: "Lightning Slash", cost: { coins: 25 }, preview: "⚡" },
-    { id: "rainbow", name: "Rainbow Slash", cost: { gems: 2 }, preview: "🌈" }
+    { id: "rainbow", name: "Rainbow Slash", cost: { gems: 2 }, preview: "🌈" },
+    { id: "mythic", name: "Dragon Slash", cost: { gems: 4 }, preview: "🐉" }
   ];
   const MEMORYMATCH_CARDBACKS = [
     { id: "default", name: "Brain", cost: null, preview: "🧠" },
     { id: "cards", name: "Cards", cost: { coins: 15 }, preview: "🎴" },
     { id: "star", name: "Star", cost: { coins: 20 }, preview: "🌟" },
-    { id: "crystal", name: "Crystal", cost: { gems: 2 }, preview: "🔮" }
+    { id: "crystal", name: "Crystal", cost: { gems: 2 }, preview: "🔮" },
+    { id: "mythic", name: "Nebula", cost: { gems: 4 }, preview: "🌌" }
   ];
   const GAMEPLAY_FX_CATALOGS = {
     "plane-bullet": PLANE_BULLET_EFFECTS,

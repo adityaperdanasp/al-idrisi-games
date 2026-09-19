@@ -373,6 +373,7 @@ button { font-family: inherit; }
 .drive-nitro-flame.fx-blue { background: linear-gradient(180deg, #7ee6ff, #2f6bff); }
 .drive-nitro-flame.fx-rainbow { background: linear-gradient(180deg, #ff3ea5, #ffd166, #7ee6ff); }
 .drive-nitro-flame.fx-rocket { background: linear-gradient(180deg, #fff, #ff6b1a, #ff3ea5); width: 12px; height: 20px; }
+.drive-nitro-flame.fx-mythic { background: linear-gradient(180deg, #fff, #ff3ea5, #6b3f9b, #1a1a2e); width: 13px; height: 22px; box-shadow: 0 0 10px 3px rgba(255,62,165,.7); }
 
 /* MOCKUP ONLY — Bo riding in the windshield + tap hint, mirrors the
    hub landing page's Bo avatar + "RAWR!"-style popup. */
@@ -1339,6 +1340,7 @@ button { font-family: inherit; }
 .plane-bullet.fx-rainbow { background: linear-gradient(180deg, #ff3ea5, #ffd166, #7ee6ff); box-shadow: 0 0 8px rgba(255,255,255,.8); }
 .plane-bullet.fx-fire { background: linear-gradient(180deg, #fff, #ff6b1a); box-shadow: 0 0 8px rgba(255,107,26,.85); }
 .plane-bullet.fx-star { background: linear-gradient(180deg, #fff, #7ee6ff); box-shadow: 0 0 8px rgba(126,230,255,.9); }
+.plane-bullet.fx-mythic { background: linear-gradient(180deg, #fff, #6b3f9b, #1a1a2e); box-shadow: 0 0 10px 3px rgba(107,63,155,.85); }
 
 .plane-enemy {
   position: absolute; width: 30px; height: 30px; margin-left: -15px; margin-top: -15px;
@@ -1727,9 +1729,11 @@ button { font-family: inherit; }
 .ninja-kunai-fx.fx-fire { background: linear-gradient(90deg, #ff6b1a, #ffd166); box-shadow: 0 0 8px 2px rgba(255,107,26,.8); }
 .ninja-kunai-fx.fx-lightning { background: linear-gradient(90deg, #7ee6ff, #fff); box-shadow: 0 0 8px 2px rgba(126,230,255,.9); }
 .ninja-kunai-fx.fx-rainbow { background: linear-gradient(90deg, #ff3ea5, #ffd166, #7ee6ff); box-shadow: 0 0 8px 2px rgba(255,255,255,.7); }
+.ninja-kunai-fx.fx-mythic { background: linear-gradient(90deg, #6b3f9b, #ff3ea5, #1a1a2e); box-shadow: 0 0 10px 3px rgba(107,63,155,.85); }
 .ninja-kunai-impact.fx-fire { background: radial-gradient(circle, #ff6b1a, transparent 70%); }
 .ninja-kunai-impact.fx-lightning { background: radial-gradient(circle, #7ee6ff, transparent 70%); }
 .ninja-kunai-impact.fx-rainbow { background: radial-gradient(circle, #ff3ea5, transparent 70%); }
+.ninja-kunai-impact.fx-mythic { background: radial-gradient(circle, #6b3f9b, #ff3ea5, transparent 70%); }
 @keyframes ninjaKunaiImpact {
   0% { transform: scale(0); opacity: 1; }
   60% { transform: scale(1.4); opacity: 1; }

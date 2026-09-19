@@ -2011,6 +2011,18 @@ function burstConfetti(effectId) {
     return;
   }
 
+  if (effectId === "mythic") {
+    // Legendary Fireworks -- gold+rainbow mixed, bigger and longer than
+    // every tier below it (this catalog's rarest/most expensive item).
+    const GOLD_RAINBOW = ["#FFD700", "#FF3EA5", "#7ee6ff", "#3F8F5F", "#ff6b1a"];
+    confetti({ particleCount: 220, spread: 160, startVelocity: 55, colors: GOLD_RAINBOW, origin: { y: 0.3 }, scalar: 1.3 });
+    (function frame() {
+      confetti({ particleCount: 20, angle: Math.random() * 360, spread: 360, startVelocity: 40, colors: GOLD_RAINBOW, origin: { x: Math.random(), y: Math.random() * 0.4 } });
+      if (Date.now() < end) setTimeout(frame, 200);
+    })();
+    return;
+  }
+
   // "default" -- unchanged from before this feature existed.
   confetti({ particleCount: 90, spread: 100, origin: { y: 0.4 } });
   (function frame() {

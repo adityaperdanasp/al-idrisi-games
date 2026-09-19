@@ -41,7 +41,7 @@ function initMemoryMatch() {
   const state = { cards: [], flipped: [], pairsFound: 0, moves: 0, locked: false };
   // Cosmetic only -- bought/equipped via the hub's Customize > Game FX tab
   // (leaderboard.js's GAMEPLAY_FX_CATALOGS, type "memorymatch-cardback").
-  const CARDBACK_EMOJI = { default: "🧠", cards: "🎴", star: "🌟", crystal: "🔮" };
+  const CARDBACK_EMOJI = { default: "🧠", cards: "🎴", star: "🌟", crystal: "🔮", mythic: "🌌" };
   let cardBackEmoji = "🧠";
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }

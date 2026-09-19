@@ -44,7 +44,7 @@ function initBossRush() {
   const state = { bossIndex: 0, playerHp: PLAYER_HP_MAX, boss: null, combo: 0, bossesDefeated: 0 };
   // Cosmetic only -- bought/equipped via the hub's Customize > Game FX tab
   // (leaderboard.js's GAMEPLAY_FX_CATALOGS, type "bossrush-special").
-  const SPECIAL_FX_EMOJI = { default: "✨", lightning: "⚡", fire: "🔥", ice: "❄️" };
+  const SPECIAL_FX_EMOJI = { default: "✨", lightning: "⚡", fire: "🔥", ice: "❄️", mythic: "☄️" };
   const BOSSRUSH_FIGHTER_EMOJI = { default: "🥋", boxer: "🥊", hero: "🦸", dragon: "🐉" };
   let specialFxEmoji = "✨";
 
