@@ -1845,10 +1845,21 @@ async function celebrateWin() {
   // shapes/spread -- "default" is exactly what already played before this
   // feature existed, never a downgrade for a player who hasn't bought one.
   let finishFx = "default";
+  let emoteFx = "default";
   if (window.AIGLeaderboard) {
     try { finishFx = await AIGLeaderboard.getEquippedCosmetic("mathrace-finish", "default"); } catch (e) {}
+    try { emoteFx = await AIGLeaderboard.getEquippedCosmetic("mathrace-emote", "default"); } catch (e) {}
   }
   burstConfetti(finishFx);
+  // Victory Emote -- a personal animation on the win emoji itself
+  // (separate from the confetti above, which is the screen's own
+  // celebration). "default" is the classic bounce .over-emoji already
+  // always had; paid tiers add a class of higher specificity that
+  // overrides it. Cleared first so Play Again's fresh celebrateWin()
+  // call doesn't stack a leftover class from the previous race.
+  const overEmoji = $("over-emoji");
+  overEmoji.classList.remove("emote-spin", "emote-wiggle", "emote-rainbow");
+  if (emoteFx !== "default") overEmoji.classList.add("emote-" + emoteFx);
   playCheerSound();
   playFinishCheer();   // applause + "Yeah!" — replaces the old spoken win line
 

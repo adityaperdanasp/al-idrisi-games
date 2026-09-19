@@ -1139,6 +1139,26 @@ h1, h2 { margin: 0 0 8px; }
 /* ---------- Game over ---------- */
 .over-emoji { font-size: 4rem; margin-bottom: 6px; animation: bounce 1s infinite alternate; }
 @keyframes bounce { to { transform: translateY(-10px); } }
+/* Victory Emote cosmetic (leaderboard.js's MATHRACE_EMOTE_EFFECTS) --
+   2 classes beats .over-emoji's 1-class specificity, so these override
+   the base bounce above regardless of source order. */
+.over-emoji.emote-spin { animation: emoteSpin 1s ease-in-out infinite; }
+.over-emoji.emote-wiggle { animation: emoteWiggle .5s ease-in-out infinite; }
+.over-emoji.emote-rainbow { animation: emoteRainbowPulse 1.4s ease-in-out infinite; }
+@keyframes emoteSpin {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(360deg) scale(1.15); }
+}
+@keyframes emoteWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-12deg) scale(1.05); }
+  75% { transform: rotate(12deg) scale(1.05); }
+}
+@keyframes emoteRainbowPulse {
+  0% { filter: drop-shadow(0 0 8px #ff5d8f) hue-rotate(0deg); transform: scale(1); }
+  50% { filter: drop-shadow(0 0 16px #4a90d9) hue-rotate(180deg); transform: scale(1.12); }
+  100% { filter: drop-shadow(0 0 8px #ff5d8f) hue-rotate(360deg); transform: scale(1); }
+}
 #winner-text { color: var(--brand); font-size: 2rem; }
 
 /* =================================================================

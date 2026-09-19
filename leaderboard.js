@@ -1543,6 +1543,16 @@
     { id: "streamers", name: "Streamers", cost: { coins: 25 }, preview: "🎉" },
     { id: "rainbow", name: "Rainbow Mega Burst", cost: { gems: 2 }, preview: "🌈" }
   ];
+  // Victory Emote -- a personal animation on the win-screen's own emoji
+  // (separate from the confetti particles above, which are the SCREEN's
+  // celebration; this is the CHARACTER's). "default" keeps the plain
+  // bounce that already always played, never a downgrade.
+  const MATHRACE_EMOTE_EFFECTS = [
+    { id: "default", name: "Classic Bounce", cost: null, preview: "🏁" },
+    { id: "spin", name: "Victory Spin", cost: { coins: 15 }, preview: "🌀" },
+    { id: "wiggle", name: "Happy Wiggle", cost: { coins: 20 }, preview: "🕺" },
+    { id: "rainbow", name: "Rainbow Glow", cost: { gems: 2 }, preview: "🌈" }
+  ];
   const BOSSRUSH_SPECIAL_EFFECTS = [
     { id: "default", name: "Default Flash", cost: null, preview: "✨" },
     { id: "lightning", name: "Lightning Strike", cost: { coins: 20 }, preview: "⚡" },
@@ -1566,6 +1576,7 @@
     "drive-nitro": DRIVE_NITRO_EFFECTS,
     "drive-trail": DRIVE_TRAIL_EFFECTS,
     "mathrace-finish": MATHRACE_FINISH_EFFECTS,
+    "mathrace-emote": MATHRACE_EMOTE_EFFECTS,
     "bossrush-special": BOSSRUSH_SPECIAL_EFFECTS,
     "ninja-slash": NINJA_SLASH_EFFECTS,
     "memorymatch-cardback": MEMORYMATCH_CARDBACKS
@@ -1637,6 +1648,7 @@
         "drive-nitro": equipped["drive-nitro"] || "default",
         "drive-trail": equipped["drive-trail"] || "none",
         "mathrace-finish": equipped["mathrace-finish"] || "default",
+        "mathrace-emote": equipped["mathrace-emote"] || "default",
         "bossrush-special": equipped["bossrush-special"] || "default",
         "ninja-slash": equipped["ninja-slash"] || "default",
         "memorymatch-cardback": equipped["memorymatch-cardback"] || "default"
