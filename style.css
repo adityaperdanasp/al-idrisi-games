@@ -13,6 +13,33 @@ body {
   background: linear-gradient(180deg, #fdedd3 0%, #e9dcc5 55%, #dccba9 100%);
   color-scheme: light;
 }
+/* Hub Theme cosmetic (leaderboard.js's HUB_THEMES, bought from the
+   Customize > Theme tab). THREE layers needed overriding, not one --
+   found live on a real render, not guessed: (1) html/body share the
+   base rule above, but the HTML element's background is what actually
+   paints the viewport canvas per the CSS spec; (2) .hub.sc-page
+   further below has its own copy of the same gradient and, being an
+   opaque flex box that fills the viewport, covers whatever html/body
+   paint underneath; (3) .sc-card (further below still, the actual
+   "phone frame" that holds every button/card of readable dark-brown-
+   on-cream text, and goes fully edge-to-edge on real phones via the
+   <=480px media query) sits on TOP of .hub.sc-page and is what a kid
+   on an actual phone sees almost exclusively -- theming only the outer
+   .hub.sc-page would have been invisible on the primary device this
+   app targets. .sc-card's override deliberately stays a LIGHT pastel
+   (not a vivid/dark tint) so the existing dark-brown text throughout
+   the hub keeps its contrast without needing a matching text-color
+   override per theme; the vivid gradient lives on the outer page only,
+   which is purely decorative background, never text. */
+html[data-hub-theme="space"],
+html[data-hub-theme="space"] .hub.sc-page { background: linear-gradient(180deg, #0d0d2b 0%, #1a1a4e 55%, #2d1b5e 100%); }
+html[data-hub-theme="space"] .sc-card { background: #e8e6f7; }
+html[data-hub-theme="beach"],
+html[data-hub-theme="beach"] .hub.sc-page { background: linear-gradient(180deg, #bde6f7 0%, #7fd4d9 55%, #f4e3b2 100%); }
+html[data-hub-theme="beach"] .sc-card { background: #eaf9f5; }
+html[data-hub-theme="sunset"],
+html[data-hub-theme="sunset"] .hub.sc-page { background: linear-gradient(180deg, #ff9a6c 0%, #ff6b9d 55%, #6b3f9b 100%); }
+html[data-hub-theme="sunset"] .sc-card { background: #fdece6; }
 
 .hub {
   width: 100%;

@@ -1031,6 +1031,7 @@
         <button class="sc-modal-tab" id="sc-tab-fx" type="button">🎮 Game FX</button>
         <button class="sc-modal-tab" id="sc-tab-upgrades" type="button">🚀 Upgrades</button>
         <button class="sc-modal-tab" id="sc-tab-costumes" type="button">🥷 Costumes</button>
+        <button class="sc-modal-tab" id="sc-tab-hubtheme" type="button">🌄 Theme</button>
       </div>
       <div class="sc-cosmetic-list" id="sc-frame-list"></div>
       <div class="sc-cosmetic-list" id="sc-sound-list" hidden></div>
@@ -1053,6 +1054,9 @@
            the first customization option either of those game modes has
            ever had. See leaderboard.js's COSTUME_CATALOGS. -->
       <div class="sc-cosmetic-list" id="sc-costume-list" hidden></div>
+      <!-- Hub Theme -- changes the LANDING PAGE's own background, not
+           tied to any one game. See leaderboard.js's getHubThemes. -->
+      <div class="sc-cosmetic-list" id="sc-hubtheme-list" hidden></div>
     </div>
   </div>
 
@@ -1336,6 +1340,7 @@
       renderNicknameCard();
       renderClassGoal();
       renderPet();
+      applyHubThemeOnLoad();
       checkMilestoneSurprise();
       const weekendBonus = AIGLeaderboard.getWeekendBonusInfo();
       document.getElementById("sc-weekend-bonus-banner").hidden = !weekendBonus.active;
@@ -2457,6 +2462,59 @@
     });
   }
 
+  // Hub Theme -- flat list (no per-game grouping needed, only 4 items),
+  // applies immediately to THIS page's own background via applyHubTheme
+  // once bought/equipped, not just next reload.
+  async function renderHubThemeList() {
+    const themeState = await AIGLeaderboard.getHubThemes();
+    const list = document.getElementById("sc-hubtheme-list");
+    if (!themeState) { list.innerHTML = ""; return; }
+    list.innerHTML = themeState.themes.map(t => {
+      const isEquipped = themeState.equipped === t.id;
+      const action = !t.owned
+        ? `<button class="sc-quest-claim-btn" data-hubtheme-buy="${t.id}">${t.cost.coins ? `🪙${t.cost.coins}` : `💎${t.cost.gems}`}</button>`
+        : isEquipped
+          ? `<span class="sc-quest-done-check">✓</span>`
+          : `<button class="sc-quest-claim-btn" data-hubtheme-equip="${t.id}">Equip</button>`;
+      return `
+        <div class="sc-cosmetic-item">
+          <span class="sc-cosmetic-preview">${t.preview}</span>
+          <span class="sc-cosmetic-name">${t.name}</span>
+          ${action}
+        </div>`;
+    }).join("");
+    document.querySelectorAll("[data-hubtheme-buy]").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.hubthemeBuy;
+        const item = themeState.themes.find(x => x.id === id);
+        btn.disabled = true;
+        const result = await AIGLeaderboard.unlockCosmetic("hub-theme", id, item.cost);
+        if (result.ok) { await AIGLeaderboard.equipCosmetic("hub-theme", id); applyHubTheme(id); renderHubThemeList(); }
+        else btn.disabled = false;
+      };
+    });
+    document.querySelectorAll("[data-hubtheme-equip]").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.hubthemeEquip;
+        await AIGLeaderboard.equipCosmetic("hub-theme", id);
+        applyHubTheme(id);
+        renderHubThemeList();
+      };
+    });
+  }
+
+  function applyHubTheme(id) {
+    document.documentElement.dataset.hubTheme = id === "default" ? "" : id;
+  }
+
+  // Applies the already-equipped theme on every hub page load (not just
+  // right after buying/equipping it in Customize, which calls
+  // applyHubTheme directly) -- read-only, no purchase UI involved here.
+  async function applyHubThemeOnLoad() {
+    const themeState = await AIGLeaderboard.getHubThemes();
+    if (themeState) applyHubTheme(themeState.equipped);
+  }
+
   // Upgrades -- permanent gameplay-affecting purchases, one-time (unlike
   // Power-ups above which are consumable stock). Each item is a flat
   // boolean own/don't-own, no equip step, so once bought the card just
@@ -2523,6 +2581,7 @@
     renderRewardList();
     renderFxList(cos);
     renderCostumeList(cos);
+    renderHubThemeList();
 
     document.getElementById("sc-frame-list").innerHTML = cos.frames.map(f => {
       const isEquipped = cos.equippedFrame === f.id;
@@ -2598,8 +2657,8 @@
   document.getElementById("sc-customize-close").addEventListener("click", () => {
     document.getElementById("sc-customize-overlay").hidden = true;
   });
-  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups", "avatarcolor", "rewards", "fx", "upgrades", "costumes"];
-  const CUSTOMIZE_TAB_LIST_ID = { frames: "sc-frame-list", sounds: "sc-sound-list", powerups: "sc-powerup-list", avatarcolor: "sc-avatarcolor-grid", rewards: "sc-reward-list", fx: "sc-fx-list", upgrades: "sc-upgrade-list", costumes: "sc-costume-list" };
+  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups", "avatarcolor", "rewards", "fx", "upgrades", "costumes", "hubtheme"];
+  const CUSTOMIZE_TAB_LIST_ID = { frames: "sc-frame-list", sounds: "sc-sound-list", powerups: "sc-powerup-list", avatarcolor: "sc-avatarcolor-grid", rewards: "sc-reward-list", fx: "sc-fx-list", upgrades: "sc-upgrade-list", costumes: "sc-costume-list", hubtheme: "sc-hubtheme-list" };
   function switchCustomizeTab(tab) {
     CUSTOMIZE_TABS.forEach(t => {
       document.getElementById(`sc-tab-${t}`).classList.toggle("active", t === tab);
@@ -2614,6 +2673,7 @@
   document.getElementById("sc-tab-fx").addEventListener("click", () => switchCustomizeTab("fx"));
   document.getElementById("sc-tab-upgrades").addEventListener("click", () => switchCustomizeTab("upgrades"));
   document.getElementById("sc-tab-costumes").addEventListener("click", () => switchCustomizeTab("costumes"));
+  document.getElementById("sc-tab-hubtheme").addEventListener("click", () => switchCustomizeTab("hubtheme"));
 
   // Real-world reward ledger -- redeems from the SAME coins/gems wallet
   // as vehicle skins/power-ups. The catalog itself is set by a parent

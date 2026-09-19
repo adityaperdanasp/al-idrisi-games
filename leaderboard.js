@@ -1366,6 +1366,34 @@
     };
   }
 
+  // ---- Hub Theme -- account-level (not tied to any one game), changes
+  // the hub landing page's own background. Same generic unlockCosmetic/
+  // equipCosmetic pair as everything else, type "hub-theme". A parent
+  // browsing their own hub view never sees this (getHubTheme below
+  // returns null for that role, same guard as Pet Accessories), so it's
+  // purely the CHILD's own personalization, not shown to classmates --
+  // "dipamerin" here means to a parent looking over their shoulder, not
+  // multiplayer visibility (that's the separate Flair item).
+  const HUB_THEMES = [
+    { id: "default", name: "Classic", cost: null, preview: "🌤️" },
+    { id: "space", name: "Space", cost: { coins: 30 }, preview: "🌌" },
+    { id: "beach", name: "Beach", cost: { coins: 30 }, preview: "🏖️" },
+    { id: "sunset", name: "Sunset", cost: { gems: 2 }, preview: "🌅" }
+  ];
+  async function getHubThemes() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const [ownedSnap, equippedSnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/ownedCosmetics/hub-theme`).get(),
+      aigDb.ref(`players/${player.id}/equipped/hub-theme`).get()
+    ]);
+    const owned = ownedSnap.exists() ? ownedSnap.val() : {};
+    return {
+      themes: HUB_THEMES.map(t => ({ ...t, owned: !t.cost || !!owned[t.id] })),
+      equipped: equippedSnap.exists() ? equippedSnap.val() : "default"
+    };
+  }
+
   // =====================================================================
   // TEACH BO — the flip side of the AI hint: after getting a question
   // right, the kid explains it back in their own words (the "protege
@@ -3521,7 +3549,7 @@
     submitSpeedRoundScore, getSpeedRoundLeaderboard,
     getMasteryMap, getSmartPractice,
     submitDiagnosticResult, getDiagnosticResult,
-    getPetStatus, feedPet, getPetAccessories,
+    getPetStatus, feedPet, getPetAccessories, getHubThemes,
     getClassmateAccuracy,
     getMilestoneSurprise,
     getTownDecoration, setTownDecoration,
