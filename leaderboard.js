@@ -1633,6 +1633,49 @@
     return { ok: true };
   }
 
+  // =====================================================================
+  // DAILY DEAL — one paid cosmetic item, picked deterministically from
+  // EVERY catalog (frames/faces/sounds/6 Game FX types/pet accessories)
+  // and discounted 30%, same SAME for every player each calendar day
+  // (seeded from the date, same trick as Bonus Hour) so it's a genuine
+  // "come back today" hook rather than a per-player roll. No new
+  // storage at all -- computed fresh from the existing catalogs +
+  // today's date every time it's asked for. Complements Bonus Hour/
+  // Weekend (which discount EARNING) with a discount on SPENDING.
+  // Only draws from catalogs whose unlockCosmetic() call already takes
+  // an explicit `cost` argument from the caller (every one below does),
+  // so applying a discount here needs no changes to the purchase
+  // functions themselves -- the discounted cost IS the cost passed in.
+  function getDailyDeal() {
+    const pool = [];
+    AVATAR_FRAMES.forEach(f => { if (f.cost) pool.push({ type: "frame", id: f.id, name: f.name, preview: "🖼️", cost: f.cost }); });
+    AVATAR_FACES.forEach(f => { if (f.cost) pool.push({ type: "face", id: f.id, name: f.name, preview: f.preview, cost: f.cost }); });
+    SOUND_PACKS.forEach(s => { if (s.cost) pool.push({ type: "sound", id: s.id, name: s.name, preview: "🎵", cost: s.cost }); });
+    Object.entries(GAMEPLAY_FX_CATALOGS).forEach(([type, catalog]) => {
+      catalog.forEach(item => { if (item.cost) pool.push({ type, id: item.id, name: item.name, preview: item.preview, cost: item.cost }); });
+    });
+    PET_ACCESSORIES.forEach(a => { if (a.cost) pool.push({ type: "pet-accessory", id: a.id, name: a.name, preview: a.preview, cost: a.cost }); });
+    if (!pool.length) return null;
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const picked = pool[seedFrom(dateStr + "dailydeal") % pool.length];
+    const discountedCost = {};
+    if (picked.cost.coins) discountedCost.coins = Math.max(1, Math.floor(picked.cost.coins * 0.7));
+    if (picked.cost.gems) discountedCost.gems = Math.max(1, Math.floor(picked.cost.gems * 0.7));
+    return { type: picked.type, id: picked.id, name: picked.name, preview: picked.preview, originalCost: picked.cost, cost: discountedCost };
+  }
+
+  // Whether the CURRENT player already owns today's deal item -- shown
+  // as "already yours!" instead of a buy button rather than re-selling
+  // something they have.
+  async function getDailyDealStatus() {
+    const deal = getDailyDeal();
+    if (!deal) return null;
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { deal, owned: false };
+    const snap = await aigDb.ref(`players/${player.id}/ownedCosmetics/${deal.type}/${deal.id}`).get();
+    return { deal, owned: snap.exists() && !!snap.val() };
+  }
+
   // Avatar color -- a FREE preference override (unlike frames/sounds
   // above, which are paid cosmetics with owned/unlock gating). Kids just
   // pick which of the 7 existing palette colors they want instead of
@@ -3302,7 +3345,7 @@
     getNinjaGhost, saveNinjaGhost,
     getBattlePass, claimBattlePassTier,
     getCollection,
-    getCosmetics, unlockCosmetic, equipCosmetic, getEquippedCosmetic,
+    getCosmetics, unlockCosmetic, equipCosmetic, getEquippedCosmetic, getDailyDeal, getDailyDealStatus,
     getAvatarColor, setAvatarColor,
     getRewardCatalog, redeemReward,
     getMathvilleTheme, setMathvilleTheme,

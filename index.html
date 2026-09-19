@@ -423,6 +423,13 @@
             <button class="sc-quest-claim-btn" id="sc-mysterybox-btn">🪙10</button>
           </div>
 
+          <!-- Daily Deal -- one cosmetic item, same for everyone today,
+               30% off. See leaderboard.js's getDailyDeal/getDailyDealStatus. -->
+          <div class="sc-smart-card" id="sc-dailydeal-card" hidden>
+            <span class="sc-smart-text">🏷️ Daily Deal! <span id="sc-dailydeal-preview"></span> <b id="sc-dailydeal-name"></b> <s id="sc-dailydeal-original"></s></span>
+            <button class="sc-quest-claim-btn" id="sc-dailydeal-btn"></button>
+          </div>
+
           <div class="sc-smart-card" id="sc-diagnostic-card" hidden>
             <span class="sc-smart-text">🩺 New here? Take a 2-minute Quick Check to see where you're starting!</span>
             <button class="sc-quest-claim-btn" id="sc-diagnostic-btn">Start</button>
@@ -1317,6 +1324,7 @@
       renderMistakeReviewReminder();
       renderSubjectStreaks();
       renderMysteryBox();
+      renderDailyDeal();
       renderSeasonalEvent();
       renderPerfectWeek();
       renderPersonalGoal();
@@ -1700,6 +1708,32 @@
       toast.innerHTML = `<span class="sc-card-toast-emoji">🎁</span><span>Mystery Box: ${label}</span>`;
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 3000);
+      card.hidden = true;
+    };
+  }
+
+  // Daily Deal -- same item for every player today (see leaderboard.js's
+  // getDailyDeal, seeded from the date), 30% off. Reuses the SAME
+  // unlockCosmetic(type,id,cost) every other cosmetic purchase already
+  // goes through -- the discounted cost computed there IS the cost this
+  // just passes along, so no new purchase path is needed.
+  async function renderDailyDeal() {
+    const status = await AIGLeaderboard.getDailyDealStatus();
+    const card = document.getElementById("sc-dailydeal-card");
+    if (!status || status.owned) { card.hidden = true; return; }
+    card.hidden = false;
+    const deal = status.deal;
+    document.getElementById("sc-dailydeal-preview").textContent = deal.preview || "";
+    document.getElementById("sc-dailydeal-name").textContent = deal.name;
+    const originalText = deal.originalCost.coins ? `🪙${deal.originalCost.coins}` : `💎${deal.originalCost.gems}`;
+    document.getElementById("sc-dailydeal-original").textContent = originalText;
+    const btn = document.getElementById("sc-dailydeal-btn");
+    btn.disabled = false;
+    btn.textContent = deal.cost.coins ? `🪙${deal.cost.coins}` : `💎${deal.cost.gems}`;
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const result = await AIGLeaderboard.unlockCosmetic(deal.type, deal.id, deal.cost);
+      if (!result.ok) { btn.disabled = false; return; }
       card.hidden = true;
     };
   }
