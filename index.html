@@ -2480,11 +2480,18 @@
       const items = byGame[game] || [];
       const itemsHtml = items.map(([id, def]) => {
         const isOwned = !!owned[id];
+        // Tier 2 prerequisite -- purely a UI-side gate (unlockUpgrade()
+        // enforces the real one server-side); shown as a locked chip
+        // with the requirement spelled out instead of a price, so it
+        // reads as "not yet available" rather than "broken/no price".
+        const prereqMet = !def.requires || !!owned[def.requires];
         const action = isOwned
           ? `<span class="sc-quest-done-check">✓</span>`
-          : `<button class="sc-quest-claim-btn" data-upgrade-buy="${id}">${def.cost.coins ? `🪙${def.cost.coins}` : `💎${def.cost.gems}`}</button>`;
+          : !prereqMet
+            ? `<span class="sc-upgrade-locked">🔒 Needs Tier 1</span>`
+            : `<button class="sc-quest-claim-btn" data-upgrade-buy="${id}">${def.cost.coins ? `🪙${def.cost.coins}` : `💎${def.cost.gems}`}</button>`;
         return `
-          <div class="sc-cosmetic-item sc-skilltree-node">
+          <div class="sc-cosmetic-item sc-skilltree-node${!prereqMet && !isOwned ? " sc-skilltree-node-locked" : ""}">
             <span class="sc-cosmetic-preview">${def.emoji}</span>
             <span class="sc-cosmetic-name">${def.name}<br><span class="sc-powerup-owned">${def.desc}</span></span>
             ${action}

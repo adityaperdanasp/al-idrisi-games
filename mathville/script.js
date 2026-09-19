@@ -1111,9 +1111,13 @@ function goToDrive(resume) {
     // Upgrades (see leaderboard.js's UPGRADE_CATALOG) -- read from the
     // ownedUpgrades cache once per run so the frame loop below never
     // needs to check ownership itself.
-    waterRangePx: DRIVE_WATER_RANGE_PX * (ownedUpgrades["drive-watergun-range"] ? 1.3 : 1),
-    nitroDrainPerMs: DRIVE_NITRO_DRAIN_PER_MS * (ownedUpgrades["drive-nitro-tank"] ? 0.65 : 1),
-    nitroRegenPerMs: DRIVE_NITRO_REGEN_PER_MS * (ownedUpgrades["drive-nitro-tank"] ? 1.5 : 1),
+    // Tier 2 REPLACES tier 1's multiplier (not stacked on top of it) --
+    // ownedUpgrades["X-2"] can only be true if "X" is also true (server-
+    // enforced in unlockUpgrade's prerequisite check), so checking tier 2
+    // first and falling back to tier 1 covers every real ownership state.
+    waterRangePx: DRIVE_WATER_RANGE_PX * (ownedUpgrades["drive-watergun-range-2"] ? 1.6 : ownedUpgrades["drive-watergun-range"] ? 1.3 : 1),
+    nitroDrainPerMs: DRIVE_NITRO_DRAIN_PER_MS * (ownedUpgrades["drive-nitro-tank-2"] ? 0.5 : ownedUpgrades["drive-nitro-tank"] ? 0.65 : 1),
+    nitroRegenPerMs: DRIVE_NITRO_REGEN_PER_MS * (ownedUpgrades["drive-nitro-tank-2"] ? 2 : ownedUpgrades["drive-nitro-tank"] ? 1.5 : 1),
     cities: [], obstacles: [], rafId: null, paused: false, worldRect: null, ended: false
   };
   // The world must be visible (display:block, not display:none) before
@@ -2393,9 +2397,12 @@ function launchPlaneMode(is2p) {
     // against below); Rapid-Fire Core permanently shortens the base fire
     // interval (separate from the temporary "rapid" power-up buff, which
     // still applies its own faster interval on top when active).
-    maxLives: PLANE_MAX_LIVES + (ownedUpgrades["plane-shield-start"] ? 1 : 0),
-    baseFireIntervalMs: ownedUpgrades["plane-rapidfire-core"] ? Math.round(PLANE_FIRE_INTERVAL_MS * 0.8) : PLANE_FIRE_INTERVAL_MS,
-    lives: PLANE_MAX_LIVES + (ownedUpgrades["plane-shield-start"] ? 1 : 0),
+    // Tier 2 REPLACES tier 1's bonus (2 extra lives total, not 1+2=3) --
+    // see the water-gun/nitro comment above for why checking tier 2
+    // first and falling back to tier 1 is always correct.
+    maxLives: PLANE_MAX_LIVES + (ownedUpgrades["plane-shield-start-2"] ? 2 : ownedUpgrades["plane-shield-start"] ? 1 : 0),
+    baseFireIntervalMs: ownedUpgrades["plane-rapidfire-core-2"] ? Math.round(PLANE_FIRE_INTERVAL_MS * 0.65) : ownedUpgrades["plane-rapidfire-core"] ? Math.round(PLANE_FIRE_INTERVAL_MS * 0.8) : PLANE_FIRE_INTERVAL_MS,
+    lives: PLANE_MAX_LIVES + (ownedUpgrades["plane-shield-start-2"] ? 2 : ownedUpgrades["plane-shield-start"] ? 1 : 0),
     respawnsUsed: 0,
     respawnCorrectCount: 0,
     invulnUntil: 0,
@@ -6853,7 +6860,9 @@ function launchNinjaRunner() {
     pendingBoss: false, inBoss: false, bossHp: 0, bossesDefeated: 0,
     // Extra Life Charm upgrade (leaderboard.js's UPGRADE_CATALOG) adds 1
     // starting life, capped by NINJA_MAX_LIVES (5) same as any in-round gain.
-    lives: Math.min(NINJA_MAX_LIVES, NINJA_START_LIVES + (ownedUpgrades["ninja-extra-life"] ? 1 : 0)), totalAnswered: 0, myCheckpoints: [], isNewHighScoreRun: false
+    // Tier 2 REPLACES tier 1's bonus (2 extra lives total, not 1+2=3),
+    // same convention as Plane Mode's Shield Booster above.
+    lives: Math.min(NINJA_MAX_LIVES, NINJA_START_LIVES + (ownedUpgrades["ninja-extra-life-2"] ? 2 : ownedUpgrades["ninja-extra-life"] ? 1 : 0)), totalAnswered: 0, myCheckpoints: [], isNewHighScoreRun: false
   };
   $("ninja-streak").classList.add("hidden");
   $("ninja-boss-hp").classList.add("hidden");

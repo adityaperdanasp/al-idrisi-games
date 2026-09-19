@@ -243,7 +243,9 @@ function initBossRush() {
       const equipped = await AIGLeaderboard.getEquippedCosmetic("bossrush-special", "default");
       specialFxEmoji = SPECIAL_FX_EMOJI[equipped] || "✨";
       const upgrades = await AIGLeaderboard.getUpgrades().catch(() => ({}));
-      PLAYER_HP_MAX = PLAYER_HP_BASE + (upgrades["bossrush-extra-hp"] ? 10 : 0);
+      // Tier 2 REPLACES tier 1's bonus (+20 max HP total, not +10+20=+30),
+      // same convention as every other Tier 2 Upgrade.
+      PLAYER_HP_MAX = PLAYER_HP_BASE + (upgrades["bossrush-extra-hp-2"] ? 20 : upgrades["bossrush-extra-hp"] ? 10 : 0);
       // Fighter costume (leaderboard.js's BOSSRUSH_FIGHTERS, bought from
       // the hub's Customize > Costumes tab) -- the player here is just
       // one fixed emoji (no CSS parts to recolor like Ninja Runner), so

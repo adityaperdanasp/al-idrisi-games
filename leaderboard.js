@@ -2568,7 +2568,19 @@
     "plane-rapidfire-core": { name: "Rapid-Fire Core", emoji: "🔫", cost: { gems: 3 }, desc: "Permanently fire faster in Plane Mode.", game: "plane" },
     "ninja-extra-life": { name: "Extra Life Charm", emoji: "❤️", cost: { coins: 80 }, desc: "Start Ninja Runner with 1 extra life.", game: "ninja" },
     "bossrush-extra-hp": { name: "Starting Heal", emoji: "💚", cost: { gems: 3 }, desc: "Start Boss Rush Arena with +10 max HP.", game: "bossrush" },
-    "cheer-emoji-pack": { name: "Reaction Pack", emoji: "🎉", cost: { coins: 40 }, desc: "Unlock 4 more emoji reactions in MathVille multiplayer.", game: "multiplayer" }
+    "cheer-emoji-pack": { name: "Reaction Pack", emoji: "🎉", cost: { coins: 40 }, desc: "Unlock 4 more emoji reactions in MathVille multiplayer.", game: "multiplayer" },
+    // ---- Tier 2 -- a real prerequisite chain (checked in unlockUpgrade
+    // below), the first actual "tree" dependency among these Upgrades
+    // rather than a flat list of independently-buyable items. Each
+    // REPLACES its tier 1 effect with a stronger one (checked in the
+    // game code as "tier2 owned? use tier2 : tier1 owned? use tier1 :
+    // base"), not stacked additively on top of it.
+    "drive-watergun-range-2": { name: "Water Gun Range++", emoji: "💦", cost: { coins: 70 }, desc: "Hose reaches ~60% farther in Drive Mode. Requires Water Gun Range+.", game: "drive", requires: "drive-watergun-range" },
+    "drive-nitro-tank-2": { name: "Nitro Tank++", emoji: "🔋", cost: { coins: 70 }, desc: "Nitro drains even slower & refills even faster. Requires Nitro Tank+.", game: "drive", requires: "drive-nitro-tank" },
+    "plane-shield-start-2": { name: "Shield Booster++", emoji: "🛡️", cost: { gems: 3 }, desc: "Start Plane Mode with 2 extra lives instead of 1. Requires Shield Booster.", game: "plane", requires: "plane-shield-start" },
+    "plane-rapidfire-core-2": { name: "Rapid-Fire Core++", emoji: "🔫", cost: { gems: 3 }, desc: "Fire even faster in Plane Mode. Requires Rapid-Fire Core.", game: "plane", requires: "plane-rapidfire-core" },
+    "ninja-extra-life-2": { name: "Extra Life Charm++", emoji: "❤️", cost: { coins: 90 }, desc: "Start Ninja Runner with 2 extra lives instead of 1. Requires Extra Life Charm.", game: "ninja", requires: "ninja-extra-life" },
+    "bossrush-extra-hp-2": { name: "Starting Heal++", emoji: "💚", cost: { gems: 3 }, desc: "Start Boss Rush Arena with +20 max HP instead of +10. Requires Starting Heal.", game: "bossrush", requires: "bossrush-extra-hp" }
   };
   const UPGRADE_GAME_LABELS = {
     drive: "🚗 Drive Mode",
@@ -2599,6 +2611,14 @@
     const ownedRef = aigDb.ref(`players/${player.id}/upgrades/${id}`);
     const ownedSnap = await ownedRef.get();
     if (ownedSnap.exists() && ownedSnap.val()) return { ok: true, alreadyOwned: true };
+    // Tier 2 prerequisite -- checked against the SAME upgrades node
+    // (not a separate read), so a tier 2 can never be bought without
+    // its tier 1 already owned even if the UI's own disabled-button
+    // guard were somehow bypassed.
+    if (def.requires) {
+      const prereqSnap = await aigDb.ref(`players/${player.id}/upgrades/${def.requires}`).get();
+      if (!prereqSnap.exists() || !prereqSnap.val()) return { ok: false, reason: "missing-prerequisite" };
+    }
     const walletRef = aigDb.ref(`players/${player.id}/wallet`);
     const walletSnap = await walletRef.get();
     const wallet = walletSnap.exists() ? walletSnap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };

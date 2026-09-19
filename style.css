@@ -1494,6 +1494,15 @@ body {
   gap: 10px;
 }
 .sc-skilltree-node { position: relative; }
+.sc-skilltree-node-locked { opacity: 0.55; }
+.sc-upgrade-locked {
+  flex-shrink: 0;
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: #a3927e;
+  white-space: nowrap;
+}
 .sc-avatar-section-label {
   font-family: "Baloo 2", sans-serif;
   font-weight: 800;
