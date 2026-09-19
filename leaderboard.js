@@ -1522,6 +1522,17 @@
     { id: "rainbow", name: "Rainbow Flame", cost: { coins: 25 }, preview: "🌈" },
     { id: "rocket", name: "Rocket Flame", cost: { gems: 2 }, preview: "🚀" }
   ];
+  // Ground Trail -- unlike the nitro flame above (only visible while
+  // actively boosting), this drops a mark behind the car during ANY
+  // normal movement. "none" is the free default, matching the pre-
+  // existing behavior (Drive Mode never had a trail at all before this).
+  const DRIVE_TRAIL_EFFECTS = [
+    { id: "none", name: "No Trail", cost: null, preview: "🚫" },
+    { id: "sparkle", name: "Sparkle Trail", cost: { coins: 20 }, preview: "✨" },
+    { id: "petals", name: "Petal Trail", cost: { coins: 25 }, preview: "🌸" },
+    { id: "stars", name: "Star Trail", cost: { coins: 25 }, preview: "⭐" },
+    { id: "rainbow", name: "Rainbow Trail", cost: { gems: 2 }, preview: "🌈" }
+  ];
   // "default" is the confetti burst Math Race already always played on a
   // win (unchanged, still free) -- the paid tiers are distinct variations
   // of the same canvas-confetti call (different colors/shapes/spread),
@@ -1553,6 +1564,7 @@
   const GAMEPLAY_FX_CATALOGS = {
     "plane-bullet": PLANE_BULLET_EFFECTS,
     "drive-nitro": DRIVE_NITRO_EFFECTS,
+    "drive-trail": DRIVE_TRAIL_EFFECTS,
     "mathrace-finish": MATHRACE_FINISH_EFFECTS,
     "bossrush-special": BOSSRUSH_SPECIAL_EFFECTS,
     "ninja-slash": NINJA_SLASH_EFFECTS,
@@ -1623,6 +1635,7 @@
       equippedFx: {
         "plane-bullet": equipped["plane-bullet"] || "default",
         "drive-nitro": equipped["drive-nitro"] || "default",
+        "drive-trail": equipped["drive-trail"] || "none",
         "mathrace-finish": equipped["mathrace-finish"] || "default",
         "bossrush-special": equipped["bossrush-special"] || "default",
         "ninja-slash": equipped["ninja-slash"] || "default",

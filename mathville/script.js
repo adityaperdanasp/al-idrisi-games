@@ -1066,6 +1066,14 @@ let driveBoosting = false; // held down = true, drives nitro drain/regen each fr
 // (leaderboard.js's GAMEPLAY_FX_CATALOGS, type "drive-nitro"). Empty
 // string means the default orange flame (no extra class needed).
 let driveNitroFxClass = "";
+// Ground Trail cosmetic (leaderboard.js's DRIVE_TRAIL_EFFECTS, type
+// "drive-trail") -- unlike nitro's flame (only visible while boosting),
+// this drops behind the car during ANY normal movement. "default"/empty
+// means no trail at all (the pre-existing behavior).
+let driveTrailEmoji = "";
+let lastDriveTrailAt = 0;
+const DRIVE_TRAIL_EMOJI = { none: "", sparkle: "✨", petals: "🌸", stars: "⭐", rainbow: "🌈" };
+const DRIVE_TRAIL_INTERVAL_MS = 160;
 // Score + bite count survive a side-trip into a chapter (city collision
 // routes there and back) — only a *fresh* Drive Mode entry resets them.
 let driveSession = null;
@@ -1077,6 +1085,9 @@ function goToDrive(resume) {
   if (window.AIGLeaderboard) {
     AIGLeaderboard.getEquippedCosmetic("drive-nitro", "default").then(id => {
       driveNitroFxClass = id !== "default" ? "fx-" + id : "";
+    }).catch(() => {});
+    AIGLeaderboard.getEquippedCosmetic("drive-trail", "none").then(id => {
+      driveTrailEmoji = DRIVE_TRAIL_EMOJI[id] || "";
     }).catch(() => {});
   }
   // Hard difficulty gets a 2nd dino from a different starting corner.
@@ -1280,6 +1291,17 @@ function startDriveLoop() {
         car.style.left = driveState.x + "%";
         car.style.top = driveState.y + "%";
         car.style.transform = `rotate(${driveHeadingCss(angle)}deg)`;
+        // Ground Trail cosmetic -- drops behind the car during ANY normal
+        // movement (throttled to DRIVE_TRAIL_INTERVAL_MS so it reads as a
+        // trail, not a solid smear), unlike nitro's flame which only shows
+        // while actively boosting.
+        if (driveTrailEmoji) {
+          const now2 = performance.now();
+          if (now2 - lastDriveTrailAt > DRIVE_TRAIL_INTERVAL_MS) {
+            lastDriveTrailAt = now2;
+            spawnDriveTrailMark(driveState.x, driveState.y);
+          }
+        }
       }
       driveWaterTick();
       // Each dino pursues the car's current spot independently, steering
@@ -1312,6 +1334,22 @@ function startDriveLoop() {
     driveState.rafId = requestAnimationFrame(frame);
   }
   driveState.rafId = requestAnimationFrame(frame);
+}
+
+// Ground Trail cosmetic -- a single emoji mark dropped at the car's
+// current position, fading/shrinking via CSS then removing itself.
+// Percentage-based left/top matches every other transient element in
+// #drive-world (car, dinos) already using the same coordinate system.
+function spawnDriveTrailMark(x, y) {
+  const world = $("drive-world");
+  if (!world) return;
+  const mark = document.createElement("div");
+  mark.className = "drive-trail-mark";
+  mark.textContent = driveTrailEmoji;
+  mark.style.left = x + "%";
+  mark.style.top = y + "%";
+  world.appendChild(mark);
+  setTimeout(() => mark.remove(), 700);
 }
 
 function driveNitroTick() {

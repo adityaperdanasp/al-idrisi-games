@@ -341,6 +341,21 @@ button { font-family: inherit; }
    goToDrive's rotate(0deg) comment), so the "back" of the car is always
    the bottom edge -- no rotation math needed to place this. */
 .drive-car-sprite { position: relative; }
+/* Ground Trail cosmetic -- see spawnDriveTrailMark() in script.js.
+   Percentage left/top matches #drive-car's own positioning. */
+.drive-trail-mark {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 1;
+  animation: driveTrailFade .7s ease-out forwards;
+}
+@keyframes driveTrailFade {
+  0% { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+}
+
 .drive-nitro-flame {
   position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%) scale(0);
   width: 10px; height: 16px;
