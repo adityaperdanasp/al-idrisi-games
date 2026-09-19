@@ -312,6 +312,25 @@ button {
   box-shadow: 0 3px 10px rgba(0,0,0,.18);
   animation: gameBoWiggle 1.8s ease-in-out infinite;
 }
+/* Reactive mascot -- these two REPLACE the idle wiggle above for their
+   short duration (same animation property, last one applied wins), then
+   reactBo()'s timeout removes the class and the idle wiggle resumes. */
+.game-bo-face.bo-happy { animation: gameBoHappy 0.9s ease-in-out; }
+.game-bo-face.bo-sad { animation: gameBoSad 0.9s ease-in-out; }
+@keyframes gameBoHappy {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  20% { transform: scale(1.25) rotate(-8deg); }
+  40% { transform: scale(1.15) rotate(8deg); }
+  60% { transform: scale(1.25) rotate(-6deg); }
+  80% { transform: scale(1.1) rotate(4deg); }
+}
+@keyframes gameBoSad {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  20% { transform: translateX(-4px) rotate(-6deg); }
+  40% { transform: translateX(4px) rotate(6deg); }
+  60% { transform: translateX(-3px) rotate(-4deg); }
+  80% { transform: translateX(3px) rotate(3deg); }
+}
 .game-bo-hint {
   position: absolute; left: 50%; bottom: 100%; margin-bottom: 2px;
   font: 800 9px inherit; color: #fff; white-space: nowrap;

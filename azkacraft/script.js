@@ -538,6 +538,7 @@ function handleMCAnswer(selected, q, grid) {
   if (isCorrect) {
     buttons.find(b => b.textContent === selected).classList.add("selected-correct");
     const phrase = AzkaVoice.speakPraise();
+    reactBo(true);
     session.score += 10;
     session.correctCount++;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, true);
@@ -546,6 +547,7 @@ function handleMCAnswer(selected, q, grid) {
     buttons.find(b => b.textContent === selected).classList.add("selected-wrong");
     buttons.find(b => b.textContent === q.answer).classList.add("reveal-correct");
     const phrase = AzkaVoice.speakEncouragement(q.answer);
+    reactBo(false);
     session.lastWrong = { question: q.prompt, correctAnswer: q.answer, kidAnswer: selected, topic: session.chapter.topic };
     session.score += 3;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
@@ -588,6 +590,7 @@ function handleFillAnswer(q) {
   if (isCorrect) {
     input.classList.add("correct");
     const phrase = AzkaVoice.speakPraise();
+    reactBo(true);
     session.score += 10;
     session.correctCount++;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, true);
@@ -597,6 +600,7 @@ function handleFillAnswer(q) {
     document.getElementById("fill-correction").innerHTML =
       `<div class="fill-correction">Correct answer: <strong>${q.answer}</strong></div>`;
     const phrase = AzkaVoice.speakEncouragement(q.answer);
+    reactBo(false);
     session.lastWrong = { question: q.prompt, correctAnswer: q.answer, kidAnswer: input.value.trim(), topic: session.chapter.topic };
     session.score += 3;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
@@ -656,6 +660,7 @@ function handleMatchAnswer(q, grid) {
 
   if (allCorrect) {
     const phrase = AzkaVoice.speakPraise();
+    reactBo(true);
     session.score += 10;
     session.correctCount++;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, true);
@@ -663,6 +668,7 @@ function handleMatchAnswer(q, grid) {
   } else {
     const firstWrong = q.pairs.find((p, i) => selects[i].value !== p.right);
     const phrase = AzkaVoice.speakEncouragement(`${firstWrong.left} → ${firstWrong.right}`);
+    reactBo(false);
     session.lastWrong = {
       question: `Match: ${firstWrong.left}`,
       correctAnswer: firstWrong.right,
@@ -687,6 +693,7 @@ function renderFlashcard(q, area) {
   `;
   document.getElementById("flash-got-it").addEventListener("click", () => {
     const phrase = AzkaVoice.speakPraise();
+    reactBo(true);
     session.score += 5;
     session.correctCount++;
     nextQuestion(1500);
@@ -768,6 +775,7 @@ function handleSentenceAnswer(q, target) {
 
   if (isCorrect) {
     const phrase = AzkaVoice.speakPraise();
+    reactBo(true);
     session.score += 10;
     session.correctCount++;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, true);
@@ -778,6 +786,7 @@ function handleSentenceAnswer(q, target) {
     correction.innerHTML = `Correct sentence: <strong>${q.answer}</strong>`;
     target.after(correction);
     const phrase = AzkaVoice.speakEncouragement(q.answer);
+    reactBo(false);
     session.lastWrong = { question: q.prompt, correctAnswer: q.answer, kidAnswer: built, topic: session.chapter.topic };
     session.score += 3;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
@@ -1189,6 +1198,26 @@ const BO_CHAT_PROMPTS = [
   "What's the tricky idea?", "Need help with something?", "What's the puzzle today?",
   "Let's figure this out together!"
 ];
+// Reactive mascot -- Bo bounces happy on a correct answer, gives a small
+// sad wobble on a wrong one, right during normal play (not just inside
+// the AI hint chat, which already has its own separate congrats/hint
+// messages). Purely a CSS class toggle on the face image; called from
+// every question type's answer handler (MC/fill/match/flashcard/
+// sentence-builder) right next to the existing AzkaVoice.speakPraise()/
+// speakEncouragement() calls. Independent of setupGameBoChat()'s IIFE
+// below (that scope's `bo`/`chat` variables aren't reachable from here),
+// so this just looks up the face element itself.
+let reactBoTimeout = null;
+function reactBo(isCorrect) {
+  const face = document.querySelector(".game-bo-face");
+  if (!face) return;
+  face.classList.remove("bo-happy", "bo-sad");
+  void face.offsetWidth; // force reflow so back-to-back reactions each restart the animation
+  face.classList.add(isCorrect ? "bo-happy" : "bo-sad");
+  clearTimeout(reactBoTimeout);
+  reactBoTimeout = setTimeout(() => face.classList.remove("bo-happy", "bo-sad"), 900);
+}
+
 // Real chat with Bo (api/bo-chat.js) -- tap Bo to open. Each open starts
 // a fresh thread with one of Bo's rotating prompts as the opener.
 (function setupGameBoChat() {
