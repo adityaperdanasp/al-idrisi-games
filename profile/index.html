@@ -54,6 +54,49 @@
 
   .pf-share-hint { text-align: center; font-weight: 700; color: #8a7a6a; font-size: .78rem; margin: 6px 16px 0; }
   .pf-empty-note { text-align: center; color: #8a7a6a; font-weight: 700; padding: 20px 0; }
+
+  /* Trophy Case -- featured achievement (free pick, players/{id}/
+     featuredAchievement) shown inside a purchasable pedestal frame
+     (players/{id}/equipped/trophy-pedestal, leaderboard.js's
+     TROPHY_PEDESTALS). "default" pedestal needs no override rule below,
+     matching the plain #fdf6ea look every other unthemed box already has. */
+  .pf-trophy-pedestal {
+    display: flex; align-items: center; gap: 12px; border-radius: 14px;
+    padding: 12px; background: #fdf6ea; margin-bottom: 10px;
+  }
+  .pf-trophy-pedestal.pedestal-bronze { background: linear-gradient(135deg, #f3d9b8, #e0a868); box-shadow: inset 0 0 0 2px #b5793a; }
+  .pf-trophy-pedestal.pedestal-silver { background: linear-gradient(135deg, #eef0f3, #c7cdd6); box-shadow: inset 0 0 0 2px #9aa3ae; }
+  .pf-trophy-pedestal.pedestal-gold { background: linear-gradient(135deg, #ffe9a8, #f7c548); box-shadow: inset 0 0 0 2px #c99a2e; }
+  .pf-trophy-pedestal.pedestal-rainbow { background: linear-gradient(135deg, #ffd6e8, #d9c1f6, #c1e1f6, #c1f0e8); box-shadow: inset 0 0 0 2px #9b6fd1; }
+  .pf-trophy-emoji { font-size: 2.4rem; line-height: 1; }
+  .pf-trophy-name { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; }
+  .pf-trophy-desc { font-weight: 700; color: #6b5a4a; font-size: .72rem; margin-top: 2px; }
+  .pf-trophy-empty { font-weight: 700; color: #8a7a6a; font-size: .82rem; }
+  .pf-trophy-change-btn {
+    border: none; background: #fff; color: #8c2f6b; font-family: "Baloo 2", sans-serif;
+    font-weight: 800; font-size: .78rem; padding: 8px 14px; border-radius: 100px;
+    cursor: pointer; box-shadow: 0 2px 0 rgba(0,0,0,.06); margin-bottom: 10px;
+  }
+  .pf-trophy-picker { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  /* Author `display:flex` above beats the UA [hidden]{display:none} rule
+     regardless of specificity (documented gotcha) -- explicit override so
+     toggling the `hidden` attribute from JS actually hides this. */
+  .pf-trophy-picker[hidden] { display: none; }
+  .pf-trophy-pick-item {
+    display: flex; align-items: center; gap: 10px; border: none; background: #fdf6ea;
+    border-radius: 10px; padding: 8px 10px; cursor: pointer; text-align: left;
+    font-family: "Nunito", sans-serif; width: 100%;
+  }
+  .pf-trophy-pick-item.active { box-shadow: inset 0 0 0 2px #8c2f6b; }
+  .pf-trophy-pick-emoji { font-size: 1.3rem; }
+  .pf-trophy-pick-name { font-weight: 800; font-size: .82rem; }
+  .pf-pedestal-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pf-pedestal-chip {
+    position: relative; border: none; background: #fdf6ea; border-radius: 10px;
+    padding: 8px 10px; font-size: 1.05rem; cursor: pointer; box-shadow: inset 0 0 0 2px transparent;
+  }
+  .pf-pedestal-chip.active { box-shadow: inset 0 0 0 2px #8c2f6b; }
+  .pf-pedestal-cost { display: block; font-family: "Nunito", sans-serif; font-weight: 800; font-size: .5rem; color: #b3862a; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -76,6 +119,21 @@
     <div class="pf-stat-card"><div class="pf-stat-emoji">🔥</div><div class="pf-stat-value" id="pf-stat-streak">--</div><div class="pf-stat-label">Day Streak</div></div>
     <div class="pf-stat-card"><div class="pf-stat-emoji">🪙</div><div class="pf-stat-value" id="pf-stat-coins">--</div><div class="pf-stat-label">Coins</div></div>
     <div class="pf-stat-card"><div class="pf-stat-emoji">💎</div><div class="pf-stat-value" id="pf-stat-gems">--</div><div class="pf-stat-label">Gems</div></div>
+  </div>
+
+  <div class="pf-section" id="pf-trophy-section" hidden>
+    <div class="pf-section-title">🏆 Trophy Case</div>
+    <div class="pf-trophy-pedestal" id="pf-trophy-pedestal">
+      <span class="pf-trophy-emoji" id="pf-trophy-emoji">🏆</span>
+      <div>
+        <div class="pf-trophy-name" id="pf-trophy-name">No trophy yet</div>
+        <div class="pf-trophy-desc" id="pf-trophy-desc">Pick your best achievement to show off!</div>
+      </div>
+    </div>
+    <button class="pf-trophy-change-btn" id="pf-trophy-change-btn" type="button">🔄 Change Trophy</button>
+    <div class="pf-trophy-picker" id="pf-trophy-picker" hidden></div>
+    <div class="pf-section-title" style="margin-top:14px;font-size:.82rem;">🖼️ Pedestal Frame</div>
+    <div class="pf-pedestal-row" id="pf-pedestal-row"></div>
   </div>
 
   <div class="pf-section">

@@ -34,7 +34,7 @@ async function loadProfile() {
 
   if (!window.AIGLeaderboard) return;
 
-  const [title, level, streak, wallet, collection, cosmetics, nickname, pet] = await Promise.all([
+  const [title, level, streak, wallet, collection, cosmetics, nickname, pet, featured, pedestals] = await Promise.all([
     AIGLeaderboard.getTitle(),
     AIGLeaderboard.getPlayerLevel(),
     AIGLeaderboard.getStreak(),
@@ -42,7 +42,9 @@ async function loadProfile() {
     AIGLeaderboard.getCollection(),
     AIGLeaderboard.getCosmetics(),
     AIGLeaderboard.getNickname(),
-    AIGLeaderboard.getPetStatus()
+    AIGLeaderboard.getPetStatus(),
+    AIGLeaderboard.getFeaturedAchievement(),
+    AIGLeaderboard.getTrophyPedestals()
   ]);
 
   if (nickname && nickname.status === "approved") {
@@ -79,4 +81,111 @@ async function loadProfile() {
     document.getElementById("pf-pet-name").textContent = pet.stage.name;
     document.getElementById("pf-pet-sub").textContent = `Fed ${pet.feedCount} time${pet.feedCount === 1 ? "" : "s"}`;
   }
+
+  if (featured && pedestals) {
+    document.getElementById("pf-trophy-section").hidden = false;
+    trophyState.owned = featured.owned;
+    trophyState.featuredId = featured.featured ? featured.featured.id : null;
+    trophyState.pedestals = pedestals.pedestals;
+    trophyState.equippedPedestal = pedestals.equipped;
+    renderTrophyPedestal();
+    renderPedestalRow();
+  }
+}
+
+// ---------------------------------------------------------------------
+// TROPHY CASE -- pick an owned achievement to feature (free, just a
+// preference) inside a purchasable pedestal frame. Local state kept here
+// so the picker/shop can re-render after a buy/equip/pick without an
+// extra round-trip back to loadProfile()'s big Promise.all.
+// ---------------------------------------------------------------------
+const trophyState = { owned: [], featuredId: null, pedestals: [], equippedPedestal: "default" };
+
+function renderTrophyPedestal() {
+  const pedestalEl = document.getElementById("pf-trophy-pedestal");
+  pedestalEl.className = "pf-trophy-pedestal" +
+    (trophyState.equippedPedestal && trophyState.equippedPedestal !== "default" ? " pedestal-" + trophyState.equippedPedestal : "");
+
+  const featured = trophyState.owned.find(a => a.id === trophyState.featuredId) || null;
+  const emojiEl = document.getElementById("pf-trophy-emoji");
+  const nameEl = document.getElementById("pf-trophy-name");
+  const descEl = document.getElementById("pf-trophy-desc");
+  if (featured) {
+    emojiEl.textContent = featured.emoji;
+    nameEl.textContent = featured.name;
+    descEl.textContent = featured.desc;
+  } else {
+    emojiEl.textContent = "🏆";
+    nameEl.textContent = "No trophy yet";
+    descEl.textContent = trophyState.owned.length ? "Tap below to pick your best achievement!" : "Earn an achievement to feature it here!";
+  }
+}
+
+function renderTrophyPicker() {
+  const wrap = document.getElementById("pf-trophy-picker");
+  if (!trophyState.owned.length) {
+    wrap.innerHTML = '<p class="pf-trophy-empty">No achievements earned yet — keep playing!</p>';
+    return;
+  }
+  wrap.innerHTML = trophyState.owned.map(a => `
+    <button class="pf-trophy-pick-item${a.id === trophyState.featuredId ? " active" : ""}" type="button" data-id="${a.id}">
+      <span class="pf-trophy-pick-emoji">${a.emoji}</span>
+      <span class="pf-trophy-pick-name">${a.name}</span>
+    </button>
+  `).join("");
+  wrap.querySelectorAll(".pf-trophy-pick-item").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const res = await AIGLeaderboard.setFeaturedAchievement(btn.dataset.id);
+      if (res.ok) {
+        trophyState.featuredId = btn.dataset.id;
+        renderTrophyPedestal();
+        renderTrophyPicker();
+        document.getElementById("pf-trophy-picker").hidden = true;
+      }
+    });
+  });
+}
+
+function renderPedestalRow() {
+  const wrap = document.getElementById("pf-pedestal-row");
+  wrap.innerHTML = trophyState.pedestals.map(p => {
+    const costLabel = !p.cost ? "" : p.cost.coins ? `🪙${p.cost.coins}` : `💎${p.cost.gems}`;
+    return `
+      <button class="pf-pedestal-chip${p.id === trophyState.equippedPedestal ? " active" : ""}" type="button" data-id="${p.id}">
+        ${p.preview}
+        ${!p.owned ? `<span class="pf-pedestal-cost">${costLabel}</span>` : ""}
+      </button>
+    `;
+  }).join("");
+  wrap.querySelectorAll(".pf-pedestal-chip").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const def = trophyState.pedestals.find(p => p.id === id);
+      if (!def) return;
+      if (!def.owned) {
+        const res = await AIGLeaderboard.unlockCosmetic("trophy-pedestal", id, def.cost || {});
+        if (!res.ok) {
+          if (res.reason === "insufficient-funds") alert("Not enough coins/gems for this pedestal yet!");
+          return;
+        }
+        def.owned = true;
+      }
+      await AIGLeaderboard.equipCosmetic("trophy-pedestal", id);
+      trophyState.equippedPedestal = id;
+      renderTrophyPedestal();
+      renderPedestalRow();
+    });
+  });
+}
+
+// Guarded -- when there's no signed-in player, the block above replaces
+// #pf-page's innerHTML entirely (see top of file), so this button won't
+// exist in the DOM at all.
+const trophyChangeBtn = document.getElementById("pf-trophy-change-btn");
+if (trophyChangeBtn) {
+  trophyChangeBtn.addEventListener("click", () => {
+    const wrap = document.getElementById("pf-trophy-picker");
+    wrap.hidden = !wrap.hidden;
+    if (!wrap.hidden) renderTrophyPicker();
+  });
 }

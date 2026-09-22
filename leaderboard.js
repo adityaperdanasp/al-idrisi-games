@@ -1285,6 +1285,63 @@
   }
 
   // =====================================================================
+  // TROPHY CASE — pick ONE already-owned achievement (from the list
+  // above) to feature prominently on the Profile "brag page"
+  // (profile/index.html), the most literal "show it off to a parent"
+  // surface in the app. Picking WHICH achievement to feature is free
+  // (it's already earned -- charging to display it would feel punitive);
+  // the PEDESTAL frame around it is the actual currency sink, same
+  // generic unlockCosmetic/equipCosmetic pair as everything else, type
+  // "trophy-pedestal".
+  // =====================================================================
+  async function getFeaturedAchievement() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const [achievements, featuredSnap] = await Promise.all([
+      getAchievements(),
+      aigDb.ref(`players/${player.id}/featuredAchievement`).get()
+    ]);
+    const owned = achievements.filter(a => a.owned);
+    const featuredId = featuredSnap.exists() ? featuredSnap.val() : null;
+    const featured = owned.find(a => a.id === featuredId) || null;
+    return { owned, featured };
+  }
+
+  // Free -- just a preference, but still validated server-side against
+  // the player's OWN achievement list so a direct call can't feature
+  // something not actually earned.
+  async function setFeaturedAchievement(id) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { ok: false };
+    const achievements = await getAchievements();
+    const match = achievements.find(a => a.id === id && a.owned);
+    if (!match) return { ok: false, reason: "not-owned" };
+    await aigDb.ref(`players/${player.id}/featuredAchievement`).set(id);
+    return { ok: true };
+  }
+
+  const TROPHY_PEDESTALS = [
+    { id: "default", name: "Plain", cost: null, preview: "⬜" },
+    { id: "bronze", name: "Bronze Pedestal", cost: { coins: 20 }, preview: "🟫" },
+    { id: "silver", name: "Silver Pedestal", cost: { coins: 30 }, preview: "⬛" },
+    { id: "gold", name: "Gold Pedestal", cost: { coins: 45 }, preview: "🟨" },
+    { id: "rainbow", name: "Rainbow Pedestal", cost: { gems: 3 }, preview: "🌈" }
+  ];
+  async function getTrophyPedestals() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const [ownedSnap, equippedSnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/ownedCosmetics/trophy-pedestal`).get(),
+      aigDb.ref(`players/${player.id}/equipped/trophy-pedestal`).get()
+    ]);
+    const owned = ownedSnap.exists() ? ownedSnap.val() : {};
+    return {
+      pedestals: TROPHY_PEDESTALS.map(p => ({ ...p, owned: !p.cost || !!owned[p.id] })),
+      equipped: equippedSnap.exists() ? equippedSnap.val() : "default"
+    };
+  }
+
+  // =====================================================================
   // VIRTUAL PET — a small companion (players/{id}/pet: {feedCount}) that
   // grows through stages the more it's fed. Deliberately NO hunger/decay
   // over time (that would need a scheduled job ticking down a value while
@@ -3617,7 +3674,7 @@
     getCityBuilder, awardCityBuilderBricks, placeCityBuilding, awardCityBuilderBonus,
     awardBossRushBonus,
     getBossRushDailyStatus, claimBossRushDaily,
-    getBossWinsCount, getAchievements,
+    getBossWinsCount, getAchievements, getFeaturedAchievement, setFeaturedAchievement, getTrophyPedestals,
     giftCard,
     postTradeOffer, getOpenTradeOffers, getMyTradeOffers, cancelTradeOffer, acceptTradeOffer,
     getWeeklyFeaturedBossStatus, claimWeeklyFeaturedBoss,
