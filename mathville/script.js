@@ -2940,7 +2940,20 @@ function pickFromPlanePool(pool) {
 // since a fast-paced shmup is the wrong place to ask for one) / 25%
 // SolarQuest science trivia / 25% Language & Arts. Falls back to
 // mathville mental math if a pool isn't ready yet.
+//
+// WEEKLY FOCUS (temporary, see mathville/weekly-focus.js) -- carves out
+// a slice of that mix, SOLO ONLY, for a harder pool of multi-step word
+// problems + 2-digit-divisor long division that deliberately breaks the
+// "easy/mental-math only" rule above. 2P keeps the untouched mix (see
+// weekly-focus.js's header comment for why). Guarded with `typeof`/
+// existence checks so this is a no-op if weekly-focus.js isn't loaded
+// (or has been deleted once the week is over) -- rollPlaneQuestion()
+// works exactly as before either way.
 function rollPlaneQuestion() {
+  if (!planeState.is2p && typeof isWeeklyFocusActive === "function" && isWeeklyFocusActive() &&
+      typeof WEEKLY_FOCUS_POOL !== "undefined" && WEEKLY_FOCUS_POOL.length && Math.random() < 0.5) {
+    return buildQuickMc(WEEKLY_FOCUS_POOL[rand(0, WEEKLY_FOCUS_POOL.length - 1)]);
+  }
   const r = Math.random();
   if (r < 0.5) return buildQuickMc(rollDriveQuestion("easy"));
   const pool = r < 0.75 ? planeSolarPool : planeLanguagePool;

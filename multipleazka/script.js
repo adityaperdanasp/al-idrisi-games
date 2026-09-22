@@ -107,6 +107,29 @@ const DIFFICULTY = {
   hard:   { time: 7,  min: 4, max: 12, divisionChance: 0.5, maxDividend: 120, opponentSeconds: 40 }
 };
 
+// WEEKLY FOCUS (temporary, added 2026-09-22 -- see mathville/weekly-focus.js
+// for the full rationale). Math Race's 10-second fast-fact format can't fit
+// a written word problem or true 2-digit-divisor long division at all, so
+// this is a much smaller adaptation: for one week, medium/hard nudge harder
+// toward division + a wider number range, reinforcing the fact fluency
+// that long division actually leans on, without touching easy (multiplication
+// only, meant to stay simple) or the per-question timer (this is about
+// bigger NUMBERS, not more time pressure). Self-reverting -- once
+// WEEKLY_FOCUS_END passes, effectiveDifficulty() just returns the base
+// table unchanged, no code needs to be touched later.
+const WEEKLY_FOCUS_END = new Date("2026-09-29T23:59:59+07:00").getTime();
+function effectiveDifficulty(key) {
+  const base = DIFFICULTY[key];
+  if (key === "easy" || Date.now() >= WEEKLY_FOCUS_END) return base;
+  return {
+    ...base,
+    divisionChance: Math.min(0.75, base.divisionChance + 0.25),
+    min: base.min + 2,
+    max: base.max + 4,
+    maxDividend: Math.round(base.maxDividend * 1.6)
+  };
+}
+
 // Seconds given to pick a ride before the current selection auto-confirms.
 const VEHICLE_TIME = 10;
 
@@ -1152,7 +1175,7 @@ function nextQuestion() {
   state.answerLocked = false;
   state.wrongAttempts = 0;   // fresh question = fresh retry budget
 
-  const d = DIFFICULTY[state.difficulty];
+  const d = effectiveDifficulty(state.difficulty);
   let isDivision, a, b, dividend, divisor, quotient, key;
   do {
     isDivision = Math.random() < d.divisionChance;
