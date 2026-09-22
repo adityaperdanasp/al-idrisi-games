@@ -823,7 +823,14 @@ function finishChapter() {
 
   const existing = PROGRESS.chapters[session.chapter.id] || { stars: 0, perfectCount: 0 };
   const isNewSticker = !existing.completed;
-  const prevPerfect = existing.perfectCount || 0;
+  // Self-heal for chapters 3-starred BEFORE Star Tier existed (or whose
+  // perfectCount otherwise reads 0 despite stars already being 3) -- see
+  // matching comment in mathville/script.js's saveChapterProgress() for
+  // the full rationale. Bug reported 2026-09-22: replaying an
+  // already-3-starred chapter and getting 3 stars again wasn't turning
+  // silver, because that original 3-star was never counted as the first
+  // tracked perfect.
+  const prevPerfect = Math.max(existing.perfectCount || 0, existing.stars === 3 ? 1 : 0);
   const perfectCount = stars === 3 ? Math.min(3, prevPerfect + 1) : prevPerfect;
   PROGRESS.chapters[session.chapter.id] = {
     stars: Math.max(stars, existing.stars),

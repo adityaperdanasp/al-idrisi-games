@@ -436,7 +436,16 @@ function starTierClass(stars, perfectCount) {
 }
 function saveChapterProgress(chapterId, stars, xp) {
   const existing = PROGRESS.chapters[chapterId] || { stars: 0, completed: false, perfectCount: 0 };
-  const prevPerfect = existing.perfectCount || 0;
+  // Self-heal for chapters 3-starred BEFORE Star Tier existed (or whose
+  // perfectCount otherwise reads 0 despite stars already being 3): floor
+  // prevPerfect at 1 so that already-earned perfect clear counts as the
+  // first tier step instead of being silently forgotten. Without this,
+  // a kid who'd already 3-starred a chapter pre-feature had to replay it
+  // TWICE more (not once) before seeing silver, which read as "still not
+  // upgrading" — exactly the bug reported 2026-09-22. Math.max so this
+  // only ever raises the floor, never overrides a genuinely-tracked
+  // higher perfectCount.
+  const prevPerfect = Math.max(existing.perfectCount || 0, existing.stars === 3 ? 1 : 0);
   const perfectCount = stars === 3 ? Math.min(3, prevPerfect + 1) : prevPerfect;
   PROGRESS.chapters[chapterId] = { stars: Math.max(existing.stars, stars), completed: true, perfectCount };
   PROGRESS.xpTotal = (PROGRESS.xpTotal || 0) + xp;

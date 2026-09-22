@@ -1079,7 +1079,14 @@ function finishLevel() {
     const existing = progress.levels[state.levelId] || { stars: 0, completed: false, perfectCount: 0 };
     const newStars = Math.max(existing.stars, stars);
     const isNewBadge = existing.stars < 3 && newStars === 3;
-    const prevPerfect = existing.perfectCount || 0;
+    // Self-heal for levels 3-starred BEFORE Star Tier existed (or whose
+    // perfectCount otherwise reads 0 despite stars already being 3) -- see
+    // matching comment in mathville/script.js's saveChapterProgress() for
+    // the full rationale. Bug reported 2026-09-22: replaying an
+    // already-3-starred level and getting 3 stars again wasn't turning
+    // silver, because that original 3-star was never counted as the
+    // first tracked perfect.
+    const prevPerfect = Math.max(existing.perfectCount || 0, existing.stars === 3 ? 1 : 0);
     const perfectCount = stars === 3 ? Math.min(3, prevPerfect + 1) : prevPerfect;
     progress.levels[state.levelId] = {
       completed: true,
