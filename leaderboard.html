@@ -57,6 +57,11 @@
   }
 
   let activeGame = GAMES[0].id;
+  // Name Flair -- one bulk read of the whole players/ tree at boot (see
+  // leaderboard.js's getAllEquippedFlairs, same accepted trade-off the
+  // weekly leaderboard already makes), cached here since it rarely
+  // changes mid-session and every render() call below needs it.
+  let flairMap = {};
 
   function renderTabs() {
     const wrap = document.getElementById("lb-tabs");
@@ -116,7 +121,7 @@
       slot.innerHTML =
         (slotIdx === 1 && crownForFirst ? `<div class="lb-p-crown">👑</div>` : "") +
         `<div class="lb-p-avatar" style="background:${colorFor(e.id)};">${initials(e.name)}</div>` +
-        `<div class="lb-p-name">${e.name}</div>` +
+        `<div class="lb-p-name">${e.name}${flairMap[e.id] ? " " + flairMap[e.id] : ""}</div>` +
         `<div class="lb-p-score">${e[scoreKey] || 0} ${scoreLabel}</div>` +
         `<div class="lb-p-bar">${medal[slotIdx]}</div>`;
       podiumEl.appendChild(slot);
@@ -131,7 +136,7 @@
       youEl.innerHTML =
         `<div class="rank">#${myIdx + 1}</div>` +
         `<div class="avatar">${initials(e.name)}</div>` +
-        `<div class="info"><div class="label">Your position</div><div class="name">${e.name}</div></div>` +
+        `<div class="info"><div class="label">Your position</div><div class="name">${e.name}${flairMap[e.id] ? " " + flairMap[e.id] : ""}</div></div>` +
         `<div class="score">${e[scoreKey] || 0} ${scoreLabel}</div>`;
     } else {
       youEl.classList.add("hidden");
@@ -143,7 +148,7 @@
       row.innerHTML =
         `<div class="rank">${i + 4}</div>` +
         `<div class="avatar" style="background:${colorFor(e.id)};">${initials(e.name)}</div>` +
-        `<div class="name">${e.name}</div>` +
+        `<div class="name">${e.name}${flairMap[e.id] ? " " + flairMap[e.id] : ""}</div>` +
         `<div class="score">${e[scoreKey] || 0} ${scoreLabel}</div>`;
       listEl.appendChild(row);
     });
@@ -199,7 +204,9 @@
     speedround: { label: "Ranked by <b>⚡ Speed Round best score</b>", showTabs: false, load: loadSpeedRound },
     improved: { label: "Ranked by <b>📈 accuracy improvement vs last week</b>", showTabs: false, load: loadMostImproved }
   };
+  let currentScope = "alltime";
   function switchScope(scope) {
+    currentScope = scope;
     Object.keys(SCOPES).forEach(s => document.getElementById(`lb-scope-${s}`).classList.toggle("active", s === scope));
     document.getElementById("lb-tabs").hidden = !SCOPES[scope].showTabs;
     document.getElementById("lb-metric-label").innerHTML = SCOPES[scope].label;
@@ -216,6 +223,16 @@
 
   renderTabs();
   loadGame(activeGame);
+  // Fetched after the first render already kicked off (above) so the
+  // page doesn't sit blank waiting on this extra read -- flair just
+  // pops in a moment later once it resolves, same "re-render on data
+  // change" behavior watchGame's live listener already relies on.
+  if (window.AIGLeaderboard) {
+    AIGLeaderboard.getAllEquippedFlairs().then(map => {
+      flairMap = map;
+      SCOPES[currentScope].load();
+    }).catch(() => {});
+  }
 </script>
 
 </body>

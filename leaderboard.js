@@ -1394,6 +1394,54 @@
     };
   }
 
+  // ---- Name Flair -- a small emoji badge shown next to the player's
+  // name on the CROSS-PLAYER leaderboard (leaderboard.html), the one
+  // place classmates actually see each other's names side by side.
+  // This is the round's highest "dipamerin" value item specifically
+  // because of that -- Hub Theme above is only ever seen by the owner.
+  // Same generic unlockCosmetic/equipCosmetic pair, type "name-flair".
+  const NAME_FLAIRS = [
+    { id: "none", name: "No Flair", cost: null, preview: "" },
+    { id: "star", name: "Star", cost: { coins: 20 }, preview: "🌟" },
+    { id: "crown", name: "Crown", cost: { coins: 25 }, preview: "👑" },
+    { id: "fire", name: "Fire", cost: { coins: 25 }, preview: "🔥" },
+    { id: "diamond", name: "Diamond", cost: { gems: 3 }, preview: "💎" }
+  ];
+  async function getNameFlairs() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const [ownedSnap, equippedSnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/ownedCosmetics/name-flair`).get(),
+      aigDb.ref(`players/${player.id}/equipped/name-flair`).get()
+    ]);
+    const owned = ownedSnap.exists() ? ownedSnap.val() : {};
+    return {
+      flairs: NAME_FLAIRS.map(f => ({ ...f, owned: !f.cost || !!owned[f.id] })),
+      equipped: equippedSnap.exists() ? equippedSnap.val() : "none"
+    };
+  }
+
+  // Bulk lookup for the leaderboard page -- ONE read of the whole
+  // players/ tree (same accepted trade-off the weekly leaderboard
+  // already makes: cheap enough for a ~26-kid class, read-only, only
+  // triggered when leaderboard.html is actually open) rather than
+  // denormalizing equipped flair into every game's own leaderboard/
+  // node on every recordPlay() write. Returns {playerId: emoji}, only
+  // for players who actually have a non-"none" flair equipped.
+  async function getAllEquippedFlairs() {
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return {};
+    const out = {};
+    snap.forEach(childSnap => {
+      const equipped = childSnap.child("equipped/name-flair").val();
+      if (equipped && equipped !== "none") {
+        const flair = NAME_FLAIRS.find(f => f.id === equipped);
+        if (flair) out[childSnap.key] = flair.preview;
+      }
+    });
+    return out;
+  }
+
   // =====================================================================
   // TEACH BO — the flip side of the AI hint: after getting a question
   // right, the kid explains it back in their own words (the "protege
@@ -3549,7 +3597,7 @@
     submitSpeedRoundScore, getSpeedRoundLeaderboard,
     getMasteryMap, getSmartPractice,
     submitDiagnosticResult, getDiagnosticResult,
-    getPetStatus, feedPet, getPetAccessories, getHubThemes,
+    getPetStatus, feedPet, getPetAccessories, getHubThemes, getNameFlairs, getAllEquippedFlairs,
     getClassmateAccuracy,
     getMilestoneSurprise,
     getTownDecoration, setTownDecoration,

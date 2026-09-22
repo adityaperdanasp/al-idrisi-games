@@ -1032,6 +1032,7 @@
         <button class="sc-modal-tab" id="sc-tab-upgrades" type="button">🚀 Upgrades</button>
         <button class="sc-modal-tab" id="sc-tab-costumes" type="button">🥷 Costumes</button>
         <button class="sc-modal-tab" id="sc-tab-hubtheme" type="button">🌄 Theme</button>
+        <button class="sc-modal-tab" id="sc-tab-flair" type="button">🏷️ Flair</button>
       </div>
       <div class="sc-cosmetic-list" id="sc-frame-list"></div>
       <div class="sc-cosmetic-list" id="sc-sound-list" hidden></div>
@@ -1057,6 +1058,11 @@
       <!-- Hub Theme -- changes the LANDING PAGE's own background, not
            tied to any one game. See leaderboard.js's getHubThemes. -->
       <div class="sc-cosmetic-list" id="sc-hubtheme-list" hidden></div>
+      <!-- Name Flair -- shown next to the player's name on the CROSS-
+           PLAYER leaderboard (leaderboard.html), the one place
+           classmates actually see it. See leaderboard.js's
+           getNameFlairs/getAllEquippedFlairs. -->
+      <div class="sc-cosmetic-list" id="sc-flair-list" hidden></div>
     </div>
   </div>
 
@@ -2515,6 +2521,47 @@
     if (themeState) applyHubTheme(themeState.equipped);
   }
 
+  // Name Flair -- flat list (only 5 items), same buy/equip pattern as
+  // Hub Theme. Unlike Hub Theme, equipping here has no immediate visual
+  // on THIS page -- the whole point is it shows up on leaderboard.html
+  // for classmates, not here.
+  async function renderFlairList() {
+    const flairState = await AIGLeaderboard.getNameFlairs();
+    const list = document.getElementById("sc-flair-list");
+    if (!flairState) { list.innerHTML = ""; return; }
+    list.innerHTML = flairState.flairs.map(f => {
+      const isEquipped = flairState.equipped === f.id;
+      const label = f.id === "none" ? "🚫" : f.preview;
+      const action = !f.owned
+        ? `<button class="sc-quest-claim-btn" data-flair-buy="${f.id}">${f.cost.coins ? `🪙${f.cost.coins}` : `💎${f.cost.gems}`}</button>`
+        : isEquipped
+          ? `<span class="sc-quest-done-check">✓</span>`
+          : `<button class="sc-quest-claim-btn" data-flair-equip="${f.id}">Equip</button>`;
+      return `
+        <div class="sc-cosmetic-item">
+          <span class="sc-cosmetic-preview">${label}</span>
+          <span class="sc-cosmetic-name">${f.name}</span>
+          ${action}
+        </div>`;
+    }).join("");
+    document.querySelectorAll("[data-flair-buy]").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.flairBuy;
+        const item = flairState.flairs.find(x => x.id === id);
+        btn.disabled = true;
+        const result = await AIGLeaderboard.unlockCosmetic("name-flair", id, item.cost);
+        if (result.ok) { await AIGLeaderboard.equipCosmetic("name-flair", id); renderFlairList(); }
+        else btn.disabled = false;
+      };
+    });
+    document.querySelectorAll("[data-flair-equip]").forEach(btn => {
+      btn.onclick = async () => {
+        await AIGLeaderboard.equipCosmetic("name-flair", btn.dataset.flairEquip);
+        renderFlairList();
+      };
+    });
+  }
+
   // Upgrades -- permanent gameplay-affecting purchases, one-time (unlike
   // Power-ups above which are consumable stock). Each item is a flat
   // boolean own/don't-own, no equip step, so once bought the card just
@@ -2582,6 +2629,7 @@
     renderFxList(cos);
     renderCostumeList(cos);
     renderHubThemeList();
+    renderFlairList();
 
     document.getElementById("sc-frame-list").innerHTML = cos.frames.map(f => {
       const isEquipped = cos.equippedFrame === f.id;
@@ -2657,8 +2705,8 @@
   document.getElementById("sc-customize-close").addEventListener("click", () => {
     document.getElementById("sc-customize-overlay").hidden = true;
   });
-  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups", "avatarcolor", "rewards", "fx", "upgrades", "costumes", "hubtheme"];
-  const CUSTOMIZE_TAB_LIST_ID = { frames: "sc-frame-list", sounds: "sc-sound-list", powerups: "sc-powerup-list", avatarcolor: "sc-avatarcolor-grid", rewards: "sc-reward-list", fx: "sc-fx-list", upgrades: "sc-upgrade-list", costumes: "sc-costume-list", hubtheme: "sc-hubtheme-list" };
+  const CUSTOMIZE_TABS = ["frames", "sounds", "powerups", "avatarcolor", "rewards", "fx", "upgrades", "costumes", "hubtheme", "flair"];
+  const CUSTOMIZE_TAB_LIST_ID = { frames: "sc-frame-list", sounds: "sc-sound-list", powerups: "sc-powerup-list", avatarcolor: "sc-avatarcolor-grid", rewards: "sc-reward-list", fx: "sc-fx-list", upgrades: "sc-upgrade-list", costumes: "sc-costume-list", hubtheme: "sc-hubtheme-list", flair: "sc-flair-list" };
   function switchCustomizeTab(tab) {
     CUSTOMIZE_TABS.forEach(t => {
       document.getElementById(`sc-tab-${t}`).classList.toggle("active", t === tab);
@@ -2674,6 +2722,7 @@
   document.getElementById("sc-tab-upgrades").addEventListener("click", () => switchCustomizeTab("upgrades"));
   document.getElementById("sc-tab-costumes").addEventListener("click", () => switchCustomizeTab("costumes"));
   document.getElementById("sc-tab-hubtheme").addEventListener("click", () => switchCustomizeTab("hubtheme"));
+  document.getElementById("sc-tab-flair").addEventListener("click", () => switchCustomizeTab("flair"));
 
   // Real-world reward ledger -- redeems from the SAME coins/gems wallet
   // as vehicle skins/power-ups. The catalog itself is set by a parent
