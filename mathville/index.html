@@ -835,6 +835,9 @@
     <button class="btn boss-challenge-btn hidden" id="btn-reward-boss">⚔️ Boss Challenge</button>
     <button class="btn boss-challenge-btn hidden" id="btn-reward-certificate">🖨️ Get Certificate</button>
     <button class="btn boss-challenge-btn hidden" id="btn-reward-share">📸 Share My Score</button>
+    <!-- Azka's Weekly PR -- once-per-day bonus claim, only unhidden/wired
+         up by showReward() when state.chapterId === "azka-pr". -->
+    <button class="btn reward-bonus-btn hidden" id="btn-reward-azkapr">🎁 Claim Today's Bonus</button>
     <button class="btn btn-primary btn-cta" id="btn-reward-continue">Continue</button>
   </section>
 
@@ -1146,6 +1149,6 @@
 <script src="weekly-focus.js?v=1"></script>
 <script src="bgm.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
-<script src="script.js?v=135"></script>
+<script src="script.js?v=136"></script>
 </body>
 </html>

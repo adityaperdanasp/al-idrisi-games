@@ -839,6 +839,48 @@
   }
 
   // =====================================================================
+  // AZKA'S WEEKLY PR BONUS -- once-per-day claim after finishing a round
+  // via mathville's launchAzkaPrRound() (its own hub card, gated to
+  // Azka's account only there -- see index.html). Same get-check-set
+  // claim pattern as Theme Day above. Bigger than Boss Challenge's
+  // {coins:15,gems:1} on purpose -- meant to feel like the flagship
+  // reward for this week's focused practice, not routine coin drip.
+  // Time-boxed to the same 7-day window as mathville/weekly-focus.js
+  // (the date is duplicated here rather than shared -- this file has no
+  // load-order dependency on that one, same reasoning as WEEKLY_FOCUS_END
+  // already being duplicated between mathville/script.js and
+  // multipleazka/script.js instead of centralized).
+  // =====================================================================
+  const AZKA_PR_END = new Date("2026-09-29T23:59:59+07:00").getTime();
+  const AZKA_PR_REWARD = { coins: 20, gems: 2 };
+
+  async function getAzkaPrBonusStatus() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent" || Date.now() >= AZKA_PR_END) {
+      return { eligible: false, claimed: true, reward: AZKA_PR_REWARD };
+    }
+    const snap = await aigDb.ref(`players/${player.id}/azkaPrBonus/${todayKey()}`).get();
+    const claimed = snap.exists() && snap.val() === true;
+    return { eligible: true, claimed, reward: AZKA_PR_REWARD };
+  }
+
+  async function claimAzkaPrBonus() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent" || Date.now() >= AZKA_PR_END) return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/azkaPrBonus/${todayKey()}`);
+    const snap = await ref.get();
+    if (snap.exists() && snap.val()) return { ok: true, alreadyClaimed: true };
+    await ref.set(true);
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      wallet.coins = (wallet.coins || 0) + AZKA_PR_REWARD.coins;
+      wallet.gems = (wallet.gems || 0) + AZKA_PR_REWARD.gems;
+      return wallet;
+    });
+    return { ok: true, alreadyClaimed: false, reward: AZKA_PR_REWARD };
+  }
+
+  // =====================================================================
   // PERSONAL BEST TRACKER -- fastest completion time + best combo streak
   // per MathVille chapter, distinct from stars/tier (a skill/speed
   // metric, not a score metric). Written once per solo round from
@@ -3679,6 +3721,7 @@
     postTradeOffer, getOpenTradeOffers, getMyTradeOffers, cancelTradeOffer, acceptTradeOffer,
     getWeeklyFeaturedBossStatus, claimWeeklyFeaturedBoss,
     getThemeDayInfo, getThemeDayBonusStatus, claimThemeDayBonus,
+    getAzkaPrBonusStatus, claimAzkaPrBonus,
     getPersonalBest, submitPersonalBest,
     awardDanceBattleBonus,
     awardCookingRushBonus,

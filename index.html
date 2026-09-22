@@ -502,6 +502,21 @@
         <div class="sc-emoji" style="top:100px;left:-4px;font-size:14px;transform:rotate(-8deg);z-index:0;">✨</div>
         <div class="sc-dot" style="bottom:60px;right:-6px;width:14px;height:14px;background:#D9C1F6;z-index:0;"></div>
 
+        <!-- "Khusus Azka" -- Weekly PR card, TEMPORARY (see
+             azka-pr/index.html's own header comment; safe to delete this
+             card + that folder once the week is over). Hidden by
+             default -- unhidden by JS further down ONLY for Azka's own
+             account, and only within the same 7-day window as
+             mathville/weekly-focus.js, so every OTHER kid on this hub
+             never sees this card at all. Pinned first in the list on
+             purpose (paling atas, per explicit request). -->
+        <a class="sc-game-card azkapr" href="azka-pr/" id="sc-azkapr-card" hidden>
+          <span class="sc-game-icon">🎁</span>
+          <span class="sc-game-txt">
+            <span class="sc-game-title">Khusus Azka: PR Minggu Ini</span>
+            <span class="sc-game-sub">Latihan soal + hadiah spesial!</span>
+          </span>
+        </a>
         <a class="sc-game-card math" href="multipleazka/">
           <span class="sc-game-icon"><img src="multipleazka/icon-512.png" alt=""></span>
           <span class="sc-game-txt">
@@ -1268,6 +1283,16 @@
     document.getElementById("sc-screen-select").classList.remove("active");
     document.getElementById("sc-screen-landing").classList.add("active");
     startRoamAnimation();
+
+    // "Khusus Azka" Weekly PR card -- gated to Azka's own account AND the
+    // same 7-day window as mathville/weekly-focus.js (date duplicated
+    // here rather than shared, same reasoning as WEEKLY_FOCUS_END already
+    // being duplicated between mathville/script.js and
+    // multipleazka/script.js -- this inline script has no load-order
+    // dependency on either of those files). TEMPORARY -- see
+    // azka-pr/index.html's own header comment.
+    const AZKA_PR_END = new Date("2026-09-29T23:59:59+07:00").getTime();
+    document.getElementById("sc-azkapr-card").hidden = !(current.id === "azka" && Date.now() < AZKA_PR_END);
 
     const SC_GREETING_COLORS = ["blue", "pink", "green"];
     const firstName = current.name.replace(/^(Ms\.|Mrs\.)\s*/, "");

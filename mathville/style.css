@@ -174,6 +174,12 @@ button { font-family: inherit; }
 .btn-copy { width: auto; padding: 8px 14px; font-size: 13px; margin: 0; }
 .boss-challenge-btn { background: #3B2A1A; color: var(--gold); }
 .boss-challenge-btn:active { background: #241a10; }
+/* Azka's Weekly PR bonus claim -- deliberately a warm gold gradient
+   (not the dark boss-challenge-btn style) so it reads as a reward to
+   collect, not another challenge to start. */
+.reward-bonus-btn { background: linear-gradient(135deg, #F7C548, #E4A72E); color: #3B2A1A; }
+.reward-bonus-btn:active { filter: brightness(0.93); }
+.reward-bonus-btn:disabled { opacity: 0.55; }
 
 /* ---------- Pairing ---------- */
 .players-seg { display: flex; gap: 8px; margin-bottom: 14px; }

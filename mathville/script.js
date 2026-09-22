@@ -95,7 +95,9 @@ const CHAPTER_META = {
   // saveChapterProgress() work unmodified for a Focus Round. Town-map
   // rendering only ever iterates the real chapters array, never this
   // object's own keys, so this extra entry is inert there.
-  "focus-round": { location: "Focus Round", icon: "🎯" }
+  "focus-round": { location: "Focus Round", icon: "🎯" },
+  // Same synthetic pattern, for Azka's Weekly PR (see launchAzkaPrRound()).
+  "azka-pr": { location: "Azka's Weekly PR", icon: "🎯" }
 };
 const MAP_HEIGHT = 1690;
 
@@ -3251,6 +3253,39 @@ async function buildFocusRoundSteps(selected) {
   render();
 })();
 
+// =====================================================================
+// AZKA'S WEEKLY PR -- own hub card + URL (azka-pr/, a thin redirect into
+// this ?azkapr=1 deep link, same footing as Focus Round/Ninja Runner
+// above), gated to Azka's own account only (the hub card checks player
+// id before showing itself; see index.html) and to the same 7-day
+// window as weekly-focus.js. Draws straight from WEEKLY_FOCUS_POOL
+// (mathville/weekly-focus.js) -- no separate content of its own, this is
+// just another way to reach the SAME practice questions Plane Mode/Math
+// Race are already pulling from this week, for a kid who wants to sit
+// down and grind through them deliberately instead of encountering them
+// mixed at random into a race/shmup. Guarded with a typeof check so a
+// stray visit after weekly-focus.js is eventually deleted just bounces
+// back to the hub instead of showing a broken empty round.
+// =====================================================================
+const AZKA_PR_ROUND_SIZE = 20;
+function launchAzkaPrRound() {
+  if (typeof WEEKLY_FOCUS_POOL === "undefined" || !WEEKLY_FOCUS_POOL.length) {
+    window.location.href = "../";
+    return;
+  }
+  const steps = shuffle(WEEKLY_FOCUS_POOL)
+    .slice(0, Math.min(AZKA_PR_ROUND_SIZE, WEEKLY_FOCUS_POOL.length))
+    .map(q => ({ ...buildQuickMc(q), uiType: "mc" }));
+  state.mode = "solo";
+  state.chapterId = "azka-pr";
+  state.stepIndex = 0;
+  state.mistakes = 0;
+  state.lastWrong = null;
+  state.lastCorrect = null;
+  state.steps = steps;
+  renderStep();
+}
+
 // `preset` is set only in 2P, when the host has already rolled the
 // question and sent it over -- both phones must show the SAME question,
 // but each answers it on their own (one can be right while the other is
@@ -5467,6 +5502,33 @@ function showReward(stars) {
     if (state.driveReturnPending) { state.driveReturnPending = false; goToDrive(true); }
     else goToMap();
   };
+
+  // Azka's Weekly PR -- once-per-day bonus claim, only offered on THIS
+  // synthetic chapterId's reward screen (see launchAzkaPrRound() above).
+  // No manual wallet-badge refresh needed after claiming -- same as
+  // every other currency-earning action, the topbar's watchWallet()
+  // live subscription picks it up on its own the moment the write lands.
+  const prBtn = $("btn-reward-azkapr");
+  prBtn.classList.add("hidden");
+  if (state.chapterId === "azka-pr" && window.AIGLeaderboard) {
+    AIGLeaderboard.getAzkaPrBonusStatus().then(status => {
+      if (!status.eligible) return;
+      prBtn.classList.remove("hidden");
+      if (status.claimed) {
+        prBtn.textContent = "🎁 Bonus already claimed today";
+        prBtn.disabled = true;
+        return;
+      }
+      prBtn.textContent = `🎁 Claim Today's Bonus (+${status.reward.coins} 🪙 +${status.reward.gems} 💎)`;
+      prBtn.disabled = false;
+      prBtn.onclick = async () => {
+        prBtn.disabled = true;
+        const result = await AIGLeaderboard.claimAzkaPrBonus();
+        prBtn.textContent = result.ok ? "🎁 Bonus claimed! Nice work 🎉" : "🎁 Claim Today's Bonus";
+        prBtn.disabled = result.ok;
+      };
+    }).catch(() => {});
+  }
 }
 
 /* =================================================================
@@ -7493,5 +7555,16 @@ $("ninja-dodge-btn").addEventListener("click", ninjaDoDuck);
 // throws a ReferenceError.
 if (new URLSearchParams(location.search).get("ninja") === "1") {
   launchNinjaRunner();
+}
+
+// Deep link from azka-pr/index.html's redirect (?azkapr=1) -- same
+// pattern as ?ninja=1 above, and placed here for the exact same reason:
+// launchAzkaPrRound() calls renderStep(), which touches several `let`-
+// declared module state (e.g. speedRoundTimerInterval) that's still in
+// its temporal dead zone earlier in the file -- confirmed by hitting
+// that exact ReferenceError when this check was first placed up near
+// ?drive=1/?focus=1 instead.
+if (new URLSearchParams(location.search).get("azkapr") === "1") {
+  launchAzkaPrRound();
 }
 
