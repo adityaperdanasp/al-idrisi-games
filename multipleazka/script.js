@@ -1778,10 +1778,15 @@ function endGame(finishers) {
 
   showScreen("screen-over");
   renderResults(finishers);
+  const myPlace = Math.max(1, finishers.findIndex(([seatKey]) => seatKey === state.seatKey) + 1);
+  showFinishFlag(iWon ? 1 : myPlace);
   if (iWon) {
     celebrateWin();                 // confetti + cheer — winner's device only (also brings BGM back after)
-  } else if (window.AIGBgm) {
-    AIGBgm.start();                 // no confetti on this device, so bring the music back right away
+  } else {
+    // 2nd/3rd place get a smaller confetti pop scaled by placement
+    // (PM round 8 batch A, item 3) instead of total silence.
+    placementConfetti(myPlace);
+    if (window.AIGBgm) AIGBgm.start();
   }
 }
 
@@ -1821,6 +1826,7 @@ function endSoloRace() {
     [state.seatKey, { name: CHILD_NAME, finishTimeSec: elapsed }],
     ["opponent", { name: "Opponent", finishTimeSec: null }]
   ]);
+  showFinishFlag(1);
   celebrateWin();
 }
 
@@ -1861,6 +1867,23 @@ function loseSoloRace() {
 /* =================================================================
    10a. WIN CELEBRATION — confetti burst + synthesized cheer, ~3s
    ================================================================= */
+// Waving checkered flag above the result emoji. 1st place = big + waving
+// fast; lower places get a smaller, calmer flag (place-2 / place-3 classes).
+function showFinishFlag(place) {
+  const flag = $("over-flag");
+  if (!flag) return;
+  flag.className = "over-flag place-" + Math.min(3, place);
+  flag.textContent = "🏁";
+}
+
+// Small placement-scaled confetti for non-winners. 2nd = a modest burst,
+// 3rd+ = a token pop; both far below celebrateWin()'s 3s barrage.
+function placementConfetti(place) {
+  if (typeof confetti !== "function") return;
+  const n = place === 2 ? 60 : 25;
+  confetti({ particleCount: n, spread: place === 2 ? 70 : 50, startVelocity: 30, origin: { y: 0.55 } });
+}
+
 async function celebrateWin() {
   // Cosmetic only -- bought/equipped via the hub's Customize > Game FX tab
   // (leaderboard.js's GAMEPLAY_FX_CATALOGS, type "mathrace-finish"). Every

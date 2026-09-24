@@ -30,6 +30,17 @@
   .mm-card-front.long-text { font-size: .56rem; line-height: 1.15; font-weight: 700; }
   .mm-card.matched .mm-card-front { background: #eaf7ee; border-color: #3F8F5F; color: #2f6b3a; }
   .mm-card.mismatch .mm-card-front { background: #fdeaea; border-color: #D64545; }
+  /* PM round 8 batch A, item 8: wobble on a mismatch. Animates the OUTER
+     .mm-card (the inner one already owns the flip's rotateY transform, so
+     animating it would fight the flip). */
+  .mm-card.mismatch { animation: mmWobble .5s ease-in-out; }
+  @keyframes mmWobble {
+    0%, 100% { transform: rotate(0deg) translateX(0); }
+    20% { transform: rotate(-7deg) translateX(-4px); }
+    40% { transform: rotate(6deg) translateX(4px); }
+    60% { transform: rotate(-4deg) translateX(-3px); }
+    80% { transform: rotate(3deg) translateX(2px); }
+  }
   .mm-card.hidden { visibility: hidden; }
 
   .mm-overlay { position: fixed; inset: 0; background: rgba(61,46,34,.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }

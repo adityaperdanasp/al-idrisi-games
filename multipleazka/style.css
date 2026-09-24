@@ -1137,6 +1137,14 @@ h1, h2 { margin: 0 0 8px; }
 }
 
 /* ---------- Game over ---------- */
+.over-flag { font-size: 3rem; text-align: center; transform-origin: 20% 100%; margin-bottom: -6px; }
+.over-flag.place-1 { font-size: 4.2rem; animation: flagWave .7s ease-in-out infinite alternate; }
+.over-flag.place-2 { font-size: 3rem; animation: flagWave 1.2s ease-in-out infinite alternate; }
+.over-flag.place-3 { font-size: 2.2rem; animation: flagWave 1.8s ease-in-out infinite alternate; }
+@keyframes flagWave {
+  from { transform: rotate(-9deg) skewX(-4deg); }
+  to { transform: rotate(9deg) skewX(4deg); }
+}
 .over-emoji { font-size: 4rem; margin-bottom: 6px; animation: bounce 1s infinite alternate; }
 @keyframes bounce { to { transform: translateY(-10px); } }
 /* Victory Emote cosmetic (leaderboard.js's MATHRACE_EMOTE_EFFECTS) --

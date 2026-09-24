@@ -3371,6 +3371,25 @@
     if (!menu.hidden && !menu.contains(e.target) && e.target.id !== "sc-more-btn") menu.hidden = true;
   });
 
+  // Bo idle gestures (PM round 8 batch A, item 9) -- see style.css's
+  // .sc-bo-idle-* classes. Only fires while the landing screen is actually
+  // showing and the tab is visible; reduced-motion users never get it.
+  (function startBoIdle() {
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const GESTURES = ["sc-bo-idle-hop", "sc-bo-idle-look", "sc-bo-idle-blink"];
+    function tick() {
+      const landing = document.getElementById("sc-screen-landing");
+      if (landing && landing.classList.contains("active") && !document.hidden) {
+        const cls = GESTURES[Math.floor(Math.random() * GESTURES.length)];
+        const targets = [document.querySelector(".sc-greeting-avatar"), document.getElementById("sc-hero-icon")].filter(Boolean);
+        targets.forEach(el => el.classList.add(cls));
+        setTimeout(() => targets.forEach(el => el.classList.remove(cls)), 1400);
+      }
+      setTimeout(tick, 16000 + Math.random() * 8000);
+    }
+    setTimeout(tick, 9000);
+  })();
+
   renderPicker();
   checkSavedIdentity();
   document.getElementById("sc-player-chip").addEventListener("click", showSelect);

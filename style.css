@@ -2108,3 +2108,27 @@ html[data-hub-theme="sunset"] .sc-card { background: #fdece6; }
   80% { opacity: 1; }
   100% { opacity: 0; transform: translate(-50%, -130%) scale(1); }
 }
+
+/* Bo idle gestures (PM round 8 batch A, item 9) -- every ~20s Bo does one
+   random gesture on top of the constant wiggle, then goes back to it. Each
+   class overrides the wiggle animation for its duration only. */
+.sc-bo-idle-hop { animation: scBoIdleHop .9s ease-out !important; }
+.sc-bo-idle-look { animation: scBoIdleLook 1.3s ease-in-out !important; }
+.sc-bo-idle-blink { animation: scBoIdleBlink .7s ease-in-out !important; }
+@keyframes scBoIdleHop {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  20% { transform: translateY(0) scale(1.12, .86); }
+  50% { transform: translateY(-9px) scale(.94, 1.1); }
+  75% { transform: translateY(0) scale(1.1, .9); }
+}
+@keyframes scBoIdleLook {
+  0%, 100% { transform: rotate(0deg) translateX(0); }
+  25% { transform: rotate(-16deg) translateX(-3px); }
+  60% { transform: rotate(16deg) translateX(3px); }
+  85% { transform: rotate(-5deg); }
+}
+@keyframes scBoIdleBlink {
+  0%, 100% { transform: scaleY(1); }
+  25%, 55% { transform: scaleY(.55); }
+  40% { transform: scaleY(1); }
+}

@@ -1230,3 +1230,11 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
   }
   .match-row { grid-template-columns: 1fr; text-align: center; }
 }
+
+/* Page-turn between questions (PM round 8 batch A, item 7) -- hinges on the
+   left edge like a storybook page settling flat. */
+.question-area.q-page-turn { transform-origin: left center; animation: qPageTurn .45s ease-out; }
+@keyframes qPageTurn {
+  from { transform: perspective(800px) rotateY(-70deg); opacity: .15; }
+  to { transform: perspective(800px) rotateY(0deg); opacity: 1; }
+}

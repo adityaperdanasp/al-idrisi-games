@@ -1353,6 +1353,11 @@ function startDriveLoop() {
           dinoEl.classList.remove("walking");
         }
         dinoEl.classList.toggle("soaked", d.slowUntil > now);
+        // Anticipation: crouch/pulse just before a bite can land, so the
+        // hit reads as a lunge rather than an instant flash. Only while
+        // the car isn't already immune (no point telegraphing a bite that
+        // can't happen).
+        dinoEl.classList.toggle("stalking", now >= driveState.carImmuneUntil && drivePxDist(d.x, d.y, driveState.x, driveState.y) < DRIVE_CAR_PX_R + DRIVE_DINO_PX_R + 26);
       });
       checkDriveCollisions();
     }
@@ -1377,8 +1382,32 @@ function spawnDriveTrailMark(x, y) {
   setTimeout(() => mark.remove(), 700);
 }
 
+// Default boost sparks (PM round 8 batch A, item 10) -- every player, even
+// with no trail/flame cosmetic bought, gets a small spark burst behind the
+// car while nitro is actually burning, so the free tier doesn't feel flat.
+let lastDriveSparkAt = 0;
+function spawnDriveBoostSpark(x, y) {
+  const world = $("drive-world");
+  if (!world) return;
+  const spark = document.createElement("div");
+  spark.className = "drive-spark";
+  spark.style.left = x + "%";
+  spark.style.top = y + "%";
+  spark.style.setProperty("--dx", (Math.random() * 24 - 12).toFixed(1) + "px");
+  spark.style.setProperty("--dy", (8 + Math.random() * 14).toFixed(1) + "px");
+  world.appendChild(spark);
+  setTimeout(() => spark.remove(), 450);
+}
+
 function driveNitroTick() {
   const wasBoostingActively = driveBoosting && driveState.nitroFuel > 0;
+  if (wasBoostingActively) {
+    const nowMs = performance.now();
+    if (nowMs - lastDriveSparkAt > 70) {
+      lastDriveSparkAt = nowMs;
+      spawnDriveBoostSpark(driveState.x, driveState.y);
+    }
+  }
   if (driveBoosting && driveState.nitroFuel > 0) {
     driveState.nitroFuel = Math.max(0, driveState.nitroFuel - driveState.nitroDrainPerMs * DRIVE_FRAME_MS);
   } else if (!driveBoosting) {
@@ -1511,6 +1540,19 @@ function checkDriveCollisions() {
       const car = $("drive-car");
       car.classList.add("bitten");
       setTimeout(() => car.classList.remove("bitten"), DRIVE_BITE_COOLDOWN_MS);
+      // Lunge + screen shake (PM round 8 batch A, item 1). Class removed
+      // then re-added with a forced reflow so back-to-back bites retrigger.
+      const biterEl = $(d.id);
+      if (biterEl) {
+        biterEl.classList.remove("lunge");
+        void biterEl.offsetWidth;
+        biterEl.classList.add("lunge");
+        setTimeout(() => biterEl.classList.remove("lunge"), 400);
+      }
+      const dw = $("drive-world");
+      dw.classList.remove("shake");
+      void dw.offsetWidth;
+      dw.classList.add("shake");
       // Without a knockback, the dino stays adjacent and re-bites the
       // instant the cooldown clears — which read as an instant 3-bite
       // loss on a single close call. Push it back so the player actually
@@ -7040,7 +7082,26 @@ function ninjaDoJump() {
   setTimeout(() => {
     runner.classList.remove("jumping");
     runner.classList.add("running");
+    ninjaSpawnDust(runner);
   }, 450);
+}
+
+// Landing dust puff (PM round 8 batch A, item 4) -- two small puffs kick out
+// from the ninja's feet when a jump/duck finishes. Pure decoration, removes
+// itself; positioned relative to the runner's own container so it follows
+// wherever the runner sits.
+function ninjaSpawnDust(runner) {
+  const parent = runner.parentElement;
+  if (!parent) return;
+  [-1, 1].forEach(dir => {
+    const puff = document.createElement("div");
+    puff.className = "ninja-dust";
+    puff.style.left = (runner.offsetLeft + runner.offsetWidth / 2 + dir * 8) + "px";
+    puff.style.bottom = runner.style.bottom || getComputedStyle(runner).bottom;
+    puff.style.setProperty("--dust-dx", (dir * 18) + "px");
+    parent.appendChild(puff);
+    setTimeout(() => puff.remove(), 500);
+  });
 }
 
 // Crouch dodge for the flying-enemy encounter's thrown shuriken -- same
@@ -7056,6 +7117,7 @@ function ninjaDoDuck() {
   setTimeout(() => {
     runner.classList.remove("ducking");
     runner.classList.add("running");
+    ninjaSpawnDust(runner);
   }, 350);
   if (ninjaState && document.getElementById("ninja-enemy-el")?.classList.contains("ninja-flying-enemy")) {
     ninjaState.duckedInTime = true;

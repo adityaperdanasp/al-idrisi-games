@@ -489,6 +489,22 @@ button { font-family: inherit; }
   filter: drop-shadow(0 3px 4px rgba(59,42,26,.35)); z-index: 4;
   transition: transform .12s ease-out;
 }
+/* Drive Mode bite juice (PM round 8 batch A, item 1) -- uses the
+   standalone `scale` property so it composes with the dino's inline
+   rotate() transform instead of overwriting it. */
+.drive-dino.stalking { animation: dinoStalk .28s ease-in-out infinite; }
+.drive-dino.lunge { animation: dinoLunge .4s ease-out; }
+@keyframes dinoStalk { 0%, 100% { scale: 0.92; } 50% { scale: 1.06; } }
+@keyframes dinoLunge { 0% { scale: 1; } 35% { scale: 1.55; } 100% { scale: 1; } }
+.drive-world.shake { animation: planeShake .3s ease-in-out; }
+.drive-spark {
+  position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+  background: radial-gradient(circle, #fff, #ffb020); box-shadow: 0 0 6px rgba(255,176,32,.9);
+  z-index: 3; pointer-events: none; animation: driveSpark .45s ease-out forwards;
+}
+@keyframes driveSpark {
+  to { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; }
+}
 .dino-leg { transform-box: fill-box; transform-origin: top center; }
 .drive-dino.walking .dino-leg-l { animation: dinoLegSwing .3s ease-in-out infinite; }
 .drive-dino.walking .dino-leg-r { animation: dinoLegSwing .3s ease-in-out infinite reverse; }
@@ -1339,6 +1355,26 @@ button { font-family: inherit; }
     radial-gradient(1.5px 1.5px at 92% 30%, rgba(255,255,255,.6), transparent);
   background-repeat: repeat; background-size: 100% 50%;
 }
+.plane-sky-deep {
+  background-image:
+    radial-gradient(1px 1px at 22% 35%, rgba(190,210,255,.7), transparent),
+    radial-gradient(1px 1px at 58% 72%, rgba(190,210,255,.6), transparent),
+    radial-gradient(1px 1px at 78% 12%, rgba(190,210,255,.7), transparent),
+    radial-gradient(1px 1px at 40% 90%, rgba(190,210,255,.5), transparent);
+  background-size: 100% 50%; animation: planeSkyScroll 12s linear infinite; opacity: .4;
+}
+.plane-shooting-star {
+  position: absolute; top: -10%; width: 2px; height: 46px; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, transparent, #fff);
+  transform: rotate(20deg); opacity: 0;
+  animation: planeShootingStar 12s linear infinite;
+}
+@keyframes planeShootingStar {
+  0% { transform: translate(0, 0) rotate(20deg); opacity: 0; }
+  2% { opacity: 1; }
+  10% { transform: translate(-90px, 330px) rotate(20deg); opacity: 0; }
+  100% { transform: translate(-90px, 330px) rotate(20deg); opacity: 0; }
+}
 .plane-sky-far { animation: planeSkyScroll 6s linear infinite; opacity: .5; }
 .plane-sky-near { animation: planeSkyScroll 3s linear infinite; opacity: .85; }
 @keyframes planeSkyScroll {
@@ -1546,6 +1582,15 @@ button { font-family: inherit; }
 @keyframes ninjaGroundScroll { from { background-position-x: 0; } to { background-position-x: -48px; } }
 
 .ninja-runner { position: absolute; left: 24px; bottom: 44px; width: 54px; height: 90px; z-index: 3; }
+.ninja-dust {
+  position: absolute; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%;
+  background: rgba(214, 200, 176, .85); z-index: 2; pointer-events: none;
+  animation: ninjaDust .5s ease-out forwards;
+}
+@keyframes ninjaDust {
+  0% { transform: translate(0, 0) scale(.5); opacity: .9; }
+  100% { transform: translate(var(--dust-dx), -6px) scale(1.7); opacity: 0; }
+}
 .ninja-runner.running { animation: ninjaBob .3s ease-in-out infinite; }
 @keyframes ninjaBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 .ninja-torso { position: absolute; left: 16px; top: 18px; width: 24px; height: 32px; background: #2b3a55; border-radius: 8px; z-index: 2; }

@@ -984,8 +984,33 @@ function startLevel(levelId, mode) {
     updateMpRaceUI();
   }
 
-  showScreen("screen-play");
-  renderQuestion();
+  // Solo levels launch through a quick warp-speed star-streak transition
+  // (PM round 8 batch A, item 6). The play screen is populated immediately
+  // and revealed at the warp's midpoint so nothing about question timing
+  // changes -- multiplayer keeps its instant cut so both racers start together.
+  if (mode === "solo") {
+    renderQuestion();
+    warpTransition(() => showScreen("screen-play"));
+  } else {
+    showScreen("screen-play");
+    renderQuestion();
+  }
+}
+
+function warpTransition(midpointCb) {
+  const overlay = document.createElement("div");
+  overlay.className = "sq-warp";
+  for (let i = 0; i < 28; i++) {
+    const streak = document.createElement("span");
+    streak.style.left = (Math.random() * 100).toFixed(1) + "%";
+    streak.style.top = (Math.random() * 100).toFixed(1) + "%";
+    streak.style.animationDelay = (Math.random() * 0.15).toFixed(2) + "s";
+    streak.style.height = (40 + Math.random() * 90).toFixed(0) + "px";
+    overlay.appendChild(streak);
+  }
+  document.body.appendChild(overlay);
+  setTimeout(midpointCb, 320);
+  setTimeout(() => overlay.remove(), 780);
 }
 
 function renderQuestion() {

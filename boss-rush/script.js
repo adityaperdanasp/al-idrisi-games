@@ -146,6 +146,22 @@ function initBossRush() {
     showQuestion(q, (btn, opt) => handleAnswer(btn, opt, q));
   }
 
+  // Flash + arena shake on a landed hit, escalating with the boss index
+  // (phase 1..3+) and hitting harder again on special moves.
+  function impactFx(isSpecial) {
+    const phase = Math.min(3, 1 + Math.floor(state.bossIndex / 2));
+    const amp = (3 + phase * 2) * (isSpecial ? 1.6 : 1);
+    const flash = document.getElementById("br-flash");
+    const arena = document.getElementById("br-arena");
+    arena.style.setProperty("--amp", amp.toFixed(1) + "px");
+    flash.style.setProperty("--flash", Math.min(0.75, 0.2 + phase * 0.1 + (isSpecial ? 0.2 : 0)).toFixed(2));
+    [flash, arena].forEach(el => { el.classList.remove("firing", "impact"); });
+    void arena.offsetWidth;
+    flash.classList.add("firing");
+    arena.classList.add("impact");
+    setTimeout(() => arena.classList.remove("impact"), 340);
+  }
+
   function handleAnswer(btn, opt, q) {
     const isCorrect = opt === q.correctLabel;
     lockQuestion(q, btn, isCorrect);
@@ -157,6 +173,7 @@ function initBossRush() {
       const damage = BASE_DAMAGE + (state.combo - 1) + (isSpecial ? SPECIAL_BONUS_DAMAGE : 0);
       state.boss.hp -= damage;
       document.getElementById("br-boss-emoji").classList.add(isSpecial ? "special" : "hit");
+      impactFx(isSpecial);
       if (isSpecial) {
         const fx = document.getElementById("br-special-fx");
         fx.textContent = specialFxEmoji;

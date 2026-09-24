@@ -32,7 +32,7 @@
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=96" />
+<link rel="stylesheet" href="style.css?v=97" />
 </head>
 <body>
 
@@ -599,8 +599,13 @@
       <div class="plane-boss-hp-fill" id="plane-boss-hp-fill"></div>
     </div>
     <div id="plane-world" class="plane-world">
+      <!-- PM round 8 batch A, item 2: a 3rd (slowest/dimmest) parallax layer
+           plus two occasional shooting stars, all pure CSS. -->
+      <div class="plane-sky-layer plane-sky-deep"></div>
       <div id="plane-sky-far" class="plane-sky-layer plane-sky-far"></div>
       <div id="plane-sky-near" class="plane-sky-layer plane-sky-near"></div>
+      <div class="plane-shooting-star" style="left:70%;animation-delay:3s"></div>
+      <div class="plane-shooting-star" style="left:30%;animation-delay:9.5s"></div>
 
       <div id="plane-ship" class="plane-ship">
         <svg viewBox="0 0 30 34" width="27" height="30">
@@ -1155,6 +1160,6 @@
 <script src="weekly-focus.js?v=1"></script>
 <script src="bgm.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
-<script src="script.js?v=136"></script>
+<script src="script.js?v=137"></script>
 </body>
 </html>

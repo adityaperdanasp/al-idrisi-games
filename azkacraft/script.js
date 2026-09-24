@@ -493,6 +493,13 @@ function renderCurrentQuestion() {
   const q = session.order[session.index];
   const area = document.getElementById("question-area");
   area.innerHTML = "";
+  // Page-turn between questions (PM round 8 batch A, item 7) -- skipped on
+  // the very first question, which already arrives via showScreen's flip.
+  area.classList.remove("q-page-turn");
+  if (session.index > 0) {
+    void area.offsetWidth;
+    area.classList.add("q-page-turn");
+  }
 
   switch (q.type) {
     case "mc": renderMC(q, area); break;
