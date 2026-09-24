@@ -1694,14 +1694,23 @@
     // catalog (this round's item 7: a longer-term aspirational goal for
     // gems specifically, since every catalog previously topped out at
     // the same 2-gem tier).
-    { id: "mythic", name: "Plasma Trail", cost: { gems: 4 }, preview: "💠" }
+    { id: "mythic", name: "Plasma Trail", cost: { gems: 4 }, preview: "💠" },
+    // 2 more (PM round 8, item 16) -- purely cosmetic bullet trails,
+    // slotted between the coins tier and Mythic.
+    { id: "laser", name: "Laser Beam", cost: { coins: 30 }, preview: "🔴" },
+    { id: "orb", name: "Homing Orb", cost: { gems: 2 }, preview: "🟣" }
   ];
   const DRIVE_NITRO_EFFECTS = [
     { id: "default", name: "Default Flame", cost: null, preview: "🔸" },
     { id: "blue", name: "Blue Flame", cost: { coins: 20 }, preview: "🔵" },
     { id: "rainbow", name: "Rainbow Flame", cost: { coins: 25 }, preview: "🌈" },
     { id: "rocket", name: "Rocket Flame", cost: { gems: 2 }, preview: "🚀" },
-    { id: "mythic", name: "Inferno Flame", cost: { gems: 4 }, preview: "🌋" }
+    { id: "mythic", name: "Inferno Flame", cost: { gems: 4 }, preview: "🌋" },
+    // 2 more (PM round 8, item 15) -- "Rainbow Flame" already existed
+    // above, so the brainstorm's 2nd pick became Golden instead of a
+    // second rainbow variant.
+    { id: "ice", name: "Ice Flame", cost: { coins: 30 }, preview: "❄️" },
+    { id: "gold", name: "Golden Flame", cost: { gems: 2 }, preview: "✨" }
   ];
   // Ground Trail -- unlike the nitro flame above (only visible while
   // actively boosting), this drops a mark behind the car during ANY
@@ -1712,7 +1721,10 @@
     { id: "sparkle", name: "Sparkle Trail", cost: { coins: 20 }, preview: "✨" },
     { id: "petals", name: "Petal Trail", cost: { coins: 25 }, preview: "🌸" },
     { id: "stars", name: "Star Trail", cost: { coins: 25 }, preview: "⭐" },
-    { id: "rainbow", name: "Rainbow Trail", cost: { gems: 2 }, preview: "🌈" }
+    { id: "rainbow", name: "Rainbow Trail", cost: { gems: 2 }, preview: "🌈" },
+    // 2 more (PM round 8, item 14).
+    { id: "comet", name: "Comet Trail", cost: { coins: 30 }, preview: "☄️" },
+    { id: "lightning", name: "Lightning Trail", cost: { gems: 2 }, preview: "⚡" }
   ];
   // "default" is the confetti burst Math Race already always played on a
   // win (unchanged, still free) -- the paid tiers are distinct variations
@@ -1733,7 +1745,10 @@
     { id: "default", name: "Classic Bounce", cost: null, preview: "🏁" },
     { id: "spin", name: "Victory Spin", cost: { coins: 15 }, preview: "🌀" },
     { id: "wiggle", name: "Happy Wiggle", cost: { coins: 20 }, preview: "🕺" },
-    { id: "rainbow", name: "Rainbow Glow", cost: { gems: 2 }, preview: "🌈" }
+    { id: "rainbow", name: "Rainbow Glow", cost: { gems: 2 }, preview: "🌈" },
+    // 2 more (PM round 8, item 20).
+    { id: "confetti", name: "Confetti Rain", cost: { coins: 25 }, preview: "🎊" },
+    { id: "trophy", name: "Trophy Lift", cost: { gems: 2 }, preview: "🏆" }
   ];
   const BOSSRUSH_SPECIAL_EFFECTS = [
     { id: "default", name: "Default Flash", cost: null, preview: "✨" },
@@ -1780,17 +1795,36 @@
     { id: "default", name: "Classic", cost: null, preview: "⚪" },
     { id: "crimson", name: "Crimson", cost: { coins: 15 }, preview: "🔴" },
     { id: "shadow", name: "Shadow", cost: { coins: 20 }, preview: "⚫" },
-    { id: "jade", name: "Jade", cost: { gems: 2 }, preview: "🟢" }
+    { id: "jade", name: "Jade", cost: { gems: 2 }, preview: "🟢" },
+    // 2 more (PM round 8, item 18).
+    { id: "ocean", name: "Ocean", cost: { coins: 25 }, preview: "🔵" },
+    { id: "golden", name: "Golden", cost: { gems: 2 }, preview: "🟡" }
   ];
   const BOSSRUSH_FIGHTERS = [
     { id: "default", name: "Classic", cost: null, preview: "🥋" },
     { id: "boxer", name: "Boxer", cost: { coins: 15 }, preview: "🥊" },
     { id: "hero", name: "Hero", cost: { coins: 20 }, preview: "🦸" },
-    { id: "dragon", name: "Dragon Warrior", cost: { gems: 2 }, preview: "🐉" }
+    { id: "dragon", name: "Dragon Warrior", cost: { gems: 2 }, preview: "🐉" },
+    // 2 more (PM round 8, item 17).
+    { id: "ronin", name: "Ronin", cost: { coins: 25 }, preview: "🗡️" },
+    { id: "cyber", name: "Cyber Fighter", cost: { gems: 2 }, preview: "🤖" }
+  ];
+  // Dino Skin (PM round 8, item 13) -- a genuinely NEW cosmetic category,
+  // the chasing dino in Drive Mode (previously always the same fixed
+  // green). Same generic unlockCosmetic/equipCosmetic pair, type
+  // "dino-skin". Recolor is pure CSS keyed off a `data-skin` attribute on
+  // #drive-dino (see mathville/script.js's goToDrive() and
+  // mathville/style.css), same trick as Ninja Runner's costume above.
+  const DINO_SKINS = [
+    { id: "default", name: "Classic Green", cost: null, preview: "🟢" },
+    { id: "fire", name: "Fire Dino", cost: { coins: 25 }, preview: "🔴" },
+    { id: "ice", name: "Ice Dino", cost: { coins: 30 }, preview: "🔵" },
+    { id: "shadow", name: "Shadow Dino", cost: { gems: 3 }, preview: "⚫" }
   ];
   const COSTUME_CATALOGS = {
     "ninja-costume": NINJA_COSTUMES,
-    "bossrush-fighter": BOSSRUSH_FIGHTERS
+    "bossrush-fighter": BOSSRUSH_FIGHTERS,
+    "dino-skin": DINO_SKINS
   };
 
   // Lightweight single-type read, for a GAME to find out its own equipped
@@ -1841,7 +1875,8 @@
       costumes,
       equippedCostumes: {
         "ninja-costume": equipped["ninja-costume"] || "default",
-        "bossrush-fighter": equipped["bossrush-fighter"] || "default"
+        "bossrush-fighter": equipped["bossrush-fighter"] || "default",
+        "dino-skin": equipped["dino-skin"] || "default"
       }
     };
   }

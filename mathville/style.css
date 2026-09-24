@@ -380,6 +380,8 @@ button { font-family: inherit; }
 .drive-nitro-flame.fx-rainbow { background: linear-gradient(180deg, #ff3ea5, #ffd166, #7ee6ff); }
 .drive-nitro-flame.fx-rocket { background: linear-gradient(180deg, #fff, #ff6b1a, #ff3ea5); width: 12px; height: 20px; }
 .drive-nitro-flame.fx-mythic { background: linear-gradient(180deg, #fff, #ff3ea5, #6b3f9b, #1a1a2e); width: 13px; height: 22px; box-shadow: 0 0 10px 3px rgba(255,62,165,.7); }
+.drive-nitro-flame.fx-ice { background: linear-gradient(180deg, #fff, #a8e8ff, #4ad9f7); box-shadow: 0 0 6px rgba(74,217,247,.7); }
+.drive-nitro-flame.fx-gold { background: linear-gradient(180deg, #fff8dc, #ffd700, #b8960c); box-shadow: 0 0 8px rgba(255,215,0,.75); }
 
 /* MOCKUP ONLY — Bo riding in the windshield + tap hint, mirrors the
    hub landing page's Bo avatar + "RAWR!"-style popup. */
@@ -497,6 +499,23 @@ button { font-family: inherit; }
   0%, 100% { transform: rotate(-20deg); }
   50% { transform: rotate(20deg); }
 }
+/* Dino Skin (leaderboard.js's DINO_SKINS, type "dino-skin") -- recolors
+   the tail/body/head/legs only; the wet-goggle overlay and eye stay the
+   same across every skin, same reasoning as Ninja Runner's costume
+   recolor leaving its face untouched. "default" needs no rule (matches
+   the SVG's own hardcoded green already). */
+.drive-dino[data-skin="fire"] .dino-tail,
+.drive-dino[data-skin="fire"] .dino-body,
+.drive-dino[data-skin="fire"] .dino-head { fill: #E4572E; stroke: #B8391A; }
+.drive-dino[data-skin="fire"] .dino-leg { fill: #B8391A; }
+.drive-dino[data-skin="ice"] .dino-tail,
+.drive-dino[data-skin="ice"] .dino-body,
+.drive-dino[data-skin="ice"] .dino-head { fill: #6EC3E0; stroke: #2E6BA3; }
+.drive-dino[data-skin="ice"] .dino-leg { fill: #2E6BA3; }
+.drive-dino[data-skin="shadow"] .dino-tail,
+.drive-dino[data-skin="shadow"] .dino-body,
+.drive-dino[data-skin="shadow"] .dino-head { fill: #1A1A1A; stroke: #000000; }
+.drive-dino[data-skin="shadow"] .dino-leg { fill: #000000; }
 .drive-toast {
   position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
   background: var(--bad); color: #fff; font: 700 13px "Fredoka", sans-serif;
@@ -1347,6 +1366,8 @@ button { font-family: inherit; }
 .plane-bullet.fx-fire { background: linear-gradient(180deg, #fff, #ff6b1a); box-shadow: 0 0 8px rgba(255,107,26,.85); }
 .plane-bullet.fx-star { background: linear-gradient(180deg, #fff, #7ee6ff); box-shadow: 0 0 8px rgba(126,230,255,.9); }
 .plane-bullet.fx-mythic { background: linear-gradient(180deg, #fff, #6b3f9b, #1a1a2e); box-shadow: 0 0 10px 3px rgba(107,63,155,.85); }
+.plane-bullet.fx-laser { background: linear-gradient(180deg, #fff, #ff2d2d); width: 4px; height: 18px; margin-left: -2px; margin-top: -9px; box-shadow: 0 0 8px rgba(255,45,45,.9); }
+.plane-bullet.fx-orb { background: radial-gradient(circle, #fff, #b03ee0); width: 10px; height: 10px; margin-left: -5px; margin-top: -5px; border-radius: 50%; box-shadow: 0 0 8px rgba(176,62,224,.85); }
 
 .plane-enemy {
   position: absolute; width: 30px; height: 30px; margin-left: -15px; margin-top: -15px;
@@ -1562,6 +1583,16 @@ button { font-family: inherit; }
 .ninja-runner[data-costume="jade"] .ninja-leg { background: #1f7a4d; }
 .ninja-runner[data-costume="jade"] .ninja-band { background: #f4f4f4; }
 .ninja-runner[data-costume="jade"] .ninja-mask { background: #0d3d26; }
+
+.ninja-runner[data-costume="ocean"] .ninja-torso,
+.ninja-runner[data-costume="ocean"] .ninja-leg { background: #1a6fa8; }
+.ninja-runner[data-costume="ocean"] .ninja-band { background: #eaf6ff; }
+.ninja-runner[data-costume="ocean"] .ninja-mask { background: #0d3352; }
+
+.ninja-runner[data-costume="golden"] .ninja-torso,
+.ninja-runner[data-costume="golden"] .ninja-leg { background: #d4af37; }
+.ninja-runner[data-costume="golden"] .ninja-band { background: #fff6d9; }
+.ninja-runner[data-costume="golden"] .ninja-mask { background: #6b4e0e; }
 .ninja-runner.running .l1 { animation: ninjaLegA .3s ease-in-out infinite; }
 .ninja-runner.running .l2 { animation: ninjaLegB .3s ease-in-out infinite; }
 @keyframes ninjaLegA { 0%, 100% { transform: rotate(28deg); } 50% { transform: rotate(-28deg); } }

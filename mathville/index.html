@@ -430,13 +430,19 @@
         <img class="drive-bo-face" src="../icon-192.png" alt="Bo">
         <span class="drive-bo-hint" id="drive-bo-hint">Bo here!</span>
       </div>
-      <div id="drive-dino" class="drive-dino">
+      <!-- data-skin (leaderboard.js's DINO_SKINS, type "dino-skin") is
+           set/kept in sync from mathville/script.js's goToDrive(); the
+           dino-tail/dino-body/dino-head classes below exist specifically
+           so mathville/style.css can recolor them per skin without
+           touching the goggle/eye circles, which stay the same across
+           every skin. -->
+      <div id="drive-dino" class="drive-dino" data-skin="default">
         <svg viewBox="0 0 30 40" width="27" height="36">
-          <path d="M15 39 Q9 34 15 29 Q21 34 15 39 Z" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.2" />
-          <ellipse cx="15" cy="24" rx="10" ry="13" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.5" />
+          <path class="dino-tail" d="M15 39 Q9 34 15 29 Q21 34 15 39 Z" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.2" />
+          <ellipse class="dino-body" cx="15" cy="24" rx="10" ry="13" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.5" />
           <rect class="dino-leg dino-leg-l" x="4" y="30" width="4" height="8" rx="2" fill="#3F7A3D" />
           <rect class="dino-leg dino-leg-r" x="22" y="30" width="4" height="8" rx="2" fill="#3F7A3D" />
-          <circle cx="15" cy="10" r="9.5" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.5" />
+          <circle class="dino-head" cx="15" cy="10" r="9.5" fill="#5FA85A" stroke="#3F7A3D" stroke-width="1.5" />
           <circle cx="15" cy="10" r="9.5" fill="rgba(191,227,240,.5)" stroke="#8fb9c9" stroke-width="1.5" />
           <circle cx="15" cy="3.5" r="1.6" fill="#E4572E" />
         </svg>

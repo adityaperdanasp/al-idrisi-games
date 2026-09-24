@@ -1881,7 +1881,7 @@ async function celebrateWin() {
   // overrides it. Cleared first so Play Again's fresh celebrateWin()
   // call doesn't stack a leftover class from the previous race.
   const overEmoji = $("over-emoji");
-  overEmoji.classList.remove("emote-spin", "emote-wiggle", "emote-rainbow");
+  overEmoji.classList.remove("emote-spin", "emote-wiggle", "emote-rainbow", "emote-confetti", "emote-trophy");
   if (emoteFx !== "default") overEmoji.classList.add("emote-" + emoteFx);
   playCheerSound();
   playFinishCheer();   // applause + "Yeah!" — replaces the old spoken win line
