@@ -186,9 +186,14 @@ function initBossRush() {
         : `You hit ${state.boss.name} for ${damage}!`;
     } else {
       state.combo = 0;
-      state.playerHp -= state.boss.atk;
-      document.getElementById("br-player-emoji").classList.add("hit");
-      document.getElementById("br-log").textContent = `${state.boss.name} struck back for ${state.boss.atk}!`;
+      if (state.loadoutShield) {
+        state.loadoutShield = false;
+        document.getElementById("br-log").textContent = `🛡️ Shield blocked ${state.boss.name}'s strike!`;
+      } else {
+        state.playerHp -= state.boss.atk;
+        document.getElementById("br-player-emoji").classList.add("hit");
+        document.getElementById("br-log").textContent = `${state.boss.name} struck back for ${state.boss.atk}!`;
+      }
     }
 
     setTimeout(() => {
@@ -272,6 +277,16 @@ function initBossRush() {
     }
     state.playerHp = PLAYER_HP_MAX;
     state.bossesDefeated = 0;
+    state.loadoutShield = false;
+    // Round Loadout (PM round 9, item 3) -- see leaderboard.js's
+    // consumeArmedLoadout(). life = +8 HP (can exceed the normal cap for
+    // this run only), shield = blocks the first boss strike.
+    if (window.AIGLeaderboard && AIGLeaderboard.consumeArmedLoadout) {
+      const armed = await AIGLeaderboard.consumeArmedLoadout().catch(() => null);
+      if (armed === "life") { state.playerHp += 8; PLAYER_HP_MAX = Math.max(PLAYER_HP_MAX, state.playerHp); }
+      else if (armed === "shield") state.loadoutShield = true;
+      if (armed) document.getElementById("br-log").textContent = armed === "life" ? "❤️ Extra Life loaded! +8 HP" : armed === "shield" ? "🛡️ Shield ready — blocks the first strike!" : "🪙 Coin Boost — 2× coins for 3 min!";
+    }
     document.getElementById("br-start-overlay").classList.add("hidden");
     document.getElementById("br-end-overlay").classList.add("hidden");
     document.getElementById("br-log").textContent = "";

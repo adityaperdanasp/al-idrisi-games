@@ -2512,6 +2512,7 @@ function launchPlaneMode(is2p) {
   $("plane-buff-shield").classList.add("hidden");
   $("plane-buff-wingmen").classList.add("hidden");
   $("plane-buff-spread").classList.add("hidden");
+  if (!is2p) applyArmedLoadout("plane"); // solo only -- a 2P round's lives/shield must stay symmetric between the two pilots
   $("plane-end-scores").classList.add("hidden");
   // 2P-only chrome: partner ship/HUD/banner stay hidden in solo.
   $("plane-peer-ship").classList.toggle("hidden", !is2p);
@@ -2696,6 +2697,13 @@ function planeTakeHit() {
   // needed since the shield itself is the protection. Still shakes the
   // world so the hit registers as feedback rather than feeling like nothing
   // happened.
+  if (planeState.loadoutShield) {
+    planeState.loadoutShield = false;
+    planeState.invulnUntil = now + PLANE_HIT_INVULN_MS;
+    shakePlaneWorld();
+    showPlaneToast("🛡️ Shield blocked it!");
+    return;
+  }
   if (now < planeState.shieldUntil) {
     shakePlaneWorld();
     return;
@@ -6953,7 +6961,37 @@ const NINJA_MAX_LIVES = 5;
 // at the right moment (immediately for the obstacle bump, after the
 // wrong-flash animation for a wrong answer) -- this helper only ever
 // touches the number, never navigates.
+// Round Loadout (PM round 9, item 3) -- leaderboard.js's consumeArmedLoadout()
+// is called once at the start of a Ninja Runner / Plane Mode round; the item
+// the kid armed from the hub's Extras page is applied to THAT round only.
+// Fire-and-forget (never blocks round start) and guarded against the round
+// having been restarted before the promise resolves.
+async function applyArmedLoadout(kind) {
+  if (!window.AIGLeaderboard || !AIGLeaderboard.consumeArmedLoadout) return;
+  let id = null;
+  try { id = await AIGLeaderboard.consumeArmedLoadout(); } catch (e) { return; }
+  if (!id) return;
+  if (kind === "ninja") {
+    const st = ninjaState;
+    if (!st || st.ended) return;
+    if (id === "life") { st.lives = Math.min(NINJA_MAX_LIVES, st.lives + 1); updateNinjaLivesHud(); showNinjaToast("❤️ Extra Life loaded!"); }
+    else if (id === "shield") { st.loadoutShield = true; showNinjaToast("🛡️ Shield ready — blocks 1 hit!"); }
+    else if (id === "boost") showNinjaToast("🪙 Coin Boost — 2× coins for 3 min!");
+  } else {
+    const st = planeState;
+    if (!st || st.ended) return;
+    if (id === "life") { st.maxLives += 1; st.lives += 1; updatePlaneLives(); showPlaneToast("❤️ Extra Life loaded!"); }
+    else if (id === "shield") { st.loadoutShield = true; showPlaneToast("🛡️ Shield ready — blocks 1 hit!"); }
+    else if (id === "boost") showPlaneToast("🪙 Coin Boost — 2× coins for 3 min!");
+  }
+}
+
 function ninjaLoseLife() {
+  if (ninjaState.loadoutShield) {
+    ninjaState.loadoutShield = false;
+    showNinjaToast("🛡️ Shield blocked it!");
+    return;
+  }
   ninjaState.lives -= 1;
   updateNinjaLivesHud();
   const runner = $("ninja-runner");
@@ -7021,6 +7059,7 @@ function launchNinjaRunner() {
   $("ninja-score").textContent = "⭐ 0";
   updateNinjaBestHud();
   updateNinjaLivesHud();
+  applyArmedLoadout("ninja");
   // Fire-and-forget -- the ghost is a nice-to-have comparison, never
   // worth blocking round start on. A run started before this resolves
   // just won't show a ghost delta until it comes back (or at all, on a

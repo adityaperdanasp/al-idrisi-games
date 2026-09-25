@@ -324,7 +324,12 @@
   function awardCurrency(comboMultiplier) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return;
-    const bonusMult = (isBonusHourNow() || isWeekendNow()) ? 2 : 1;
+    ensureBoosterLoaded();
+    // Personal Booster / Coin Boost loadout (PM round 9): a SINGLE 2x on top
+    // of Bonus Hour, using the larger of the two so they never stack with
+    // each other (only with Bonus Hour/combo/streak, as those already do).
+    const perkMult = Date.now() < Math.max(cachedBoosterUntil, cachedCoinBoostUntil) ? 2 : 1;
+    const bonusMult = ((isBonusHourNow() || isWeekendNow()) ? 2 : 1) * perkMult;
     const streakMult = streakMultiplierFor(cachedStreakCount);
     // Math.ceil (not round) so any active multiplier ALWAYS visibly adds
     // at least +1 coin over the no-bonus baseline -- with a 1-coin base
@@ -488,9 +493,31 @@
     const data = snap.exists() ? snap.val() : { count: 0, lastPlayDate: null, bestStreak: 0 };
     if (data.lastPlayDate === today) return;
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    const newCount = data.lastPlayDate === yesterday ? (data.count || 0) + 1 : 1;
+    let newCount;
+    let freezeUsedOn = data.freezeUsedOn || null;
+    if (data.lastPlayDate === yesterday) {
+      newCount = (data.count || 0) + 1;
+    } else {
+      // Streak Freeze (PM round 9): each purchased freeze covers ONE missed
+      // day; up to 2 consecutive missed days can be bridged if enough
+      // freezes are held, otherwise the streak resets to 1 as before.
+      const missed = data.lastPlayDate
+        ? Math.round((Date.parse(today + "T00:00:00Z") - Date.parse(data.lastPlayDate + "T00:00:00Z")) / 86400000) - 1
+        : 0;
+      newCount = 1;
+      if (missed >= 1 && missed <= STREAK_FREEZE_MAX && (data.count || 0) > 0) {
+        const freezes = await getStreakFreezes();
+        if (freezes >= missed) {
+          await aigDb.ref(`players/${player.id}/streakFreezes`).set(freezes - missed);
+          newCount = (data.count || 0) + 1;
+          freezeUsedOn = today;
+        }
+      }
+    }
     const newBest = Math.max(data.bestStreak || 0, newCount);
-    await ref.set({ count: newCount, lastPlayDate: today, bestStreak: newBest });
+    const streakRecord = { count: newCount, lastPlayDate: today, bestStreak: newBest };
+    if (freezeUsedOn) streakRecord.freezeUsedOn = freezeUsedOn;
+    await ref.set(streakRecord);
     cachedStreakCount = newCount;
   }
 
@@ -878,6 +905,276 @@
       return wallet;
     });
     return { ok: true, alreadyClaimed: false, reward: AZKA_PR_REWARD };
+  }
+
+  // =====================================================================
+  // PERKS (PM round 9, batch 1) -- new places to SPEND coins/gems, all
+  // nested under the already-open players/{id}/... rules (no new RTDB
+  // paths). Every spend uses the get-check-set pattern (NOT
+  // .transaction(), which can abort spuriously on this secondary Firebase
+  // app instance -- see unlockVehicle's own comment); every credit is a
+  // plain add-only transaction, which never aborts.
+  // =====================================================================
+  function perksPlayer() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    return (!player || player.role === "parent") ? null : player;
+  }
+
+  async function spendWallet(cost) {
+    const player = perksPlayer();
+    if (!player) return { ok: false, reason: "no-player" };
+    const ref = aigDb.ref(`players/${player.id}/wallet`);
+    const snap = await ref.get();
+    const wallet = snap.exists() ? snap.val() : { coins: 0, gems: 0, correctSinceGem: 0 };
+    const c = cost.coins || 0, g = cost.gems || 0;
+    if ((wallet.coins || 0) < c || (wallet.gems || 0) < g) return { ok: false, reason: "insufficient-funds" };
+    await ref.set({ ...wallet, coins: (wallet.coins || 0) - c, gems: (wallet.gems || 0) - g });
+    return { ok: true };
+  }
+
+  async function creditWallet(reward) {
+    const player = perksPlayer();
+    if (!player) return;
+    await aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
+      const w = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
+      w.coins = (w.coins || 0) + (reward.coins || 0);
+      w.gems = (w.gems || 0) + (reward.gems || 0);
+      return w;
+    });
+  }
+
+  // ---- 1. Streak Freeze -- a purchased "shield" for the login streak.
+  // touchStreak() (above) consumes one per missed day (up to 2 missed days
+  // in a row) instead of resetting the streak to 1.
+  const STREAK_FREEZE_COST = { coins: 30 };
+  const STREAK_FREEZE_MAX = 2;
+  async function getStreakFreezes() {
+    const player = perksPlayer();
+    if (!player) return 0;
+    const snap = await aigDb.ref(`players/${player.id}/streakFreezes`).get();
+    return snap.exists() ? (snap.val() || 0) : 0;
+  }
+  async function buyStreakFreeze() {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const have = await getStreakFreezes();
+    if (have >= STREAK_FREEZE_MAX) return { ok: false, reason: "max" };
+    const spent = await spendWallet(STREAK_FREEZE_COST);
+    if (!spent.ok) return spent;
+    await aigDb.ref(`players/${player.id}/streakFreezes`).set(have + 1);
+    return { ok: true, count: have + 1 };
+  }
+
+  // ---- 2. Piggy Bank -- deposit coins, earn 10%/week simple interest on
+  // the principal (max 4 weeks counted, 500 coin cap) -- a saving/percent
+  // lesson that also gives a reason to come back weekly.
+  const PIGGY_RATE = 0.10, PIGGY_MAX_WEEKS = 4, PIGGY_CAP = 500, WEEK_MS = 7 * 86400000;
+  function piggyView(p) {
+    const amount = (p && p.amount) || 0;
+    const weeks = amount ? Math.min(PIGGY_MAX_WEEKS, Math.floor((Date.now() - (p.since || Date.now())) / WEEK_MS)) : 0;
+    return { amount, since: (p && p.since) || 0, weeks, interest: Math.floor(amount * PIGGY_RATE * weeks) };
+  }
+  async function getPiggy() {
+    const player = perksPlayer();
+    if (!player) return piggyView(null);
+    const snap = await aigDb.ref(`players/${player.id}/piggy`).get();
+    return piggyView(snap.exists() ? snap.val() : null);
+  }
+  async function depositPiggy(n) {
+    const player = perksPlayer();
+    n = Math.floor(n);
+    if (!player || !(n >= 1)) return { ok: false, reason: "bad-amount" };
+    const p = await getPiggy();
+    const principal = p.amount + p.interest; // settle earned interest into principal so it keeps compounding
+    if (principal + n > PIGGY_CAP) return { ok: false, reason: "cap" };
+    const spent = await spendWallet({ coins: n });
+    if (!spent.ok) return spent;
+    await aigDb.ref(`players/${player.id}/piggy`).set({ amount: principal + n, since: Date.now() });
+    return { ok: true, amount: principal + n };
+  }
+  async function withdrawPiggy() {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const p = await getPiggy();
+    if (!p.amount) return { ok: false, reason: "empty" };
+    await aigDb.ref(`players/${player.id}/piggy`).remove(); // cleared BEFORE crediting so a double-tap can't pay twice
+    const total = p.amount + p.interest;
+    await creditWallet({ coins: total });
+    return { ok: true, total, interest: p.interest };
+  }
+
+  // ---- 3. Pre-round Loadout -- consumable items bought here, "armed" for
+  // the NEXT round of Ninja Runner / Plane Mode / Boss Rush, which call
+  // consumeArmedLoadout() once at round start.
+  const LOADOUT_ITEMS = [
+    { id: "life", name: "Extra Life", emoji: "❤️", cost: { coins: 15 }, desc: "+1 life (Ninja/Plane) or +8 HP (Boss Rush)" },
+    { id: "shield", name: "Shield", emoji: "🛡️", cost: { coins: 20 }, desc: "Blocks the first hit you take" },
+    { id: "boost", name: "Coin Boost", emoji: "🪙", cost: { coins: 25 }, desc: "2x coins for 3 minutes" }
+  ];
+  let cachedCoinBoostUntil = 0;
+  async function getInventory() {
+    const player = perksPlayer();
+    if (!player) return {};
+    const snap = await aigDb.ref(`players/${player.id}/inventory`).get();
+    return snap.exists() ? snap.val() : {};
+  }
+  async function getArmedLoadout() {
+    const player = perksPlayer();
+    if (!player) return null;
+    const snap = await aigDb.ref(`players/${player.id}/armedLoadout`).get();
+    return snap.exists() ? snap.val() : null;
+  }
+  async function buyLoadout(id) {
+    const player = perksPlayer();
+    const item = LOADOUT_ITEMS.find(i => i.id === id);
+    if (!player || !item) return { ok: false };
+    const inv = await getInventory();
+    if ((inv[id] || 0) >= 9) return { ok: false, reason: "max" };
+    const spent = await spendWallet(item.cost);
+    if (!spent.ok) return spent;
+    await aigDb.ref(`players/${player.id}/inventory/${id}`).set((inv[id] || 0) + 1);
+    return { ok: true };
+  }
+  async function armLoadout(id) {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    if (id === null) { await aigDb.ref(`players/${player.id}/armedLoadout`).remove(); return { ok: true }; }
+    const inv = await getInventory();
+    if (!(inv[id] > 0)) return { ok: false, reason: "none-owned" };
+    await aigDb.ref(`players/${player.id}/armedLoadout`).set(id);
+    return { ok: true };
+  }
+  // Called by a game at round start. Returns the consumed item id (or null).
+  async function consumeArmedLoadout() {
+    const player = perksPlayer();
+    if (!player) return null;
+    const armed = await getArmedLoadout();
+    if (!armed) return null;
+    await aigDb.ref(`players/${player.id}/armedLoadout`).remove(); // cleared first -- one consume per arm
+    const inv = await getInventory();
+    if (!(inv[armed] > 0)) return null;
+    await aigDb.ref(`players/${player.id}/inventory/${armed}`).set(inv[armed] - 1);
+    if (armed === "boost") cachedCoinBoostUntil = Date.now() + 180000;
+    return armed;
+  }
+
+  // ---- 4. Pet Adventure -- send the pet out for 1 hour, come back for loot.
+  const PET_ADVENTURE_COST = { coins: 15 };
+  const PET_ADVENTURE_MS = 3600000;
+  const PET_ADVENTURE_MAX_PER_DAY = 3;
+  async function getPetAdventure() {
+    const player = perksPlayer();
+    if (!player) return { state: "none", startsLeftToday: 0 };
+    const [advSnap, cntSnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/petAdventure`).get(),
+      aigDb.ref(`players/${player.id}/petAdventureCount/${todayKey()}`).get()
+    ]);
+    const used = cntSnap.exists() ? (cntSnap.val() || 0) : 0;
+    const startsLeftToday = Math.max(0, PET_ADVENTURE_MAX_PER_DAY - used);
+    if (!advSnap.exists()) return { state: "none", startsLeftToday };
+    const endsAt = advSnap.val().startedAt + PET_ADVENTURE_MS;
+    return { state: Date.now() >= endsAt ? "ready" : "away", endsAt, startsLeftToday };
+  }
+  async function startPetAdventure() {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const cur = await getPetAdventure();
+    if (cur.state !== "none") return { ok: false, reason: "busy" };
+    if (cur.startsLeftToday <= 0) return { ok: false, reason: "daily-limit" };
+    const spent = await spendWallet(PET_ADVENTURE_COST);
+    if (!spent.ok) return spent;
+    await aigDb.ref(`players/${player.id}/petAdventure`).set({ startedAt: Date.now() });
+    await aigDb.ref(`players/${player.id}/petAdventureCount/${todayKey()}`).set((PET_ADVENTURE_MAX_PER_DAY - cur.startsLeftToday) + 1);
+    return { ok: true };
+  }
+  async function claimPetAdventure() {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const cur = await getPetAdventure();
+    if (cur.state !== "ready") return { ok: false, reason: "not-ready" };
+    await aigDb.ref(`players/${player.id}/petAdventure`).remove(); // cleared first -- no double claim
+    const r = Math.random();
+    if (r < 0.55) { const coins = 20 + Math.floor(Math.random() * 16); await creditWallet({ coins }); return { ok: true, loot: { type: "coins", amount: coins } }; }
+    if (r < 0.85) { const coins = 35 + Math.floor(Math.random() * 21); await creditWallet({ coins }); return { ok: true, loot: { type: "coins", amount: coins } }; }
+    if (r < 0.95) { const card = await awardRandomCard("common"); return { ok: true, loot: { type: "card", id: card, card: CARD_POOL.find(c => c.id === card) } }; }
+    await creditWallet({ gems: 1 });
+    return { ok: true, loot: { type: "gems", amount: 1 } };
+  }
+
+  // ---- 5. Lucky Wheel -- 1 free spin/day, up to 5 extra at 🪙10.
+  const WHEEL_EXTRA_COST = { coins: 10 };
+  const WHEEL_EXTRA_MAX = 5;
+  const WHEEL_PRIZES = [
+    { label: "🪙 5", weight: 30, coins: 5 },
+    { label: "🪙 10", weight: 25, coins: 10 },
+    { label: "🪙 25", weight: 15, coins: 25 },
+    { label: "🪙 50", weight: 5, coins: 50 },
+    { label: "💎 1", weight: 10, gems: 1 },
+    { label: "💎 2", weight: 3, gems: 2 },
+    { label: "🎴 Card", weight: 10, card: true },
+    { label: "💨 Nothing", weight: 2 }
+  ];
+  async function getWheelStatus() {
+    const player = perksPlayer();
+    if (!player) return { freeAvailable: false, extraUsed: 0, extraLeft: 0 };
+    const snap = await aigDb.ref(`players/${player.id}/wheel/${todayKey()}`).get();
+    const d = snap.exists() ? snap.val() : { freeUsed: false, extra: 0 };
+    return { freeAvailable: !d.freeUsed, extraUsed: d.extra || 0, extraLeft: Math.max(0, WHEEL_EXTRA_MAX - (d.extra || 0)) };
+  }
+  async function spinWheel() {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const st = await getWheelStatus();
+    const ref = aigDb.ref(`players/${player.id}/wheel/${todayKey()}`);
+    if (st.freeAvailable) {
+      await ref.update({ freeUsed: true });
+    } else {
+      if (st.extraLeft <= 0) return { ok: false, reason: "daily-limit" };
+      const spent = await spendWallet(WHEEL_EXTRA_COST);
+      if (!spent.ok) return spent;
+      await ref.update({ extra: st.extraUsed + 1 });
+    }
+    const total = WHEEL_PRIZES.reduce((s, p) => s + p.weight, 0);
+    let roll = Math.random() * total, idx = 0;
+    for (let i = 0; i < WHEEL_PRIZES.length; i++) { roll -= WHEEL_PRIZES[i].weight; if (roll <= 0) { idx = i; break; } }
+    const prize = WHEEL_PRIZES[idx];
+    let card = null;
+    if (prize.coins || prize.gems) await creditWallet({ coins: prize.coins || 0, gems: prize.gems || 0 });
+    if (prize.card) { const id = await awardRandomCard("common"); card = CARD_POOL.find(c => c.id === id) || null; }
+    return { ok: true, prizeIndex: idx, prize, card, free: st.freeAvailable };
+  }
+
+  // ---- 8. Personal Booster -- 2x coins for 30 min, 1x/day (💎2).
+  const BOOSTER_COST = { gems: 2 };
+  const BOOSTER_MS = 30 * 60000;
+  let cachedBoosterUntil = 0;
+  let boosterFetched = false;
+  async function getBooster() {
+    const player = perksPlayer();
+    if (!player) return { until: 0, active: false, boughtToday: false };
+    const snap = await aigDb.ref(`players/${player.id}/booster`).get();
+    const d = snap.exists() ? snap.val() : {};
+    cachedBoosterUntil = d.until || 0;
+    return { until: d.until || 0, active: (d.until || 0) > Date.now(), boughtToday: d.boughtDate === todayKey() };
+  }
+  async function buyBooster() {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const cur = await getBooster();
+    if (cur.boughtToday) return { ok: false, reason: "daily-limit" };
+    const spent = await spendWallet(BOOSTER_COST);
+    if (!spent.ok) return spent;
+    const until = Date.now() + BOOSTER_MS;
+    await aigDb.ref(`players/${player.id}/booster`).set({ until, boughtDate: todayKey() });
+    cachedBoosterUntil = until;
+    return { ok: true, until };
+  }
+  // Loaded lazily once per page (first awardCurrency call) so games that
+  // never open Extras still honor an active booster.
+  function ensureBoosterLoaded() {
+    if (boosterFetched) return;
+    boosterFetched = true;
+    getBooster().catch(() => {});
   }
 
   // =====================================================================
@@ -3757,6 +4054,11 @@
     getWeeklyFeaturedBossStatus, claimWeeklyFeaturedBoss,
     getThemeDayInfo, getThemeDayBonusStatus, claimThemeDayBonus,
     getAzkaPrBonusStatus, claimAzkaPrBonus,
+    getStreakFreezes, buyStreakFreeze, getPiggy, depositPiggy, withdrawPiggy,
+    LOADOUT_ITEMS, getInventory, getArmedLoadout, buyLoadout, armLoadout, consumeArmedLoadout,
+    getPetAdventure, startPetAdventure, claimPetAdventure,
+    WHEEL_PRIZES, getWheelStatus, spinWheel, getBooster, buyBooster,
+    STREAK_FREEZE_COST, STREAK_FREEZE_MAX, PIGGY_CAP, PET_ADVENTURE_COST, WHEEL_EXTRA_COST, BOOSTER_COST,
     getPersonalBest, submitPersonalBest,
     awardDanceBattleBonus,
     awardCookingRushBonus,
