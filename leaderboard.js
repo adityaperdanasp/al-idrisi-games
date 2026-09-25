@@ -1730,6 +1730,354 @@
   }
 
   // =====================================================================
+  // PM ROUND 10, BATCH 3 -- Clubs, Weekend Tournament, Card Battle rewards,
+  // Idle Garden, Parent Missions, Certificates, Bo's Adventure (season 2).
+  // Shared data (clubs, tournament entrants) lives under leaderboard/...
+  // (already writable, same as classfund); everything personal is under
+  // players/{id}/...
+  // =====================================================================
+  function weekDates(mondayKey) { return weekDatesFor(mondayKey); }
+  function prevWeekKey() {
+    const d = new Date(weekKey() + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() - 7);
+    return d.toISOString().slice(0, 10);
+  }
+  const cleanText = (t, n) => String(t || "").replace(/[<>&"]/g, "").trim().slice(0, n);
+
+  // ---- 15. Clubs -- small teams (max 5) that add up their weekly correct
+  // answers. Hitting the weekly goal lets every member claim a reward.
+  const CLUB_MAX = 5, CLUB_GOAL_PER_MEMBER = 60, CLUB_GOAL_REWARD = 25;
+  async function memberWeeklyScore(id, players, wk) {
+    const d = players[id];
+    return (d && d.weekly && d.weekly[wk] && d.weekly[wk].correct) || 0;
+  }
+  async function getMyClub() {
+    const player = perksPlayer();
+    if (!player) return null;
+    const idSnap = await aigDb.ref(`players/${player.id}/club`).get();
+    if (!idSnap.exists()) return null;
+    const cid = idSnap.val();
+    const snap = await aigDb.ref(`leaderboard/clubs/${cid}`).get();
+    if (!snap.exists() || !(snap.val().members || {})[player.id]) { await aigDb.ref(`players/${player.id}/club`).remove(); return null; }
+    const club = snap.val();
+    const players = await readAllPlayers();
+    const wk = weekKey();
+    const members = await Promise.all(Object.entries(club.members).map(async ([id, m]) => ({ id, name: m.name, score: await memberWeeklyScore(id, players, wk) })));
+    const score = members.reduce((a, m) => a + m.score, 0);
+    const goal = CLUB_GOAL_PER_MEMBER * members.length;
+    const claimed = (await aigDb.ref(`players/${player.id}/clubClaims/${wk}`).get()).exists();
+    return { id: cid, name: club.name, emoji: club.emoji, owner: club.owner, members: members.sort((a, b) => b.score - a.score), score, goal, claimed, reward: CLUB_GOAL_REWARD };
+  }
+  async function listClubs() {
+    const [snap, players] = await Promise.all([aigDb.ref("leaderboard/clubs").get(), readAllPlayers()]);
+    const wk = weekKey();
+    const clubs = snap.exists() ? snap.val() : {};
+    return Object.entries(clubs).map(([id, c]) => {
+      const ids = Object.keys(c.members || {});
+      const score = ids.reduce((a, m) => a + ((players[m] && players[m].weekly && players[m].weekly[wk] && players[m].weekly[wk].correct) || 0), 0);
+      return { id, name: c.name, emoji: c.emoji, size: ids.length, full: ids.length >= CLUB_MAX, score };
+    }).sort((a, b) => b.score - a.score);
+  }
+  async function createClub(name, emoji) {
+    const player = perksPlayer();
+    if (!player) return { ok: false, reason: "no-player" };
+    const nm = cleanText(name, 20);
+    if (nm.length < 3) return { ok: false, reason: "bad-name" };
+    if (await getMyClub()) return { ok: false, reason: "in-club" };
+    const cid = sanitizeNameKeyForLookup(nm).slice(0, 24);
+    if (!cid) return { ok: false, reason: "bad-name" };
+    const ref = aigDb.ref(`leaderboard/clubs/${cid}`);
+    if ((await ref.get()).exists()) return { ok: false, reason: "taken" };
+    await ref.set({ name: nm, emoji: cleanText(emoji, 4) || "🏰", owner: player.id, createdAt: Date.now(), members: { [player.id]: { name: player.name } } });
+    await aigDb.ref(`players/${player.id}/club`).set(cid);
+    return { ok: true, id: cid };
+  }
+  async function joinClub(cid) {
+    const player = perksPlayer();
+    if (!player) return { ok: false, reason: "no-player" };
+    if (await getMyClub()) return { ok: false, reason: "in-club" };
+    const ref = aigDb.ref(`leaderboard/clubs/${cid}`);
+    const snap = await ref.get();
+    if (!snap.exists()) return { ok: false, reason: "gone" };
+    if (Object.keys(snap.val().members || {}).length >= CLUB_MAX) return { ok: false, reason: "full" };
+    await ref.child(`members/${player.id}`).set({ name: player.name });
+    await aigDb.ref(`players/${player.id}/club`).set(cid);
+    return { ok: true };
+  }
+  async function leaveClub() {
+    const player = perksPlayer();
+    const mine = player && await getMyClub();
+    if (!mine) return { ok: false };
+    const ref = aigDb.ref(`leaderboard/clubs/${mine.id}`);
+    await ref.child(`members/${player.id}`).remove();
+    const left = mine.members.filter(m => m.id !== player.id);
+    if (!left.length) await ref.remove();
+    else if (mine.owner === player.id) await ref.child("owner").set(left[0].id);
+    await aigDb.ref(`players/${player.id}/club`).remove();
+    return { ok: true };
+  }
+  async function claimClubGoal() {
+    const player = perksPlayer();
+    const mine = player && await getMyClub();
+    if (!mine) return { ok: false, reason: "no-club" };
+    if (mine.claimed) return { ok: false, reason: "daily-limit" };
+    if (mine.score < mine.goal) return { ok: false, reason: "not-ready" };
+    await aigDb.ref(`players/${player.id}/clubClaims/${weekKey()}`).set(true);
+    await creditWallet({ coins: CLUB_GOAL_REWARD });
+    return { ok: true, coins: CLUB_GOAL_REWARD };
+  }
+
+  // ---- 16. Weekend Tournament -- enter Mon-Fri (first 8 in), bracket of
+  // 8 is played on Flash Challenge scores: quarter-finals = Saturday's
+  // best, semi-finals = Sunday's best, final = Sat+Sun. Fully computed
+  // from stored entrants + flash scores, so no server logic. Winner
+  // claims a title + reward (this week if it's done, or last week's).
+  const TOURNEY_SIZE = 8, TOURNEY_REWARD = { coins: 100, gems: 3 };
+  async function tourneyBuild(wk, players) {
+    const snap = await aigDb.ref(`leaderboard/tournament/${wk}/entrants`).get();
+    const raw = snap.exists() ? snap.val() : {};
+    const entrants = Object.entries(raw).sort((a, b) => (a[1].at || 0) - (b[1].at || 0)).slice(0, TOURNEY_SIZE)
+      .map(([id, v]) => ({ id, name: v.name || id }));
+    const dates = weekDates(wk);
+    const sat = dates[5], sun = dates[6];
+    const flash = id => { const f = (players[id] && players[id].flash) || {}; return { sat: (f[sat] && f[sat].best) || 0, sun: (f[sun] && f[sun].best) || 0 }; };
+    // Seed order: 1v8, 4v5, 2v7, 3v6 -> classic bracket (entrants already sorted by entry time).
+    const seeded = entrants.slice();
+    const order = [0, 7, 3, 4, 1, 6, 2, 5].filter(i => i < seeded.length);
+    const pairs = [];
+    for (let i = 0; i < order.length; i += 2) pairs.push([seeded[order[i]], seeded[order[i + 1]] || null]);
+    const decide = (a, b, key) => {
+      if (!a) return b; if (!b) return a;
+      const sa = key(a.id), sb = key(b.id);
+      return sa > sb ? a : sb > sa ? b : a; // tie -> earlier entrant
+    };
+    const rounds = [];
+    const qf = pairs.map(([a, b]) => ({ a, b, win: decide(a, b, id => flash(id).sat), sa: a ? flash(a.id).sat : 0, sb: b ? flash(b.id).sat : 0 }));
+    rounds.push(qf);
+    const semiPairs = [];
+    for (let i = 0; i < qf.length; i += 2) semiPairs.push([qf[i].win, qf[i + 1] ? qf[i + 1].win : null]);
+    const sf = semiPairs.map(([a, b]) => ({ a, b, win: decide(a, b, id => flash(id).sun), sa: a ? flash(a.id).sun : 0, sb: b ? flash(b.id).sun : 0 }));
+    rounds.push(sf);
+    let final = null;
+    if (sf.length >= 2) { const a = sf[0].win, b = sf[1].win; final = { a, b, win: decide(a, b, id => flash(id).sat + flash(id).sun), sa: a ? flash(a.id).sat + flash(a.id).sun : 0, sb: b ? flash(b.id).sat + flash(b.id).sun : 0 }; rounds.push([final]); }
+    else if (sf.length === 1) final = sf[0];
+    return { wk, entrants, rounds, champion: final && final.win ? final.win : null };
+  }
+  async function getTournament() {
+    const player = perksPlayer();
+    if (!player) return null;
+    const now = new Date();
+    const dow = now.getUTCDay(); // 0 Sun .. 6 Sat
+    const phase = (dow >= 1 && dow <= 5) ? "entry" : "live";
+    const wk = weekKey();
+    const players = await readAllPlayers();
+    const cur = await tourneyBuild(wk, players);
+    const last = await tourneyBuild(prevWeekKey(), players);
+    const claimedSnap = await aigDb.ref(`players/${player.id}/tournamentTitles`).get();
+    const titles = claimedSnap.exists() ? claimedSnap.val() : {};
+    const lastDone = last.entrants.length >= 2 && last.champion && last.champion.id === player.id && !titles[last.wk];
+    return { phase, current: cur, last, mine: cur.entrants.some(e => e.id === player.id), size: TOURNEY_SIZE, titles: Object.keys(titles).length, canClaim: lastDone ? last.wk : null, reward: TOURNEY_REWARD };
+  }
+  async function enterTournament() {
+    const player = perksPlayer();
+    if (!player) return { ok: false, reason: "no-player" };
+    const dow = new Date().getUTCDay();
+    if (dow === 0 || dow === 6) return { ok: false, reason: "closed" };
+    const ref = aigDb.ref(`leaderboard/tournament/${weekKey()}/entrants`);
+    const snap = await ref.get();
+    const cur = snap.exists() ? snap.val() : {};
+    if (cur[player.id]) return { ok: false, reason: "joined" };
+    if (Object.keys(cur).length >= TOURNEY_SIZE) return { ok: false, reason: "full" };
+    await ref.child(player.id).set({ name: player.name, at: Date.now() });
+    return { ok: true };
+  }
+  async function claimTournamentTitle() {
+    const player = perksPlayer();
+    const t = player && await getTournament();
+    if (!t || !t.canClaim) return { ok: false, reason: "not-ready" };
+    await aigDb.ref(`players/${player.id}/tournamentTitles/${t.canClaim}`).set(true);
+    await creditWallet(TOURNEY_REWARD);
+    return { ok: true, reward: TOURNEY_REWARD };
+  }
+
+  // ---- 17. Card Battle -- fought in the extras page; this is just the
+  // daily reward cap so it can't be farmed (12 coins a win, 3 wins a day).
+  const BATTLE_WIN_COINS = 12, BATTLE_DAILY_WINS = 3;
+  async function getBattleStatus() {
+    const player = perksPlayer();
+    if (!player) return null;
+    const snap = await aigDb.ref(`players/${player.id}/battle/${todayKey()}`).get();
+    const wins = snap.exists() ? (snap.val() || 0) : 0;
+    return { wins, left: Math.max(0, BATTLE_DAILY_WINS - wins), reward: BATTLE_WIN_COINS };
+  }
+  async function claimBattleWin() {
+    const player = perksPlayer();
+    const st = await getBattleStatus();
+    if (!player || !st) return { ok: false };
+    if (!st.left) return { ok: true, coins: 0, capped: true };
+    await aigDb.ref(`players/${player.id}/battle/${todayKey()}`).set(st.wins + 1);
+    await creditWallet({ coins: BATTLE_WIN_COINS });
+    return { ok: true, coins: BATTLE_WIN_COINS };
+  }
+
+  // ---- 18. Idle Garden -- plant, wait, harvest coins. Every correct answer
+  // you give while a plant grows shaves a minute off its timer.
+  const GARDEN_PLANTS = [
+    { id: "carrot", emoji: "🥕", name: "Carrot", seed: 5, growMin: 30, yield: 9 },
+    { id: "sunflower", emoji: "🌻", name: "Sunflower", seed: 15, growMin: 120, yield: 30 },
+    { id: "pumpkin", emoji: "🎃", name: "Pumpkin", seed: 30, growMin: 300, yield: 70 },
+    { id: "dragonfruit", emoji: "🐉", name: "Dragonfruit", seed: 60, growMin: 720, yield: 150 }
+  ];
+  const GARDEN_MAX_PLOTS = 6, GARDEN_PLOT_COST = [0, 0, 0, { gems: 2 }, { gems: 3 }, { gems: 4 }];
+  async function readGarden(player) {
+    const [g, t] = await Promise.all([aigDb.ref(`players/${player.id}/garden`).get(), aigDb.ref(`players/${player.id}/totalCorrect`).get()]);
+    const d = g.exists() ? g.val() : {};
+    return { plots: d.plots || 3, slots: d.slots || {}, total: t.exists() ? (t.val() || 0) : 0 };
+  }
+  async function getGarden() {
+    const player = perksPlayer();
+    if (!player) return null;
+    const g = await readGarden(player);
+    const now = Date.now();
+    const slots = [];
+    for (let i = 0; i < g.plots; i++) {
+      const s = g.slots[i];
+      if (!s) { slots.push({ i, empty: true }); continue; }
+      const def = GARDEN_PLANTS.find(p => p.id === s.plant);
+      const boost = Math.max(0, g.total - (s.totalAt || 0)) * 60000;
+      const readyAt = (s.at || 0) + def.growMin * 60000 - boost;
+      slots.push({ i, plant: def, readyAt, ready: now >= readyAt, msLeft: Math.max(0, readyAt - now) });
+    }
+    return { slots, plots: g.plots, maxPlots: GARDEN_MAX_PLOTS, nextPlotCost: g.plots < GARDEN_MAX_PLOTS ? GARDEN_PLOT_COST[g.plots] : null, plants: GARDEN_PLANTS };
+  }
+  async function plantSeed(i, plantId) {
+    const player = perksPlayer();
+    const def = GARDEN_PLANTS.find(p => p.id === plantId);
+    if (!player || !def) return { ok: false };
+    const g = await readGarden(player);
+    if (i < 0 || i >= g.plots) return { ok: false, reason: "bad-amount" };
+    if (g.slots[i]) return { ok: false, reason: "busy" };
+    const paid = await spendWallet({ coins: def.seed });
+    if (!paid.ok) return paid;
+    await aigDb.ref(`players/${player.id}/garden/slots/${i}`).set({ plant: plantId, at: Date.now(), totalAt: g.total });
+    if (!(await aigDb.ref(`players/${player.id}/garden/plots`).get()).exists()) await aigDb.ref(`players/${player.id}/garden/plots`).set(3);
+    return { ok: true };
+  }
+  async function harvestPlot(i) {
+    const player = perksPlayer();
+    const garden = player && await getGarden();
+    const slot = garden && garden.slots[i];
+    if (!slot || slot.empty) return { ok: false, reason: "empty" };
+    if (!slot.ready) return { ok: false, reason: "not-ready" };
+    await aigDb.ref(`players/${player.id}/garden/slots/${i}`).remove(); // clear FIRST so a double-tap can't pay twice
+    await creditWallet({ coins: slot.plant.yield });
+    return { ok: true, coins: slot.plant.yield, plant: slot.plant };
+  }
+  async function buyGardenPlot() {
+    const player = perksPlayer();
+    const garden = player && await getGarden();
+    if (!garden || garden.nextPlotCost === null) return { ok: false, reason: "max" };
+    const paid = await spendWallet(garden.nextPlotCost);
+    if (!paid.ok) return paid;
+    await aigDb.ref(`players/${player.id}/garden/plots`).set(garden.plots + 1);
+    return { ok: true };
+  }
+
+  // ---- 19. Parent Missions -- a parent writes a real-world mission in the
+  // Parent Portal (players/{child}/parentMissions/{id}); the child marks it
+  // done; the parent approves; an optional coin bonus pays out once.
+  async function getMissions() {
+    const player = perksPlayer();
+    if (!player) return [];
+    const snap = await aigDb.ref(`players/${player.id}/parentMissions`).get();
+    return Object.entries(snap.exists() ? snap.val() : {}).map(([id, m]) => ({ id, ...m })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+  async function completeMission(id) {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/parentMissions/${id}`);
+    const snap = await ref.get();
+    if (!snap.exists() || snap.val().status !== "open") return { ok: false, reason: "busy" };
+    await ref.child("status").set("done");
+    await ref.child("doneAt").set(Date.now());
+    return { ok: true };
+  }
+  async function claimMissionBonus(id) {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/parentMissions/${id}`);
+    const snap = await ref.get();
+    const m = snap.exists() ? snap.val() : null;
+    if (!m || m.status !== "approved" || m.credited) return { ok: false, reason: "not-ready" };
+    await ref.child("credited").set(true); // marker BEFORE paying
+    const coins = Math.max(0, Math.min(100, m.bonus | 0));
+    if (coins) await creditWallet({ coins });
+    return { ok: true, coins };
+  }
+
+  // ---- 20. Certificates & Memory Book -- milestones computed from data
+  // that already exists; the first date each one is seen is stored so the
+  // book shows WHEN it happened.
+  const CERT_DEFS = [
+    { id: "correct-100", emoji: "🌱", title: "100 Right Answers", desc: "answered 100 questions correctly", test: c => c.total >= 100 },
+    { id: "correct-500", emoji: "🌿", title: "500 Right Answers", desc: "answered 500 questions correctly", test: c => c.total >= 500 },
+    { id: "correct-1000", emoji: "🌳", title: "1,000 Right Answers", desc: "answered 1,000 questions correctly", test: c => c.total >= 1000 },
+    { id: "correct-2500", emoji: "🏔️", title: "2,500 Right Answers", desc: "answered 2,500 questions correctly", test: c => c.total >= 2500 },
+    { id: "streak-7", emoji: "🔥", title: "7-Day Streak", desc: "played 7 days in a row", test: c => c.best >= 7 },
+    { id: "streak-30", emoji: "☄️", title: "30-Day Streak", desc: "played 30 days in a row", test: c => c.best >= 30 },
+    { id: "level-10", emoji: "⭐", title: "Level 10", desc: "reached Level 10", test: c => c.level >= 10 },
+    { id: "cards-12", emoji: "🃏", title: "Card Collector", desc: "collected 12 cards", test: c => c.cards >= 12 },
+    { id: "dino-mega", emoji: "🐲", title: "Dino Master", desc: "evolved a Dino Companion into Mega Rex", test: c => c.dino >= 4 },
+    { id: "champion", emoji: "🏆", title: "Tournament Champion", desc: "won the Weekend Tournament", test: c => c.titles >= 1 }
+  ];
+  async function getCertificates() {
+    const player = perksPlayer();
+    if (!player) return null;
+    const [t, st, lv, col, dn, ti, saved] = await Promise.all([
+      aigDb.ref(`players/${player.id}/totalCorrect`).get(), getStreak(), getPlayerLevel(), getCollection(),
+      aigDb.ref(`players/${player.id}/dino/stage`).get(), aigDb.ref(`players/${player.id}/tournamentTitles`).get(),
+      aigDb.ref(`players/${player.id}/certs`).get()
+    ]);
+    const ctx = { total: t.exists() ? (t.val() || 0) : 0, best: Math.max(st.bestStreak || 0, st.count || 0), level: lv ? lv.level : 1,
+      cards: Object.values(col.owned || {}).filter(Boolean).length, dino: dn.exists() ? dn.val() : 0, titles: ti.exists() ? Object.keys(ti.val()).length : 0 };
+    const dates = saved.exists() ? saved.val() : {};
+    const today = todayKey();
+    const out = [];
+    for (const d of CERT_DEFS) {
+      const earned = !!d.test(ctx);
+      if (earned && !dates[d.id]) { dates[d.id] = today; aigDb.ref(`players/${player.id}/certs/${d.id}`).set(today).catch(() => {}); }
+      out.push({ id: d.id, emoji: d.emoji, title: d.title, desc: d.desc, earned, date: earned ? dates[d.id] : null });
+    }
+    return { certs: out, name: player.name, ctx };
+  }
+
+  // ---- 14. Bo's Adventure (season 2) -- the story graph lives in
+  // extras/script.js; this stores the current node + which endings you've
+  // seen, and pays a one-time reward per ending.
+  const ADVENTURE_ENDING_COINS = 30;
+  async function getAdventure() {
+    const player = perksPlayer();
+    if (!player) return null;
+    const snap = await aigDb.ref(`players/${player.id}/adventure`).get();
+    const a = snap.exists() ? snap.val() : {};
+    return { node: a.node || "start", endings: a.endings || {} };
+  }
+  async function saveAdventureNode(node) {
+    const player = perksPlayer();
+    if (!player) return;
+    await aigDb.ref(`players/${player.id}/adventure/node`).set(node);
+  }
+  async function claimAdventureEnding(endingId) {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/adventure/endings/${endingId}`);
+    if ((await ref.get()).exists()) return { ok: true, first: false };
+    await ref.set(true); // marker BEFORE paying
+    await creditWallet({ coins: ADVENTURE_ENDING_COINS });
+    return { ok: true, first: true, coins: ADVENTURE_ENDING_COINS };
+  }
+
+  // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
   // players so skin.js can call it unconditionally.
@@ -4715,6 +5063,12 @@
     getDino, evolveDino, DINO_STAGES, getSeason, getSeasonStatus, claimSeasonGift,
     getRotatingShop, getGachaStatus, rollGacha, GACHA_COST, GACHA_X5_COST,
     getFlashStatus, submitFlash, getFlashBoard, FLASH_MAX_PLAYS,
+    getMyClub, listClubs, createClub, joinClub, leaveClub, claimClubGoal, CLUB_MAX,
+    getTournament, enterTournament, claimTournamentTitle,
+    getBattleStatus, claimBattleWin, BATTLE_DAILY_WINS,
+    getGarden, plantSeed, harvestPlot, buyGardenPlot,
+    getMissions, completeMission, claimMissionBonus,
+    getCertificates, getAdventure, saveAdventureNode, claimAdventureEnding, ADVENTURE_ENDING_COINS,
     getPersonalBest, submitPersonalBest,
     awardDanceBattleBonus,
     awardCookingRushBonus,

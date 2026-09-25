@@ -136,6 +136,19 @@
         <p class="p-save-note" id="p-save-note"></p>
       </div>
 
+      <!-- ---- Real-world missions (PM round 10, item 19) ---- -->
+      <div class="p-section">
+        <div class="p-section-title">📝 Missions for Your Child</div>
+        <p class="p-section-desc">Set a real-world mission ("read 1 chapter", "tidy your room") and the reward YOU choose. Your child sees it in Extras, taps "I did it!", and you approve it here. An optional coin bonus (0-100) is paid in-game when you approve.</p>
+        <div class="p-quiz-card">
+          <input id="p-mission-text" type="text" maxlength="80" placeholder="Mission, e.g. Read 1 chapter of your book" style="width:100%;padding:10px;border:2px solid #eadff5;border-radius:10px;font:inherit;margin-bottom:6px">
+          <input id="p-mission-reward" type="text" maxlength="60" placeholder="Your real-life reward, e.g. Ice cream on Saturday (optional)" style="width:100%;padding:10px;border:2px solid #eadff5;border-radius:10px;font:inherit;margin-bottom:6px">
+          <input id="p-mission-bonus" type="number" min="0" max="100" placeholder="In-game coin bonus (0-100)" style="width:100%;padding:10px;border:2px solid #eadff5;border-radius:10px;font:inherit;margin-bottom:8px">
+          <div class="p-quiz-actions"><button class="p-quiz-btn p-quiz-approve" id="p-mission-add" type="button">+ Add mission</button></div>
+        </div>
+        <div id="p-mission-list"></div>
+      </div>
+
       <!-- ---- Review kid-written quiz questions before they go live ---- -->
       <div class="p-section">
         <div class="p-section-title">✏️ Review Quiz Questions</div>

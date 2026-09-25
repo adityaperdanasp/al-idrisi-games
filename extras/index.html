@@ -40,6 +40,10 @@
   .ex-wheel span { position: absolute; left: 50%; top: 50%; font-size: 1rem; font-weight: 800; font-family: "Baloo 2", sans-serif; transform-origin: 0 0; white-space: nowrap; }
   .ex-pointer { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); font-size: 1.6rem; z-index: 2; }
   .ex-prize { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; min-height: 1.4em; }
+  .ex-nav { position: sticky; top: 0; z-index: 20; display: flex; gap: 6px; overflow-x: auto; padding: 8px 16px; margin-bottom: 8px; background: linear-gradient(180deg, #FDF0F7 70%, rgba(253,240,247,0)); scrollbar-width: none; }
+  .ex-nav::-webkit-scrollbar { display: none; }
+  .ex-nav a { flex: none; background: #fff; border-radius: 100px; padding: 6px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .78rem; color: #8c2f6b; text-decoration: none; box-shadow: 0 2px 0 rgba(0,0,0,.06); white-space: nowrap; }
+  .ex-card { scroll-margin-top: 56px; }
   .ex-empty { text-align: center; color: #8a7a6a; font-weight: 700; padding: 10px 0; font-size: .82rem; }
 </style>
 </head>

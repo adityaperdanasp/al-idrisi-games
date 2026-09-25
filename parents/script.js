@@ -193,6 +193,9 @@
     // have; a parent checking here any time still sees where things stand) ----
     renderAchievements(player);
 
+    // ---- Real-world missions (PM round 10, item 19) ----
+    renderMissions(player.parentMissions || {});
+
     // ---- Review kid-written quiz questions ----
     renderQuizReview(player.customQuestions || {});
 
@@ -267,6 +270,31 @@
         <span class="p-achievement-value">${escapeHtml(String(r.value))}</span>
         ${r.sub ? `<span class="p-achievement-sub">${escapeHtml(r.sub)}</span>` : ""}
       </div>`).join("");
+  }
+
+  function renderMissions(missions) {
+    const wrap = document.getElementById("p-mission-list");
+    const entries = Object.entries(missions).sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+    wrap.innerHTML = entries.map(([id, m]) => {
+      const right = m.status === "done"
+        ? `<div class="p-quiz-actions"><button class="p-quiz-btn p-quiz-approve" data-mission-approve="${id}">✓ Approve</button><button class="p-quiz-btn p-quiz-reject" data-mission-reopen="${id}">↺ Not yet</button></div>`
+        : `<span class="p-quiz-status p-quiz-status-${m.status === "approved" ? "approved" : "pending"}">${m.status === "approved" ? "approved" : "waiting for your child"}</span>${m.status === "open" ? ` <button class="p-quiz-btn p-quiz-reject" data-mission-del="${id}">Delete</button>` : ""}`;
+      return `<div class="p-quiz-card"><div class="p-quiz-prompt">${escapeHtml(m.text)}</div><div class="p-quiz-options">${m.reward ? "🎁 " + escapeHtml(m.reward) : ""}${m.bonus ? ` · 🪙${m.bonus | 0}` : ""}</div>${right}</div>`;
+    }).join("");
+    const add = document.getElementById("p-mission-add");
+    add.onclick = async () => {
+      const text = document.getElementById("p-mission-text").value.trim();
+      if (!text) return;
+      const bonus = Math.max(0, Math.min(100, parseInt(document.getElementById("p-mission-bonus").value, 10) || 0));
+      add.disabled = true;
+      await aigDb.ref(`players/${childId}/parentMissions`).push({ text, reward: document.getElementById("p-mission-reward").value.trim(), bonus, status: "open", createdAt: Date.now() });
+      ["p-mission-text", "p-mission-reward", "p-mission-bonus"].forEach(i => { document.getElementById(i).value = ""; });
+      add.disabled = false;
+      loadPortal();
+    };
+    wrap.querySelectorAll("[data-mission-approve]").forEach(b => b.onclick = async () => { await aigDb.ref(`players/${childId}/parentMissions/${b.dataset.missionApprove}/status`).set("approved"); loadPortal(); });
+    wrap.querySelectorAll("[data-mission-reopen]").forEach(b => b.onclick = async () => { await aigDb.ref(`players/${childId}/parentMissions/${b.dataset.missionReopen}/status`).set("open"); loadPortal(); });
+    wrap.querySelectorAll("[data-mission-del]").forEach(b => b.onclick = async () => { await aigDb.ref(`players/${childId}/parentMissions/${b.dataset.missionDel}`).remove(); loadPortal(); });
   }
 
   function renderQuizReview(customQuestions) {

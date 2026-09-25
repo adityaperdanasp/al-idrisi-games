@@ -461,10 +461,240 @@ SECTIONS.push({ id: "dino", async render(el) {
 // Newest features first: pull this batch's sections to the front.
 SECTIONS.unshift(...SECTIONS.splice(R10_START));
 
+/* =================================================================
+   PM round 10, batch 3 -- Adventure, Clubs, Tournament, Card Battle,
+   Garden, Parent Missions, Certificates (also pulled to the top).
+   ================================================================= */
+const R10B_START = SECTIONS.length;
+const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const shuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// A small local quiz generator (tier 1 easy / 2 medium / 3 hard) for the
+// adventure gates and card battles -> { prompt, options[4], answer }.
+function makeQuiz(tier) {
+  let prompt, ans;
+  if (tier <= 1) { const a = rnd(12, 60), b = rnd(11, 39); if (Math.random() < .5) { prompt = `${a} + ${b} = ?`; ans = a + b; } else { const x = Math.max(a, b), y = Math.min(a, b); prompt = `${x} − ${y} = ?`; ans = x - y; } }
+  else if (tier === 2) { const a = rnd(6, 12), b = rnd(3, 9); prompt = `${a} × ${b} = ?`; ans = a * b; }
+  else { const a = rnd(12, 25), b = rnd(3, 9); prompt = `${a} × ${b} = ?`; ans = a * b; }
+  const opts = new Set([ans]);
+  while (opts.size < 4) { const d = rnd(1, 9) * (Math.random() < .5 ? -1 : 1) * (tier > 1 ? 2 : 1); if (ans + d > 0) opts.add(ans + d); }
+  return { prompt, options: shuf([...opts]), answer: ans };
+}
+
+/* ---- 14. Bo's Adventure (season 2) ---- */
+const ADV = {
+  start: { text: "Bo finds a glowing map in the Number Forest. Two paths shine: the Whispering Woods 🌲 and Crystal Mountain 🏔️.", choices: [["🌲 Whispering Woods", "woods", 1], ["🏔️ Crystal Mountain", "mountain", 1]] },
+  woods: { text: "A wise owl blocks a rushing river. \"Cross,\" hoots the owl, \"and I'll show you the way!\"", choices: [["🌉 Build a bridge", "end-builder", 2], ["🐟 Ride a giant fish", "cave", 1]] },
+  mountain: { text: "An ice door glitters with a lock made of numbers.", choices: [["🔑 Pick the lock", "treasure", 2], ["🔨 Smash it!", "end-oops", 1]] },
+  cave: { text: "In a warm cave, a sleepy dragon snores on a pile of shiny things — and there sits the Number Crystal!", choices: [["🤫 Tiptoe past", "end-hero", 3], ["🎵 Sing a lullaby", "end-friend", 2]] },
+  treasure: { text: "Inside the mountain: the Number Crystal… and a tiny dragon egg that wiggles!", choices: [["💎 Take the crystal", "end-hero", 3], ["🥚 Take the egg", "end-friend", 1]] },
+  "end-hero": { ending: "hero", title: "🏆 Crystal Hero", text: "Bo carries the Number Crystal home and the whole forest lights up. Everyone cheers your name!" },
+  "end-friend": { ending: "friend", title: "🐉 Dragon Friend", text: "The dragon wakes up, hugs Bo (gently!) and becomes your best friend. It gives you a ride home." },
+  "end-builder": { ending: "builder", title: "🌉 Master Builder", text: "Your bridge is so good the owl makes you the forest's official builder. Bo hangs the blueprint on the wall." },
+  "end-oops": { ending: "oops", title: "🧊 The Great Slip", text: "SMASH! The door slides open… and Bo slides all the way down the mountain. Wheeee! (The crystal can wait.)" }
+};
+let advGate = null;
+SECTIONS.push({ id: "adventure", async render(el) {
+  const a = await LB.getAdventure();
+  const node = ADV[a.node] || ADV.start;
+  const endCount = Object.keys(a.endings).length;
+  let body;
+  if (node.ending) {
+    const r = await LB.claimAdventureEnding(node.ending);
+    if (r.first) refreshWallet();
+    body = `<div class="ex-prize" style="font-size:1.2rem">${node.title}</div><p class="ex-sub" style="font-size:.85rem">${node.text}</p>
+      ${r.first ? `<div class="ex-msg">🎉 New ending! +🪙${r.coins}</div>` : ""}<button class="ex-btn" id="ad-again">Start a new adventure</button>`;
+  } else if (advGate) {
+    const g = advGate;
+    body = `<p class="ex-sub" style="font-size:.85rem">${node.text}</p><div class="ex-prize">🧠 Solve it to go: ${g.label}</div><div class="ex-prize" style="font-size:1.3rem">${g.q.prompt}</div>
+      <div class="ex-chip-row">${g.q.options.map(o => `<button class="ex-item" data-ans="${o}"><span class="ex-item-name">${o}</span></button>`).join("")}</div><div class="ex-msg"></div><button class="ex-btn alt" id="ad-back" style="margin-top:8px">← Choose again</button>`;
+  } else {
+    body = `<p class="ex-sub" style="font-size:.85rem">${node.text}</p><div class="ex-chip-row">${node.choices.map((c, i) => `<button class="ex-item" data-c="${i}"><span class="ex-item-name">${c[0]}</span><span class="ex-item-own">${["★", "★★", "★★★"][c[2] - 1]} puzzle</span></button>`).join("")}</div>`;
+  }
+  el.innerHTML = `<h2>🗺️ Bo's Adventure</h2><p class="ex-sub" style="margin-bottom:4px">Season 2 · ${endCount}/4 endings found — each new ending pays 🪙${LB.ADVENTURE_ENDING_COINS}.</p>${body}`;
+  const again = el.querySelector("#ad-again");
+  if (again) again.onclick = async () => { advGate = null; await LB.saveAdventureNode("start"); this.render(el); };
+  const back = el.querySelector("#ad-back");
+  if (back) back.onclick = () => { advGate = null; this.render(el); };
+  el.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { const c = node.choices[+b.dataset.c]; advGate = { label: c[0], to: c[1], tier: c[2], q: makeQuiz(c[2]) }; this.render(el); });
+  el.querySelectorAll("[data-ans]").forEach(b => b.onclick = async () => {
+    if (+b.dataset.ans === advGate.q.answer) {
+      const to = advGate.to; advGate = null;
+      await LB.saveAdventureNode(to); this.render(el);
+    } else { advGate.q = makeQuiz(advGate.tier); say(el, "Oops! Bo gets a new puzzle — try again 💪"); setTimeout(() => this.render(el), 700); }
+  });
+}});
+
+/* ---- 15. Clubs ---- */
+SECTIONS.push({ id: "club", async render(el) {
+  const mine = await LB.getMyClub();
+  if (mine) {
+    const pct = Math.min(100, Math.round(mine.score / mine.goal * 100));
+    el.innerHTML = `<h2>${esc(mine.emoji)} ${esc(mine.name)}</h2>
+      <p class="ex-sub">Your club's answers this week add up. Reach the goal and every member can claim 🪙${mine.reward}.</p>
+      <div style="background:#eee4f7;border-radius:100px;height:12px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#c08be8,#8c2f6b)"></div></div>
+      <div class="ex-sub" style="margin:6px 0 10px">${mine.score}/${mine.goal} correct this week</div>
+      ${mine.members.map(m => `<div class="ex-row" style="justify-content:space-between;padding:3px 0"><span>${m.id === player.id ? "⭐ " : ""}${esc(m.name)}</span><b>${m.score}</b></div>`).join("")}
+      <div class="ex-row" style="margin-top:10px"><button class="ex-btn" id="cl-claim" ${mine.claimed || mine.score < mine.goal ? "disabled" : ""}>${mine.claimed ? "Claimed ✓" : "Claim goal reward"}</button><button class="ex-btn alt" id="cl-leave">Leave club</button></div><div class="ex-msg"></div>`;
+    el.querySelector("#cl-claim").onclick = async () => { const r = await LB.claimClubGoal(); if (!r.ok) return say(el, FAIL[r.reason] || "Not yet!"); await refreshWallet(); await this.render(el); say(el, `🎉 +🪙${r.coins}`); };
+    el.querySelector("#cl-leave").onclick = async () => { if (confirm("Leave this club?")) { await LB.leaveClub(); this.render(el); } };
+    return;
+  }
+  const clubs = await LB.listClubs();
+  el.innerHTML = `<h2>🏰 Clubs</h2><p class="ex-sub">Team up with up to ${LB.CLUB_MAX} friends. Your answers add up on the weekly club board.</p>
+    <div class="ex-row"><input class="ex-input" id="cl-name" maxlength="20" placeholder="Club name" style="width:150px"><input class="ex-input" id="cl-emoji" maxlength="2" value="🏰" style="width:56px;text-align:center"><button class="ex-btn" id="cl-make">Create</button></div><div class="ex-msg"></div>
+    <div style="margin-top:10px">${clubs.length ? clubs.map((c, i) => `<div class="ex-row" style="justify-content:space-between;padding:4px 0"><span>${["🥇","🥈","🥉"][i] || (i + 1) + "."} ${esc(c.emoji)} <b>${esc(c.name)}</b> <small>(${c.size}/${LB.CLUB_MAX})</small></span><span>${c.score} <button class="ex-btn alt" data-join="${esc(c.id)}" ${c.full ? "disabled" : ""} style="padding:5px 10px">${c.full ? "Full" : "Join"}</button></span></div>`).join("") : '<div class="ex-empty">No clubs yet — start the first one!</div>'}</div>`;
+  const F = { taken: "That name is taken.", "bad-name": "Pick a name (3+ letters).", full: "That club is full.", "in-club": "You're already in a club.", gone: "That club is gone." };
+  el.querySelector("#cl-make").onclick = async () => { const r = await LB.createClub(el.querySelector("#cl-name").value, el.querySelector("#cl-emoji").value); if (!r.ok) return say(el, F[r.reason] || "Couldn't create."); this.render(el); };
+  el.querySelectorAll("[data-join]").forEach(b => b.onclick = async () => { const r = await LB.joinClub(b.dataset.join); if (!r.ok) return say(el, F[r.reason] || "Couldn't join."); this.render(el); });
+}});
+
+/* ---- 16. Weekend Tournament ---- */
+SECTIONS.push({ id: "tourney", async render(el) {
+  const t = await LB.getTournament();
+  const nm = e => e ? esc(e.name) : "—";
+  const match = m => `<div style="background:#fdf6ea;border-radius:10px;padding:6px 10px;margin:4px 0;font-size:.78rem"><div style="${m.win && m.a && m.win.id === m.a.id ? "font-weight:800;color:#8c2f6b" : ""}">${nm(m.a)} <span style="float:right">${m.sa}</span></div><div style="${m.win && m.b && m.win.id === m.b.id ? "font-weight:800;color:#8c2f6b" : ""}">${nm(m.b)} <span style="float:right">${m.sb}</span></div></div>`;
+  const cur = t.current;
+  const live = t.phase === "live" && cur.entrants.length >= 2;
+  const shown = cur.rounds.filter(r => r.some(m => m.a && m.b)); // hide rounds that are only byes
+  el.innerHTML = `<h2>🏆 Weekend Tournament</h2>
+    <p class="ex-sub">Sign up Mon–Fri (first ${t.size} in). On the weekend, play ⚡ Flash Challenge: quarter-finals = Saturday's best score, semi-finals = Sunday's, final = both days added. Winner earns a title + 🪙${t.reward.coins} 💎${t.reward.gems}.</p>
+    <div class="ex-row"><span class="ex-stat">${cur.entrants.length}/${t.size}</span><span class="ex-sub" style="margin:0">signed up · ${t.phase === "entry" ? "sign-ups open" : "matches are live"} · ${t.titles} title${t.titles === 1 ? "" : "s"} won</span>
+    ${t.phase === "entry" ? `<button class="ex-btn" id="tn-join" ${t.mine || cur.entrants.length >= t.size ? "disabled" : ""}>${t.mine ? "You're in ✓" : "Sign up"}</button>` : ""}</div>
+    ${t.canClaim ? `<div class="ex-row" style="margin-top:8px"><button class="ex-btn" id="tn-claim">🏆 You won last week! Claim prize</button></div>` : ""}
+    <div class="ex-msg"></div>
+    ${live ? shown.map((r, i) => `<div class="ex-sub" style="margin:8px 0 2px;font-weight:800;color:#3d2e22">${["Quarter-finals", "Semi-finals", "Final"].slice(3 - shown.length)[i]}</div>${r.map(match).join("")}`).join("") + (cur.champion ? `<div class="ex-prize">👑 Leading: ${nm(cur.champion)}</div>` : "")
+      : cur.entrants.length ? `<div class="ex-chip-row" style="margin-top:8px">${cur.entrants.map(e => `<span class="ex-item" style="flex:0 1 auto;padding:6px 10px;font-weight:800;font-size:.74rem;cursor:default">${esc(e.name)}</span>`).join("")}</div>` : ""}
+    ${t.last.entrants.length >= 2 && t.last.champion ? `<div class="ex-sub" style="margin-top:10px">Last week's champion: <b>👑 ${esc(t.last.champion.name)}</b></div>` : ""}`;
+  const j = el.querySelector("#tn-join");
+  if (j) j.onclick = async () => { const r = await LB.enterTournament(); if (!r.ok) return say(el, r.reason === "full" ? "The bracket is full!" : "Sign-ups are closed."); this.render(el); };
+  const c = el.querySelector("#tn-claim");
+  if (c) c.onclick = async () => { const r = await LB.claimTournamentTitle(); if (!r.ok) return say(el, "Not ready."); await refreshWallet(); await this.render(el); say(el, "👑 Champion! Prize paid."); };
+}});
+
+/* ---- 17. Card Battle ---- */
+const RAR_BASE = { common: 3, rare: 5, epic: 7, legendary: 9 };
+const cardAtk = c => (RAR_BASE[c.rarity] || 3) + (String(c.id).split("").reduce((a, ch) => a + ch.charCodeAt(0), 0) % 3);
+let battleSel = [];
+SECTIONS.push({ id: "battle", async render(el) {
+  const [col, st] = await Promise.all([LB.getCollection(), LB.getBattleStatus()]);
+  const mine = col.pool.filter(c => col.owned[c.id]);
+  if (mine.length < 3) { el.innerHTML = `<h2>⚔️ Card Battle</h2><p class="ex-sub">Collect 3 cards first (they drop from daily bonuses, the season pass and boss wins), then bring them here to battle!</p><div class="ex-empty">${mine.length}/3 cards</div>`; return; }
+  el.innerHTML = `<h2>⚔️ Card Battle</h2>
+    <p class="ex-sub">Pick 3 cards (their power is the number). Each round, solve a puzzle: a right answer gives +4 power. Win 2 of 3 rounds → 🪙${st.reward}. ${st.left} win${st.left === 1 ? "" : "s"} of coins left today.</p>
+    <div class="ex-chip-row" id="bt-pick">${mine.map(c => `<button class="ex-item ${battleSel.includes(c.id) ? "armed" : ""}" data-id="${c.id}" style="flex:0 1 72px"><div class="ex-item-emoji">${c.emoji}</div><div class="ex-item-own">⚔️ ${cardAtk(c)}</div></button>`).join("")}</div>
+    <div class="ex-row" style="margin-top:10px"><button class="ex-btn" id="bt-go" ${battleSel.length === 3 ? "" : "disabled"}>Battle! (${battleSel.length}/3)</button></div><div id="bt-arena"></div><div class="ex-msg"></div>`;
+  el.querySelectorAll("#bt-pick .ex-item").forEach(b => b.onclick = () => {
+    const id = b.dataset.id; battleSel = battleSel.includes(id) ? battleSel.filter(x => x !== id) : battleSel.length < 3 ? [...battleSel, id] : battleSel; this.render(el);
+  });
+  el.querySelector("#bt-go").onclick = async () => {
+    const deck = battleSel.map(id => col.pool.find(c => c.id === id));
+    const avg = deck.reduce((a, c) => a + cardAtk(c), 0) / 3;
+    const foes = [0, 1, 2].map(() => { const p = col.pool[rnd(0, col.pool.length - 1)]; return { ...p, atk: Math.max(2, Math.round(avg + rnd(-2, 2))) }; });
+    const arena = el.querySelector("#bt-arena"); el.querySelector("#bt-go").disabled = true;
+    let wins = 0;
+    for (let i = 0; i < 3; i++) {
+      const q = makeQuiz(2);
+      const right = await new Promise(res => {
+        arena.innerHTML = `<div class="ex-prize" style="font-size:1.6rem">${deck[i].emoji} ${cardAtk(deck[i])} <small>vs</small> ${foes[i].atk} ${foes[i].emoji}</div><div class="ex-prize" style="font-size:1.1rem">Round ${i + 1}: ${q.prompt}</div><div class="ex-chip-row">${q.options.map(o => `<button class="ex-item" data-a="${o}"><span class="ex-item-name">${o}</span></button>`).join("")}</div>`;
+        arena.querySelectorAll("[data-a]").forEach(b => b.onclick = () => res(+b.dataset.a === q.answer));
+      });
+      const me = cardAtk(deck[i]) + (right ? 4 : 0), foe = foes[i].atk + rnd(0, 2);
+      const won = me > foe; if (won) wins++;
+      arena.innerHTML = `<div class="ex-prize">${right ? "✅ Right! +4" : "❌ Missed"} — ${me} vs ${foe}: ${won ? "You win the round! 🎉" : "They win the round."}</div>`;
+      await new Promise(r => setTimeout(r, 1100));
+    }
+    battleSel = [];
+    if (wins >= 2) { const r = await LB.claimBattleWin(); await refreshWallet(); await this.render(el); say(el, `🏆 Victory ${wins}-${3 - wins}! ${r.coins ? `+🪙${r.coins}` : "(daily coin limit reached)"}`); }
+    else { await this.render(el); say(el, `Defeat ${wins}-${3 - wins} — try a different deck!`); }
+  };
+}});
+
+/* ---- 18. Idle Garden ---- */
+let gardenTimer = null, gardenPick = "carrot";
+SECTIONS.push({ id: "garden", async render(el) {
+  clearInterval(gardenTimer);
+  const g = await LB.getGarden();
+  const cost = c => c.coins ? `🪙${c.coins}` : `💎${c.gems}`;
+  el.innerHTML = `<h2>🌱 Idle Garden</h2>
+    <p class="ex-sub">Plant a seed, come back later, harvest coins. Every right answer you give while it grows makes it ripen 1 minute sooner!</p>
+    <div class="ex-chip-row" id="gd-plants" style="margin-bottom:8px">${g.plants.map(p => `<button class="ex-item ${p.id === gardenPick ? "armed" : ""}" data-p="${p.id}" style="flex:0 1 auto;padding:6px 10px"><span class="ex-item-name">${p.emoji} ${p.name}</span><div class="ex-item-own">🪙${p.seed} → 🪙${p.yield} · ${p.growMin >= 60 ? p.growMin / 60 + "h" : p.growMin + "m"}</div></button>`).join("")}</div>
+    <div class="ex-chip-row">${g.slots.map(s => s.empty
+      ? `<button class="ex-item" data-plant="${s.i}" style="flex:0 1 30%"><div class="ex-item-emoji">🟫</div><div class="ex-item-own">Plant here</div></button>`
+      : `<button class="ex-item ${s.ready ? "armed" : ""}" data-harv="${s.i}" style="flex:0 1 30%"><div class="ex-item-emoji">${s.ready ? s.plant.emoji : "🌱"}</div><div class="ex-item-own" data-ms="${s.readyAt}">${s.ready ? "Harvest!" : mmss(s.msLeft)}</div></button>`).join("")}</div>
+    ${g.nextPlotCost ? `<div class="ex-row" style="margin-top:10px"><button class="ex-btn alt" id="gd-plot">+1 plot ${cost(g.nextPlotCost)}</button><span class="ex-sub" style="margin:0">${g.plots}/${g.maxPlots} plots</span></div>` : ""}<div class="ex-msg"></div>`;
+  el.querySelectorAll("#gd-plants .ex-item").forEach(b => b.onclick = () => { gardenPick = b.dataset.p; el.querySelectorAll("#gd-plants .ex-item").forEach(x => x.classList.toggle("armed", x === b)); });
+  el.querySelectorAll("[data-plant]").forEach(b => b.onclick = async () => { const r = await LB.plantSeed(+b.dataset.plant, gardenPick); if (!r.ok) return say(el, FAIL[r.reason] || "Couldn't plant."); await refreshWallet(); this.render(el); });
+  el.querySelectorAll("[data-harv]").forEach(b => b.onclick = async () => { const r = await LB.harvestPlot(+b.dataset.harv); if (!r.ok) return say(el, r.reason === "not-ready" ? "Still growing — answer some questions to speed it up!" : "Nothing to harvest."); await refreshWallet(); await this.render(el); say(el, `${r.plant.emoji} +🪙${r.coins}!`); });
+  const plot = el.querySelector("#gd-plot");
+  if (plot) plot.onclick = async () => { const r = await LB.buyGardenPlot(); if (!r.ok) return say(el, FAIL[r.reason] || "Couldn't buy."); await refreshWallet(); this.render(el); };
+  gardenTimer = setInterval(() => {
+    let ripe = false;
+    el.querySelectorAll("[data-ms]").forEach(n => { const left = +n.dataset.ms - Date.now(); if (left <= 0) ripe = true; else n.textContent = mmss(left); });
+    if (ripe) { clearInterval(gardenTimer); this.render(el); }
+  }, 1000);
+}});
+
+/* ---- 19. Parent Missions ---- */
+SECTIONS.push({ id: "missions", async render(el) {
+  const list = await LB.getMissions();
+  if (!list.length) { el.style.display = "none"; return; }
+  el.style.display = "";
+  el.innerHTML = `<h2>📝 Missions from Mom & Dad</h2><p class="ex-sub">Real-world missions from your parent. Do it, tap "I did it!", and your parent will approve.</p>
+    ${list.map(m => `<div class="ex-row" style="justify-content:space-between;padding:6px 0;border-top:1px solid #f0e8f7"><div><b>${esc(m.text)}</b><div class="ex-sub" style="margin:0">${m.reward ? "🎁 " + esc(m.reward) : ""}${m.bonus ? ` · 🪙${m.bonus | 0}` : ""}</div></div>
+      ${m.status === "open" ? `<button class="ex-btn" data-done="${m.id}">I did it!</button>` : m.status === "done" ? '<span class="ex-sub" style="margin:0">⏳ Waiting for a parent</span>'
+        : m.bonus && !m.credited ? `<button class="ex-btn" data-bonus="${m.id}">Claim 🪙${m.bonus | 0}</button>` : '<span class="ex-sub" style="margin:0">✅ Approved!</span>'}</div>`).join("")}<div class="ex-msg"></div>`;
+  el.querySelectorAll("[data-done]").forEach(b => b.onclick = async () => { await LB.completeMission(b.dataset.done); this.render(el); });
+  el.querySelectorAll("[data-bonus]").forEach(b => b.onclick = async () => { const r = await LB.claimMissionBonus(b.dataset.bonus); await refreshWallet(); await this.render(el); if (r.ok) say(el, `🎉 +🪙${r.coins}`); });
+}});
+
+/* ---- 20. Certificates & Memory Book ---- */
+function drawCertificate(cert, name) {
+  const c = document.createElement("canvas"); c.width = 900; c.height = 640;
+  const x = c.getContext("2d");
+  const g = x.createLinearGradient(0, 0, 900, 640); g.addColorStop(0, "#fff8e1"); g.addColorStop(1, "#ffe3f1");
+  x.fillStyle = g; x.fillRect(0, 0, 900, 640);
+  x.strokeStyle = "#d4af37"; x.lineWidth = 10; x.strokeRect(24, 24, 852, 592);
+  x.strokeStyle = "#8c2f6b"; x.lineWidth = 3; x.strokeRect(42, 42, 816, 556);
+  x.textAlign = "center"; x.fillStyle = "#8c2f6b";
+  x.font = "800 30px 'Baloo 2', sans-serif"; x.fillText("BRAINBOX", 450, 100);
+  x.font = "800 52px 'Baloo 2', sans-serif"; x.fillStyle = "#3d2e22"; x.fillText("Certificate of Achievement", 450, 175);
+  x.font = "120px serif"; x.fillText(cert.emoji, 450, 320);
+  x.font = "700 26px 'Nunito', sans-serif"; x.fillStyle = "#6b5a4a"; x.fillText("proudly presented to", 450, 375);
+  x.font = "800 60px 'Baloo 2', sans-serif"; x.fillStyle = "#8c2f6b"; x.fillText(name, 450, 445);
+  x.font = "700 28px 'Nunito', sans-serif"; x.fillStyle = "#3d2e22"; x.fillText(`who ${cert.desc}!`, 450, 500);
+  x.font = "800 34px 'Baloo 2', sans-serif"; x.fillStyle = "#d4af37"; x.fillText(cert.title, 450, 552);
+  x.font = "700 20px 'Nunito', sans-serif"; x.fillStyle = "#8a7a6a"; x.fillText(cert.date || "", 450, 590);
+  return c.toDataURL("image/png");
+}
+SECTIONS.push({ id: "certs", async render(el) {
+  const d = await LB.getCertificates();
+  const earned = d.certs.filter(c => c.earned).length;
+  el.innerHTML = `<h2>📜 Memory Book</h2><p class="ex-sub">${earned}/${d.certs.length} milestones. Tap one you've earned to make a certificate you can save and show off!</p>
+    <div class="ex-chip-row">${d.certs.map(c => `<button class="ex-item" data-c="${c.id}" ${c.earned ? "" : "disabled"} style="flex:0 1 46%;${c.earned ? "" : "opacity:.45"}"><div class="ex-item-emoji">${c.earned ? c.emoji : "🔒"}</div><div class="ex-item-name">${c.title}</div><div class="ex-item-own">${c.earned ? c.date : c.desc}</div></button>`).join("")}</div><div id="ct-view"></div>`;
+  el.querySelectorAll("[data-c]").forEach(b => b.onclick = () => {
+    const cert = d.certs.find(x => x.id === b.dataset.c);
+    const url = drawCertificate(cert, d.name);
+    el.querySelector("#ct-view").innerHTML = `<img src="${url}" alt="Certificate" style="width:100%;border-radius:12px;margin-top:12px;box-shadow:0 3px 10px rgba(0,0,0,.15)"><div class="ex-row" style="justify-content:center;margin-top:8px"><a class="ex-btn" style="text-decoration:none" download="brainbox-${cert.id}.png" href="${url}">💾 Save picture</a></div><div class="ex-sub" style="text-align:center;margin-top:6px">On a phone you can also press-and-hold the picture.</div>`;
+    if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3);
+  });
+}});
+
+SECTIONS.unshift(...SECTIONS.splice(R10B_START));
+
 /* ---- boot ---- */
 if (!player || player.role === "parent" || !LB) {
   $("ex-page").innerHTML = '<div class="ex-topbar"><a href="../" class="ex-back">←</a><div class="ex-title">🎁 Extras</div></div><p class="ex-empty">Please sign in from the hub first.</p>';
 } else {
   refreshWallet();
   SECTIONS.forEach(mount);
+  // Jump bar -- the page has grown long, so every card gets a chip up top.
+  const nav = document.createElement("div");
+  nav.className = "ex-nav";
+  const buildNav = () => {
+    nav.innerHTML = SECTIONS.filter(x => x.el && x.el.style.display !== "none" && x.el.querySelector("h2")).map(x =>
+      `<a href="#ex-${x.id}">${x.el.querySelector("h2").textContent.trim()}</a>`).join("");
+  };
+  [1200, 3000, 6000].forEach(t => setTimeout(buildNav, t));
+  $("ex-sections").before(nav);
 }
