@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Quiz Card Race — BrainBox</title>
+<meta name="theme-color" content="#8c2f6b">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .cr-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:0 14px 12px}
+  .cr-c{width:64px;height:86px;border-radius:12px;border:3px solid #fff;box-shadow:0 3px 0 rgba(0,0,0,.15);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Baloo 2",sans-serif;font-weight:800;color:#fff;cursor:pointer;font-size:1.5rem;transition:transform .12s}
+  .cr-c small{font-size:.62rem;opacity:.9}
+  .cr-c:active{transform:scale(.94)}
+  .cr-c.math{background:linear-gradient(160deg,#f59e0b,#e4572e)} .cr-c.lang{background:linear-gradient(160deg,#34c759,#1f7a4d)} .cr-c.sci{background:linear-gradient(160deg,#4a90d9,#2e6ba3)}
+  .cr-c.back{background:repeating-linear-gradient(45deg,#8c2f6b,#8c2f6b 6px,#a84c87 6px,#a84c87 12px);cursor:default;color:#fff}
+  .cr-c.out{animation:crOut .5s forwards}
+  @keyframes crOut{to{transform:translateY(-40px) scale(.5);opacity:0}}
+  .cr-label{text-align:center;font-weight:800;font-size:.8rem;margin:4px 0}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🃏 Quiz Card Race</div></div>
+
+  <div class="cr-label" id="cr-ai-label">🤖 Bo-Bot's hand</div>
+  <div class="cr-row" id="cr-ai"></div>
+  <div class="cr-label" id="cr-msg">Tap a card, answer it right, and it's gone. First empty hand wins!</div>
+  <div class="cr-label">🧒 Your hand</div>
+  <div class="cr-row" id="cr-hand"></div>
+  <div id="cr-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Quiz Card Race',accent:'#8c2f6b',bg:'linear-gradient(180deg,#fdf0f7,#e9dcfa)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

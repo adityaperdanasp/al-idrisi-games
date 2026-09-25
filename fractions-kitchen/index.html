@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Fractions Kitchen — BrainBox</title>
+<meta name="theme-color" content="#e8632e">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .fk-order{text-align:center;padding:6px 14px}
+  .fk-order .em{font-size:2.6rem}
+  .fk-recipe{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.35rem;margin:2px 0 6px}
+  .fk-hint{font-weight:700;font-size:.8rem;color:#8a5a2e}
+  .fk-cupwrap{display:flex;align-items:flex-end;justify-content:center;gap:16px;margin:10px 0}
+  .fk-cup{width:110px;border:4px solid #b08a5a;border-top:0;border-radius:0 0 22px 22px;overflow:hidden;background:rgba(255,255,255,.7);display:flex;flex-direction:column-reverse}
+  .fk-seg{height:34px;border-top:2px dashed rgba(0,0,0,.18);cursor:pointer;transition:background .15s}
+  .fk-seg:first-child{border-top:0}
+  .fk-seg.on{background:linear-gradient(180deg,#fff2c9,#f5c542)}
+  .fk-read{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.6rem;min-width:80px;text-align:left}
+  .fk-read small{display:block;font-size:.72rem;color:#8a5a2e;font-weight:700}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🥣 Fractions Kitchen</div></div>
+
+  <div class="kit-hud"><span>🍽️ Order <b id="fk-n">1</b>/8</span><span>⭐ First try: <b id="fk-ft">0</b></span></div>
+  <div class="kit-card">
+    <div class="fk-order"><div class="em" id="fk-em">🥛</div><div class="fk-recipe" id="fk-recipe"></div><div class="fk-hint" id="fk-hint"></div></div>
+    <div class="fk-cupwrap"><div class="fk-cup" id="fk-cup"></div><div class="fk-read" id="fk-read"></div></div>
+    <div style="text-align:center"><button class="kit-btn" id="fk-pour">Pour it in! 🫗</button></div>
+    <div class="kit-sub" id="fk-msg" style="text-align:center;margin:10px 0 0;min-height:1.2em"></div>
+  </div>
+  <div id="fk-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Fractions Kitchen',accent:'#e8632e',bg:'linear-gradient(180deg,#fff4e0,#ffe0b8)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

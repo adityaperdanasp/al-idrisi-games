@@ -2078,6 +2078,29 @@
   }
 
   // =====================================================================
+  // PM ROUND 11 -- Game Room bonus. Each Game Room mini-game pays a small
+  // completion bonus at most twice a day per game (plus a 60-coin daily
+  // ceiling across all of them), on top of the usual +1 coin per right
+  // answer from recordTopicAttempt.
+  // =====================================================================
+  const MINIGAME_PAYOUTS_PER_DAY = 2, MINIGAME_DAILY_CEILING = 60;
+  async function awardMiniGame(gameId, coins) {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/miniPaid/${todayKey()}`);
+    const snap = await ref.get();
+    const d = snap.exists() ? snap.val() : {};
+    const gameCount = d[gameId] || 0;
+    const total = d._total || 0;
+    const want = Math.max(0, Math.min(25, Math.floor(coins)));
+    const paid = Math.min(want, MINIGAME_DAILY_CEILING - total);
+    if (gameCount >= MINIGAME_PAYOUTS_PER_DAY || paid <= 0) return { ok: true, paid: 0, capped: true };
+    await ref.set({ ...d, [gameId]: gameCount + 1, _total: total + paid }); // marker BEFORE paying
+    await creditWallet({ coins: paid });
+    return { ok: true, paid };
+  }
+
+  // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
   // players so skin.js can call it unconditionally.
@@ -5059,7 +5082,7 @@
     getZoneLevel, recordZoneResult, claimArcadeReward,
     getMathRaceGhost, saveMathRaceGhost, getStoryRead, markStoryRead, getCalendarMonth, STORY_READ_REWARD,
     STREAK_FREEZE_COST, STREAK_FREEZE_MAX, PIGGY_CAP, PET_ADVENTURE_COST, WHEEL_EXTRA_COST, BOOSTER_COST,
-    getSkinPrefs,
+    getSkinPrefs, awardMiniGame,
     getDino, evolveDino, DINO_STAGES, getSeason, getSeasonStatus, claimSeasonGift,
     getRotatingShop, getGachaStatus, rollGacha, GACHA_COST, GACHA_X5_COST,
     getFlashStatus, submitFlash, getFlashBoard, FLASH_MAX_PLAYS,

@@ -2164,3 +2164,9 @@ html[data-hub-theme="volcano"] .sc-card { background: #fbe9dd; }
 .sc-splash-hi { font-weight: 800; font-size: 1.5rem; opacity: 0; transform: translateY(10px); animation: scSplashIn .6s .9s forwards; }
 @keyframes scSplashBo { 0% { transform: scale(0) rotate(-30deg); } 100% { transform: scale(1) rotate(0); } }
 @keyframes scSplashIn { to { opacity: 1; transform: none; } }
+
+/* Game Room hub card (PM round 11) */
+.sc-game-card.gameroom { background: #efe6ff; transform: rotate(-0.5deg); }
+.sc-game-card.gameroom .sc-game-icon { background: transparent; }
+.sc-game-card.gameroom .sc-game-title { color: #5b3f9b; }
+.sc-game-card.gameroom .sc-game-sub { color: #6b5a8a; }

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Word Detective — BrainBox</title>
+<meta name="theme-color" content="#5b3f9b">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .wd-story{font-size:.98rem;line-height:1.6;font-weight:700}
+  .wd-story p{margin:0 0 10px}
+  .wd-story mark{background:#fff3b0;border-radius:4px;padding:0 2px}
+  .wd-cases{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .wd-case{border:2px solid rgba(0,0,0,.08);background:#faf6ff;border-radius:14px;padding:12px 8px;text-align:center;font-family:"Baloo 2",sans-serif;font-weight:800;cursor:pointer;color:inherit}
+  .wd-case .e{font-size:1.9rem;display:block}
+  .wd-case.done{background:#e5f5e8;border-color:#34c759}
+  .wd-sus{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .wd-sus button{flex:1 1 90px;border:2px solid rgba(0,0,0,.1);background:#fff;border-radius:14px;padding:12px 6px;font-family:"Baloo 2",sans-serif;font-weight:800;cursor:pointer;color:inherit}
+  .wd-sus .e{font-size:2rem;display:block}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🕵️ Word Detective</div></div>
+
+  <div id="wd-main"></div>
+  <div id="wd-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Word Detective',accent:'#5b3f9b',bg:'linear-gradient(180deg,#efe9fb,#dccff5)'});</script>
+<script src="script.js"></script>
+</body>
+</html>
