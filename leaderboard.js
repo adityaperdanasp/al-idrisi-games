@@ -1515,6 +1515,221 @@
   }
 
   // =====================================================================
+  // PM ROUND 10, BATCH 2 -- Dino Companion, Seasons, Rotating Shop, Egg
+  // Gacha, Flash Challenge. Everything lives under players/{id}/... (no new
+  // top-level paths, no rules changes). Spending = spendWallet (get-check-
+  // set), credits = creditWallet, exactly as the earlier perks.
+  // =====================================================================
+  function cosmeticPool() {
+    const pool = [];
+    const add = (type, list, fixedPreview) => list.forEach(x => {
+      if (x.cost) pool.push({ type, id: x.id, name: x.name, preview: fixedPreview || x.preview || "🎁", cost: x.cost });
+    });
+    add("frame", AVATAR_FRAMES, "🖼️");
+    add("face", AVATAR_FACES);
+    add("sound", SOUND_PACKS, "🎵");
+    add("hub-theme", HUB_THEMES);
+    Object.entries(GAMEPLAY_FX_CATALOGS).forEach(([t, c]) => add(t, c));
+    Object.entries(COSTUME_CATALOGS).forEach(([t, c]) => { if (t !== "dino-skin") add(t, c); });
+    add("pet-accessory", PET_ACCESSORIES);
+    return pool;
+  }
+  function rarityOf(cost) {
+    if (cost.gems) return cost.gems >= 3 ? "legendary" : "epic";
+    return (cost.coins || 0) >= 30 ? "rare" : "common";
+  }
+  async function readOwnedCosmetics(player) {
+    const snap = await aigDb.ref(`players/${player.id}/ownedCosmetics`).get();
+    return snap.exists() ? snap.val() : {};
+  }
+  const isOwned = (owned, item) => !!(owned[item.type] && owned[item.type][item.id]);
+
+  // ---- 4. Dino Companion -- hatch it, then evolve it by playing. Each
+  // stage needs enough LIFETIME correct answers (so it's earned by
+  // learning) plus a coin/gem fee (so it's a sink). Mega Rex also unlocks
+  // the Mega Rex chasing-dino skin for free.
+  const DINO_STAGES = [
+    { emoji: "🥚", name: "Mystery Egg", need: 0, cost: null },
+    { emoji: "🦎", name: "Hatchling", need: 20, cost: { coins: 20 } },
+    { emoji: "🦕", name: "Longneck", need: 80, cost: { coins: 60 } },
+    { emoji: "🦖", name: "Rex", need: 200, cost: { gems: 4 } },
+    { emoji: "🐲", name: "Mega Rex", need: 400, cost: { gems: 8 } }
+  ];
+  async function getDino() {
+    const player = perksPlayer();
+    if (!player) return null;
+    const [d, t] = await Promise.all([aigDb.ref(`players/${player.id}/dino/stage`).get(), aigDb.ref(`players/${player.id}/totalCorrect`).get()]);
+    const stage = d.exists() ? Math.max(0, Math.min(DINO_STAGES.length - 1, d.val() | 0)) : 0;
+    const total = t.exists() ? (t.val() || 0) : 0;
+    return { stage, def: DINO_STAGES[stage], next: DINO_STAGES[stage + 1] || null, total, stages: DINO_STAGES };
+  }
+  async function evolveDino() {
+    const player = perksPlayer();
+    if (!player) return { ok: false, reason: "no-player" };
+    const d = await getDino();
+    if (!d.next) return { ok: false, reason: "max" };
+    if (d.total < d.next.need) return { ok: false, reason: "not-ready", need: d.next.need, total: d.total };
+    const paid = await spendWallet(d.next.cost);
+    if (!paid.ok) return paid;
+    await aigDb.ref(`players/${player.id}/dino/stage`).set(d.stage + 1);
+    if (d.stage + 1 === DINO_STAGES.length - 1) await aigDb.ref(`players/${player.id}/ownedCosmetics/dino-skin/mega`).set(true);
+    return { ok: true, stage: d.stage + 1, def: DINO_STAGES[d.stage + 1] };
+  }
+
+  // ---- 9. Seasons -- date-driven events (Indonesian calendar + the usual).
+  // `aig_season_override` in localStorage forces one for testing.
+  const SEASONS = [
+    { id: "batik", name: "Batik Week", emoji: "👘", from: "09-28", to: "10-04", msg: "Selamat Hari Batik! 👘", orn: ["👘", "🎨", "✨"] },
+    { id: "halloween", name: "Spooky Week", emoji: "🎃", from: "10-24", to: "10-31", msg: "Spooky season is here! 🎃", orn: ["🎃", "👻", "🕸️", "🦇"] },
+    { id: "teachers", name: "Teachers' Day", emoji: "🍎", from: "11-22", to: "11-28", msg: "Thank your teacher today! 🍎", orn: ["🍎", "📚", "✏️"] },
+    { id: "christmas", name: "Winter Holidays", emoji: "🎄", from: "12-18", to: "12-26", msg: "Happy holidays! 🎄", orn: ["🎄", "⛄", "🎁", "❄️"] },
+    { id: "newyear", name: "New Year", emoji: "🎆", from: "12-27", to: "01-03", msg: "Happy New Year! 🎆", orn: ["🎆", "🎇", "🥳", "✨"] },
+    { id: "ramadan", name: "Ramadan", emoji: "🌙", from: "02-08", to: "03-09", msg: "Ramadan Kareem! 🌙", orn: ["🌙", "⭐", "🕌", "🏮"] },
+    { id: "eid", name: "Eid Mubarak", emoji: "🕌", from: "03-10", to: "03-14", msg: "Selamat Idul Fitri! 🕌", orn: ["🕌", "🌙", "🍬", "✨"] },
+    { id: "kids", name: "Kids' Day", emoji: "🧒", from: "07-20", to: "07-26", msg: "Happy Hari Anak Nasional! 🧒", orn: ["🧒", "🎈", "🎉"] },
+    { id: "independence", name: "Merdeka Week", emoji: "🇮🇩", from: "08-10", to: "08-20", msg: "Dirgahayu Republik Indonesia! 🇮🇩", orn: ["🇮🇩", "🎏", "🏆"] }
+  ];
+  function getSeason(dateStr) {
+    let ov = null;
+    try { ov = localStorage.getItem("aig_season_override"); } catch (e) {}
+    if (ov) return SEASONS.find(x => x.id === ov) || null;
+    const d = dateStr || new Date().toISOString().slice(0, 10);
+    const md = d.slice(5);
+    return SEASONS.find(x => x.from <= x.to ? (md >= x.from && md <= x.to) : (md >= x.from || md <= x.to)) || null;
+  }
+  async function getSeasonStatus() {
+    const season = getSeason();
+    if (!season) return null;
+    const player = perksPlayer();
+    let claimed = false;
+    if (player) claimed = (await aigDb.ref(`players/${player.id}/seasonClaims/${season.id}-${new Date().getUTCFullYear()}`).get()).exists();
+    return { season, claimed, reward: { coins: 20, gems: 1 } };
+  }
+  async function claimSeasonGift() {
+    const player = perksPlayer();
+    const st = await getSeasonStatus();
+    if (!player || !st) return { ok: false };
+    if (st.claimed) return { ok: false, reason: "daily-limit" };
+    await aigDb.ref(`players/${player.id}/seasonClaims/${st.season.id}-${new Date().getUTCFullYear()}`).set(true);
+    await creditWallet(st.reward);
+    return { ok: true, reward: st.reward };
+  }
+
+  // ---- 11. Rotating Shop -- 4 cosmetics, 35% off, refreshes every 12h
+  // (00:00 and 12:00 UTC). Same items for everybody, seeded from the slot.
+  function shopSlot() {
+    const d = new Date();
+    const half = d.getUTCHours() >= 12 ? "b" : "a";
+    const end = new Date(d);
+    if (half === "a") end.setUTCHours(12, 0, 0, 0); else { end.setUTCDate(d.getUTCDate() + 1); end.setUTCHours(0, 0, 0, 0); }
+    return { key: todayKey() + half, endsAt: end.getTime() };
+  }
+  const discount = cost => {
+    const o = {};
+    if (cost.coins) o.coins = Math.max(1, Math.round(cost.coins * 0.65));
+    if (cost.gems) o.gems = Math.max(1, Math.round(cost.gems * 0.65));
+    return o;
+  };
+  async function getRotatingShop() {
+    const player = perksPlayer();
+    const pool = cosmeticPool();
+    const slot = shopSlot();
+    const picks = [], used = new Set();
+    for (let n = 0; picks.length < 4 && n < 200; n++) {
+      const i = seedFrom(slot.key + "shop" + n) % pool.length;
+      if (!used.has(i)) { used.add(i); picks.push(pool[i]); }
+    }
+    const owned = player ? await readOwnedCosmetics(player) : {};
+    return { endsAt: slot.endsAt, items: picks.map(p => ({ ...p, originalCost: p.cost, cost: discount(p.cost), owned: isOwned(owned, p) })) };
+  }
+
+  // ---- 12. Mystery Egg gacha -- 30 coins a pull (or 5 for 135). Rarity by
+  // price tier; a 10-pull pity guarantees an epic+ if you haven't seen one.
+  // Only ever hands out cosmetics you DON'T own yet; if you own everything
+  // a pull just refunds 15 coins.
+  const GACHA_COST = 30, GACHA_X5_COST = 135, GACHA_PITY_AT = 9;
+  async function getGachaStatus() {
+    const player = perksPlayer();
+    if (!player) return null;
+    const snap = await aigDb.ref(`players/${player.id}/gacha`).get();
+    const g = snap.exists() ? snap.val() : {};
+    const pool = cosmeticPool();
+    const owned = await readOwnedCosmetics(player);
+    return { rolls: g.rolls || 0, pity: g.pity || 0, pityAt: GACHA_PITY_AT, left: pool.filter(x => !isOwned(owned, x)).length, total: pool.length };
+  }
+  async function rollGacha(times) {
+    const player = perksPlayer();
+    if (!player) return { ok: false, reason: "no-player" };
+    const n = times === 5 ? 5 : 1;
+    const paid = await spendWallet({ coins: n === 5 ? GACHA_X5_COST : GACHA_COST });
+    if (!paid.ok) return paid;
+    try {
+      const gRef = aigDb.ref(`players/${player.id}/gacha`);
+      const gSnap = await gRef.get();
+      const g = gSnap.exists() ? gSnap.val() : {};
+      let pity = g.pity || 0, rolls = g.rolls || 0;
+      const owned = await readOwnedCosmetics(player);
+      const pool = cosmeticPool();
+      const results = [];
+      let refund = 0;
+      for (let i = 0; i < n; i++) {
+        const r = Math.random() * 100;
+        let tier = pity >= GACHA_PITY_AT ? (r < 75 ? "epic" : "legendary") : (r < 55 ? "common" : r < 85 ? "rare" : r < 96 ? "epic" : "legendary");
+        const free = pool.filter(x => !isOwned(owned, x));
+        let cand = free.filter(x => rarityOf(x.cost) === tier);
+        if (!cand.length) cand = free;
+        rolls++;
+        if (!cand.length) { refund += 15; results.push({ refund: 15 }); continue; }
+        const pick = cand[Math.floor(Math.random() * cand.length)];
+        const rar = rarityOf(pick.cost);
+        (owned[pick.type] = owned[pick.type] || {})[pick.id] = true;
+        await aigDb.ref(`players/${player.id}/ownedCosmetics/${pick.type}/${pick.id}`).set(true);
+        pity = (rar === "epic" || rar === "legendary") ? 0 : pity + 1;
+        results.push({ type: pick.type, id: pick.id, name: pick.name, preview: pick.preview, rarity: rar });
+      }
+      await gRef.set({ rolls, pity });
+      if (refund) await creditWallet({ coins: refund });
+      return { ok: true, results, pity };
+    } catch (e) {
+      await creditWallet({ coins: n === 5 ? GACHA_X5_COST : GACHA_COST }); // never eat coins on an error
+      return { ok: false, reason: "error" };
+    }
+  }
+
+  // ---- 13. Flash Challenge -- 60s of mixed questions, up to 3 tries a day,
+  // best score goes on the class board. Coins only for the first 2 tries.
+  const FLASH_MAX_PLAYS = 3, FLASH_REWARD_PLAYS = 2;
+  function flashMultiplier() { return [1, 1.5, 1, 2, 1, 1.5, 2][new Date().getUTCDay()]; }
+  async function getFlashStatus() {
+    const player = perksPlayer();
+    if (!player) return null;
+    const snap = await aigDb.ref(`players/${player.id}/flash/${todayKey()}`).get();
+    const f = snap.exists() ? snap.val() : {};
+    return { best: f.best || 0, plays: f.plays || 0, left: Math.max(0, FLASH_MAX_PLAYS - (f.plays || 0)), mult: flashMultiplier() };
+  }
+  async function submitFlash(score) {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/flash/${todayKey()}`);
+    const snap = await ref.get();
+    const f = snap.exists() ? snap.val() : {};
+    const plays = f.plays || 0;
+    if (plays >= FLASH_MAX_PLAYS) return { ok: false, reason: "daily-limit" };
+    const coins = plays < FLASH_REWARD_PLAYS ? Math.min(20, Math.round(Math.max(0, score) * flashMultiplier())) : 0;
+    const best = Math.max(f.best || 0, score);
+    await ref.set({ best, plays: plays + 1 });
+    if (coins) await creditWallet({ coins });
+    return { ok: true, coins, best, newBest: score > (f.best || 0), plays: plays + 1, left: FLASH_MAX_PLAYS - plays - 1 };
+  }
+  async function getFlashBoard() {
+    const players = await readAllPlayers();
+    const day = todayKey();
+    return Object.entries(players)
+      .map(([id, d]) => ({ id, name: nameOf(id, d), best: d && d.flash && d.flash[day] ? (d.flash[day].best || 0) : 0 }))
+      .filter(x => x.best > 0).sort((a, b) => b.best - a.best).slice(0, 10);
+  }
+
+  // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
   // players so skin.js can call it unconditionally.
@@ -2463,7 +2678,16 @@
     { id: "rocket", name: "Rocket", cost: { coins: 20 }, preview: "🚀" },
     { id: "crown", name: "Champion", cost: { gems: 2 }, preview: "👑" }
   ];
+  const CARD_BACKGROUNDS = [
+    { id: "default", name: "Cream", cost: null, preview: "🟨" },
+    { id: "sunrise", name: "Sunrise", cost: { coins: 20 }, preview: "🌅" },
+    { id: "mint", name: "Fresh Mint", cost: { coins: 20 }, preview: "🍃" },
+    { id: "aurora", name: "Aurora", cost: { coins: 30 }, preview: "🌌" },
+    { id: "galaxy", name: "Galaxy", cost: { gems: 2 }, preview: "🪐" },
+    { id: "gold", name: "Pure Gold", cost: { gems: 4 }, preview: "🥇" }
+  ];
   const GAMEPLAY_FX_CATALOGS = {
+    "card-bg": CARD_BACKGROUNDS,
     "answer-fx": ANSWER_FX,
     "touch-trail": TOUCH_TRAILS,
     "combo-sticker": COMBO_STICKERS,
@@ -2520,7 +2744,10 @@
     { id: "default", name: "Classic Green", cost: null, preview: "🟢" },
     { id: "fire", name: "Fire Dino", cost: { coins: 25 }, preview: "🔴" },
     { id: "ice", name: "Ice Dino", cost: { coins: 30 }, preview: "🔵" },
-    { id: "shadow", name: "Shadow Dino", cost: { gems: 3 }, preview: "⚫" }
+    { id: "shadow", name: "Shadow Dino", cost: { gems: 3 }, preview: "⚫" },
+    // Earned, not bought: granted free when the Dino Companion reaches Mega
+    // Rex (the 99-gem "price" only exists so it reads as unbuyable).
+    { id: "mega", name: "Mega Rex", cost: { gems: 99 }, preview: "🐲" }
   ];
   // Bo's wardrobe (PM round 10, item 5): skin.js perches the equipped hat
   // on every Bo avatar it can find.
@@ -2584,6 +2811,7 @@
         "ninja-slash": equipped["ninja-slash"] || "default",
         "memorymatch-cardback": equipped["memorymatch-cardback"] || "default",
         "answer-fx": equipped["answer-fx"] || "default",
+        "card-bg": equipped["card-bg"] || "default",
         "touch-trail": equipped["touch-trail"] || "none",
         "combo-sticker": equipped["combo-sticker"] || "none"
       },
@@ -4484,6 +4712,9 @@
     getMathRaceGhost, saveMathRaceGhost, getStoryRead, markStoryRead, getCalendarMonth, STORY_READ_REWARD,
     STREAK_FREEZE_COST, STREAK_FREEZE_MAX, PIGGY_CAP, PET_ADVENTURE_COST, WHEEL_EXTRA_COST, BOOSTER_COST,
     getSkinPrefs,
+    getDino, evolveDino, DINO_STAGES, getSeason, getSeasonStatus, claimSeasonGift,
+    getRotatingShop, getGachaStatus, rollGacha, GACHA_COST, GACHA_X5_COST,
+    getFlashStatus, submitFlash, getFlashBoard, FLASH_MAX_PLAYS,
     getPersonalBest, submitPersonalBest,
     awardDanceBattleBonus,
     awardCookingRushBonus,

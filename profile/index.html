@@ -19,6 +19,16 @@
   .pf-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #8c2f6b; }
 
   .pf-hero { text-align: center; padding: 10px 20px 20px; }
+  /* PM round 10, item 8 -- name-card backgrounds (leaderboard.js CARD_BACKGROUNDS) + sticker/dino flair */
+  .pf-hero[data-card="sunrise"] { background: linear-gradient(160deg, #ffe0b3, #ffb3c1); border-radius: 22px; }
+  .pf-hero[data-card="mint"] { background: linear-gradient(160deg, #d6f5df, #b5e3f2); border-radius: 22px; }
+  .pf-hero[data-card="aurora"] { background: linear-gradient(160deg, #b8f2e6, #c9b6ff 60%, #ffc2e2); border-radius: 22px; }
+  .pf-hero[data-card="galaxy"] { background: radial-gradient(circle at 30% 20%, #4b2a8f, #150a35); border-radius: 22px; color: #fff; }
+  .pf-hero[data-card="galaxy"] .pf-name { color: #fff; }
+  .pf-hero[data-card="gold"] { background: linear-gradient(135deg, #fff2b0, #f5c542 50%, #fff2b0); border-radius: 22px; box-shadow: 0 0 0 3px #d4af37 inset; }
+  .pf-flair-row { display: flex; gap: 14px; justify-content: center; font-size: 2rem; margin-top: 6px; }
+  .pf-flair-row[hidden] { display: none; }
+
   .pf-avatar { width: 84px; height: 84px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 2.2rem; color: #3d2e22; }
   .pf-avatar.frame-bronze { box-shadow: 0 0 0 5px #C1793E; }
   .pf-avatar.frame-silver { box-shadow: 0 0 0 5px #C7CDD6; }
@@ -121,6 +131,7 @@
     <div class="pf-name" id="pf-name"></div>
     <div class="pf-nickname" id="pf-nickname" hidden></div>
     <div class="pf-title-badge" id="pf-title-badge" hidden></div>
+    <div class="pf-flair-row" id="pf-flair-row" hidden><span id="pf-sticker"></span><span id="pf-dino"></span></div>
   </div>
 
   <div class="pf-stats-grid">

@@ -354,6 +354,113 @@ SECTIONS.push({ id: "calendar", async render(el) {
   el.querySelector("#cal-next").onclick = () => { calOffset++; this.render(el); };
 }});
 
+/* =================================================================
+   PM round 10, batch 2 -- shown at the TOP of the page (moved to the front
+   below): Season, Flash Challenge, Rotating Shop, Mystery Egg, Dino.
+   ================================================================= */
+const R10_START = SECTIONS.length;
+
+/* ---- 9. Season banner ---- */
+SECTIONS.push({ id: "season", async render(el) {
+  const st = await LB.getSeasonStatus();
+  if (!st) { el.style.display = "none"; return; }
+  el.style.display = "";
+  el.style.background = "linear-gradient(135deg,#fff3c4,#ffd9ec)";
+  el.innerHTML = `<h2>${st.season.emoji} ${st.season.name}</h2>
+    <p class="ex-sub" style="color:#6b3f9b;font-size:.85rem">${st.season.msg}</p>
+    <div class="ex-row"><button class="ex-btn" id="ss-claim" ${st.claimed ? "disabled" : ""}>${st.claimed ? "Gift opened ✓" : "🎁 Open seasonal gift (🪙20 💎1)"}</button></div><div class="ex-msg"></div>`;
+  el.querySelector("#ss-claim").onclick = async () => {
+    const r = await LB.claimSeasonGift();
+    if (!r.ok) return say(el, FAIL[r.reason] || "Already opened!");
+    await refreshWallet(); await this.render(el); say(el, "🎉 Happy holidays! +🪙20 +💎1");
+  };
+}});
+
+/* ---- 13. Flash Challenge ---- */
+SECTIONS.push({ id: "flash", async render(el) {
+  const [st, board] = await Promise.all([LB.getFlashStatus(), LB.getFlashBoard()]);
+  const me = player.id;
+  el.innerHTML = `<h2>⚡ Flash Challenge</h2>
+    <p class="ex-sub">60 seconds, mixed questions. Best of ${LB.FLASH_MAX_PLAYS} tries a day goes on the class board. Coins for your first 2 tries — today's bonus: <b>×${st.mult}</b>!</p>
+    <div class="ex-row"><span class="ex-stat">Best ${st.best}</span><span class="ex-sub" style="margin:0">${st.left} ${st.left === 1 ? "try" : "tries"} left today</span>
+    <a class="ex-btn" style="text-decoration:none;${st.left ? "" : "opacity:.45;pointer-events:none"}" href="../mathville/index.html?flash=1">Play ⚡</a></div>
+    <div style="margin-top:10px">${board.length ? board.map((b, i) => `<div class="ex-row" style="justify-content:space-between;padding:4px 0;${b.id === me ? "font-weight:800;color:#8c2f6b" : ""}"><span>${["🥇","🥈","🥉"][i] || (i + 1) + "."} ${b.name}</span><span>${b.best}</span></div>`).join("") : '<div class="ex-empty">No scores yet today — be the first!</div>'}</div>`;
+}});
+
+/* ---- 11. Rotating Shop ---- */
+let shopTimer = null;
+SECTIONS.push({ id: "shop", async render(el) {
+  clearInterval(shopTimer);
+  const shop = await LB.getRotatingShop();
+  const cost = c => c.coins ? `🪙${c.coins}` : `💎${c.gems}`;
+  el.innerHTML = `<h2>🛍️ Rotating Shop</h2>
+    <p class="ex-sub">4 items, 35% off — new picks in <b id="sh-left"></b>.</p>
+    <div class="ex-chip-row">${shop.items.map((it, i) => `<button class="ex-item" data-i="${i}" ${it.owned ? "disabled" : ""}>
+      <div class="ex-item-emoji">${it.preview}</div><div class="ex-item-name">${it.name}</div>
+      <div class="ex-item-own">${it.owned ? "Owned ✓" : `<s>${cost(it.originalCost)}</s> <b>${cost(it.cost)}</b>`}</div></button>`).join("")}</div><div class="ex-msg"></div>`;
+  const tick = () => { const n = el.querySelector("#sh-left"); if (n) n.textContent = mmss(shop.endsAt - Date.now()); if (shop.endsAt <= Date.now()) { clearInterval(shopTimer); this.render(el); } };
+  tick(); shopTimer = setInterval(tick, 1000);
+  el.querySelectorAll(".ex-item").forEach(b => b.onclick = async () => {
+    const it = shop.items[+b.dataset.i];
+    const r = await LB.unlockCosmetic(it.type, it.id, it.cost);
+    if (!r.ok) return say(el, FAIL[r.reason] || "Couldn't buy.");
+    await refreshWallet(); await this.render(el); say(el, `${it.preview} ${it.name} is yours! Equip it in 🎨 Customize.`);
+  });
+}});
+
+/* ---- 12. Mystery Egg ---- */
+const RARITY = { common: ["Common", "#9aa5b1"], rare: ["Rare", "#3b82f6"], epic: ["Epic", "#a855f7"], legendary: ["Legendary", "#f59e0b"] };
+SECTIONS.push({ id: "gacha", async render(el) {
+  const g = await LB.getGachaStatus();
+  el.innerHTML = `<h2>🥚 Mystery Egg</h2>
+    <p class="ex-sub">Crack an egg for a random cosmetic you don't own yet. Every ${g.pityAt + 1}th egg without an Epic is guaranteed Epic or better. ${g.left}/${g.total} still to find.</p>
+    <div id="gc-stage" style="text-align:center;font-size:3.4rem;min-height:84px;line-height:84px">🥚</div>
+    <div id="gc-result" class="ex-prize"></div>
+    <div class="ex-row" style="justify-content:center"><button class="ex-btn" id="gc-1">1 egg 🪙${LB.GACHA_COST}</button><button class="ex-btn alt" id="gc-5">5 eggs 🪙${LB.GACHA_X5_COST}</button></div>
+    <div class="ex-sub" style="text-align:center;margin:8px 0 0">Pity: ${g.pity}/${g.pityAt} · eggs opened: ${g.rolls}</div><div class="ex-msg"></div>`;
+  const stage = el.querySelector("#gc-stage"), res = el.querySelector("#gc-result");
+  const go = async n => {
+    el.querySelectorAll(".ex-btn").forEach(b => b.disabled = true);
+    stage.style.transition = "transform .12s"; let k = 0;
+    const shake = setInterval(() => { stage.style.transform = `rotate(${k++ % 2 ? 14 : -14}deg) scale(1.1)`; }, 120);
+    const r = await LB.rollGacha(n);
+    await new Promise(x => setTimeout(x, 900));
+    clearInterval(shake); stage.style.transform = "none";
+    if (!r.ok) { stage.textContent = "🥚"; await this.render(el); return say(el, FAIL[r.reason] || "Something went wrong — your coins are safe."); }
+    stage.textContent = "💥";
+    await refreshWallet();
+    const html = r.results.map(x => x.refund ? `<div>🪙 Own everything! +${x.refund} back</div>` : `<div style="color:${RARITY[x.rarity][1]}">${x.preview} <b>${x.name}</b> — ${RARITY[x.rarity][0]}!</div>`).join("");
+    const top = r.results.find(x => x.rarity === "legendary") || r.results.find(x => x.rarity === "epic") || r.results[0];
+    setTimeout(async () => { await this.render(el); el.querySelector("#gc-stage").textContent = top && top.preview ? top.preview : "🎉"; el.querySelector("#gc-result").innerHTML = html; if (window.AIGSkin && r.results.some(x => x.rarity === "epic" || x.rarity === "legendary")) AIGSkin.burst(innerWidth / 2, innerHeight / 2); }, 350);
+  };
+  el.querySelector("#gc-1").onclick = () => go(1);
+  el.querySelector("#gc-5").onclick = () => go(5);
+}});
+
+/* ---- 4. Dino Companion ---- */
+SECTIONS.push({ id: "dino", async render(el) {
+  const d = await LB.getDino();
+  const cost = c => c.coins ? `🪙${c.coins}` : `💎${c.gems}`;
+  const pct = d.next ? Math.min(100, Math.round(d.total / d.next.need * 100)) : 100;
+  el.innerHTML = `<h2>🦖 Dino Companion</h2>
+    <p class="ex-sub">Your very own dino! Answer questions to help it grow, then pay to evolve it. Reach Mega Rex to unlock the free Mega Rex chasing-dino skin.</p>
+    <div style="text-align:center"><div style="font-size:${3 + d.stage * .7}rem;line-height:1.1">${d.def.emoji}</div><div class="ex-stat">${d.def.name}</div></div>
+    <div class="ex-row" style="justify-content:center;margin:8px 0">${d.stages.map((s, i) => `<span style="font-size:1.1rem;opacity:${i <= d.stage ? 1 : .3}">${s.emoji}</span>`).join('<span style="opacity:.4">›</span>')}</div>
+    ${d.next ? `<div style="background:#eee4f7;border-radius:100px;height:10px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#c08be8,#8c2f6b)"></div></div>
+    <div class="ex-sub" style="text-align:center;margin:6px 0 10px">${d.total}/${d.next.need} correct answers to evolve into ${d.next.name}</div>
+    <div class="ex-row" style="justify-content:center"><button class="ex-btn" id="dn-go" ${d.total >= d.next.need ? "" : "disabled"}>${d.stage === 0 ? "Hatch" : "Evolve"} ${cost(d.next.cost)}</button></div>` : '<div class="ex-sub" style="text-align:center">Fully grown! 🎉 Equip Mega Rex in 🎨 Customize → Dino Skin.</div>'}<div class="ex-msg"></div>`;
+  const b = el.querySelector("#dn-go");
+  if (b) b.onclick = async () => {
+    const r = await LB.evolveDino();
+    if (!r.ok) return say(el, FAIL[r.reason] || "Couldn't evolve.");
+    await refreshWallet(); await this.render(el); say(el, `${r.def.emoji} It grew into ${r.def.name}!`);
+    if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 2);
+  };
+}});
+
+// Newest features first: pull this batch's sections to the front.
+SECTIONS.unshift(...SECTIONS.splice(R10_START));
+
 /* ---- boot ---- */
 if (!player || player.role === "parent" || !LB) {
   $("ex-page").innerHTML = '<div class="ex-topbar"><a href="../" class="ex-back">←</a><div class="ex-title">🎁 Extras</div></div><p class="ex-empty">Please sign in from the hub first.</p>';

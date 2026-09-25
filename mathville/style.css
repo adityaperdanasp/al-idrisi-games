@@ -2004,3 +2004,24 @@ button { font-family: inherit; }
 .ninja-runner[data-costume="chef"] .ninja-band { background: #ef4444; }
 .ninja-runner[data-costume="chef"] .ninja-mask { background: #6b3f1d; }
 .ninja-runner[data-costume="chef"]::after { content: ""; position: absolute; left: 50%; top: -20px; transform: translateX(-50%); width: 24px; height: 16px; background: #fff; border-radius: 10px 10px 3px 3px; box-shadow: 0 0 0 1px #d6d6d6; z-index: 6; }
+
+/* Flash Challenge (PM round 10, item 13) */
+.flash-overlay { position: fixed; inset: 0; background: linear-gradient(180deg, #2b1055, #7597de); z-index: 950; display: grid; place-items: center; padding: 14px; }
+.flash-overlay.hidden { display: none; }
+.flash-card { width: min(460px, 100%); background: #fff; border-radius: 22px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+.flash-head { display: flex; justify-content: space-between; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; margin-bottom: 8px; }
+.flash-bar { height: 10px; background: #eee; border-radius: 100px; overflow: hidden; margin-bottom: 14px; }
+.flash-bar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #f7c548, #e4572e); transition: width 1s linear; }
+.flash-q { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; min-height: 3.2em; display: grid; place-items: center; text-align: center; margin-bottom: 10px; }
+.flash-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.flash-opt { border: 2px solid #eadff5; background: #faf6ff; border-radius: 14px; padding: 12px 6px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; cursor: pointer; }
+.flash-opt.right { background: #c9f2d3; border-color: #34c759; }
+.flash-opt.wrong { background: #ffd0d0; border-color: #e4572e; }
+.flash-result { text-align: center; font-weight: 800; color: #6b3f9b; min-height: 1.4em; margin: 10px 0; line-height: 1.5; }
+@keyframes ornamentBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+/* Mega Rex chasing dino (PM round 10, item 4) -- see the dino-skin rules above for the pattern */
+.drive-dino[data-skin="mega"] .dino-tail,
+.drive-dino[data-skin="mega"] .dino-body,
+.drive-dino[data-skin="mega"] .dino-head { fill: #FFD54A; stroke: #C99A2E; }
+.drive-dino[data-skin="mega"] { filter: drop-shadow(0 0 8px #ffd700); }
+.drive-dino[data-skin="mega"] .dino-leg { fill: #C99A2E; }

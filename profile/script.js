@@ -84,6 +84,18 @@ async function loadProfile() {
 
   loadRoom();
 
+  // PM round 10: name-card background, signature sticker, dino companion.
+  try {
+    const [cardBg, skin, dino] = await Promise.all([
+      AIGLeaderboard.getEquippedCosmetic("card-bg", "default"), AIGLeaderboard.getSkinPrefs(), AIGLeaderboard.getDino()
+    ]);
+    const hero = document.querySelector(".pf-hero");
+    if (cardBg && cardBg !== "default") hero.dataset.card = cardBg;
+    if (skin.sticker) document.getElementById("pf-sticker").textContent = skin.sticker;
+    if (dino && dino.stage > 0) document.getElementById("pf-dino").textContent = dino.def.emoji;
+    if (skin.sticker || (dino && dino.stage > 0)) document.getElementById("pf-flair-row").hidden = false;
+  } catch (e) { /* decorative */ }
+
   if (featured && pedestals) {
     document.getElementById("pf-trophy-section").hidden = false;
     trophyState.owned = featured.owned;

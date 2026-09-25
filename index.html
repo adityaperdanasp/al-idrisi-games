@@ -347,6 +347,9 @@
         <div class="sc-hero-tagline">Pick a quest, have fun, and level up! 🎉</div>
       </div>
 
+      <!-- Seasonal event banner (PM round 10, item 9) -- leaderboard.js's SEASONS -->
+      <a class="sc-season-banner" id="sc-season-banner" href="extras/" hidden></a>
+
       <div class="sc-newfeature-banner" id="sc-startier-banner" hidden>
         <span>🆕 New! Replay a chapter you've already 3-starred in MathVille, Language & Arts, or SolarQuest to earn Silver 🥈 stars — then Gold 🥇!</span>
         <button id="sc-startier-banner-close" type="button" aria-label="Dismiss">✕</button>
@@ -1281,6 +1284,7 @@
       });
     }
     document.getElementById("sc-player-avatar").textContent = current.name[0].toUpperCase();
+    renderSeasonBanner();
     document.getElementById("sc-player-name").textContent = current.name;
     document.getElementById("sc-screen-select").classList.remove("active");
     document.getElementById("sc-screen-landing").classList.add("active");
@@ -2433,6 +2437,7 @@
   // INSIDE 6 different games. Grouped under a small label per game so
   // it doesn't read as one undifferentiated 16-item list.
   const FX_GROUP_LABEL = {
+    "card-bg": "🪪 Profile — Card Background",
     "answer-fx": "✨ Everywhere — Correct-Answer Effect",
     "touch-trail": "👆 Everywhere — Finger Trail",
     "combo-sticker": "🎟️ Everywhere — 5-Streak Sticker",
@@ -2576,6 +2581,34 @@
       };
     });
   }
+
+  // Seasonal banner (PM round 10, item 9). Links to Extras, where the gift is.
+  function renderSeasonBanner() {
+    const el = document.getElementById("sc-season-banner");
+    if (!el || !window.AIGLeaderboard || !AIGLeaderboard.getSeason) return;
+    const season = AIGLeaderboard.getSeason();
+    if (!season) { el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = `<span class="sc-season-emoji">${season.emoji}</span><span class="sc-season-text"><b>${season.name}</b> — ${season.msg} <u>Open your gift →</u></span>`;
+  }
+
+  // Intro splash (PM round 10, item 8) -- once per browser session, tap to skip.
+  (function introSplash() {
+    try {
+      if (sessionStorage.getItem("aig_splash") === "1") return;
+      if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const p = window.AIGPlayer && AIGPlayer.getPlayer();
+      if (!p) return;
+      sessionStorage.setItem("aig_splash", "1");
+      const el = document.createElement("div");
+      el.className = "sc-splash";
+      el.innerHTML = `<img src="icon-192.png" alt="" class="sc-splash-bo"><div class="sc-splash-pre">BrainBox presents</div><div class="sc-splash-hi">Welcome back, ${p.name.replace(/[<>&]/g, "")}! 🎉</div>`;
+      const close = () => { el.classList.add("out"); setTimeout(() => el.remove(), 450); };
+      el.onclick = close;
+      document.body.appendChild(el);
+      setTimeout(close, 2000);
+    } catch (e) { /* purely decorative */ }
+  })();
 
   function applyHubTheme(id) {
     document.documentElement.dataset.hubTheme = id === "default" ? "" : id;

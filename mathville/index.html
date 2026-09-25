@@ -34,7 +34,7 @@
 <script src="../leaderboard.js"></script>
 <script src="../skin.js"></script>
 
-<link rel="stylesheet" href="style.css?v=99" />
+<link rel="stylesheet" href="style.css?v=100" />
 </head>
 <body>
 
@@ -1155,6 +1155,18 @@
 
 </main>
 
+<!-- Flash Challenge (PM round 10, item 13) -- outside every .screen, like the arcade break. -->
+<div id="flash-overlay" class="flash-overlay hidden">
+  <div class="flash-card">
+    <div class="flash-head"><span>⚡ Flash Challenge</span><span>⏱️ <b id="flash-time">60</b></span><span>⭐ <b id="flash-score">0</b></span></div>
+    <div class="flash-bar"><i id="flash-bar-fill"></i></div>
+    <div id="flash-q" class="flash-q"></div>
+    <div id="flash-opts" class="flash-opts"></div>
+    <div id="flash-result" class="flash-result"></div>
+    <button class="btn btn-secondary" id="flash-exit" type="button">Back to Extras</button>
+  </div>
+</div>
+
 <!-- Arcade break (PM round 9, item 18) -- deliberately OUTSIDE every .screen
      (see CLAUDE.md's overlay-in-inactive-screen gotcha) so it shows over
      whichever screen the question round is on. -->
@@ -1175,6 +1187,6 @@
 <script src="weekly-focus.js?v=1"></script>
 <script src="bgm.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
-<script src="script.js?v=141"></script>
+<script src="script.js?v=142"></script>
 </body>
 </html>

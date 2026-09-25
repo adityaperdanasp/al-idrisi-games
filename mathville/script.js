@@ -574,6 +574,19 @@ function renderTownMap() {
     wrap.appendChild(el);
   });
 
+  // Seasonal decor (PM round 10, item 9): during an event (see
+  // leaderboard.js's SEASONS) the whole map gets festive emoji.
+  const season = window.AIGLeaderboard && AIGLeaderboard.getSeason && AIGLeaderboard.getSeason();
+  if (season) {
+    for (let i = 0; i < 22; i++) {
+      const el = document.createElement("div");
+      el.textContent = season.orn[i % season.orn.length];
+      const side = i % 2 ? 78 + (i * 7) % 16 : 2 + (i * 5) % 14; // hug the map's edges, away from the chapter nodes
+      el.style.cssText = `position:absolute;left:${side}%;top:${40 + i * ((MAP_HEIGHT - 120) / 22)}px;font-size:${18 + (i % 3) * 6}px;opacity:.85;pointer-events:none;animation:ornamentBob ${3 + (i % 4) * .6}s ease-in-out infinite;animation-delay:${(i % 5) * .3}s`;
+      wrap.appendChild(el);
+    }
+  }
+
   chapters.forEach((ch, i) => {
     const meta = CHAPTER_META[ch.id];
     const prog = PROGRESS.chapters[ch.id] || { stars: 0, completed: false };
@@ -7802,3 +7815,69 @@ if (new URLSearchParams(location.search).get("azkapr") === "1") {
   launchAzkaPrRound();
 }
 
+/* =================================================================
+   FLASH CHALLENGE (PM round 10, item 13) -- 60 seconds of mixed
+   questions (half math, a quarter each science/language). +1 per correct
+   answer, a wrong answer costs 3 seconds. Score + coins go through
+   leaderboard.js (3 tries a day, coins on the first 2, class board).
+   Deep link: mathville/?flash=1 (see the extras page).
+   ================================================================= */
+async function launchFlashChallenge() {
+  const overlay = $("flash-overlay");
+  overlay.classList.remove("hidden");
+  const setResult = html => { $("flash-result").innerHTML = html; };
+  $("flash-exit").onclick = () => { window.location.href = "../extras/"; };
+  $("flash-opts").innerHTML = ""; $("flash-q").textContent = "Loading…";
+  let status = null;
+  try { status = await AIGLeaderboard.getFlashStatus(); } catch (e) {}
+  if (!status) { $("flash-q").textContent = "Please sign in from the hub first."; return; }
+  if (status.left <= 0) { $("flash-q").textContent = "You've used all 3 tries today — come back tomorrow! 🌙"; setResult(`Best today: ${status.best}`); return; }
+  try { await Promise.race([ensurePlaneQuestionPools(), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}
+  planeZoneLevel = 2;
+
+  let score = 0, streak = 0, left = 60, over = false, current = null;
+  $("flash-score").textContent = "0";
+  const total = 60;
+  const paint = () => { $("flash-time").textContent = String(Math.max(0, left)); $("flash-bar-fill").style.width = Math.max(0, left / total * 100) + "%"; };
+  function nextQuestion() {
+    const r = Math.random();
+    current = r < 0.5 ? buildQuickMc(rollDriveQuestion(Math.random() < 0.5 ? "easy" : "medium"))
+      : (pickFromPlanePool(r < 0.75 ? planeSolarPool : planeLanguagePool) || buildQuickMc(rollDriveQuestion("easy")));
+    $("flash-q").textContent = current.prompt;
+    const box = $("flash-opts");
+    box.innerHTML = "";
+    current.options.forEach(opt => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "flash-opt"; b.textContent = opt;
+      b.onclick = () => answer(b, opt);
+      box.appendChild(b);
+    });
+  }
+  let locked = false;
+  function answer(btn, opt) {
+    if (over || locked) return;
+    locked = true;
+    const ok = opt === current.correctLabel;
+    if (window.AIGJuice) AIGJuice.answer(ok, streak);
+    if (ok) { score++; streak++; btn.classList.add("right"); $("flash-score").textContent = String(score); }
+    else { streak = 0; left -= 3; btn.classList.add("wrong"); paint(); }
+    setTimeout(() => { locked = false; if (!over) nextQuestion(); }, ok ? 220 : 480);
+  }
+  const clock = setInterval(() => { left--; paint(); if (left <= 0) finish(); }, 1000);
+  async function finish() {
+    if (over) return;
+    over = true; clearInterval(clock); locked = true;
+    $("flash-opts").innerHTML = "";
+    $("flash-q").textContent = `⏱️ Time! Score: ${score}`;
+    let r = null;
+    try { r = await AIGLeaderboard.submitFlash(score); } catch (e) {}
+    setResult(r && r.ok
+      ? `${r.newBest ? "🏆 New best! " : ""}Best today: ${r.best}<br>${r.coins ? `🪙 +${r.coins} coins (×${status.mult} bonus day)` : r.plays > 2 ? "No coins on the last try — just for bragging rights!" : "Get some right to earn coins next try!"}<br>${r.left} ${r.left === 1 ? "try" : "tries"} left`
+      : "Couldn't save your score — check your connection.");
+    if (r && r.ok && r.coins && window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 2);
+  }
+  paint(); nextQuestion();
+}
+if (new URLSearchParams(location.search).get("flash") === "1") {
+  launchFlashChallenge();
+}
