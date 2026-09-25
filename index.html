@@ -2223,12 +2223,28 @@
     const recap = await AIGLeaderboard.getWeeklyRecap();
     const body = document.getElementById("sc-recap-body");
     if (!recap) { body.innerHTML = ""; return; }
-    body.innerHTML = `
-      <div class="sc-recap-row"><span class="sc-recap-emoji">🎯</span><span>${recap.weeklyCorrect} correct answers this week</span></div>
-      <div class="sc-recap-row"><span class="sc-recap-emoji">🔥</span><span>${recap.streak} day streak</span></div>
-      <div class="sc-recap-row"><span class="sc-recap-emoji">🪙</span><span>${recap.coins} coins · 💎 ${recap.gems} gems</span></div>
-      <div class="sc-recap-row"><span class="sc-recap-emoji">📚</span><span>${recap.cardsOwned}/${recap.cardsTotal} cards collected</span></div>
-    `;
+    // Animated recap (PM round 9, item 19): rows reveal one after another
+    // (reusing the month report's staggered .sc-month-row pop-in), the
+    // headline number counts up, and the pet closes the show.
+    const pet = await AIGLeaderboard.getPetStatus().catch(() => null);
+    const rows = [
+      { emoji: "🎯", html: `<b class="sc-count-up" data-to="${recap.weeklyCorrect}">0</b> correct answers this week` },
+      { emoji: "🔥", html: `${recap.streak} day streak` },
+      { emoji: "🪙", html: `${recap.coins} coins · 💎 ${recap.gems} gems` },
+      { emoji: "📚", html: `${recap.cardsOwned}/${recap.cardsTotal} cards collected` }
+    ];
+    if (pet && pet.stage) rows.push({ emoji: pet.stage.emoji, html: `${pet.stage.name} says: great week!` });
+    body.innerHTML = rows.map((r, i) => `
+      <div class="sc-recap-row sc-month-row" style="animation-delay:${i * 0.35}s"><span class="sc-recap-emoji">${r.emoji}</span><span>${r.html}</span></div>`).join("");
+    const counter = body.querySelector(".sc-count-up");
+    if (counter) {
+      const to = Number(counter.dataset.to) || 0, t0 = performance.now(), dur = 1100;
+      (function tick(now) {
+        const p = Math.min(1, (now - t0) / dur);
+        counter.textContent = Math.round(to * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(tick);
+      })(t0);
+    }
     renderJourneyTimeline();
   }
 

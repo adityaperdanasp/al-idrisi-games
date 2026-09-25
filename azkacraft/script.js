@@ -541,6 +541,7 @@ function handleMCAnswer(selected, q, grid) {
   const buttons = [...grid.querySelectorAll(".option-btn")];
   buttons.forEach(b => (b.disabled = true));
   const isCorrect = selected === q.answer;
+  if (window.AIGJuice) AIGJuice.answer(isCorrect, session.correctCount); // haptic + rising blip (juice.js)
 
   if (isCorrect) {
     buttons.find(b => b.textContent === selected).classList.add("selected-correct");

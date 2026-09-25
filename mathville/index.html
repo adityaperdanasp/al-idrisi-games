@@ -29,10 +29,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
 <script src="../firebase.js"></script>
 <script src="../player.js"></script>
+<script src="../juice.js"></script>
 <script src="../players.js"></script>
 <script src="../leaderboard.js"></script>
 
-<link rel="stylesheet" href="style.css?v=97" />
+<link rel="stylesheet" href="style.css?v=98" />
 </head>
 <body>
 
@@ -1153,6 +1154,19 @@
 
 </main>
 
+<!-- Arcade break (PM round 9, item 18) -- deliberately OUTSIDE every .screen
+     (see CLAUDE.md's overlay-in-inactive-screen gotcha) so it shows over
+     whichever screen the question round is on. -->
+<div id="arcade-overlay" class="arcade-overlay hidden">
+  <div class="arcade-card">
+    <div class="arcade-title">🐹 Brain Break! Whack the moles</div>
+    <div class="arcade-hud"><span>⏱️ <b id="arcade-time">30</b>s</span><span>⭐ <b id="arcade-score">0</b></span></div>
+    <div class="arcade-board" id="arcade-board"></div>
+    <div class="arcade-result" id="arcade-result"></div>
+    <button class="btn btn-secondary" id="arcade-skip" type="button">Skip</button>
+  </div>
+</div>
+
 <script src="questions.js?v=11"></script>
 <script src="generators.js?v=3"></script>
 <!-- TEMPORARY -- see weekly-focus.js's own header comment. Safe to
@@ -1160,6 +1174,6 @@
 <script src="weekly-focus.js?v=1"></script>
 <script src="bgm.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
-<script src="script.js?v=138"></script>
+<script src="script.js?v=140"></script>
 </body>
 </html>

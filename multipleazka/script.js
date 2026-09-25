@@ -351,6 +351,26 @@ function goHome() {
   window.location.href = "../";
 }
 
+// Solo opponent (PM round 9, item 12): "ai" (default) or "ghost" -- a ghost
+// that finishes at the player's own best time for the chosen difficulty.
+// Best times are cached per difficulty on boot and refreshed after a save.
+let oppMode = "ai";
+const ghostBest = {};
+if (window.AIGLeaderboard && AIGLeaderboard.getMathRaceGhost) {
+  ["easy", "medium", "hard", "turbo"].forEach(d => {
+    AIGLeaderboard.getMathRaceGhost(d).then(v => { if (v) ghostBest[d] = v; }).catch(() => {});
+  });
+}
+document.querySelectorAll("#opp-seg .seg-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    oppMode = btn.dataset.opp;
+    document.querySelectorAll("#opp-seg .seg-btn").forEach(b => b.classList.toggle("active", b === btn));
+  });
+});
+function activeGhostSeconds() {
+  return oppMode === "ghost" && ghostBest[state.difficulty] ? ghostBest[state.difficulty] : null;
+}
+
 // Difficulty segmented control. Per player — see the DIFFICULTY table.
 if (window.AIGLeaderboard && AIGLeaderboard.hasSecretMode) {
   AIGLeaderboard.hasSecretMode("turbo").then(owned => {
@@ -1031,7 +1051,7 @@ function playNitroSound() {
 function resetCarsToStart() {
   mySlot = "p1";
   updateLaneLabel("p1", { name: CHILD_NAME, pace: state.role });
-  updateLaneLabel("p2", { name: "Opponent", pace: state.role === "kids" ? "parent" : "kids" });
+  updateLaneLabel("p2", { name: activeGhostSeconds() ? `👻 Ghost (${activeGhostSeconds()}s)` : "Opponent", pace: state.role === "kids" ? "parent" : "kids" });
   updateCar("p1", { progress: 0, correct: 0, vehicle: state.vehicle, pace: state.role }, true);
   updateCar("p2", { progress: 0, correct: 0, pace: "parent" }, false);
   lastProgress.p1 = 0; lastProgress.p2 = 0;
@@ -1045,7 +1065,9 @@ function resetCarsToStart() {
 function startSoloOpponent() {
   stopSoloOpponent();
   soloOpponentProgress = 0;
-  const seconds = DIFFICULTY[state.difficulty].opponentSeconds;
+  // Ghost mode: finish exactly at the player's own record time (a fresh
+  // record therefore beats the ghost by construction -- see endSoloRace()).
+  const seconds = activeGhostSeconds() || DIFFICULTY[state.difficulty].opponentSeconds;
   soloOpponentTimerId = setInterval(() => {
     if (state.gameOver) { stopSoloOpponent(); return; }
     soloOpponentProgress = Math.min(soloOpponentProgress + 0.1 / seconds, 1);
@@ -1329,6 +1351,7 @@ function handleAnswer(value) {
 
   // value === null means the timer ran out → always wrong.
   const isCorrect = value !== null && Number(value) === state.currentAnswer;
+  if (window.AIGJuice) AIGJuice.answer(isCorrect, state.streak); // haptic + rising blip (juice.js)
 
   // Lock every input to prevent double-submits between questions.
   document.querySelectorAll(".answer-btn, .key").forEach(b => (b.disabled = true));
@@ -1809,6 +1832,15 @@ function endSoloRace() {
   $("winner-text").textContent = "You finished!";
 
   const elapsed = raceStartTime ? Math.round((Date.now() - raceStartTime) / 1000) : 0;
+  // Ghost record (PM round 9, item 12) -- any FINISHED solo race saves a new
+  // personal best for this difficulty; shown on the result screen.
+  if (window.AIGLeaderboard && AIGLeaderboard.saveMathRaceGhost && elapsed > 0) {
+    const diffKey = state.difficulty;
+    AIGLeaderboard.saveMathRaceGhost(diffKey, elapsed).then(r => {
+      if (r.best) ghostBest[diffKey] = r.best;
+      if (r.newRecord) $("over-sub").textContent += "  👻 New personal best!";
+    }).catch(() => {});
+  }
 
   if (window.AIGLeaderboard) {
     AIGLeaderboard.recordPlay("mathrace").then(timesPlayed => {

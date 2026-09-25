@@ -1416,6 +1416,104 @@
     return { ok: true };
   }
 
+  // ---- 12. Math Race Ghost -- personal best finish time per difficulty,
+  // used as a "ghost" opponent that runs at the kid's own record pace.
+  async function getMathRaceGhost(difficulty) {
+    const player = perksPlayer();
+    if (!player) return null;
+    const snap = await aigDb.ref(`players/${player.id}/mathraceGhost/${difficulty}`).get();
+    return snap.exists() ? snap.val() : null;
+  }
+  // Only ever lowers the stored time. Returns {newRecord, best}.
+  async function saveMathRaceGhost(difficulty, seconds) {
+    const player = perksPlayer();
+    if (!player || !(seconds > 0)) return { newRecord: false };
+    const cur = await getMathRaceGhost(difficulty);
+    if (cur && cur <= seconds) return { newRecord: false, best: cur };
+    await aigDb.ref(`players/${player.id}/mathraceGhost/${difficulty}`).set(seconds);
+    return { newRecord: true, best: seconds };
+  }
+
+  // ---- 13. Bo's Story -- episodes unlock by lifetime correct answers
+  // (players/{id}/totalCorrect); reading each one for the first time pays
+  // a small coin reward. The episode TEXT lives in extras/script.js.
+  const STORY_READ_REWARD = 5;
+  async function getStoryRead() {
+    const player = perksPlayer();
+    if (!player) return {};
+    const snap = await aigDb.ref(`players/${player.id}/storyRead`).get();
+    return snap.exists() ? snap.val() : {};
+  }
+  async function markStoryRead(i) {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/storyRead/e${i}`);
+    const snap = await ref.get();
+    if (snap.exists()) return { ok: true, first: false };
+    await ref.set(true); // marked BEFORE crediting so a double-tap can't pay twice
+    await creditWallet({ coins: STORY_READ_REWARD });
+    return { ok: true, first: true, coins: STORY_READ_REWARD };
+  }
+
+  // ---- 20. Calendar -- which days of a month the kid played (dailyStats
+  // has one child per active day) plus per-week completion for medals.
+  async function getCalendarMonth(year, month) { // month is 0-based
+    const player = perksPlayer();
+    if (!player) return { days: {} };
+    const snap = await aigDb.ref(`players/${player.id}/dailyStats`).get();
+    const all = snap.exists() ? snap.val() : {};
+    const prefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
+    const days = {};
+    Object.entries(all).forEach(([date, d]) => { if (date.startsWith(prefix)) days[Number(date.slice(8))] = d.correct || 0; });
+    return { days };
+  }
+
+  // ---- 17. Zone Level -- adaptive difficulty. A rolling window of the last
+  // answers moves the kid between Zone 1..5: 5+ right in the last 6 -> up,
+  // 3+ wrong in the last 4 -> down. Games read getZoneLevel() to pick a
+  // difficulty tier and call recordZoneResult() per answer.
+  const ZONE_MIN = 1, ZONE_MAX = 5;
+  let zoneCache = null; // { level, recent: [0|1,...] }
+  async function loadZone() {
+    if (zoneCache) return zoneCache;
+    const player = perksPlayer();
+    let d = null;
+    if (player) { const snap = await aigDb.ref(`players/${player.id}/zone`).get(); d = snap.exists() ? snap.val() : null; }
+    zoneCache = { level: (d && d.level) || 2, recent: (d && d.recent ? String(d.recent).split("").map(Number) : []) };
+    return zoneCache;
+  }
+  async function getZoneLevel() { return (await loadZone()).level; }
+  // Returns { level, change } where change is +1 / -1 / 0.
+  async function recordZoneResult(isCorrect) {
+    const player = perksPlayer();
+    if (!player) return { level: 2, change: 0 };
+    const z = await loadZone();
+    z.recent.push(isCorrect ? 1 : 0);
+    if (z.recent.length > 8) z.recent.shift();
+    let change = 0;
+    const last6 = z.recent.slice(-6), last4 = z.recent.slice(-4);
+    if (last6.length === 6 && last6.reduce((a, b) => a + b, 0) >= 5 && z.level < ZONE_MAX) { z.level++; change = 1; z.recent = []; }
+    else if (last4.length === 4 && last4.filter(x => !x).length >= 3 && z.level > ZONE_MIN) { z.level--; change = -1; z.recent = []; }
+    aigDb.ref(`players/${player.id}/zone`).set({ level: z.level, recent: z.recent.join("") }).catch(() => {});
+    return { level: z.level, change };
+  }
+
+  // ---- 18. Arcade break reward -- coins for the 30s reflex mini-game
+  // MathVille offers midway through a 20-question Focus/PR round. Capped so
+  // it can't become a farm: max 10 coins per break, 30 per day.
+  const ARCADE_DAILY_CAP = 30;
+  async function claimArcadeReward(score) {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const want = Math.max(0, Math.min(10, Math.floor(score / 2)));
+    const ref = aigDb.ref(`players/${player.id}/arcade/${todayKey()}`);
+    const snap = await ref.get();
+    const used = snap.exists() ? (snap.val() || 0) : 0;
+    const coins = Math.max(0, Math.min(want, ARCADE_DAILY_CAP - used));
+    if (coins > 0) { await ref.set(used + coins); await creditWallet({ coins }); }
+    return { ok: true, coins, capped: coins < want };
+  }
+
   // =====================================================================
   // PERSONAL BEST TRACKER -- fastest completion time + best combo streak
   // per MathVille chapter, distinct from stars/tier (a skill/speed
@@ -4300,6 +4398,8 @@
     ROOM_ITEMS, getRoom, placeRoomItem, SECRET_MODES, getSecretModes, hasSecretMode,
     setQuestionBounty, claimQuestionBounty, BOUNTY_MIN, BOUNTY_MAX,
     getClassFund, donateClassFund, claimClassFundTier, getClassBoss, claimClassBoss, getTeamBattle, claimTeamReward,
+    getZoneLevel, recordZoneResult, claimArcadeReward,
+    getMathRaceGhost, saveMathRaceGhost, getStoryRead, markStoryRead, getCalendarMonth, STORY_READ_REWARD,
     STREAK_FREEZE_COST, STREAK_FREEZE_MAX, PIGGY_CAP, PET_ADVENTURE_COST, WHEEL_EXTRA_COST, BOOSTER_COST,
     getPersonalBest, submitPersonalBest,
     awardDanceBattleBonus,

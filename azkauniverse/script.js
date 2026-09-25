@@ -1170,6 +1170,7 @@ function renderMC(stage, q) {
     btn.addEventListener("click", () => {
       if (state.locked) return;
       const isCorrect = originalIndex === q.answer;
+      if (window.AIGJuice) AIGJuice.answer(isCorrect, state.correctCount);
       [...grid.children].forEach((b, bi) => {
         b.disabled = true;
         if (order[bi] === q.answer) b.classList.add("correct");

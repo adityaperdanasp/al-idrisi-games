@@ -101,6 +101,16 @@
           </div>
         </div>
 
+        <!-- Solo opponent (PM round 9, item 12): the usual AI, or a ghost that
+             replays your own best finish time for this difficulty. -->
+        <div class="setting-row">
+          <span class="setting-label">🏁 Solo opponent</span>
+          <div class="seg seg-compact" id="opp-seg">
+            <button class="seg-btn active" data-opp="ai">🤖 AI</button>
+            <button class="seg-btn" data-opp="ghost">👻 My Ghost</button>
+          </div>
+        </div>
+
         <!-- Answer style: multiple choice vs type-in (per player) -->
         <div class="setting-row">
           <span class="setting-label">🔘 Answer style</span>
@@ -381,6 +391,7 @@
 <!-- Shared "who's playing" identity from the hub (falls back gracefully if
      opened outside the hub, e.g. directly). -->
 <script src="../player.js"></script>
+<script src="../juice.js"></script>
 <script src="../leaderboard.js"></script>
 
 <!-- Standalone custom domains (e.g. multipleazka.fun) don't carry the

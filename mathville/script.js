@@ -2512,6 +2512,7 @@ function launchPlaneMode(is2p) {
   $("plane-buff-shield").classList.add("hidden");
   $("plane-buff-wingmen").classList.add("hidden");
   $("plane-buff-spread").classList.add("hidden");
+  if (!is2p && window.AIGLeaderboard && AIGLeaderboard.getZoneLevel) AIGLeaderboard.getZoneLevel().then(z => { planeZoneLevel = z; }).catch(() => {});
   if (!is2p) applyArmedLoadout("plane"); // solo only -- a 2P round's lives/shield must stay symmetric between the two pilots
   $("plane-end-scores").classList.add("hidden");
   // 2P-only chrome: partner ship/HUD/banner stay hidden in solo.
@@ -3023,15 +3024,22 @@ function pickFromPlanePool(pool) {
 // existence checks so this is a no-op if weekly-focus.js isn't loaded
 // (or has been deleted once the week is over) -- rollPlaneQuestion()
 // works exactly as before either way.
+// Zone Level (PM round 9, item 17) -- adaptive difficulty for the plane's
+// mathville slot: Zones 1-3 keep the original "easy" mental-math tier (the
+// shmup's own rule above), Zones 4-5 step up to "medium". Refreshed from
+// leaderboard.js at plane launch and after every answer.
+let planeZoneLevel = 2;
+function planeMathTier() { return planeZoneLevel >= 4 ? "medium" : "easy"; }
+
 function rollPlaneQuestion() {
   if (!planeState.is2p && typeof isWeeklyFocusActive === "function" && isWeeklyFocusActive() &&
       typeof WEEKLY_FOCUS_POOL !== "undefined" && WEEKLY_FOCUS_POOL.length && Math.random() < 0.5) {
     return buildQuickMc(WEEKLY_FOCUS_POOL[rand(0, WEEKLY_FOCUS_POOL.length - 1)]);
   }
   const r = Math.random();
-  if (r < 0.5) return buildQuickMc(rollDriveQuestion("easy"));
+  if (r < 0.5) return buildQuickMc(rollDriveQuestion(planeMathTier()));
   const pool = r < 0.75 ? planeSolarPool : planeLanguagePool;
-  return pickFromPlanePool(pool) || buildQuickMc(rollDriveQuestion("easy"));
+  return pickFromPlanePool(pool) || buildQuickMc(rollDriveQuestion(planeMathTier()));
 }
 
 /* =================================================================
@@ -3411,6 +3419,14 @@ function showPlaneQuestion(preset) {
         else if (b === btn) b.classList.add("wrong");
       });
       if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "plane-mode", isCorrect);
+      // Zone Level (item 17): solo only, so a 2P round's difficulty stays symmetric.
+      if (!planeState.is2p && window.AIGLeaderboard && AIGLeaderboard.recordZoneResult) {
+        AIGLeaderboard.recordZoneResult(isCorrect).then(z => {
+          planeZoneLevel = z.level;
+          if (z.change > 0) showPlaneToast(`🎯 Zone Up! Zone ${z.level}`);
+          else if (z.change < 0) showPlaneToast(`🎯 Zone ${z.level} — warming up`);
+        }).catch(() => {});
+      }
       if (isCorrect) {
         planeState.score += 3;
         updatePlaneScore();
@@ -4765,6 +4781,57 @@ function renderStep() {
   else if (step.uiType === "order") renderOrderStep(step);
 }
 
+
+// =====================================================================
+// ARCADE BREAK (PM round 9, item 18) -- 30s whack-a-mole midway through a
+// Focus Round / Azka PR round. Skippable. Coins via leaderboard.js's
+// claimArcadeReward (capped per break and per day).
+// =====================================================================
+function showArcadeBreak(done) {
+  const overlay = $("arcade-overlay");
+  const board = $("arcade-board");
+  let score = 0, left = 30, finished = false;
+  board.innerHTML = Array.from({ length: 9 }, () => '<button class="arcade-hole" type="button"></button>').join("");
+  $("arcade-score").textContent = "0";
+  $("arcade-time").textContent = "30";
+  $("arcade-result").textContent = "";
+  overlay.classList.remove("hidden");
+  const holes = [...board.querySelectorAll(".arcade-hole")];
+  holes.forEach(h => h.addEventListener("click", () => {
+    if (!h.classList.contains("up")) return;
+    h.classList.remove("up");
+    score++;
+    $("arcade-score").textContent = String(score);
+    if (window.AIGJuice) AIGJuice.answer(true, Math.min(10, score));
+  }));
+  const popTimer = setInterval(() => {
+    const h = holes[Math.floor(Math.random() * holes.length)];
+    h.classList.add("up");
+    setTimeout(() => h.classList.remove("up"), 850);
+  }, 620);
+  const clock = setInterval(() => {
+    left--;
+    $("arcade-time").textContent = String(left);
+    if (left <= 0) finish(true);
+  }, 1000);
+  async function finish(played) {
+    if (finished) return;
+    finished = true;
+    clearInterval(popTimer); clearInterval(clock);
+    holes.forEach(h => h.classList.remove("up"));
+    let msg = "Back to the questions!";
+    if (played && score > 0 && window.AIGLeaderboard && AIGLeaderboard.claimArcadeReward) {
+      try {
+        const r = await AIGLeaderboard.claimArcadeReward(score);
+        msg = r.coins ? `🪙 +${r.coins} coins! ${r.capped ? "(daily arcade limit reached)" : ""}` : "Nice! (daily arcade coin limit reached)";
+      } catch (e) {}
+    }
+    $("arcade-result").textContent = msg;
+    setTimeout(() => { overlay.classList.add("hidden"); done(); }, played ? 1400 : 0);
+  }
+  $("arcade-skip").onclick = () => finish(false);
+}
+
 function goToNextStep() {
   state.stepIndex++;
   // Relay Race live progress -- write-only here, read side is
@@ -4780,6 +4847,11 @@ function goToNextStep() {
   if (state.stepIndex < state.steps.length) {
     if (state.isCoop) {
       showCoopTurnGate(); // pauses on a "pass the device" gate before rendering the next question -- see coop section below
+    } else if (state.stepIndex === 10 && !state.isBoss && !state.isChallenge && state.mode === "solo" &&
+               (state.chapterId === "focus-round" || state.chapterId === "azka-pr")) {
+      // Arcade break (item 18): a 30s reflex mini-game halfway through a
+      // 20-question round; renders the next question when it finishes.
+      showArcadeBreak(() => renderStep());
     } else {
       renderStep();
       if (state.isBoss) startBossTimer();
@@ -5093,6 +5165,7 @@ function spawnSparkleBurst() {
 function submitAnswer(isCorrect, prompt, answerForHint) {
   clearQuestionTimer(); // a real answer (or the timeout path itself) always cancels any in-flight question timer -- no-op if Pressure Timer was off
   if (isCorrect) spawnSparkleBurst();
+  if (window.AIGJuice) AIGJuice.answer(isCorrect, state.combo || 0); // haptic + rising blip (juice.js)
   let comboMultiplier = 1;
   const comboActive = !state.isBoss && !state.isChallenge && !state.isCoop;
   if (comboActive) {

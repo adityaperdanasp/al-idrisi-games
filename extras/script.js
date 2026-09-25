@@ -272,6 +272,88 @@ SECTIONS.push({ id: "team", async render(el) {
   };
 }});
 
+/* ---- 13. Bo's Story ---- */
+const STORY = [
+  { at: 0, title: "Bo Wakes Up", text: "Bo the little brain opens two sleepy eyes. \"Where am I?\" The world of BrainBox glows all around — numbers floating like fireflies, words fluttering like butterflies. \"I think I'm supposed to help someone learn,\" Bo whispers. That someone is YOU!" },
+  { at: 20, title: "The Number Forest", text: "Bo hops into the Number Forest. Trees grow taller every time you answer right! \"Look — a 7 tree and an 8 tree. If they hold hands, they make 56!\" Bo giggles. Together you count all the way to the forest edge." },
+  { at: 50, title: "The Word River", text: "A shimmering river of letters flows past. Some words sink, some float. \"Antonyms and synonyms — opposites and twins!\" says Bo, building a bridge from 'happy' to 'glad'. You cross without getting wet." },
+  { at: 100, title: "Star Harbor", text: "Night falls and stars drip from the sky like honey. Bo climbs a ladder of light to a tiny harbor between planets. \"Every star was once a cloud,\" Bo explains. \"Just like you were once new to all this — and look how far you've come!\"" },
+  { at: 200, title: "The Dino Chase", text: "RAWR! A dino bursts out of the fog. Bo squeaks and jumps into a car (the Blaze, of course). \"Don't panic — think! Splash him with water and ZOOM with nitro!\" You both escape, laughing so hard the dino starts laughing too." },
+  { at: 350, title: "Boss of the Arena", text: "Ogres, werewolves, and a Dragon Lord line up in the arena. Bo whispers, \"Three right answers in a row and you can unleash a SPECIAL MOVE.\" You do. The whole arena shakes. Bo does a tiny victory dance." },
+  { at: 500, title: "The Secret Mountain", text: "Beyond the clouds sits a mountain nobody has climbed. Bo tightens tiny boots. \"Hard problems are just mountains you haven't climbed YET.\" Step by step, answer by answer, you both reach the top and see the whole BrainBox world sparkling below." },
+  { at: 800, title: "Bo's Big Secret", text: "At the summit Bo finally tells you the secret: \"I'm not just a brain. I'm YOUR brain — every question you've answered made me grow.\" Bo glows brighter than any star. \"Thank you for learning with me. Ready for the next adventure?\"" }
+];
+SECTIONS.push({ id: "story", async render(el) {
+  const [title, read] = await Promise.all([LB.getTitle(), LB.getStoryRead()]);
+  const total = title ? title.count : 0;
+  el.innerHTML = `<h2>📖 Bo's Story</h2>
+    <p class="ex-sub">A new chapter unlocks as you answer more questions (${total} so far). Read each one for the first time to earn 🪙${LB.STORY_READ_REWARD}!</p>
+    ${STORY.map((ep, i) => {
+      const open = total >= ep.at;
+      return `<div class="ex-row" style="margin-bottom:6px"><span style="flex:1;font-weight:800;font-size:.82rem">${open ? (read["e" + i] ? "✅" : "📗") : "🔒"} ${i + 1}. ${open ? ep.title : "???"}${open ? "" : ` <span class="ex-sub" style="display:inline;margin:0">(unlocks at ${ep.at} correct)</span>`}</span>
+        ${open ? `<button class="ex-btn alt" data-ep="${i}">Read</button>` : ""}</div>`;
+    }).join("")}
+    <div id="st-reader" style="display:none;background:#fdf6ea;border-radius:12px;padding:12px;margin-top:8px"><div id="st-title" style="font-family:'Baloo 2',sans-serif;font-weight:800"></div><p id="st-text" style="font-weight:700;font-size:.82rem;line-height:1.5;margin:6px 0 0"></p></div><div class="ex-msg"></div>`;
+  el.querySelectorAll("[data-ep]").forEach(b => b.onclick = async () => {
+    const i = Number(b.dataset.ep);
+    const r = await LB.markStoryRead(i);
+    el.querySelector("#st-reader").style.display = "block";
+    el.querySelector("#st-title").textContent = STORY[i].title;
+    el.querySelector("#st-text").textContent = STORY[i].text;
+    if (r.first) { await refreshWallet(); say(el, `🪙 +${r.coins} for reading!`); b.textContent = "Read ✅"; }
+  });
+}});
+
+/* ---- 14. Mastery Map ---- */
+SECTIONS.push({ id: "mastery", async render(el) {
+  const GAMES = [
+    { id: "mathville", label: "🏘️ MathVille", href: t => `../mathville/index.html?focus=1&quicktopic=math:${encodeURIComponent(t)}` },
+    { id: "solarquest", label: "🪐 SolarQuest", href: t => `../mathville/index.html?focus=1&quicktopic=sci:${encodeURIComponent(t)}` },
+    { id: "language-arts", label: "📖 Language & Arts", href: null }
+  ];
+  const maps = await Promise.all(GAMES.map(g => LB.getMasteryMap(g.id)));
+  const pretty = t => t.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  let total = 0, mastered = 0;
+  const body = GAMES.map((g, i) => {
+    const entries = Object.entries(maps[i]).filter(([t]) => !["drive-mode", "plane-mode", "ninja-runner", "speed-round", "focus-round", "azka-pr", "weekly-boss-rush", "perk-test"].includes(t));
+    if (!entries.length) return "";
+    entries.forEach(([, m]) => { total++; if (m) mastered++; });
+    return `<div class="ex-sub" style="margin:8px 0 4px;font-weight:800;color:#3d2e22">${g.label}</div><div class="ex-chip-row">${entries.map(([t, m]) =>
+      `<${g.href && !m ? `a href="${g.href(t)}"` : "span"} class="ex-item" style="text-decoration:none;color:inherit;flex:0 1 auto;padding:6px 10px;${m ? "background:#e5f5e8" : ""}"><span style="font-weight:800;font-size:.72rem">${m ? "⭐" : "🔓"} ${pretty(t)}</span></${g.href && !m ? "a" : "span"}>`).join("")}</div>`;
+  }).join("");
+  el.innerHTML = `<h2>🗺️ Mastery Map</h2>
+    <p class="ex-sub">${total ? `${mastered}/${total} topics mastered.` : "Play a few rounds and your topics show up here."} Tap a 🔓 topic to practice it (⭐ = mastered).</p>${body}`;
+}});
+
+/* ---- 20. Calendar ---- */
+let calOffset = 0;
+SECTIONS.push({ id: "calendar", async render(el) {
+  const now = new Date();
+  const d0 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + calOffset, 1));
+  const y = d0.getUTCFullYear(), m = d0.getUTCMonth();
+  const { days } = await LB.getCalendarMonth(y, m);
+  const dim = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  const startDow = (d0.getUTCDay() + 6) % 7; // Monday-first
+  const cells = [];
+  for (let i = 0; i < startDow; i++) cells.push("");
+  for (let d = 1; d <= dim; d++) cells.push(d);
+  while (cells.length % 7) cells.push("");
+  const weeks = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  const active = Object.keys(days).length;
+  const label = d0.toLocaleDateString(undefined, { month: "long", year: "numeric", timeZone: "UTC" });
+  el.innerHTML = `<h2>🗓️ ${label}</h2>
+    <p class="ex-sub">⭐ = a day you played. A full week of stamps earns a 🏅 medal. ${active} day${active === 1 ? "" : "s"} this month!</p>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr) 28px;gap:4px;text-align:center;font-weight:800;font-size:.7rem">
+      ${["M","T","W","T","F","S","S"].map(x => `<div style="color:#8a7a6a">${x}</div>`).join("")}<div></div>
+      ${weeks.map(w => { const played = w.filter(d => d && days[d]).length; const full = w.filter(Boolean).length === 7 && played === 7;
+        return w.map(d => `<div style="aspect-ratio:1;border-radius:8px;display:grid;place-items:center;${d ? (days[d] ? "background:#ffe9a8" : "background:#fdf6ea") : ""}">${d ? (days[d] ? "⭐" : d) : ""}</div>`).join("") + `<div style="display:grid;place-items:center">${full ? "🏅" : ""}</div>`; }).join("")}
+    </div>
+    <div class="ex-row" style="justify-content:space-between;margin-top:10px"><button class="ex-btn alt" id="cal-prev">◀</button><button class="ex-btn alt" id="cal-next" ${calOffset >= 0 ? "disabled" : ""}>▶</button></div>`;
+  el.querySelector("#cal-prev").onclick = () => { calOffset--; this.render(el); };
+  el.querySelector("#cal-next").onclick = () => { calOffset++; this.render(el); };
+}});
+
 /* ---- boot ---- */
 if (!player || player.role === "parent" || !LB) {
   $("ex-page").innerHTML = '<div class="ex-topbar"><a href="../" class="ex-back">←</a><div class="ex-title">🎁 Extras</div></div><p class="ex-empty">Please sign in from the hub first.</p>';

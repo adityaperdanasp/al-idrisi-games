@@ -172,6 +172,7 @@ function initBossRush() {
 
   function handleAnswer(btn, opt, q) {
     const isCorrect = opt === q.correctLabel;
+    if (window.AIGJuice) AIGJuice.answer(isCorrect, state.combo);
     lockQuestion(q, btn, isCorrect);
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("boss-rush", q.key, isCorrect);
 
