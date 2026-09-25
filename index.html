@@ -1321,6 +1321,26 @@
       document.getElementById("sc-greeting-hint").style.display = "none";
     }
 
+    // Class Fund celebration (PM round 9, item 10): once a day, if the class
+    // has reached a fund tier, a short burst of emoji rains down the hub.
+    if (current.role !== "parent" && window.AIGLeaderboard && AIGLeaderboard.getClassFund) {
+      AIGLeaderboard.getClassFund().then(f => {
+        const reached = f.tiers.filter(t => t.reached);
+        if (!reached.length) return;
+        const key = "aig_classfund_burst_" + new Date().toISOString().slice(0, 10);
+        if (localStorage.getItem(key)) return;
+        localStorage.setItem(key, "1");
+        const emoji = ["🎉", "🌈", "🏆"][reached.length - 1];
+        for (let i = 0; i < 22; i++) {
+          const p = document.createElement("div");
+          p.textContent = emoji;
+          p.style.cssText = `position:fixed;top:-30px;left:${Math.random() * 100}vw;font-size:${18 + Math.random() * 18}px;z-index:9999;pointer-events:none;transition:transform ${2 + Math.random() * 2}s ease-in, opacity 1s ease-in ${1.5 + Math.random()}s;`;
+          document.body.appendChild(p);
+          requestAnimationFrame(() => requestAnimationFrame(() => { p.style.transform = `translateY(${window.innerHeight + 60}px) rotate(${Math.random() * 360}deg)`; p.style.opacity = "0"; }));
+          setTimeout(() => p.remove(), 4500);
+        }
+      }).catch(() => {});
+    }
     checkParentMessage(current.id);
     checkParentVoiceNote(current.id);
     renderDailyPanel(current);

@@ -24,12 +24,20 @@ function initBossRush() {
     }).catch(() => {});
   }
   const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
-  const BOSSES = [
+  const BASE_BOSSES = [
     { emoji: "👹", name: "Ogre", hp: 25, atk: 5 },
     { emoji: "🐺", name: "Werewolf", hp: 35, atk: 7 },
     { emoji: "🧟", name: "Zombie King", hp: 45, atk: 9 },
     { emoji: "🐲", name: "Dragon Lord", hp: 60, atk: 12 }
   ];
+  // Secret Mode "Nightmare" (leaderboard.js's SECRET_MODES, 💎3): 2 extra,
+  // tougher bosses appended for that run only. BOSSES is what every counter/
+  // win check reads, so swapping it in startGame() is the only change needed.
+  const NIGHTMARE_BOSSES = [
+    { emoji: "👻", name: "Phantom", hp: 75, atk: 14 },
+    { emoji: "😈", name: "Demon King", hp: 95, atk: 17 }
+  ];
+  let BOSSES = BASE_BOSSES;
   const PLAYER_HP_BASE = 40;
   // Boss Rush Starting Heal upgrade (leaderboard.js's UPGRADE_CATALOG,
   // bought from the hub's Customize > Upgrades tab) -- re-checked at the
@@ -260,7 +268,9 @@ function initBossRush() {
     document.getElementById("br-end-overlay").classList.remove("hidden");
   }
 
-  async function startGame() {
+  async function startGame(nightmare) {
+    state.nightmare = !!nightmare;
+    BOSSES = nightmare ? BASE_BOSSES.concat(NIGHTMARE_BOSSES) : BASE_BOSSES;
     if (window.AIGLeaderboard) {
       const equipped = await AIGLeaderboard.getEquippedCosmetic("bossrush-special", "default");
       specialFxEmoji = SPECIAL_FX_EMOJI[equipped] || "✨";
@@ -293,6 +303,11 @@ function initBossRush() {
     startBoss(0);
   }
 
-  document.getElementById("br-start-btn").addEventListener("click", startGame);
-  document.getElementById("br-play-again-btn").addEventListener("click", startGame);
+  document.getElementById("br-start-btn").addEventListener("click", () => startGame(false));
+  document.getElementById("br-play-again-btn").addEventListener("click", () => startGame(state.nightmare));
+  const nmBtn = document.getElementById("br-nightmare-btn");
+  nmBtn.addEventListener("click", () => startGame(true));
+  if (window.AIGLeaderboard && AIGLeaderboard.hasSecretMode) {
+    AIGLeaderboard.hasSecretMode("nightmare").then(owned => { nmBtn.hidden = !owned; }).catch(() => {});
+  }
 }

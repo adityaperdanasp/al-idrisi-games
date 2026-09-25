@@ -183,7 +183,8 @@
       const q = quizQueue[quizIndex];
       document.getElementById("kq-play-question").hidden = false;
       document.getElementById("kq-qnum").textContent = `Question ${quizIndex + 1} of ${quizQueue.length}`;
-      document.getElementById("kq-author").textContent = `Written by ${q.authorName || "a classmate"}`;
+      const openBounty = q.bounty && q.bounty.amount && !q.bounty.claimedBy;
+      document.getElementById("kq-author").textContent = `Written by ${q.authorName || "a classmate"}` + (openBounty ? ` · 💰 ${q.bounty.amount} coin bounty!` : "");
       document.getElementById("kq-prompt").textContent = q.prompt;
       const wrap = document.getElementById("kq-options");
       wrap.innerHTML = "";
@@ -194,6 +195,13 @@
         btn.addEventListener("click", () => {
           const isCorrect = i === q.correctIndex;
           if (isCorrect) quizScore++;
+          // Question Bounty (PM round 9, item 9): first correct classmate
+          // takes the author's pot. Best-effort -- never blocks the quiz.
+          if (isCorrect && openBounty && AIGLeaderboard.claimQuestionBounty) {
+            AIGLeaderboard.claimQuestionBounty(q.authorId, q.id).then(r => {
+              if (r && r.ok) document.getElementById("kq-author").textContent = `💰 You won the ${r.amount}-coin bounty!`;
+            }).catch(() => {});
+          }
           wrap.querySelectorAll(".kq-option").forEach((b, bi) => {
             b.disabled = true;
             if (bi === q.correctIndex) b.classList.add("correct");

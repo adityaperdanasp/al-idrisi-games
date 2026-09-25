@@ -1178,6 +1178,245 @@
   }
 
   // =====================================================================
+  // PERKS batch 2 (PM round 9) -- Room, Secret Modes, Question Bounty,
+  // Class Fund, Class Boss, Team Battle. Class-wide features read the whole
+  // players/ tree (the same technique getWeeklyLeaderboard already uses)
+  // and Class Fund donations live at leaderboard/classfund/{playerId} --
+  // the already-open `leaderboard` rule -- so NO RTDB rules change.
+  // =====================================================================
+  let allPlayersCache = { at: 0, val: null };
+  async function readAllPlayers() {
+    if (allPlayersCache.val && Date.now() - allPlayersCache.at < 30000) return allPlayersCache.val;
+    const snap = await aigDb.ref("players").get();
+    allPlayersCache = { at: Date.now(), val: snap.exists() ? snap.val() : {} };
+    return allPlayersCache.val;
+  }
+  function nameOf(id, data) {
+    const w = data && data.weekly && Object.values(data.weekly).find(x => x && x.name);
+    return (w && w.name) || (data && data.customQuestions && Object.values(data.customQuestions).find(q => q.authorName) || {}).authorName || id;
+  }
+
+  // ---- 6. Room -- 6 slots on the profile page, furnished with items bought
+  // via the generic unlockCosmetic type "room-item".
+  const ROOM_SLOTS = 6;
+  const ROOM_ITEMS = [
+    { id: "plant", name: "Plant", emoji: "🪴", cost: { coins: 15 } },
+    { id: "lamp", name: "Lamp", emoji: "🛋️", cost: { coins: 20 } },
+    { id: "poster", name: "Poster", emoji: "🖼️", cost: { coins: 20 } },
+    { id: "books", name: "Bookshelf", emoji: "📚", cost: { coins: 25 } },
+    { id: "globe", name: "Globe", emoji: "🌍", cost: { coins: 30 } },
+    { id: "telescope", name: "Telescope", emoji: "🔭", cost: { coins: 35 } },
+    { id: "guitar", name: "Guitar", emoji: "🎸", cost: { coins: 35 } },
+    { id: "aquarium", name: "Aquarium", emoji: "🐠", cost: { coins: 45 } },
+    { id: "trophy", name: "Trophy", emoji: "🏆", cost: { coins: 50 } },
+    { id: "rocket", name: "Model Rocket", emoji: "🚀", cost: { gems: 2 } },
+    { id: "dino", name: "Dino Statue", emoji: "🦖", cost: { gems: 3 } },
+    { id: "crystal", name: "Crystal Ball", emoji: "🔮", cost: { gems: 3 } }
+  ];
+  async function getRoom() {
+    const player = perksPlayer();
+    if (!player) return null;
+    const [ownedSnap, roomSnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/ownedCosmetics/room-item`).get(),
+      aigDb.ref(`players/${player.id}/room`).get()
+    ]);
+    const owned = ownedSnap.exists() ? ownedSnap.val() : {};
+    const room = roomSnap.exists() ? roomSnap.val() : {};
+    return {
+      items: ROOM_ITEMS.map(i => ({ ...i, owned: !!owned[i.id] })),
+      slots: Array.from({ length: ROOM_SLOTS }, (_, n) => room["s" + n] || null)
+    };
+  }
+  async function placeRoomItem(slot, itemId) {
+    const player = perksPlayer();
+    if (!player || !(slot >= 0 && slot < ROOM_SLOTS)) return { ok: false };
+    if (itemId === null) { await aigDb.ref(`players/${player.id}/room/s${slot}`).remove(); return { ok: true }; }
+    const own = await aigDb.ref(`players/${player.id}/ownedCosmetics/room-item/${itemId}`).get();
+    if (!own.exists() || !own.val()) return { ok: false, reason: "not-owned" };
+    await aigDb.ref(`players/${player.id}/room/s${slot}`).set(itemId);
+    return { ok: true };
+  }
+
+  // ---- 7. Secret Modes -- gem-gated gameplay variants (type "secret-mode").
+  const SECRET_MODES = [
+    { id: "nightmare", name: "Boss Rush: Nightmare", emoji: "🌋", cost: { gems: 3 }, desc: "2 extra, tougher bosses at the end of Boss Rush." },
+    { id: "turbo", name: "Math Race: Turbo", emoji: "🔥", cost: { gems: 4 }, desc: "A 4th Math Race difficulty: bigger numbers, 5-second timer." }
+  ];
+  async function getSecretModes() {
+    const player = perksPlayer();
+    if (!player) return SECRET_MODES.map(m => ({ ...m, owned: false }));
+    const snap = await aigDb.ref(`players/${player.id}/ownedCosmetics/secret-mode`).get();
+    const owned = snap.exists() ? snap.val() : {};
+    return SECRET_MODES.map(m => ({ ...m, owned: !!owned[m.id] }));
+  }
+  async function hasSecretMode(id) {
+    const player = perksPlayer();
+    if (!player) return false;
+    const snap = await aigDb.ref(`players/${player.id}/ownedCosmetics/secret-mode/${id}`).get();
+    return snap.exists() && !!snap.val();
+  }
+
+  // ---- 9. Question Bounty -- an author puts coins on one of their OWN
+  // approved Kids' Quiz questions; the first classmate to answer it
+  // correctly takes the pot.
+  const BOUNTY_MIN = 5, BOUNTY_MAX = 50;
+  async function setQuestionBounty(qId, amount) {
+    const player = perksPlayer();
+    amount = Math.floor(amount);
+    if (!player || !(amount >= BOUNTY_MIN && amount <= BOUNTY_MAX)) return { ok: false, reason: "bad-amount" };
+    const ref = aigDb.ref(`players/${player.id}/customQuestions/${qId}`);
+    const snap = await ref.get();
+    if (!snap.exists() || snap.val().status !== "approved") return { ok: false, reason: "not-approved" };
+    if (snap.val().bounty) return { ok: false, reason: "already-set" };
+    const spent = await spendWallet({ coins: amount });
+    if (!spent.ok) return spent;
+    await ref.child("bounty").set({ amount, claimedBy: null });
+    return { ok: true };
+  }
+  async function claimQuestionBounty(authorId, qId) {
+    const player = perksPlayer();
+    if (!player || authorId === player.id) return { ok: false };
+    const ref = aigDb.ref(`players/${authorId}/customQuestions/${qId}/bounty`);
+    const snap = await ref.get();
+    if (!snap.exists() || snap.val().claimedBy || !snap.val().amount) return { ok: false, reason: "no-bounty" };
+    const amount = snap.val().amount;
+    // Only ever writes when claimedBy is still empty; on a lost race the
+    // transaction commits nothing and we report no-bounty.
+    const res = await ref.child("claimedBy").transaction(cur => (cur ? undefined : player.id));
+    if (!res.committed) return { ok: false, reason: "no-bounty" };
+    await creditWallet({ coins: amount });
+    return { ok: true, amount };
+  }
+
+  // ---- 10. Class Fund -- everyone donates coins; class-wide tiers unlock
+  // a one-time claimable bonus for EVERY player + hub confetti.
+  const CLASS_FUND_TIERS = [
+    { at: 150, coins: 10, label: "🎉 Party time" },
+    { at: 400, coins: 20, label: "🌈 Rainbow class" },
+    { at: 900, coins: 40, label: "🏆 Class champions" }
+  ];
+  async function getClassFund() {
+    const player = perksPlayer();
+    const [snap, claimSnap] = await Promise.all([
+      aigDb.ref("leaderboard/classfund").get(),
+      player ? aigDb.ref(`players/${player.id}/classFundClaims`).get() : Promise.resolve(null)
+    ]);
+    const all = snap.exists() ? snap.val() : {};
+    const donors = Object.entries(all).map(([id, d]) => ({ id, name: d.name || id, donated: d.donated || 0 })).sort((a, b) => b.donated - a.donated);
+    const total = donors.reduce((s, d) => s + d.donated, 0);
+    const claims = claimSnap && claimSnap.exists() ? claimSnap.val() : {};
+    return {
+      total, donors: donors.slice(0, 5),
+      mine: player ? ((all[player.id] && all[player.id].donated) || 0) : 0,
+      tiers: CLASS_FUND_TIERS.map((t, i) => ({ ...t, index: i, reached: total >= t.at, claimed: !!claims["t" + i] }))
+    };
+  }
+  async function donateClassFund(n) {
+    const player = perksPlayer();
+    n = Math.floor(n);
+    if (!player || !(n >= 1 && n <= 100)) return { ok: false, reason: "bad-amount" };
+    const spent = await spendWallet({ coins: n });
+    if (!spent.ok) return spent;
+    await aigDb.ref(`leaderboard/classfund/${player.id}`).transaction(cur => {
+      const d = cur || { name: player.name, donated: 0 };
+      d.name = player.name;
+      d.donated = (d.donated || 0) + n;
+      return d;
+    });
+    return { ok: true };
+  }
+  async function claimClassFundTier(i) {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    const fund = await getClassFund();
+    const tier = fund.tiers[i];
+    if (!tier || !tier.reached || tier.claimed) return { ok: false, reason: "not-available" };
+    await aigDb.ref(`players/${player.id}/classFundClaims/t${i}`).set(true);
+    await creditWallet({ coins: tier.coins });
+    return { ok: true, coins: tier.coins };
+  }
+
+  // ---- 11. Class Boss -- ONE boss per day for the whole class; every
+  // correct answer anyone gives (dailyStats.correct, already tracked) chips
+  // its HP. Beat it and everyone who chipped in 5+ can claim a reward.
+  const CLASS_BOSS_HP = 150, CLASS_BOSS_MIN_HITS = 5;
+  const CLASS_BOSSES = [
+    { emoji: "👹", name: "Ogre" }, { emoji: "🐉", name: "Dragon" }, { emoji: "🦖", name: "T-Rex" },
+    { emoji: "🧟", name: "Zombie King" }, { emoji: "🦑", name: "Kraken" }, { emoji: "👾", name: "Alien" }, { emoji: "🐺", name: "Werewolf" }
+  ];
+  async function getClassBoss() {
+    const player = perksPlayer();
+    const today = todayKey();
+    const all = await readAllPlayers();
+    const contribs = Object.entries(all)
+      .map(([id, d]) => ({ id, name: nameOf(id, d), hits: (d.dailyStats && d.dailyStats[today] && d.dailyStats[today].correct) || 0 }))
+      .filter(c => c.hits > 0).sort((a, b) => b.hits - a.hits);
+    const damage = contribs.reduce((s, c) => s + c.hits, 0);
+    const mine = player ? ((contribs.find(c => c.id === player.id) || {}).hits || 0) : 0;
+    const claimSnap = player ? await aigDb.ref(`players/${player.id}/classBossClaim/${today}`).get() : null;
+    const boss = CLASS_BOSSES[new Date().getUTCDay() % CLASS_BOSSES.length];
+    const defeated = damage >= CLASS_BOSS_HP;
+    return { boss, hp: CLASS_BOSS_HP, damage, mine, defeated, top: contribs.slice(0, 5), minHits: CLASS_BOSS_MIN_HITS,
+      claimed: !!(claimSnap && claimSnap.exists()), eligible: defeated && mine >= CLASS_BOSS_MIN_HITS };
+  }
+  async function claimClassBoss() {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    allPlayersCache = { at: 0, val: null };
+    const st = await getClassBoss();
+    if (!st.eligible || st.claimed) return { ok: false, reason: "not-available" };
+    await aigDb.ref(`players/${player.id}/classBossClaim/${todayKey()}`).set(true);
+    await creditWallet({ coins: 15 });
+    const card = await awardRandomCard("common");
+    return { ok: true, coins: 15, card: CARD_POOL.find(c => c.id === card) || null };
+  }
+
+  // ---- 16. Team Battle -- everyone is auto-assigned Red/Blue (stable hash
+  // of their id); teams' weekly correct answers are summed. Last week's
+  // winning team's contributors (10+ correct) can claim a reward.
+  const TEAM_MIN_HITS = 10;
+  function teamOf(id) {
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    return h % 2 === 0 ? "red" : "blue";
+  }
+  function prevWeekKey() {
+    const d = new Date(weekKey() + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() - 7);
+    return d.toISOString().slice(0, 10);
+  }
+  async function getTeamBattle() {
+    const player = perksPlayer();
+    const wk = weekKey(), pk = prevWeekKey();
+    const all = await readAllPlayers();
+    const sums = { cur: { red: 0, blue: 0 }, prev: { red: 0, blue: 0 }, members: { red: 0, blue: 0 } };
+    let myPrev = 0, myCur = 0;
+    Object.entries(all).forEach(([id, d]) => {
+      const team = teamOf(id);
+      const c = (d.weekly && d.weekly[wk] && d.weekly[wk].correct) || 0;
+      const p = (d.weekly && d.weekly[pk] && d.weekly[pk].correct) || 0;
+      sums.cur[team] += c; sums.prev[team] += p;
+      if (c > 0 || p > 0) sums.members[team]++;
+      if (player && id === player.id) { myCur = c; myPrev = p; }
+    });
+    const myTeam = player ? teamOf(player.id) : null;
+    const prevWinner = sums.prev.red === sums.prev.blue ? null : (sums.prev.red > sums.prev.blue ? "red" : "blue");
+    const claimSnap = player ? await aigDb.ref(`players/${player.id}/teamClaims/${pk}`).get() : null;
+    return { weekKey: wk, cur: sums.cur, prev: sums.prev, members: sums.members, myTeam, myCur, myPrev, prevWinner,
+      claimed: !!(claimSnap && claimSnap.exists()), eligible: !!prevWinner && prevWinner === myTeam && myPrev >= TEAM_MIN_HITS, minHits: TEAM_MIN_HITS };
+  }
+  async function claimTeamReward() {
+    const player = perksPlayer();
+    if (!player) return { ok: false };
+    allPlayersCache = { at: 0, val: null };
+    const st = await getTeamBattle();
+    if (!st.eligible || st.claimed) return { ok: false, reason: "not-available" };
+    await aigDb.ref(`players/${player.id}/teamClaims/${prevWeekKey()}`).set(true);
+    await creditWallet({ coins: 20, gems: 1 });
+    return { ok: true };
+  }
+
+  // =====================================================================
   // PERSONAL BEST TRACKER -- fastest completion time + best combo streak
   // per MathVille chapter, distinct from stars/tier (a skill/speed
   // metric, not a score metric). Written once per solo round from
@@ -4058,6 +4297,9 @@
     LOADOUT_ITEMS, getInventory, getArmedLoadout, buyLoadout, armLoadout, consumeArmedLoadout,
     getPetAdventure, startPetAdventure, claimPetAdventure,
     WHEEL_PRIZES, getWheelStatus, spinWheel, getBooster, buyBooster,
+    ROOM_ITEMS, getRoom, placeRoomItem, SECRET_MODES, getSecretModes, hasSecretMode,
+    setQuestionBounty, claimQuestionBounty, BOUNTY_MIN, BOUNTY_MAX,
+    getClassFund, donateClassFund, claimClassFundTier, getClassBoss, claimClassBoss, getTeamBattle, claimTeamReward,
     STREAK_FREEZE_COST, STREAK_FREEZE_MAX, PIGGY_CAP, PET_ADVENTURE_COST, WHEEL_EXTRA_COST, BOOSTER_COST,
     getPersonalBest, submitPersonalBest,
     awardDanceBattleBonus,

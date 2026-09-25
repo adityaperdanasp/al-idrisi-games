@@ -1194,3 +1194,5 @@ h1, h2 { margin: 0 0 8px; }
   .lane { padding: 18px 40px 10px; }
   .question-panel { max-width: 100%; }
 }
+
+.seg-btn[hidden] { display: none; }

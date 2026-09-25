@@ -104,7 +104,10 @@ const STEP = {
 const DIFFICULTY = {
   easy:   { time: 10, min: 3, max: 5,  divisionChance: 0,   maxDividend: 25,  opponentSeconds: 90 },
   medium: { time: 9,  min: 3, max: 10, divisionChance: 0.5, maxDividend: 100, opponentSeconds: 55 },
-  hard:   { time: 7,  min: 4, max: 12, divisionChance: 0.5, maxDividend: 120, opponentSeconds: 40 }
+  hard:   { time: 7,  min: 4, max: 12, divisionChance: 0.5, maxDividend: 120, opponentSeconds: 40 },
+  // Secret Mode "Turbo" (leaderboard.js's SECRET_MODES, 💎4): the button is
+  // hidden until unlocked -- see the #difficulty-seg wiring below.
+  turbo:  { time: 5,  min: 6, max: 14, divisionChance: 0.6, maxDividend: 196, opponentSeconds: 28 }
 };
 
 // WEEKLY FOCUS (temporary, added 2026-09-22 -- see mathville/weekly-focus.js
@@ -120,7 +123,7 @@ const DIFFICULTY = {
 const WEEKLY_FOCUS_END = new Date("2026-09-29T23:59:59+07:00").getTime();
 function effectiveDifficulty(key) {
   const base = DIFFICULTY[key];
-  if (key === "easy" || Date.now() >= WEEKLY_FOCUS_END) return base;
+  if (key === "easy" || key === "turbo" || Date.now() >= WEEKLY_FOCUS_END) return base;
   return {
     ...base,
     divisionChance: Math.min(0.75, base.divisionChance + 0.25),
@@ -349,6 +352,12 @@ function goHome() {
 }
 
 // Difficulty segmented control. Per player — see the DIFFICULTY table.
+if (window.AIGLeaderboard && AIGLeaderboard.hasSecretMode) {
+  AIGLeaderboard.hasSecretMode("turbo").then(owned => {
+    const t = document.querySelector('#difficulty-seg [data-difficulty="turbo"]');
+    if (t) t.hidden = !owned;
+  }).catch(() => {});
+}
 document.querySelectorAll("#difficulty-seg .seg-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     state.difficulty = btn.dataset.difficulty;   // 'easy' | 'medium' | 'hard'
