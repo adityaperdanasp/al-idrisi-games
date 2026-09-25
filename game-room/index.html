@@ -54,7 +54,7 @@ const GAMES = [
     ["zen-mode","🍃","Zen Mode","No timer, no lives — just calm practice","Calm"],
     ["bo-tutor","🎓","Bo's Tutor Session","5 special questions on your trickiest topic","Coaching"]]]
 ];
-const LIVE = new Set(["zombie-defense","card-race","fractions-kitchen","word-detective","escape-daily"]);
+const LIVE = new Set(["zombie-defense","card-race","fractions-kitchen","word-detective","escape-daily","times-rhythm","dungeon","science-lab","my-town","geo-flight"]);
 document.getElementById("gr-list").innerHTML = GAMES.map(([sec, list]) => {
   const items = list.filter(g => LIVE.has(g[0]));
   if (!items.length) return "";

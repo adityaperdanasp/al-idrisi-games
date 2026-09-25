@@ -2100,6 +2100,115 @@
     return { ok: true, paid };
   }
 
+  // ---- My Town (PM round 11, item 6) -- a 5x5 grid of tiles, each holding
+  // one bought building. Stored under players/{id}/town/tiles/{0..24}.
+  // Anyone can visit and leave one 💖 per town per day; the OWNER collects
+  // 2 coins per like (once, capped at 10 a day). Beauty = sum of building points.
+  const TOWN_SIZE = 25;
+  const TOWN_BUILDINGS = [
+    { id: "road", emoji: "🛣️", name: "Road", cost: { coins: 2 }, pts: 0 },
+    { id: "flower", emoji: "🌷", name: "Flowers", cost: { coins: 3 }, pts: 1 },
+    { id: "tree", emoji: "🌳", name: "Tree", cost: { coins: 5 }, pts: 1 },
+    { id: "house", emoji: "🏠", name: "House", cost: { coins: 10 }, pts: 2 },
+    { id: "playground", emoji: "🛝", name: "Playground", cost: { coins: 25 }, pts: 5 },
+    { id: "fountain", emoji: "⛲", name: "Fountain", cost: { coins: 30 }, pts: 6 },
+    { id: "school", emoji: "🏫", name: "School", cost: { coins: 40 }, pts: 8 },
+    { id: "hospital", emoji: "🏥", name: "Hospital", cost: { coins: 50 }, pts: 9 },
+    { id: "ferris", emoji: "🎡", name: "Ferris Wheel", cost: { coins: 80 }, pts: 15 },
+    { id: "castle", emoji: "🏰", name: "Castle", cost: { gems: 2 }, pts: 25 }
+  ];
+  const beautyOf = tiles => Object.values(tiles || {}).reduce((a, id) => a + ((TOWN_BUILDINGS.find(b => b.id === id) || {}).pts || 0), 0);
+  async function getTown(ownerId) {
+    const me = perksPlayer();
+    const id = ownerId || (me && me.id);
+    if (!id) return null;
+    const [t, l] = await Promise.all([aigDb.ref(`players/${id}/town/tiles`).get(), aigDb.ref(`players/${id}/townLikes/${todayKey()}`).get()]);
+    const tiles = t.exists() ? t.val() : {};
+    const likes = l.exists() ? Object.keys(l.val()).length : 0;
+    let claimed = 0;
+    if (me && me.id === id) { const c = await aigDb.ref(`players/${id}/townClaim/${todayKey()}`).get(); claimed = c.exists() ? (c.val() || 0) : 0; }
+    return { id, tiles, beauty: beautyOf(tiles), likes, claimed, size: TOWN_SIZE, buildings: TOWN_BUILDINGS };
+  }
+  async function placeBuilding(idx, type) {
+    const me = perksPlayer();
+    const def = TOWN_BUILDINGS.find(b => b.id === type);
+    if (!me || !def || !(idx >= 0 && idx < TOWN_SIZE)) return { ok: false };
+    const ref = aigDb.ref(`players/${me.id}/town/tiles/${idx}`);
+    if ((await ref.get()).exists()) return { ok: false, reason: "busy" };
+    const paid = await spendWallet(def.cost);
+    if (!paid.ok) return paid;
+    await ref.set(type);
+    return { ok: true };
+  }
+  async function removeBuilding(idx) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    const ref = aigDb.ref(`players/${me.id}/town/tiles/${idx}`);
+    const snap = await ref.get();
+    const def = snap.exists() && TOWN_BUILDINGS.find(b => b.id === snap.val());
+    if (!def) return { ok: false };
+    await ref.remove(); // clear FIRST so a double-tap can't refund twice
+    const back = {};
+    if (def.cost.coins) back.coins = Math.floor(def.cost.coins / 2);
+    if (back.coins) await creditWallet(back);
+    return { ok: true, back };
+  }
+  async function listTowns() {
+    const players = await readAllPlayers();
+    return Object.entries(players).filter(([, d]) => d && d.town && d.town.tiles).map(([id, d]) => ({ id, name: nameOf(id, d), beauty: beautyOf(d.town.tiles) }))
+      .filter(t => t.beauty > 0).sort((a, b) => b.beauty - a.beauty).slice(0, 30);
+  }
+  async function likeTown(ownerId) {
+    const me = perksPlayer();
+    if (!me || !ownerId || ownerId === me.id) return { ok: false };
+    const ref = aigDb.ref(`players/${ownerId}/townLikes/${todayKey()}/${me.id}`);
+    if ((await ref.get()).exists()) return { ok: false, reason: "daily-limit" };
+    await ref.set(true);
+    return { ok: true };
+  }
+  async function claimTownLikes() {
+    const me = perksPlayer();
+    const t = me && await getTown();
+    if (!t) return { ok: false };
+    const owed = Math.min(5, t.likes) - t.claimed; // 5 likes = 10 coins a day
+    if (owed <= 0) return { ok: false, reason: "not-ready" };
+    await aigDb.ref(`players/${me.id}/townClaim/${todayKey()}`).set(t.claimed + owed);
+    await creditWallet({ coins: owed * 2 });
+    return { ok: true, coins: owed * 2 };
+  }
+
+  // ---- Geo Flight stamps + Dungeon gear (PM round 11) -- tiny persisted
+  // sets under players/{id}/geoStamps and players/{id}/dungeon.
+  async function getGeoStamps() {
+    const me = perksPlayer();
+    if (!me) return {};
+    const s = await aigDb.ref(`players/${me.id}/geoStamps`).get();
+    return s.exists() ? s.val() : {};
+  }
+  async function addGeoStamp(code) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    const ref = aigDb.ref(`players/${me.id}/geoStamps/${code}`);
+    if ((await ref.get()).exists()) return { ok: true, first: false };
+    await ref.set(true);
+    return { ok: true, first: true };
+  }
+  async function getDungeon() {
+    const me = perksPlayer();
+    if (!me) return { gear: {}, best: 0 };
+    const s = await aigDb.ref(`players/${me.id}/dungeon`).get();
+    const d = s.exists() ? s.val() : {};
+    return { gear: d.gear || {}, best: d.best || 0 };
+  }
+  async function saveDungeon(gearId, floor) {
+    const me = perksPlayer();
+    if (!me) return;
+    const cur = await getDungeon();
+    const ref = aigDb.ref(`players/${me.id}/dungeon`);
+    if (gearId) await ref.child(`gear/${gearId}`).set(true);
+    if (floor > cur.best) await ref.child("best").set(floor);
+  }
+
   // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
@@ -5083,6 +5192,8 @@
     getMathRaceGhost, saveMathRaceGhost, getStoryRead, markStoryRead, getCalendarMonth, STORY_READ_REWARD,
     STREAK_FREEZE_COST, STREAK_FREEZE_MAX, PIGGY_CAP, PET_ADVENTURE_COST, WHEEL_EXTRA_COST, BOOSTER_COST,
     getSkinPrefs, awardMiniGame,
+    getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
+    getGeoStamps, addGeoStamp, getDungeon, saveDungeon,
     getDino, evolveDino, DINO_STAGES, getSeason, getSeasonStatus, claimSeasonGift,
     getRotatingShop, getGachaStatus, rollGacha, GACHA_COST, GACHA_X5_COST,
     getFlashStatus, submitFlash, getFlashBoard, FLASH_MAX_PLAYS,

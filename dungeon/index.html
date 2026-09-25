@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Dungeon Crawler — BrainBox</title>
+<meta name="theme-color" content="#7c3aed">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .dg-arena{display:flex;justify-content:space-around;align-items:flex-end;background:linear-gradient(180deg,#3b3355,#1f1a33);border-radius:16px;padding:14px 8px;margin-bottom:10px;color:#fff}
+  .dg-fig{text-align:center;width:44%}
+  .dg-em{font-size:3.2rem;line-height:1.1}
+  .dg-em.hit{animation:dgHit .3s}
+  @keyframes dgHit{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+  .dg-hp{height:10px;border-radius:100px;background:rgba(255,255,255,.18);overflow:hidden;margin-top:4px}
+  .dg-hp>i{display:block;height:100%;background:linear-gradient(90deg,#f87171,#fbbf24)}
+  .dg-hp.me>i{background:linear-gradient(90deg,#4ade80,#22d3ee)}
+  .dg-name{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:.8rem}
+  .dg-cls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .dg-c{border:2px solid rgba(0,0,0,.08);background:#faf6ff;border-radius:14px;padding:10px 4px;font-family:"Baloo 2",sans-serif;font-weight:800;cursor:pointer;color:inherit;text-align:center}
+  .dg-c .e{font-size:2rem;display:block}
+  .dg-c small{display:block;color:#7a6a5a;font-weight:700;font-size:.66rem;line-height:1.3}
+  .dg-gear{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .dg-gear span{background:#fff;border-radius:10px;padding:4px 8px;font-size:.78rem;font-weight:800;border:2px solid #ede4f7}
+  .dg-gear span.lock{opacity:.35}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🗡️ Dungeon Crawler</div></div>
+
+  <div id="dg-main"></div>
+  <div id="dg-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Dungeon Crawler',accent:'#7c3aed',bg:'linear-gradient(180deg,#efe7fb,#d9c9f5)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

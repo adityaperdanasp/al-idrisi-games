@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>My Town — BrainBox</title>
+<meta name="theme-color" content="#3f8f5f">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .mt-tabs{display:flex;gap:8px;padding:0 14px 10px}
+  .mt-tab{flex:1;border:none;border-radius:12px;padding:9px;font-family:"Baloo 2",sans-serif;font-weight:800;background:rgba(0,0,0,.07);color:inherit;cursor:pointer}
+  .mt-tab.on{background:var(--kit-accent);color:#fff}
+  .mt-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:8px;border-radius:16px;background:linear-gradient(180deg,#bfe8a8,#8fc97a);margin:0 14px 10px}
+  .mt-tile{aspect-ratio:1;border:0;border-radius:10px;background:rgba(255,255,255,.35);font-size:1.7rem;cursor:pointer;display:grid;place-items:center;color:inherit;padding:0}
+  .mt-tile.has{background:rgba(255,255,255,.7)}
+  .mt-sheet{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .mt-b{border:2px solid rgba(0,0,0,.08);background:#faf6ff;border-radius:12px;padding:8px 4px;font-family:"Baloo 2",sans-serif;font-weight:800;cursor:pointer;color:inherit;font-size:.85rem}
+  .mt-b .e{font-size:1.5rem;display:block}
+  .mt-b small{color:#7a6a5a;font-weight:700}
+  .mt-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #f0e8f7}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🏘️ My Town</div></div>
+
+  <div class="kit-hud"><span id="mt-wallet"></span><span>✨ Beauty <b id="mt-beauty">0</b></span><span id="mt-likes"></span></div>
+  <div class="mt-tabs"><button class="mt-tab on" data-t="mine">🏘️ My Town</button><button class="mt-tab" data-t="visit">🚶 Visit</button></div>
+  <div id="mt-title" class="kit-sub" style="text-align:center;margin:0 0 6px"></div>
+  <div class="mt-grid" id="mt-grid"></div>
+  <div class="kit-card" id="mt-panel"></div>
+  <div id="mt-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'My Town',accent:'#3f8f5f',bg:'linear-gradient(180deg,#e6f5dc,#cfeeb9)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

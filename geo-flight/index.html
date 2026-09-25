@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Geo Flight — BrainBox</title>
+<meta name="theme-color" content="#0369a1">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .gf-track{position:relative;height:40px;margin:0 20px 10px;border-bottom:3px dashed rgba(0,0,0,.2)}
+  .gf-plane{position:absolute;bottom:-6px;font-size:1.8rem;transition:left .6s ease;transform:translateX(-50%)}
+  .gf-flag{font-size:4rem;text-align:center;line-height:1.1}
+  .gf-pass{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+  .gf-stamp{aspect-ratio:1;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:1.5rem;border:2px solid #e2e8f0}
+  .gf-stamp.lock{background:#eef2f7;filter:grayscale(1);opacity:.5}
+  .gf-tabs{display:flex;gap:8px;padding:0 14px 10px}
+  .gf-tab{flex:1;border:none;border-radius:12px;padding:9px;font-family:"Baloo 2",sans-serif;font-weight:800;background:rgba(0,0,0,.07);color:inherit;cursor:pointer}
+  .gf-tab.on{background:var(--kit-accent);color:#fff}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🌍 Geo Flight</div></div>
+
+  <div class="gf-tabs"><button class="gf-tab on" data-t="fly">✈️ Fly</button><button class="gf-tab" data-t="pass">📘 Passport</button></div>
+  <div id="gf-main"></div>
+  <div id="gf-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Geo Flight',accent:'#0369a1',bg:'linear-gradient(180deg,#dff1fb,#bfe0f3)'});</script>
+<script src="script.js"></script>
+</body>
+</html>
