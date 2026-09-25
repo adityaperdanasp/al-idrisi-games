@@ -1129,6 +1129,7 @@
 <script src="players.js"></script>
 <script src="firebase.js"></script>
 <script src="leaderboard.js"></script>
+<script src="skin.js"></script>
 <script src="hub-bgm.js"></script>
 <script>
   // Card background cycles through this palette (index-based, per the
@@ -2432,6 +2433,9 @@
   // INSIDE 6 different games. Grouped under a small label per game so
   // it doesn't read as one undifferentiated 16-item list.
   const FX_GROUP_LABEL = {
+    "answer-fx": "✨ Everywhere — Correct-Answer Effect",
+    "touch-trail": "👆 Everywhere — Finger Trail",
+    "combo-sticker": "🎟️ Everywhere — 5-Streak Sticker",
     "plane-bullet": "✈️ Plane Mode — Bullet Trail",
     "drive-nitro": "🚗 Drive Mode — Nitro Flame",
     "drive-trail": "🚗 Drive Mode — Ground Trail",
@@ -2486,6 +2490,7 @@
   // through the generic unlockCosmetic/equipCosmetic pair), just a
   // different pair of catalogs (leaderboard.js's COSTUME_CATALOGS).
   const COSTUME_GROUP_LABEL = {
+    "bo-costume": "🧠 Bo — Hat",
     "ninja-costume": "🥷 Ninja Runner — Costume",
     "bossrush-fighter": "🥊 Boss Rush Arena — Fighter",
     "dino-skin": "🦖 Drive Mode — Dino Skin"
@@ -2684,6 +2689,7 @@
   async function renderCustomize() {
     const cos = await AIGLeaderboard.getCosmetics();
     if (!cos) return;
+    if (window.AIGSkin) AIGSkin.refresh(); // theme/trail/effect/hat changes show immediately
     renderPowerupShop();
     renderUpgradeShop();
     renderAvatarColorPicker();

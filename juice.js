@@ -37,6 +37,9 @@
   }
   // combo = current streak BEFORE this answer counts (0 for a first answer).
   function answer(isCorrect, combo) {
+    // Purchased visuals (skin.js: answer burst, combo sticker) are NOT
+    // silenced by the audio/haptic mute flag below.
+    try { if (window.AIGSkin) AIGSkin.onAnswer(isCorrect, combo); } catch (e) { /* decorative */ }
     if (off()) return;
     try {
       if (isCorrect) {

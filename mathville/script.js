@@ -1961,6 +1961,33 @@ const VEHICLE_SKINS = {
   ]
 };
 
+// PM round 10, items 2 + 3 -- 6 more cars and 6 more aircraft, each a
+// genuinely different silhouette. `fire` on a plane skin changes its
+// shooting pattern (see spawnPlaneBullet): "twin" = two parallel shots,
+// "triple" = a centre shot plus two slightly angled ones. Priced so the
+// stronger patterns cost more.
+(function addRound10Vehicles() {
+  const W = (c) => `<rect x="0" y="9" width="4" height="8" rx="1.5" fill="${c}"/><rect x="22" y="9" width="4" height="8" rx="1.5" fill="${c}"/><rect x="0" y="23" width="4" height="8" rx="1.5" fill="${c}"/><rect x="22" y="23" width="4" height="8" rx="1.5" fill="${c}"/>`;
+  const car = (inner, h) => `<svg viewBox="0 0 26 ${h || 40}" width="23" height="${h ? 38 : 36}">${inner}</svg>`;
+  const plane = (inner) => `<svg viewBox="0 0 30 34" width="27" height="30">${inner}</svg>`;
+  VEHICLE_SKINS.car.push(
+    { id: "patrol", name: "Patrol", glow: "#3B82F6", cost: { coins: 30 }, svg: car(`<rect x="3" y="1" width="20" height="38" rx="8" fill="#1F3A8A" stroke="#14275f" stroke-width="1.5"/><rect x="3" y="18" width="20" height="8" fill="#F5F7FB"/><rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0"/><rect x="7" y="3" width="6" height="3" rx="1" fill="#EF4444"/><rect x="13" y="3" width="6" height="3" rx="1" fill="#3B82F6"/>${W("#0d1533")}`) },
+    { id: "ambulance", name: "Ambulance", glow: "#EF4444", cost: { coins: 30 }, svg: car(`<rect x="3" y="1" width="20" height="38" rx="7" fill="#FAFAFA" stroke="#c9c9c9" stroke-width="1.5"/><rect x="6" y="6" width="14" height="8" rx="2.5" fill="#BFE3F0"/><rect x="11" y="19" width="4" height="12" fill="#EF4444"/><rect x="7" y="23" width="12" height="4" fill="#EF4444"/><rect x="10" y="2" width="6" height="3" rx="1" fill="#EF4444"/>${W("#333")}`) },
+    { id: "monster", name: "Monster Truck", glow: "#F59E0B", cost: { coins: 40 }, svg: car(`<rect x="4" y="3" width="18" height="34" rx="6" fill="#16A34A" stroke="#0f6b31" stroke-width="1.5"/><rect x="7" y="8" width="12" height="9" rx="2.5" fill="#BFE3F0"/><path d="M8 24 L13 20 L18 24 L18 32 L8 32 Z" fill="#FACC15" opacity=".85"/><rect x="-1" y="6" width="6" height="11" rx="2.5" fill="#111"/><rect x="21" y="6" width="6" height="11" rx="2.5" fill="#111"/><rect x="-1" y="23" width="6" height="11" rx="2.5" fill="#111"/><rect x="21" y="23" width="6" height="11" rx="2.5" fill="#111"/>`) },
+    { id: "formula", name: "Formula", glow: "#E11D48", cost: { gems: 3 }, svg: car(`<rect x="8" y="4" width="10" height="34" rx="4" fill="#E11D48" stroke="#9f1239" stroke-width="1.4"/><rect x="2" y="2" width="22" height="4" rx="1.5" fill="#111"/><rect x="3" y="35" width="20" height="4" rx="1.5" fill="#111"/><rect x="10" y="12" width="6" height="8" rx="3" fill="#FDE68A"/><rect x="0" y="9" width="5" height="9" rx="2" fill="#111"/><rect x="21" y="9" width="5" height="9" rx="2" fill="#111"/><rect x="0" y="24" width="5" height="9" rx="2" fill="#111"/><rect x="21" y="24" width="5" height="9" rx="2" fill="#111"/>`) },
+    { id: "phantom", name: "Phantom", glow: "#C4B5FD", cost: { gems: 3 }, svg: car(`<g opacity=".82"><rect x="3" y="1" width="20" height="38" rx="9" fill="#EDE9FE" stroke="#A78BFA" stroke-width="1.5"/><circle cx="9.5" cy="14" r="2.6" fill="#4C1D95"/><circle cx="16.5" cy="14" r="2.6" fill="#4C1D95"/><path d="M8 24 Q13 30 18 24" stroke="#4C1D95" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M3 34 q3 4 5 0 q3 4 5 0 q3 4 5 0 q3 4 5 0" fill="#EDE9FE" stroke="#A78BFA" stroke-width="1"/></g>${W("#7C3AED")}`) },
+    { id: "royal", name: "Royal", glow: "#FACC15", cost: { gems: 4 }, svg: car(`<rect x="3" y="1" width="20" height="38" rx="8" fill="#FACC15" stroke="#a16207" stroke-width="1.5"/><rect x="6" y="9" width="14" height="9" rx="2.5" fill="#FEF3C7"/><path d="M6 8 L8 3 L11 6 L13 2 L15 6 L18 3 L20 8 Z" fill="#DC2626" stroke="#7f1d1d" stroke-width="1"/><circle cx="13" cy="27" r="3.4" fill="#22D3EE" stroke="#0e7490" stroke-width="1"/>${W("#422006")}`) }
+  );
+  VEHICLE_SKINS.plane.push(
+    { id: "jet", name: "Jet", glow: "#64748B", cost: { coins: 40 }, fire: "twin", svg: plane(`<path d="M15 0 L18 14 L29 26 L29 29 L18 24 L17 31 L21 33 L21 34 L9 34 L9 33 L13 31 L12 24 L1 29 L1 26 L12 14 Z" fill="#94A3B8" stroke="#475569" stroke-width="1.3" stroke-linejoin="round"/><path d="M15 4 L16.6 12 L13.4 12 Z" fill="#BFE3F0"/>`) },
+    { id: "ufo", name: "UFO", glow: "#A3E635", cost: { gems: 3 }, fire: "triple", svg: plane(`<ellipse cx="15" cy="20" rx="14" ry="6.5" fill="#94A3B8" stroke="#475569" stroke-width="1.4"/><path d="M8 17 Q15 3 22 17 Z" fill="#A5F3FC" stroke="#0e7490" stroke-width="1.2"/><circle cx="7" cy="21" r="1.5" fill="#FDE047"/><circle cx="15" cy="23" r="1.5" fill="#F87171"/><circle cx="23" cy="21" r="1.5" fill="#86EFAC"/>`) },
+    { id: "rocket", name: "Rocket", glow: "#F97316", cost: { coins: 35 }, svg: plane(`<path d="M15 0 C21 6 21 16 20 24 L10 24 C9 16 9 6 15 0 Z" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.3"/><path d="M15 0 C18 3 19 6 19.5 9 L10.5 9 C11 6 12 3 15 0 Z" fill="#EF4444"/><circle cx="15" cy="14" r="2.6" fill="#38BDF8" stroke="#0369A1" stroke-width="1"/><path d="M10 18 L4 27 L10 24 Z M20 18 L26 27 L20 24 Z" fill="#EF4444"/><path d="M12 24 Q15 33 18 24 Z" fill="#FBBF24"/>`) },
+    { id: "copter", name: "Copter", glow: "#10B981", cost: { coins: 40 }, fire: "twin", svg: plane(`<rect x="2" y="2" width="26" height="2.2" rx="1" fill="#334155"/><rect x="14" y="3" width="2" height="5" fill="#334155"/><ellipse cx="15" cy="15" rx="6" ry="8" fill="#10B981" stroke="#047857" stroke-width="1.3"/><ellipse cx="15" cy="11.5" rx="3.4" ry="3.6" fill="#BFE3F0"/><rect x="14" y="22" width="2" height="9" fill="#047857"/><rect x="10" y="30" width="10" height="2" rx="1" fill="#334155"/>`) },
+    { id: "sub", name: "Sky Sub", glow: "#FACC15", cost: { gems: 3 }, fire: "triple", svg: plane(`<ellipse cx="15" cy="19" rx="7.5" ry="13" fill="#FACC15" stroke="#a16207" stroke-width="1.4"/><rect x="14" y="2" width="2" height="6" fill="#a16207"/><rect x="14" y="2" width="5" height="2" fill="#a16207"/><circle cx="15" cy="15" r="2.6" fill="#BAE6FD" stroke="#0369A1" stroke-width="1"/><circle cx="15" cy="22" r="2.6" fill="#BAE6FD" stroke="#0369A1" stroke-width="1"/><path d="M10 30 L5 33 L10 33 Z M20 30 L25 33 L20 33 Z" fill="#a16207"/>`) },
+    { id: "firebird", name: "Firebird", glow: "#F43F5E", cost: { gems: 4 }, fire: "triple", svg: plane(`<path d="M15 2 C13 8 13 14 13 20 L17 20 C17 14 17 8 15 2 Z" fill="#F43F5E" stroke="#9f1239" stroke-width="1.2"/><path d="M13 12 C8 8 3 10 1 6 C4 15 8 18 13 20 Z M17 12 C22 8 27 10 29 6 C26 15 22 18 17 20 Z" fill="#FB923C" stroke="#9a3412" stroke-width="1.1"/><path d="M14 20 L11 33 L15 28 L19 33 L16 20 Z" fill="#FDE047" stroke="#a16207" stroke-width="1"/><circle cx="15" cy="8" r="1.4" fill="#111"/>`) }
+  );
+})();
+
 function getVehicleSkinId(category) {
   return localStorage.getItem("mathville.vehicleSkin." + category) || VEHICLE_SKINS[category][0].id;
 }
@@ -2594,7 +2621,18 @@ function spawnPlaneBulletAt(x, y, angleDeg = 0) {
 // just more pellets per shot.
 function spawnPlaneBullet() {
   const now = performance.now();
-  spawnPlaneBulletAt(planeState.x, planeState.y - 4, 0);
+  // PM round 10, item 3: some aircraft shoot differently (see VEHICLE_SKINS).
+  const pattern = getVehicleSkin("plane").fire;
+  if (pattern === "twin") {
+    spawnPlaneBulletAt(planeState.x - 2.2, planeState.y - 4, 0);
+    spawnPlaneBulletAt(planeState.x + 2.2, planeState.y - 4, 0);
+  } else {
+    spawnPlaneBulletAt(planeState.x, planeState.y - 4, 0);
+    if (pattern === "triple") {
+      spawnPlaneBulletAt(planeState.x, planeState.y - 4, -PLANE_SPREAD_ANGLE_DEG * 0.7);
+      spawnPlaneBulletAt(planeState.x, planeState.y - 4, PLANE_SPREAD_ANGLE_DEG * 0.7);
+    }
+  }
   if (now < planeState.spreadUntil) {
     spawnPlaneBulletAt(planeState.x, planeState.y - 4, -PLANE_SPREAD_ANGLE_DEG);
     spawnPlaneBulletAt(planeState.x, planeState.y - 4, PLANE_SPREAD_ANGLE_DEG);

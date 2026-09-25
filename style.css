@@ -40,6 +40,25 @@ html[data-hub-theme="beach"] .sc-card { background: #eaf9f5; }
 html[data-hub-theme="sunset"],
 html[data-hub-theme="sunset"] .hub.sc-page { background: linear-gradient(180deg, #ff9a6c 0%, #ff6b9d 55%, #6b3f9b 100%); }
 html[data-hub-theme="sunset"] .sc-card { background: #fdece6; }
+/* PM round 10, item 1 -- 6 more world themes (skin.js adds the ambient particles on top). */
+html[data-hub-theme="ocean"],
+html[data-hub-theme="ocean"] .hub.sc-page { background: linear-gradient(180deg, #8fd3f4 0%, #2b8fd6 55%, #0b3d7a 100%); }
+html[data-hub-theme="ocean"] .sc-card { background: #e6f4fc; }
+html[data-hub-theme="forest"],
+html[data-hub-theme="forest"] .hub.sc-page { background: linear-gradient(180deg, #d4f0c0 0%, #7cc47a 55%, #2f6b45 100%); }
+html[data-hub-theme="forest"] .sc-card { background: #eef8e8; }
+html[data-hub-theme="neon"],
+html[data-hub-theme="neon"] .hub.sc-page { background: linear-gradient(180deg, #14082e 0%, #3a0ca3 55%, #b5179e 100%); }
+html[data-hub-theme="neon"] .sc-card { background: #efe6fa; }
+html[data-hub-theme="candy"],
+html[data-hub-theme="candy"] .hub.sc-page { background: linear-gradient(180deg, #ffe0f0 0%, #ffb3d9 55%, #c9a7ff 100%); }
+html[data-hub-theme="candy"] .sc-card { background: #fff0f8; }
+html[data-hub-theme="arctic"],
+html[data-hub-theme="arctic"] .hub.sc-page { background: linear-gradient(180deg, #f2fbff 0%, #bfe6f7 55%, #8fb8de 100%); }
+html[data-hub-theme="arctic"] .sc-card { background: #f6fcff; }
+html[data-hub-theme="volcano"],
+html[data-hub-theme="volcano"] .hub.sc-page { background: linear-gradient(180deg, #2b0a0a 0%, #8c1c13 55%, #ff6a00 100%); }
+html[data-hub-theme="volcano"] .sc-card { background: #fbe9dd; }
 
 .hub {
   width: 100%;

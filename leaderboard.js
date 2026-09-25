@@ -1515,6 +1515,25 @@
   }
 
   // =====================================================================
+  // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
+  // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
+  // players so skin.js can call it unconditionally.
+  // =====================================================================
+  async function getSkinPrefs() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    const d = { theme: "default", trail: "none", answerFx: "default", sticker: "none", boHat: "none", boHatEmoji: "" };
+    if (!player || player.role === "parent") return d;
+    const snap = await aigDb.ref(`players/${player.id}/equipped`).get();
+    const e = snap.exists() ? snap.val() : {};
+    const hat = BO_HATS.find(h => h.id === (e["bo-costume"] || "none"));
+    const sticker = COMBO_STICKERS.find(x => x.id === (e["combo-sticker"] || "none"));
+    return {
+      theme: e["hub-theme"] || "default", trail: e["touch-trail"] || "none", answerFx: e["answer-fx"] || "default",
+      sticker: sticker && sticker.id !== "none" ? sticker.preview : "", boHat: hat ? hat.id : "none", boHatEmoji: hat ? hat.hat : ""
+    };
+  }
+
+  // =====================================================================
   // PERSONAL BEST TRACKER -- fastest completion time + best combo streak
   // per MathVille chapter, distinct from stars/tier (a skill/speed
   // metric, not a score metric). Written once per solo round from
@@ -2111,7 +2130,16 @@
     { id: "default", name: "Classic", cost: null, preview: "🌤️" },
     { id: "space", name: "Space", cost: { coins: 30 }, preview: "🌌" },
     { id: "beach", name: "Beach", cost: { coins: 30 }, preview: "🏖️" },
-    { id: "sunset", name: "Sunset", cost: { gems: 2 }, preview: "🌅" }
+    { id: "sunset", name: "Sunset", cost: { gems: 2 }, preview: "🌅" },
+    // PM round 10, item 1 -- 6 more "world" themes. skin.js also reads the
+    // equipped theme on every game page and floats matching ambient
+    // particles over it, so a theme is felt everywhere, not just the hub.
+    { id: "ocean", name: "Deep Ocean", cost: { coins: 30 }, preview: "🌊" },
+    { id: "forest", name: "Magic Forest", cost: { coins: 30 }, preview: "🌳" },
+    { id: "neon", name: "Neon City", cost: { gems: 2 }, preview: "🌃" },
+    { id: "candy", name: "Candyland", cost: { coins: 35 }, preview: "🍭" },
+    { id: "arctic", name: "Arctic", cost: { coins: 35 }, preview: "🧊" },
+    { id: "volcano", name: "Volcano", cost: { gems: 3 }, preview: "🌋" }
   ];
   async function getHubThemes() {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
@@ -2405,7 +2433,40 @@
     { id: "crystal", name: "Crystal", cost: { gems: 2 }, preview: "🔮" },
     { id: "mythic", name: "Nebula", cost: { gems: 4 }, preview: "🌌" }
   ];
+  // PM round 10 -- 3 new cosmetics that live in skin.js/juice.js (global,
+  // every game): the effect a correct answer sets off, the trail a finger
+  // leaves, and a "combo sticker" that pops up on a 5-streak.
+  const ANSWER_FX = [
+    { id: "default", name: "Sparkle", cost: null, preview: "✨" },
+    { id: "hearts", name: "Heart Burst", cost: { coins: 20 }, preview: "💖" },
+    { id: "stars", name: "Star Shower", cost: { coins: 25 }, preview: "🌠" },
+    { id: "fireworks", name: "Fireworks", cost: { coins: 30 }, preview: "🎆" },
+    { id: "animals", name: "Animal Party", cost: { coins: 30 }, preview: "🐾" },
+    { id: "rainbow", name: "Rainbow Pop", cost: { gems: 2 }, preview: "🌈" }
+  ];
+  const TOUCH_TRAILS = [
+    { id: "none", name: "No Trail", cost: null, preview: "🚫" },
+    { id: "stars", name: "Star Dust", cost: { coins: 20 }, preview: "⭐" },
+    { id: "hearts", name: "Hearts", cost: { coins: 20 }, preview: "❤️" },
+    { id: "fire", name: "Flames", cost: { coins: 25 }, preview: "🔥" },
+    { id: "bubbles", name: "Bubbles", cost: { coins: 25 }, preview: "🫧" },
+    { id: "snow", name: "Snowfall", cost: { gems: 2 }, preview: "❄️" },
+    { id: "rainbow", name: "Rainbow", cost: { gems: 3 }, preview: "🌈" }
+  ];
+  const COMBO_STICKERS = [
+    { id: "none", name: "No Sticker", cost: null, preview: "🚫" },
+    { id: "wow", name: "Bo Wow", cost: { coins: 10 }, preview: "🤩" },
+    { id: "cool", name: "Bo Cool", cost: { coins: 10 }, preview: "😎" },
+    { id: "love", name: "Bo Love", cost: { coins: 15 }, preview: "🥰" },
+    { id: "fire", name: "On Fire", cost: { coins: 15 }, preview: "🔥" },
+    { id: "brain", name: "Big Brain", cost: { coins: 20 }, preview: "🧠" },
+    { id: "rocket", name: "Rocket", cost: { coins: 20 }, preview: "🚀" },
+    { id: "crown", name: "Champion", cost: { gems: 2 }, preview: "👑" }
+  ];
   const GAMEPLAY_FX_CATALOGS = {
+    "answer-fx": ANSWER_FX,
+    "touch-trail": TOUCH_TRAILS,
+    "combo-sticker": COMBO_STICKERS,
     "plane-bullet": PLANE_BULLET_EFFECTS,
     "drive-nitro": DRIVE_NITRO_EFFECTS,
     "drive-trail": DRIVE_TRAIL_EFFECTS,
@@ -2432,7 +2493,13 @@
     { id: "jade", name: "Jade", cost: { gems: 2 }, preview: "🟢" },
     // 2 more (PM round 8, item 18).
     { id: "ocean", name: "Ocean", cost: { coins: 25 }, preview: "🔵" },
-    { id: "golden", name: "Golden", cost: { gems: 2 }, preview: "🟡" }
+    { id: "golden", name: "Golden", cost: { gems: 2 }, preview: "🟡" },
+    // PM round 10, item 5 -- character costumes (recolor + a hat, see
+    // mathville/style.css).
+    { id: "samurai", name: "Samurai", cost: { coins: 30 }, preview: "⛩️" },
+    { id: "robot", name: "Robo-Ninja", cost: { coins: 30 }, preview: "🤖" },
+    { id: "astronaut", name: "Astronaut", cost: { gems: 3 }, preview: "🧑‍🚀" },
+    { id: "chef", name: "Chef", cost: { coins: 25 }, preview: "👨‍🍳" }
   ];
   const BOSSRUSH_FIGHTERS = [
     { id: "default", name: "Classic", cost: null, preview: "🥋" },
@@ -2455,7 +2522,18 @@
     { id: "ice", name: "Ice Dino", cost: { coins: 30 }, preview: "🔵" },
     { id: "shadow", name: "Shadow Dino", cost: { gems: 3 }, preview: "⚫" }
   ];
+  // Bo's wardrobe (PM round 10, item 5): skin.js perches the equipped hat
+  // on every Bo avatar it can find.
+  const BO_HATS = [
+    { id: "none", name: "No Hat", cost: null, preview: "🚫", hat: "" },
+    { id: "cap", name: "Sporty Cap", cost: { coins: 15 }, preview: "🧢", hat: "🧢" },
+    { id: "grad", name: "Graduate", cost: { coins: 25 }, preview: "🎓", hat: "🎓" },
+    { id: "tophat", name: "Top Hat", cost: { coins: 25 }, preview: "🎩", hat: "🎩" },
+    { id: "straw", name: "Sun Hat", cost: { coins: 20 }, preview: "👒", hat: "👒" },
+    { id: "crown", name: "Royal Crown", cost: { gems: 3 }, preview: "👑", hat: "👑" }
+  ];
   const COSTUME_CATALOGS = {
+    "bo-costume": BO_HATS,
     "ninja-costume": NINJA_COSTUMES,
     "bossrush-fighter": BOSSRUSH_FIGHTERS,
     "dino-skin": DINO_SKINS
@@ -2504,13 +2582,17 @@
         "mathrace-emote": equipped["mathrace-emote"] || "default",
         "bossrush-special": equipped["bossrush-special"] || "default",
         "ninja-slash": equipped["ninja-slash"] || "default",
-        "memorymatch-cardback": equipped["memorymatch-cardback"] || "default"
+        "memorymatch-cardback": equipped["memorymatch-cardback"] || "default",
+        "answer-fx": equipped["answer-fx"] || "default",
+        "touch-trail": equipped["touch-trail"] || "none",
+        "combo-sticker": equipped["combo-sticker"] || "none"
       },
       costumes,
       equippedCostumes: {
         "ninja-costume": equipped["ninja-costume"] || "default",
         "bossrush-fighter": equipped["bossrush-fighter"] || "default",
-        "dino-skin": equipped["dino-skin"] || "default"
+        "dino-skin": equipped["dino-skin"] || "default",
+        "bo-costume": equipped["bo-costume"] || "none"
       }
     };
   }
@@ -4401,6 +4483,7 @@
     getZoneLevel, recordZoneResult, claimArcadeReward,
     getMathRaceGhost, saveMathRaceGhost, getStoryRead, markStoryRead, getCalendarMonth, STORY_READ_REWARD,
     STREAK_FREEZE_COST, STREAK_FREEZE_MAX, PIGGY_CAP, PET_ADVENTURE_COST, WHEEL_EXTRA_COST, BOOSTER_COST,
+    getSkinPrefs,
     getPersonalBest, submitPersonalBest,
     awardDanceBattleBonus,
     awardCookingRushBonus,
