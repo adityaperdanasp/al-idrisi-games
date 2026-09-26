@@ -1737,11 +1737,6 @@
   // players/{id}/...
   // =====================================================================
   function weekDates(mondayKey) { return weekDatesFor(mondayKey); }
-  function prevWeekKey() {
-    const d = new Date(weekKey() + "T00:00:00Z");
-    d.setUTCDate(d.getUTCDate() - 7);
-    return d.toISOString().slice(0, 10);
-  }
   const cleanText = (t, n) => String(t || "").replace(/[<>&"]/g, "").trim().slice(0, n);
 
   // ---- 15. Clubs -- small teams (max 5) that add up their weekly correct
@@ -2207,6 +2202,192 @@
     const ref = aigDb.ref(`players/${me.id}/dungeon`);
     if (gearId) await ref.child(`gear/${gearId}`).set(true);
     if (floor > cur.best) await ref.child("best").set(floor);
+  }
+
+  // =====================================================================
+  // PM ROUND 11, BATCH 3 -- weekly report, Bo tutor, mega quests, advent
+  // calendar, parent focus, class teams, friend list.
+  // =====================================================================
+  async function listPlayerNames() {
+    const me = perksPlayer();
+    const players = await readAllPlayers();
+    return Object.entries(players).filter(([id, d]) => (!me || id !== me.id) && d && (d.weekly || d.wallet || d.topicStats))
+      .map(([id, d]) => ({ id, name: nameOf(id, d) })).sort((a, b) => a.name.localeCompare(b.name));
+  }
+  async function readTopicStats(player) {
+    const s = await aigDb.ref(`players/${player.id}/topicStats`).get();
+    return s.exists() ? s.val() : {};
+  }
+  const GAME_LABEL = { mathville: "MathVille", "language-arts": "Language & Arts", solarquest: "SolarQuest", mathrace: "Math Race" };
+  const prettyTopic = t => String(t).replace(/^times-(\d+)$/, "Multiply by $1").replace(/^divby-(\d+)$/, "Divide by $1").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+  // ---- 11. Weekly report -- everything computed from data that already exists.
+  async function getWeeklyReport() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const wk = weekKey(), pk = prevWeekKey();
+    const [w, ts, st] = await Promise.all([aigDb.ref(`players/${me.id}/weekly`).get(), readTopicStats(me), getStreak()]);
+    const weekly = w.exists() ? w.val() : {};
+    const cur = (weekly[wk] && weekly[wk].correct) || 0, prev = (weekly[pk] && weekly[pk].correct) || 0;
+    const rows = [];
+    Object.entries(ts).forEach(([game, topics]) => Object.entries(topics || {}).forEach(([topic, v]) => {
+      const c = (v && v.correct) || 0, x = (v && v.wrong) || 0, n = c + x;
+      if (n >= 5 && !["drive-mode", "plane-mode", "ninja-runner", "speed-round", "focus-round", "azka-pr", "weekly-boss-rush", "perk-test"].includes(topic)) rows.push({ game, topic, acc: c / n, n });
+    }));
+    rows.sort((a, b) => b.acc - a.acc);
+    return { cur, prev, change: prev ? Math.round((cur - prev) / prev * 100) : null, best: rows[0] || null, weak: rows.length > 1 ? rows[rows.length - 1] : null,
+      streak: st.count || 0, goal: Math.max(20, Math.ceil(Math.max(cur, prev) * 1.1)), gameLabel: g => GAME_LABEL[g] || g, pretty: prettyTopic };
+  }
+
+  // ---- 12. Bo tutor -- weakest topics (>= 3 attempts, lowest accuracy first).
+  async function getWeakTopics(limit) {
+    const me = perksPlayer();
+    if (!me) return [];
+    const ts = await readTopicStats(me);
+    const rows = [];
+    Object.entries(ts).forEach(([game, topics]) => Object.entries(topics || {}).forEach(([topic, v]) => {
+      const c = (v && v.correct) || 0, x = (v && v.wrong) || 0, n = c + x;
+      if (n >= 3 && x > 0 && !["drive-mode", "plane-mode", "ninja-runner", "speed-round", "focus-round", "azka-pr", "weekly-boss-rush", "perk-test"].includes(topic)) rows.push({ game, topic, acc: c / n, n });
+    }));
+    return rows.sort((a, b) => a.acc - b.acc).slice(0, limit || 3);
+  }
+  async function getTutorMastered() {
+    const me = perksPlayer();
+    if (!me) return {};
+    const s = await aigDb.ref(`players/${me.id}/tutorMastered`).get();
+    return s.exists() ? s.val() : {};
+  }
+  async function markTutorMastered(topic) {
+    const me = perksPlayer();
+    if (!me) return;
+    await aigDb.ref(`players/${me.id}/tutorMastered/${String(topic).replace(/[.#$/\[\]]/g, "-")}`).set(todayKey());
+  }
+
+  // ---- 15. Mega quests -- 4-week goals measured against a stored baseline.
+  const MEGA_QUESTS = [
+    { id: "mult", emoji: "✖️", name: "Multiplication Master", desc: "Answer 120 multiplication questions correctly", target: 120, measure: ts => ((ts.mathville || {}).multiplication || {}).correct || 0 },
+    { id: "words", emoji: "📖", name: "Word Wizard", desc: "Get 150 Language & Arts answers right", target: 150, measure: ts => Object.values(ts["language-arts"] || {}).reduce((a, v) => a + ((v && v.correct) || 0), 0) },
+    { id: "space", emoji: "🪐", name: "Space Explorer", desc: "Get 150 SolarQuest answers right", target: 150, measure: ts => Object.values(ts.solarquest || {}).reduce((a, v) => a + ((v && v.correct) || 0), 0) },
+    { id: "town", emoji: "🏙️", name: "All-Rounder", desc: "Get 300 answers right in ANY game", target: 300, measure: (ts, total) => total }
+  ];
+  const MEGA_DAYS = 28;
+  async function getMegaQuest() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const [q, ts, tc] = await Promise.all([aigDb.ref(`players/${me.id}/megaQuest`).get(), readTopicStats(me), aigDb.ref(`players/${me.id}/totalCorrect`).get()]);
+    const total = tc.exists() ? (tc.val() || 0) : 0;
+    const cur = q.exists() ? q.val() : null;
+    if (!cur) return { active: null, quests: MEGA_QUESTS.map(({ measure, ...r }) => r) };
+    const def = MEGA_QUESTS.find(x => x.id === cur.id);
+    const progress = Math.max(0, def.measure(ts, total) - (cur.base || 0));
+    const daysLeft = Math.max(0, Math.ceil((cur.startedAt + MEGA_DAYS * 86400000 - Date.now()) / 86400000));
+    return { active: { id: cur.id, emoji: def.emoji, name: def.name, desc: def.desc, target: def.target, progress: Math.min(def.target, progress), daysLeft, expired: daysLeft <= 0 && progress < def.target,
+      claims: cur.claims || {} }, quests: MEGA_QUESTS.map(({ measure, ...r }) => r) };
+  }
+  async function startMegaQuest(id) {
+    const me = perksPlayer();
+    const def = MEGA_QUESTS.find(x => x.id === id);
+    if (!me || !def) return { ok: false };
+    const [ts, tc] = await Promise.all([readTopicStats(me), aigDb.ref(`players/${me.id}/totalCorrect`).get()]);
+    await aigDb.ref(`players/${me.id}/megaQuest`).set({ id, startedAt: Date.now(), base: def.measure(ts, tc.exists() ? (tc.val() || 0) : 0) });
+    return { ok: true };
+  }
+  async function claimMegaQuest(stage) {
+    const me = perksPlayer();
+    const st = me && await getMegaQuest();
+    if (!st || !st.active) return { ok: false };
+    const a = st.active;
+    const need = stage === "half" ? a.target / 2 : a.target;
+    if (a.progress < need) return { ok: false, reason: "not-ready" };
+    if (a.claims[stage]) return { ok: false, reason: "daily-limit" };
+    await aigDb.ref(`players/${me.id}/megaQuest/claims/${stage}`).set(true); // marker BEFORE paying
+    const reward = stage === "half" ? { coins: 30 } : { coins: 150, gems: 5 };
+    await creditWallet(reward);
+    return { ok: true, reward };
+  }
+  async function endMegaQuest() {
+    const me = perksPlayer();
+    if (me) await aigDb.ref(`players/${me.id}/megaQuest`).remove();
+  }
+
+  // ---- 18. Advent calendar -- 30 gift days from your first visit.
+  const ADVENT_DAYS = 30;
+  const adventReward = d => d === 30 ? { coins: 100, gems: 5 } : d % 5 === 0 ? { coins: 10, gems: 1 } : { coins: 5 + (d % 7) * 2 };
+  const daysBetween = (a, b) => Math.round((new Date(b + "T00:00:00Z") - new Date(a + "T00:00:00Z")) / 86400000);
+  async function getAdvent() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const ref = aigDb.ref(`players/${me.id}/advent`);
+    const snap = await ref.get();
+    let a = snap.exists() ? snap.val() : null;
+    if (!a) { a = { start: todayKey(), opened: {} }; await ref.set(a); }
+    const opened = a.opened || {};
+    const today = Math.min(ADVENT_DAYS, daysBetween(a.start, todayKey()) + 1); // 1-based day due today
+    let ontime = 0;
+    for (let d = Math.min(today, ADVENT_DAYS); d >= 1; d--) {
+      const due = new Date(a.start + "T00:00:00Z"); due.setUTCDate(due.getUTCDate() + d - 1);
+      if (opened[d] === due.toISOString().slice(0, 10)) ontime++; else if (d !== today) break;
+    }
+    return { start: a.start, today, opened, ontime, done: Object.keys(opened).length >= ADVENT_DAYS, over: daysBetween(a.start, todayKey()) >= ADVENT_DAYS + 7, days: ADVENT_DAYS,
+      rewards: Array.from({ length: ADVENT_DAYS }, (_, i) => adventReward(i + 1)), bonusClaimed: a.bonus || {} };
+  }
+  async function openAdventDay(d) {
+    const me = perksPlayer();
+    const a = me && await getAdvent();
+    if (!a || d < 1 || d > a.today) return { ok: false, reason: "not-ready" };
+    if (a.opened[d]) return { ok: false, reason: "daily-limit" };
+    await aigDb.ref(`players/${me.id}/advent/opened/${d}`).set(todayKey()); // marker BEFORE paying
+    const reward = adventReward(d);
+    await creditWallet(reward);
+    return { ok: true, reward };
+  }
+  async function claimAdventStreak() {
+    const me = perksPlayer();
+    const a = me && await getAdvent();
+    if (!a) return { ok: false };
+    const step = Math.floor(a.ontime / 7);
+    if (step < 1 || (a.bonusClaimed[step])) return { ok: false, reason: "not-ready" };
+    await aigDb.ref(`players/${me.id}/advent/bonus/${step}`).set(true);
+    await creditWallet({ coins: 20, gems: 1 });
+    return { ok: true, reward: { coins: 20, gems: 1 } };
+  }
+  async function restartAdvent() {
+    const me = perksPlayer();
+    if (me) await aigDb.ref(`players/${me.id}/advent`).remove();
+  }
+
+  // ---- 17. Parent focus -- topics a parent picked in the Parent Portal.
+  const FOCUS_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  async function getWeeklyFocus() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const s = await aigDb.ref(`players/${me.id}/weeklyFocus`).get();
+    if (!s.exists()) return null;
+    const f = s.val();
+    if (!f.topics || !f.topics.length || Date.now() - (f.setAt || 0) > 8 * 86400000) return null;
+    return { topics: f.topics.filter(t => FOCUS_KEYS.includes(t)), stats: f.stats || {}, setAt: f.setAt };
+  }
+  function recordFocusAnswer(key, ok) {
+    const me = perksPlayer();
+    if (!me || !FOCUS_KEYS.includes(key)) return;
+    aigDb.ref(`players/${me.id}/weeklyFocus/stats/${key}/${ok ? "c" : "w"}`).transaction(n => (n || 0) + 1).catch(() => {});
+  }
+
+  // ---- 16. Class board -- 4 colour teams from a stable hash of the player id.
+  const CLASS_TEAMS = [{ id: "rockets", name: "Red Rockets", emoji: "🚀", color: "#e4572e" }, { id: "dolphins", name: "Blue Dolphins", emoji: "🐬", color: "#2e86de" },
+    { id: "turtles", name: "Green Turtles", emoji: "🐢", color: "#2ea44f" }, { id: "bees", name: "Yellow Bees", emoji: "🐝", color: "#f2b705" }];
+  async function getClassTeams() {
+    const all = await readAllPlayers();
+    const wk = weekKey();
+    const teams = CLASS_TEAMS.map(t => ({ ...t, score: 0, members: [] }));
+    Object.entries(all).forEach(([id, d]) => {
+      const c = (d && d.weekly && d.weekly[wk] && d.weekly[wk].correct) || 0;
+      if (c <= 0) return;
+      const t = teams[seedFrom(id + "class4") % 4];
+      t.score += c; t.members.push({ id, name: nameOf(id, d), score: c });
+    });
+    teams.forEach(t => t.members.sort((a, b) => b.score - a.score));
+    return { week: wk, teams };
   }
 
   // =====================================================================
@@ -5194,6 +5375,10 @@
     getSkinPrefs, awardMiniGame,
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
     getGeoStamps, addGeoStamp, getDungeon, saveDungeon,
+    listPlayerNames, getWeeklyReport, getWeakTopics, getTutorMastered, markTutorMastered,
+    getMegaQuest, startMegaQuest, claimMegaQuest, endMegaQuest, MEGA_DAYS,
+    getAdvent, openAdventDay, claimAdventStreak, restartAdvent, adventReward,
+    getWeeklyFocus, recordFocusAnswer, FOCUS_KEYS, getClassTeams,
     getDino, evolveDino, DINO_STAGES, getSeason, getSeasonStatus, claimSeasonGift,
     getRotatingShop, getGachaStatus, rollGacha, GACHA_COST, GACHA_X5_COST,
     getFlashStatus, submitFlash, getFlashBoard, FLASH_MAX_PLAYS,

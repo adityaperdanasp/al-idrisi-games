@@ -682,6 +682,86 @@ SECTIONS.push({ id: "certs", async render(el) {
 
 SECTIONS.unshift(...SECTIONS.splice(R10B_START));
 
+/* =================================================================
+   PM round 11, batch 3 -- Weekly Report, Mega Quest, Advent Calendar,
+   plus quick links to the new Game Room pages. Pulled to the top.
+   ================================================================= */
+const R11_START = SECTIONS.length;
+
+/* ---- 18. Advent Calendar ---- */
+SECTIONS.push({ id: "advent", async render(el) {
+  const a = await LB.getAdvent();
+  if (a.over && !a.done || a.done && a.over) {
+    el.innerHTML = `<h2>🎁 Advent Calendar</h2><p class="ex-sub">${a.done ? "You opened every gift — amazing!" : "This calendar has ended."} Ready for a fresh one?</p><button class="ex-btn" id="av-restart">Start a new calendar</button>`;
+    el.querySelector("#av-restart").onclick = async () => { await LB.restartAdvent(); this.render(el); };
+    return;
+  }
+  const cell = d => {
+    const opened = !!a.opened[d], due = d <= a.today;
+    const r = a.rewards[d - 1], label = r.gems ? "💎" : "🪙";
+    return `<button class="ex-item" data-d="${d}" ${opened || !due ? "disabled" : ""} style="flex:0 0 calc(16.6% - 7px);padding:8px 2px;${opened ? "background:#e5f5e8" : due ? "background:#ffe9a8;border-color:#f7c548" : "opacity:.5"}">
+      <div class="ex-item-emoji" style="font-size:1.1rem">${opened ? "✅" : due ? "🎁" : "🔒"}</div><div class="ex-item-own">${d}${!opened && due ? " " + label : ""}</div></button>`;
+  };
+  const step = Math.floor(a.ontime / 7), canBonus = step >= 1 && !a.bonusClaimed[step];
+  el.innerHTML = `<h2>🎁 Advent Calendar</h2>
+    <p class="ex-sub">A new gift every day for 30 days. Missed one? It waits for you — but opening each gift on its OWN day builds an on-time streak (${a.ontime} now): every 7 in a row pays a 🪙20 💎1 bonus!</p>
+    <div class="ex-chip-row" style="gap:6px">${Array.from({ length: 30 }, (_, i) => cell(i + 1)).join("")}</div>
+    <div class="ex-row" style="margin-top:10px"><button class="ex-btn" id="av-bonus" ${canBonus ? "" : "disabled"}>${canBonus ? "Claim streak bonus 🪙20 💎1" : "On-time streak: " + a.ontime + "/" + (Math.floor(a.ontime / 7) + 1) * 7}</button></div><div class="ex-msg"></div>`;
+  el.querySelectorAll("[data-d]").forEach(b => b.onclick = async () => {
+    const r = await LB.openAdventDay(+b.dataset.d);
+    if (!r.ok) return say(el, "Not ready yet!");
+    await refreshWallet(); await this.render(el);
+    say(el, `🎉 Day ${b.dataset.d}: +${r.reward.coins ? "🪙" + r.reward.coins : ""}${r.reward.gems ? " 💎" + r.reward.gems : ""}`);
+    if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 2);
+  });
+  el.querySelector("#av-bonus").onclick = async () => { const r = await LB.claimAdventStreak(); if (!r.ok) return; await refreshWallet(); await this.render(el); say(el, "🔥 Streak bonus! +🪙20 +💎1"); };
+}});
+
+/* ---- 11. Bo's Weekly Report ---- */
+SECTIONS.push({ id: "report", async render(el) {
+  const r = await LB.getWeeklyReport();
+  const trend = r.change === null ? "It's your first full week of data — welcome!" : r.change > 0 ? `You answered ${r.change}% MORE right than last week. 📈` : r.change < 0 ? `A bit fewer than last week (${r.change}%) — no stress, next week is a fresh start! 🌱` : "Exactly the same as last week — steady! 🎯";
+  const pct = x => Math.round(x * 100) + "%";
+  el.innerHTML = `<h2>📬 Bo's Weekly Report</h2>
+    <p class="ex-sub" style="font-size:.85rem;color:#3d2e22">Hi ${esc(player.name)}! Here's how your week is going:</p>
+    <div class="ex-row" style="justify-content:space-around;text-align:center"><div><div class="ex-stat">${r.cur}</div><div class="ex-sub" style="margin:0">right this week</div></div><div><div class="ex-stat">${r.prev}</div><div class="ex-sub" style="margin:0">last week</div></div><div><div class="ex-stat">🔥 ${r.streak}</div><div class="ex-sub" style="margin:0">day streak</div></div></div>
+    <p class="ex-sub" style="margin-top:10px;font-size:.82rem;color:#3d2e22">${trend}</p>
+    ${r.best ? `<p class="ex-sub" style="font-size:.82rem;color:#3d2e22">⭐ Your strongest topic: <b>${esc(r.pretty(r.best.topic))}</b> (${pct(r.best.acc)} right in ${esc(r.gameLabel(r.best.game))}).</p>` : ""}
+    ${r.weak ? `<p class="ex-sub" style="font-size:.82rem;color:#3d2e22">💪 Let's grow: <b>${esc(r.pretty(r.weak.topic))}</b> (${pct(r.weak.acc)}). Try <a href="../bo-tutor/" style="color:#8c2f6b;font-weight:800">Bo's Tutor Session</a>!</p>` : ""}
+    <div class="ex-row" style="background:#f6e3f0;border-radius:12px;padding:8px 12px"><span style="font-weight:800;font-size:.85rem">🎯 Goal for next week: ${r.goal} right answers</span></div>`;
+}});
+
+/* ---- 15. Mega Quest ---- */
+SECTIONS.push({ id: "megaquest", async render(el) {
+  const m = await LB.getMegaQuest();
+  if (!m.active) {
+    el.innerHTML = `<h2>🏔️ Mega Quest</h2><p class="ex-sub">A 4-week goal with a big prize (🪙150 💎5, plus 🪙30 at the halfway mark). Pick one:</p>
+      <div class="ex-chip-row">${m.quests.map(q => `<button class="ex-item" data-q="${q.id}"><div class="ex-item-emoji">${q.emoji}</div><div class="ex-item-name">${q.name}</div><div class="ex-item-own">${q.desc}</div></button>`).join("")}</div>`;
+    el.querySelectorAll("[data-q]").forEach(b => b.onclick = async () => { await LB.startMegaQuest(b.dataset.q); this.render(el); });
+    return;
+  }
+  const a = m.active, pct = Math.round(a.progress / a.target * 100);
+  const halfReady = a.progress >= a.target / 2 && !a.claims.half, fullReady = a.progress >= a.target && !a.claims.full;
+  el.innerHTML = `<h2>${a.emoji} ${a.name}</h2><p class="ex-sub">${a.desc}. ${a.daysLeft} day${a.daysLeft === 1 ? "" : "s"} left.</p>
+    <div style="background:#eee4f7;border-radius:100px;height:14px;overflow:hidden;position:relative"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#c08be8,#8c2f6b)"></div></div>
+    <div class="ex-sub" style="margin:6px 0 10px">${a.progress}/${a.target} (${pct}%)</div>
+    <div class="ex-row"><button class="ex-btn" id="mq-half" ${halfReady ? "" : "disabled"}>${a.claims.half ? "Halfway ✓" : "Halfway 🪙30"}</button><button class="ex-btn" id="mq-full" ${fullReady ? "" : "disabled"}>${a.claims.full ? "Done ✓" : "Finish 🪙150 💎5"}</button>
+    ${a.claims.full || a.expired ? '<button class="ex-btn alt" id="mq-new">New quest</button>' : ""}</div><div class="ex-msg">${a.expired ? "Time ran out — pick a new quest and go again!" : ""}</div>`;
+  const go = stage => async () => { const r = await LB.claimMegaQuest(stage); if (!r.ok) return; await refreshWallet(); await this.render(el); say(el, "🎉 Reward claimed!"); if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 2); };
+  el.querySelector("#mq-half").onclick = go("half"); el.querySelector("#mq-full").onclick = go("full");
+  const nb = el.querySelector("#mq-new"); if (nb) nb.onclick = async () => { await LB.endMegaQuest(); this.render(el); };
+}});
+
+/* ---- Quick links ---- */
+SECTIONS.push({ id: "gamelinks", async render(el) {
+  el.innerHTML = `<h2>🎮 More to explore</h2><div class="ex-chip-row">
+    <a class="ex-item" href="../game-room/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🎮</div><div class="ex-item-name">Game Room</div></a>
+    <a class="ex-item" href="../bo-tutor/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🎓</div><div class="ex-item-name">Bo's Tutor</div></a>
+    <a class="ex-item" href="../class-board/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🏆</div><div class="ex-item-name">Class Board</div></a></div>`;
+}});
+
+SECTIONS.unshift(...SECTIONS.splice(R11_START));
+
 /* ---- boot ---- */
 if (!player || player.role === "parent" || !LB) {
   $("ex-page").innerHTML = '<div class="ex-topbar"><a href="../" class="ex-back">←</a><div class="ex-title">🎁 Extras</div></div><p class="ex-empty">Please sign in from the hub first.</p>';

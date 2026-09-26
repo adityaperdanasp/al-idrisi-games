@@ -193,6 +193,9 @@
     // have; a parent checking here any time still sees where things stand) ----
     renderAchievements(player);
 
+    // ---- This week's focus (PM round 11, item 17) ----
+    renderFocus(player.weeklyFocus || null);
+
     // ---- Real-world missions (PM round 10, item 19) ----
     renderMissions(player.parentMissions || {});
 
@@ -270,6 +273,31 @@
         <span class="p-achievement-value">${escapeHtml(String(r.value))}</span>
         ${r.sub ? `<span class="p-achievement-sub">${escapeHtml(r.sub)}</span>` : ""}
       </div>`).join("");
+  }
+
+  const FOCUS_TOPICS = [["addition-subtraction-add", "Addition"], ["addition-subtraction-sub", "Subtraction"], ["multiplication", "Multiplication"], ["division", "Division"], ["measurement", "Measurement"], ["rounding", "Rounding"]];
+  function renderFocus(focus) {
+    const active = focus && focus.topics && focus.topics.length && Date.now() - (focus.setAt || 0) < 8 * 86400000 ? focus : null;
+    const picker = document.getElementById("p-focus-picker");
+    picker.innerHTML = FOCUS_TOPICS.map(([k, label]) => `<label style="display:inline-flex;align-items:center;gap:6px;margin:0 12px 8px 0;font-weight:700"><input type="checkbox" value="${k}" ${active && active.topics.includes(k) ? "checked" : ""}> ${label}</label>`).join("") +
+      `<div class="p-quiz-actions"><button class="p-quiz-btn p-quiz-approve" id="p-focus-save" type="button">${active ? "Update focus" : "Set focus"}</button>${active ? '<button class="p-quiz-btn p-quiz-reject" id="p-focus-clear" type="button">Clear</button>' : ""}</div>`;
+    picker.querySelectorAll("input").forEach(cb => cb.addEventListener("change", () => {
+      if (picker.querySelectorAll("input:checked").length > 3) cb.checked = false;
+    }));
+    document.getElementById("p-focus-save").onclick = async () => {
+      const topics = [...picker.querySelectorAll("input:checked")].map(i => i.value);
+      if (!topics.length) return;
+      await aigDb.ref(`players/${childId}/weeklyFocus`).set({ topics, setAt: Date.now(), stats: {} });
+      loadPortal();
+    };
+    const clear = document.getElementById("p-focus-clear");
+    if (clear) clear.onclick = async () => { await aigDb.ref(`players/${childId}/weeklyFocus`).remove(); loadPortal(); };
+    const prog = document.getElementById("p-focus-progress");
+    prog.innerHTML = active ? active.topics.map(t => {
+      const st = (active.stats || {})[t] || {}, c = st.c || 0, w = st.w || 0, n = c + w;
+      const label = (FOCUS_TOPICS.find(x => x[0] === t) || [t, t])[1];
+      return `<div class="p-quiz-card"><div class="p-quiz-prompt">${escapeHtml(label)}</div><div class="p-quiz-options">${n ? `${n} question${n === 1 ? "" : "s"} answered since you set this · ${Math.round(c / n * 100)}% correct` : "No practice yet — it will show up as your child plays the Game Room games."}</div></div>`;
+    }).join("") : "";
   }
 
   function renderMissions(missions) {

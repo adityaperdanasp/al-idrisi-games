@@ -39,10 +39,17 @@
     return { key: "multiplication", ...buildMc({ prompt: `${a} × ${b} = ?`, answer: String(a * b) }) };
   }
   // opts.subject: "math" | "lang" | "sci" | undefined (mixed)
+  let focus = null; // parent-picked topics (PM round 11, item 17), loaded by ready()
+  function focusQuestion(diff) {
+    if (!focus || !focus.topics.length || Math.random() > 0.35) return null;
+    const key = focus.topics[rand(0, focus.topics.length - 1)];
+    try { return { subject: "math", key, focus: true, ...buildMc(window.MATHVILLE_GENERATORS[key](diff)) }; } catch (e) { return null; }
+  }
   function question(opts) {
     opts = opts || {};
     const P = window.AIGQuestionPools;
     const diff = opts.difficulty || "medium";
+    if (!opts.subject || opts.subject === "math") { const f = focusQuestion(diff); if (f) return f; }
     if (opts.subject === "math" || !P) return { subject: "math", ...mathQuestion(diff) };
     if (opts.subject === "lang") { const q = P.pickLanguage(); if (q) return { subject: "lang", key: "language", ...q }; }
     if (opts.subject === "sci") { const q = P.pickScience(); if (q) return { subject: "sci", key: "science", ...q }; }
@@ -52,6 +59,7 @@
 
   function record(gameId, key, ok) {
     try { if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt(gameId, key, ok); } catch (e) { /* never block a round */ }
+    try { if (focus && focus.topics.includes(key) && window.AIGLeaderboard && AIGLeaderboard.recordFocusAnswer) AIGLeaderboard.recordFocusAnswer(key, ok); } catch (e) {}
     try { if (window.AIGJuice) AIGJuice.answer(ok, (record.streak = ok ? (record.streak || 0) + 1 : 0) - 1); } catch (e) {}
   }
 
@@ -107,6 +115,7 @@
     return `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${emoji || "🎮"}</div><p class="kit-sub">Please sign in from the hub first.</p><a href="../" class="kit-btn block">Back to Hub</a></div></div>`;
   }
   async function ready() {
+    try { if (window.AIGLeaderboard && AIGLeaderboard.getWeeklyFocus) focus = await AIGLeaderboard.getWeeklyFocus(); } catch (e) {}
     try { if (window.AIGQuestionPools) await Promise.race([AIGQuestionPools.ensurePools(), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}
   }
 

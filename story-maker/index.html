@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Story Maker — BrainBox</title>
+<meta name="theme-color" content="#c2410c">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .sm-tabs{display:flex;gap:8px;padding:0 14px 10px}
+  .sm-tab{flex:1;border:none;border-radius:12px;padding:9px;font-family:"Baloo 2",sans-serif;font-weight:800;background:rgba(0,0,0,.07);color:inherit;cursor:pointer}
+  .sm-tab.on{background:var(--kit-accent);color:#fff}
+  .sm-story{font-size:1rem;line-height:1.7;font-weight:700}
+  .sm-blank{display:inline-block;min-width:60px;border-bottom:3px dashed var(--kit-accent);text-align:center;color:var(--kit-accent)}
+  .sm-cover{text-align:center;padding:18px 8px;border-radius:16px;background:linear-gradient(160deg,#fde68a,#fca5a5);margin-bottom:10px}
+  .sm-cover .e{font-size:3.4rem}.sm-cover .t{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.3rem}
+  .sm-pick{display:block;width:100%;text-align:left;border:2px solid rgba(0,0,0,.08);background:#faf6ff;border-radius:14px;padding:12px;font-family:"Baloo 2",sans-serif;font-weight:800;cursor:pointer;color:inherit;margin-bottom:8px}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">📖 Story Maker</div></div>
+
+  <div class="sm-tabs"><button class="sm-tab on" data-t="new">✏️ New story</button><button class="sm-tab" data-t="books">📚 My books</button></div>
+  <div id="sm-main"></div><div id="sm-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Story Maker',accent:'#c2410c',bg:'linear-gradient(180deg,#fff3e0,#ffe0c2)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

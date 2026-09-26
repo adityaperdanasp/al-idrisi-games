@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Speak with Bo — BrainBox</title>
+<meta name="theme-color" content="#be185d">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .sp-sent{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.35rem;text-align:center;line-height:1.5;margin:6px 0 12px}
+  .sp-w.ok{color:#15803d}.sp-w.bad{color:#b91c1c;text-decoration:underline wavy}
+  .sp-mic{width:84px;height:84px;border-radius:50%;border:0;background:var(--kit-accent);color:#fff;font-size:2rem;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.2)}
+  .sp-mic.rec{animation:spPulse 1s infinite;background:#e11d48}
+  @keyframes spPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+  .sp-heard{text-align:center;font-weight:700;font-size:.85rem;color:#6b5a4a;min-height:1.3em;margin-top:8px}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🎤 Speak with Bo</div></div>
+
+  <div class="kit-hud"><span>🎤 Sentence <b id="sp-n">1</b>/5</span><span>⭐ Great: <b id="sp-g">0</b></span></div>
+  <div class="kit-card"><div class="sp-sent" id="sp-sent"></div>
+    <div style="display:flex;justify-content:center;gap:16px;align-items:center"><button class="kit-btn alt" id="sp-listen" type="button">🔊 Listen</button><button class="sp-mic" id="sp-mic" type="button">🎤</button></div>
+    <div class="sp-heard" id="sp-heard">Tap the microphone and read the sentence out loud.</div>
+    <div style="text-align:center;margin-top:10px"><button class="kit-btn" id="sp-next" type="button" hidden>Next →</button></div></div>
+  <div id="sp-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Speak with Bo',accent:'#be185d',bg:'linear-gradient(180deg,#fde7f1,#f8cfe2)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

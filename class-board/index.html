@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Class Team Board — BrainBox</title>
+<meta name="theme-color" content="#b45309">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .kit-page{max-width:760px}
+  .cb-team{margin:0 14px 12px;border-radius:20px;padding:14px 16px;background:#fff;box-shadow:0 4px 0 rgba(0,0,0,.07);position:relative;overflow:hidden}
+  .cb-head{display:flex;align-items:center;gap:10px}
+  .cb-em{font-size:2.6rem}
+  .cb-name{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.5rem;flex:1}
+  .cb-score{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:2.4rem}
+  .cb-bar{height:16px;border-radius:100px;background:rgba(0,0,0,.08);margin:8px 0;overflow:hidden}
+  .cb-bar i{display:block;height:100%;border-radius:100px;transition:width 1s}
+  .cb-mem{font-weight:700;font-size:.92rem;color:#6b5a4a}
+  .cb-crown{position:absolute;right:12px;top:6px;font-size:1.6rem}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🏆 Class Team Board</div></div>
+
+  <div class="kit-sub" style="text-align:center" id="cb-sub">Loading this week's scores…</div>
+  <div id="cb-list"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Class Team Board',accent:'#b45309',bg:'linear-gradient(180deg,#fff7e0,#ffe7b0)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

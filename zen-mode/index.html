@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Zen Mode — BrainBox</title>
+<meta name="theme-color" content="#2e8b6a">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .zm-breathe{width:90px;height:90px;border-radius:50%;margin:8px auto 14px;background:radial-gradient(circle,#bbf7d0,#6ee7b7);animation:zmB 8s ease-in-out infinite;opacity:.8}
+  @keyframes zmB{0%,100%{transform:scale(.8)}50%{transform:scale(1.15)}}
+  .zm-cap{text-align:center;font-weight:700;font-size:.8rem;color:#4b7a63;margin-top:-6px;margin-bottom:8px}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🍃 Zen Mode</div></div>
+
+  <div class="zm-breathe"></div><div class="zm-cap">breathe in… and out…</div>
+  <div class="kit-hud"><span>🌱 Right: <b id="zm-r">0</b></span><span id="zm-sub"></span></div>
+  <div class="kit-card"><div class="kit-q" id="zm-q"></div><div class="kit-opts" id="zm-opts"></div><div class="kit-sub" id="zm-msg" style="text-align:center;margin:8px 0 0;min-height:1.4em"></div></div>
+  <div style="text-align:center"><button class="kit-btn alt" id="zm-done" type="button">I'm done for now</button></div>
+  <div id="zm-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Zen Mode',accent:'#2e8b6a',bg:'linear-gradient(180deg,#e8f8ef,#d0eedd)'});</script>
+<script src="script.js"></script>
+</body>
+</html>
