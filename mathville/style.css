@@ -2025,3 +2025,6 @@ button { font-family: inherit; }
 .drive-dino[data-skin="mega"] .dino-head { fill: #FFD54A; stroke: #C99A2E; }
 .drive-dino[data-skin="mega"] { filter: drop-shadow(0 0 8px #ffd700); }
 .drive-dino[data-skin="mega"] .dino-leg { fill: #C99A2E; }
+
+/* PM round 14 -- neon underglow from the Garage paint shop */
+.vehicle-neon { filter: drop-shadow(0 0 6px var(--vehicle-glow)) drop-shadow(0 0 12px var(--vehicle-glow)); }

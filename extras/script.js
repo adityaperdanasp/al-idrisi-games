@@ -781,9 +781,31 @@ SECTIONS.push({ id: "topiccerts", async render(el) {
   });
 }});
 
+/* =================================================================
+   PM round 14 -- Wallet Goals (item 9) and quick links to the Garage.
+   ================================================================= */
+const R14_START = SECTIONS.length;
+SECTIONS.push({ id: "goals", async render(el) {
+  const d = await LB.getGoals();
+  const w = d.wallet, cost = c => c.coins ? `🪙${c.coins}` : `💎${c.gems}`;
+  const have = c => c.coins ? (w.coins || 0) : (w.gems || 0), need = c => c.coins || c.gems;
+  el.innerHTML = `<h2>🎯 Wallet Goals</h2><p class="ex-sub">Pick up to 3 things you're saving for and watch the bar fill. Buying one from here gives back 10% of the price (up to 🪙20)!</p>
+    ${d.goals.length ? d.goals.map(g => { const pct = Math.min(100, Math.round(have(g.cost) / need(g.cost) * 100)), ok = pct >= 100;
+      return `<div style="padding:8px 0;border-top:1px solid #f0e8f7"><div class="ex-row" style="justify-content:space-between"><b>${g.preview} ${esc(g.name)}</b><span>${cost(g.cost)}</span></div>
+      <div style="background:#eee4f7;border-radius:100px;height:10px;overflow:hidden;margin:5px 0"><div style="width:${pct}%;height:100%;background:${ok ? "#34c759" : "linear-gradient(90deg,#c08be8,#8c2f6b)"}"></div></div>
+      <div class="ex-row" style="justify-content:space-between"><span class="ex-sub" style="margin:0">${g.owned ? "You own this ✓" : ok ? "You can afford it!" : `${have(g.cost)}/${need(g.cost)}`}</span><span><button class="ex-btn" data-buy="${esc(g.type)}::${esc(g.id)}" ${ok && !g.owned ? "" : "disabled"}>Buy</button> <button class="ex-btn alt" data-rm="${esc(g.type)}::${esc(g.id)}">✕</button></span></div></div>`; }).join("") : '<div class="ex-empty">No goals yet — add one below!</div>'}
+    ${d.goals.length < 3 ? `<div class="ex-row" style="margin-top:10px"><select class="ex-input" id="gl-pick" style="width:auto;max-width:70%">${d.pool.filter(p => !d.goals.some(g => g.type === p.type && g.id === p.id)).map(p => `<option value="${esc(p.type)}::${esc(p.id)}">${p.preview} ${esc(p.name)} (${cost(p.cost)})</option>`).join("")}</select><button class="ex-btn" id="gl-add">+ Goal</button></div>` : ""}<div class="ex-msg"></div>`;
+  el.querySelectorAll("[data-buy]").forEach(b => b.onclick = async () => { const [t, i] = b.dataset.buy.split("::"); const r = await LB.buyGoal(t, i); if (!r.ok) return say(el, FAIL[r.reason] || "Couldn't buy."); await refreshWallet(); await this.render(el); say(el, `🎉 Goal reached!${r.refund ? ` +🪙${r.refund} back` : ""}`); if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3); });
+  el.querySelectorAll("[data-rm]").forEach(b => b.onclick = async () => { const [t, i] = b.dataset.rm.split("::"); await LB.setGoal(t, i, false); this.render(el); });
+  const add = el.querySelector("#gl-add");
+  if (add) add.onclick = async () => { const [t, i] = el.querySelector("#gl-pick").value.split("::"); const r = await LB.setGoal(t, i, true); if (!r.ok) return say(el, "Three goals is the max."); this.render(el); };
+}});
+SECTIONS.unshift(...SECTIONS.splice(R14_START));
+
 /* ---- Quick links ---- */
 SECTIONS.push({ id: "gamelinks", async render(el) {
   el.innerHTML = `<h2>🎮 More to explore</h2><div class="ex-chip-row">
+    <a class="ex-item" href="../garage/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🔧</div><div class="ex-item-name">Garage</div></a>
     <a class="ex-item" href="../weekly-boss/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🐉</div><div class="ex-item-name">Weekly Boss</div></a>
     <a class="ex-item" href="../world-map/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🗺️</div><div class="ex-item-name">World Map</div></a>
     <a class="ex-item" href="../ready-check/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">✅</div><div class="ex-item-name">Level-Up Check</div></a>

@@ -23,7 +23,7 @@ const REGIONS = [
     ["island-adventure", "🏝️", "Island Adventure", "../island-adventure/", "island-adventure"], ["dungeon", "🗡️", "Dungeon Crawler", "../dungeon/", "dungeon"], ["escape-daily", "🗝️", "Escape Room", "../escape-daily/", "escape-daily"], ["pattern-puzzles", "🧩", "Pattern Puzzles", "../pattern-puzzles/", "pattern-puzzles"],
     ["ninja-runner", "🥷", "Ninja Runner", "../ninja-runner/", null], ["boss-rush", "🥊", "Boss Rush", "../boss-rush/", null], ["card-race", "🃏", "Quiz Card Race", "../card-race/", "card-race"]] },
   { name: "Home Harbor", emoji: "⚓", bg: "linear-gradient(160deg,#ede9fe,#c4b5fd)", nodes: [
-    ["bo-home", "🏠", "Bo's World", "../bo-home/", null], ["bo-class", "🎓", "Bo's Classroom", "../bo-class/", "bo-class"], ["weekly-boss", "🐉", "Weekly Boss", "../weekly-boss/", null], ["my-town", "🏘️", "My Town", "../my-town/", null], ["bo-tutor", "🎓", "Bo's Tutor", "../bo-tutor/", "bo-tutor"],
+    ["bo-home", "🏠", "Bo's World", "../bo-home/", null], ["garage", "🔧", "Garage", "../garage/", null], ["bo-class", "🎓", "Bo's Classroom", "../bo-class/", "bo-class"], ["weekly-boss", "🐉", "Weekly Boss", "../weekly-boss/", null], ["my-town", "🏘️", "My Town", "../my-town/", null], ["bo-tutor", "🎓", "Bo's Tutor", "../bo-tutor/", "bo-tutor"],
     ["friend-duel", "⚔️", "Friend Duel", "../friend-duel/", "friend-duel"], ["zen-mode", "🍃", "Zen Mode", "../zen-mode/", "zen-mode"], ["extras", "🎁", "Extras", "../extras/", null],
     ["ready-check", "✅", "Level-Up Check", "../ready-check/", null], ["quick-review", "🔁", "Quick Review", "../quick-review/", "quick-review"], ["word-book", "📕", "Word Book", "../word-book/", "word-book"],
     ["game-room", "🎮", "Game Room", "../game-room/", null]] }

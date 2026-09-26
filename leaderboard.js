@@ -3001,6 +3001,143 @@
   }
 
   // =====================================================================
+  // PM ROUND 14, BATCH 1 -- Garage (vehicle levels + upgrade timers, paint
+  // shop, daily rentals) and Wallet Goals. All under players/{id}/...
+  // =====================================================================
+  const GARAGE_MAX_LEVEL = 5, GARAGE_MAX_QUEUE = 2;
+  // index = the level you are upgrading TO
+  const GARAGE_UPGRADE = [null, null, { coins: 40, hours: 1 }, { coins: 80, hours: 3 }, { coins: 150, hours: 6 }, { coins: 250, hours: 12 }];
+  const PAINT_PRICES = { hue: 10, neon: 30, sticker: 15 };
+  const PAINT_NEONS = ["none", "blue", "pink", "green", "gold", "white"];
+  const PAINT_STICKERS = ["none", "⭐", "🔥", "⚡", "💖", "🏁"];
+  const RENT_MS = 24 * 3600000;
+  async function getGarage() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const [lv, q, pa, re, own] = await Promise.all([
+      aigDb.ref(`players/${me.id}/vlevels`).get(), aigDb.ref(`players/${me.id}/vqueue`).get(), aigDb.ref(`players/${me.id}/paints`).get(),
+      aigDb.ref(`players/${me.id}/rentals`).get(), getOwnedVehicles("mathville")
+    ]);
+    const levels = lv.exists() ? lv.val() : {}, queue = q.exists() ? q.val() : {}, now = Date.now();
+    // Finish any upgrade whose timer has run out (applied lazily, the next time anything reads the garage).
+    for (const [id, e] of Object.entries(queue)) {
+      if (e.readyAt <= now) {
+        levels[id] = Math.max(levels[id] || 1, e.to);
+        await aigDb.ref(`players/${me.id}/vlevels/${id}`).set(levels[id]);
+        await aigDb.ref(`players/${me.id}/vqueue/${id}`).remove();
+        delete queue[id];
+      }
+    }
+    const rentals = {};
+    Object.entries(re.exists() ? re.val() : {}).forEach(([id, exp]) => { if (exp > now) rentals[id] = exp; });
+    return { levels, queue, paints: pa.exists() ? pa.val() : {}, rentals, owned: own, upgrade: GARAGE_UPGRADE, maxLevel: GARAGE_MAX_LEVEL };
+  }
+  async function startVehicleUpgrade(id) {
+    const me = perksPlayer();
+    const g = me && await getGarage();
+    if (!g) return { ok: false };
+    if (!g.owned[id]) return { ok: false, reason: "not-ready" };
+    const cur = g.levels[id] || 1;
+    if (cur >= GARAGE_MAX_LEVEL) return { ok: false, reason: "max" };
+    if (g.queue[id]) return { ok: false, reason: "busy" };
+    if (Object.keys(g.queue).length >= GARAGE_MAX_QUEUE) return { ok: false, reason: "busy" };
+    const step = GARAGE_UPGRADE[cur + 1];
+    const paid = await spendWallet({ coins: step.coins });
+    if (!paid.ok) return paid;
+    await aigDb.ref(`players/${me.id}/vqueue/${id}`).set({ to: cur + 1, readyAt: Date.now() + step.hours * 3600000 });
+    return { ok: true, to: cur + 1, hours: step.hours };
+  }
+  async function speedUpVehicle(id) {
+    const me = perksPlayer();
+    const g = me && await getGarage();
+    const e = g && g.queue[id];
+    if (!e) return { ok: false, reason: "not-ready" };
+    const gems = Math.max(1, Math.ceil((e.readyAt - Date.now()) / 3600000));
+    const paid = await spendWallet({ gems });
+    if (!paid.ok) return paid;
+    await aigDb.ref(`players/${me.id}/vlevels/${id}`).set(e.to);
+    await aigDb.ref(`players/${me.id}/vqueue/${id}`).remove();
+    return { ok: true, to: e.to, gems };
+  }
+  // Paint: each PART that changes is charged (hue 10 / neon 30 / sticker 15 coins).
+  async function applyPaint(id, next) {
+    const me = perksPlayer();
+    const g = me && await getGarage();
+    if (!g || !(g.owned[id] || g.rentals[id])) return { ok: false };
+    const cur = g.paints[id] || { hue: 0, neon: "none", sticker: "none" };
+    const want = { hue: Math.max(0, Math.min(350, (next.hue | 0) - ((next.hue | 0) % 10))), neon: PAINT_NEONS.includes(next.neon) ? next.neon : "none", sticker: PAINT_STICKERS.includes(next.sticker) ? next.sticker : "none" };
+    let coins = 0;
+    if (want.hue !== (cur.hue || 0)) coins += PAINT_PRICES.hue;
+    if (want.neon !== (cur.neon || "none")) coins += PAINT_PRICES.neon;
+    if (want.sticker !== (cur.sticker || "none")) coins += PAINT_PRICES.sticker;
+    if (coins) { const paid = await spendWallet({ coins }); if (!paid.ok) return paid; }
+    await aigDb.ref(`players/${me.id}/paints/${id}`).update(want);
+    return { ok: true, coins };
+  }
+  async function savePaintPreset(id, slot) {
+    const me = perksPlayer();
+    const g = me && await getGarage();
+    if (!g || !g.paints[id] || slot < 0 || slot > 2) return { ok: false };
+    const { hue, neon, sticker } = g.paints[id];
+    await aigDb.ref(`players/${me.id}/paints/${id}/presets/${slot}`).set({ hue: hue || 0, neon: neon || "none", sticker: sticker || "none" });
+    return { ok: true };
+  }
+  async function applyPaintPreset(id, slot) {
+    const me = perksPlayer();
+    const g = me && await getGarage();
+    const p = g && g.paints[id] && g.paints[id].presets && g.paints[id].presets[slot];
+    if (!p) return { ok: false };
+    await aigDb.ref(`players/${me.id}/paints/${id}`).update({ hue: p.hue, neon: p.neon, sticker: p.sticker }); // free: it was paid for when first made
+    return { ok: true };
+  }
+  async function rentVehicle(id, price) {
+    const me = perksPlayer();
+    const g = me && await getGarage();
+    if (!g || g.owned[id] || g.rentals[id]) return { ok: false, reason: "busy" };
+    const coins = Math.max(5, Math.min(120, price | 0));
+    const paid = await spendWallet({ coins });
+    if (!paid.ok) return paid;
+    await aigDb.ref(`players/${me.id}/rentals/${id}`).set(Date.now() + RENT_MS);
+    return { ok: true, coins, until: Date.now() + RENT_MS };
+  }
+
+  // ---- 9. Wallet goals -- up to 3 wished-for cosmetics with a savings bar.
+  // Buying one through its goal returns 10% of the price (max 20 coins).
+  async function getGoals() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const [gs, w] = await Promise.all([aigDb.ref(`players/${me.id}/goals`).get(), getWallet()]);
+    const keys = gs.exists() ? gs.val() : [];
+    const pool = cosmeticPool();
+    const owned = await readOwnedCosmetics(me);
+    return { wallet: w, goals: keys.map(k => { const [type, id] = k.split("::"); const it = pool.find(x => x.type === type && x.id === id); return it ? { key: k, ...it, owned: isOwned(owned, it) } : null; }).filter(Boolean), pool: pool.filter(x => !isOwned(owned, x)) };
+  }
+  async function setGoal(type, id, on) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    const ref = aigDb.ref(`players/${me.id}/goals`);
+    const s = await ref.get();
+    let keys = s.exists() ? s.val() : [];
+    const key = `${type}::${id}`;
+    keys = keys.filter(k => k !== key);
+    if (on) { if (keys.length >= 3) return { ok: false, reason: "max" }; keys.push(key); }
+    await ref.set(keys);
+    return { ok: true };
+  }
+  async function buyGoal(type, id) {
+    const me = perksPlayer();
+    const data = me && await getGoals();
+    const g = data && data.goals.find(x => x.type === type && x.id === id);
+    if (!g || g.owned) return { ok: false };
+    const r = await unlockCosmetic(type, id, g.cost);
+    if (!r.ok) return r;
+    await setGoal(type, id, false);
+    const refund = g.cost.coins ? Math.min(20, Math.floor(g.cost.coins * 0.1)) : 0;
+    if (refund) await creditWallet({ coins: refund });
+    return { ok: true, refund };
+  }
+
+  // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
   // players so skin.js can call it unconditionally.
@@ -6001,6 +6138,8 @@
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
     getGeoStamps, addGeoStamp, getDungeon, saveDungeon,
     getWeeklyBoss, claimWeeklyBoss, WEEKLY_TIERS, getSpells, SPELLS, getBuddy, requestBuddy, acceptBuddy, declineBuddy, removeBuddy, cheerBuddy, claimBuddyGoal, getLessons, finishLesson,
+    getGarage, startVehicleUpgrade, speedUpVehicle, applyPaint, savePaintPreset, applyPaintPreset, rentVehicle, GARAGE_UPGRADE, GARAGE_MAX_LEVEL, PAINT_PRICES, PAINT_NEONS, PAINT_STICKERS,
+    getGoals, setGoal, buyGoal,
     getWorldState,
     getSettings, saveSettings, getPlayLimit, exportMyData, sendReport,
     srsAdd, srsAll, srsStats, srsDue, srsResult, getReadiness, saveReadiness, logMood, MOODS, getTopicCerts, getMoodSummary,

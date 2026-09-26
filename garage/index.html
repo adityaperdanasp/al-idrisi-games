@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Garage — BrainBox</title>
+<meta name="theme-color" content="#b45309">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .gg-tabs{display:flex;gap:6px;padding:0 14px 10px;overflow-x:auto;scrollbar-width:none}
+  .gg-tab{flex:none;border:none;border-radius:100px;padding:8px 14px;font-family:"Baloo 2",sans-serif;font-weight:800;background:rgba(0,0,0,.07);color:inherit;cursor:pointer}
+  .gg-tab.on{background:var(--kit-accent);color:#fff}
+  .gg-car{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #f4e6d2}
+  .gg-car:first-child{border-top:0}
+  .gg-th{flex:none;width:56px;height:70px;display:grid;place-items:center;background:#fff8ee;border-radius:12px;position:relative}
+  .gg-th .sticker{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-size:14px}
+  .gg-th svg{transform:scale(1.4)}
+  .gg-body{flex:1;min-width:0}
+  .gg-name{font-family:"Baloo 2",sans-serif;font-weight:800}
+  .gg-lv{display:flex;gap:3px;margin:3px 0}
+  .gg-lv i{width:16px;height:7px;border-radius:4px;background:#e5d5be}.gg-lv i.on{background:#f59e0b}
+  .gg-sub{font-size:.72rem;color:#8a7a6a;font-weight:700}
+  .gg-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .gg-btns .kit-btn{padding:6px 12px;font-size:.78rem}
+  .gg-paint{background:#fff8ee;border-radius:14px;padding:12px;margin:8px 0}
+  .gg-sw{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+  .gg-sw button{border:2px solid #e5d5be;background:#fff;border-radius:10px;padding:4px 10px;font-weight:800;cursor:pointer;color:inherit}
+  .gg-sw button.on{border-color:#b45309;background:#fde68a}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../" class="kit-back">←</a><div class="kit-title">🔧 Garage</div></div>
+
+  <div class="kit-hud"><span id="gg-wallet"></span></div>
+  <div class="gg-tabs" id="gg-tabs"></div>
+  <div class="kit-card" id="gg-main"></div>
+  <div id="gg-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../vehicles.js"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Garage',accent:'#b45309',bg:'linear-gradient(180deg,#fff3e0,#ffdcae)'});</script>
+<script src="script.js"></script>
+</body>
+</html>
