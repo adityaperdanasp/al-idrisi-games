@@ -158,6 +158,45 @@ TABS.push({ id: "museum", label: "🏛️ Museum", async render(el) {
       ${open ? floors[i].map(([h, c]) => `<div class="mu-h">${h}</div><div class="mu-row">${c}</div>`).join("") : ""}</div>`; }).join("")}`;
 }});
 
+/* ---- 4. Buddy ---- */
+TABS.push({ id: "buddy", label: "🤝 Buddy", async render(el) {
+  const b = await LB.getBuddy();
+  if (!b.buddy) {
+    const friends = await LB.listPlayerNames();
+    el.innerHTML = `<div class="kit-card">${boHeader("Pick one best friend to team up with! Your scores add up and you build a buddy streak together.")}
+      ${b.requests.length ? `<div class="kit-sub" style="font-weight:800;margin:0 0 6px">💌 Requests for you</div>${b.requests.map(r => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0"><b>${K.esc(r.name)}</b><span><button class="kit-btn" data-acc="${K.esc(r.id)}" style="padding:6px 12px">Accept</button> <button class="kit-btn alt" data-dec="${K.esc(r.id)}" style="padding:6px 12px">No</button></span></div>`).join("")}<hr style="border:0;border-top:1px solid #eee;margin:10px 0">` : ""}
+      <input id="bd-q" placeholder="Search for a friend…" style="width:100%;padding:10px;border:2px solid #e6dcf5;border-radius:12px;font:inherit;margin-bottom:8px"><div id="bd-list"></div><div class="kit-bonus" id="bd-msg"></div></div>`;
+    const draw = () => {
+      const q = $("bd-q").value.trim().toLowerCase();
+      $("bd-list").innerHTML = friends.filter(f => !q || f.name.toLowerCase().includes(q)).slice(0, 25).map(f => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid #f4eefb"><b>${K.esc(f.name)}</b><button class="kit-btn" data-req="${K.esc(f.id)}" style="padding:6px 12px">Ask</button></div>`).join("");
+      $("bd-list").querySelectorAll("[data-req]").forEach(x => x.onclick = async () => { const r = await LB.requestBuddy(x.dataset.req); $("bd-msg").textContent = r.ok ? "💌 Request sent! They'll see it in their Buddy tab." : "Couldn't send that."; });
+    };
+    $("bd-q").oninput = draw; draw();
+    el.querySelectorAll("[data-acc]").forEach(x => x.onclick = async () => { const r = await LB.acceptBuddy(x.dataset.acc); if (r.ok) { if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3); this.render(el); } else $("bd-msg").textContent = "Couldn't accept — someone already has a buddy."; });
+    el.querySelectorAll("[data-dec]").forEach(x => x.onclick = async () => { await LB.declineBuddy(x.dataset.dec); this.render(el); });
+    return;
+  }
+  const pct = Math.min(100, Math.round(b.combined / b.goal * 100));
+  el.innerHTML = `<div class="kit-card">${boHeader(`You and ${b.buddy.name} are buddies! ${b.streak ? `🔥 ${b.streak}-day buddy streak — you both played ${b.streak} day${b.streak === 1 ? "" : "s"} in a row.` : "Play on the same days to build a buddy streak."}`)}
+    <div style="display:flex;justify-content:space-around;text-align:center;margin:8px 0"><div><div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.6rem">${b.mineWeek}</div><div class="kit-sub" style="margin:0">you (this week)</div></div><div style="font-size:1.6rem">🤝</div><div><div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.6rem">${b.theirWeek}</div><div class="kit-sub" style="margin:0">${K.esc(b.buddy.name)}</div></div></div>
+    <div class="kit-bar"><i style="width:${pct}%;background:linear-gradient(90deg,#c08be8,#7c3aed)"></i></div><div class="kit-sub" style="text-align:center;margin:6px 0 10px">${b.combined}/${b.goal} together this week</div>
+    <button class="kit-btn block" id="bd-claim" ${b.combined >= b.goal && !b.claimed ? "" : "disabled"}>${b.claimed ? "Weekly goal collected ✓" : b.combined >= b.goal ? "🎁 Collect buddy goal (🪙25)" : "Reach the weekly goal for a gift"}</button>
+    <button class="kit-btn alt block" id="bd-cheer" ${b.cheeredToday ? "disabled" : ""}>${b.cheeredToday ? "You cheered them today 💜" : b.buddy.hitsToday ? "📣 Cheer your buddy!" : "📣 Nudge: come play today!"}</button>
+    ${b.cheersForMe ? `<div class="kit-bonus">💜 ${b.cheersForMe} cheer${b.cheersForMe === 1 ? "" : "s"} for you today!</div>` : ""}
+    <div class="kit-bonus" id="bd-msg"></div><button class="kit-btn alt" id="bd-remove" style="padding:6px 12px;font-size:.75rem">Change buddy</button></div>`;
+  $("bd-claim").onclick = async () => { const r = await LB.claimBuddyGoal(); if (r.ok) { $("bd-msg").textContent = "🎉 +🪙25 for both of you being awesome!"; if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3); setTimeout(() => this.render(el), 1200); } };
+  $("bd-cheer").onclick = async () => { const r = await LB.cheerBuddy(); if (r.ok) { $("bd-msg").textContent = "💜 Sent!"; setTimeout(() => this.render(el), 800); } };
+  $("bd-remove").onclick = async () => { if (confirm("Stop being buddies? Your buddy will be unpaired too.")) { await LB.removeBuddy(); this.render(el); } };
+}});
+
+/* ---- 3. Spell Book ---- */
+TABS.push({ id: "spells", label: "🪄 Spells", async render(el) {
+  const d = await LB.getSpells();
+  el.innerHTML = `<div class="kit-card">${boHeader("Learning unlocks magic! Each spell can be used once per game page. Look for the 🪄 bar at the bottom of Game Room games.")}
+    ${d.spells.map(s => `<div class="bh-perk ${s.unlocked ? "" : "off"}" style="align-items:flex-start;padding:10px 0"><span style="font-size:1.6rem">${s.unlocked ? s.emoji : "🔒"}</span><span><b>${K.esc(s.name)}</b> — ${K.esc(s.desc)}<br><small style="color:#7a6a5a">${s.unlocked ? "Unlocked! ✨" : "Unlock: " + K.esc(s.unlock)}</small></span></div>`).join("")}
+    <div class="kit-sub" style="margin:8px 0 0;text-align:center">Your progress: ✅ ${d.progress.passed} checks passed · 🎓 ${d.progress.tutor} tutor topics · 🔁 ${d.progress.srs} reviews mastered · 📜 ${d.progress.certs} certificates</div></div>`;
+}});
+
 /* ---- shell ---- */
 function show(id) {
   current = id;

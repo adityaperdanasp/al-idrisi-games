@@ -35,6 +35,7 @@
 AIGKit.mount({title:'Game Room',accent:'#5b3f9b',bg:'linear-gradient(180deg,#efe9fb,#dccff5)'});
 const GAMES = [
   ["Action & Strategy", [
+    ["weekly-boss","🐉","Weekly Boss","The whole class fights one big boss","Class"],
     ["zombie-defense","🧟","Zombie Math Defense","Answer to shoot zombies before they reach your house","Action"],
     ["card-race","🃏","Quiz Card Race","Play cards by answering — first empty hand wins","Cards"],
     ["times-rhythm","🎵","Times Rhythm","Tap the right answer to the beat","Rhythm"],
@@ -43,6 +44,8 @@ const GAMES = [
     ["fractions-kitchen","🥣","Fractions Kitchen","Measure recipes with fractions of a cup","Fractions"],
     ["word-detective","🕵️","Word Detective","Read the case, find the clues, catch the culprit","Reading"],
     ["escape-daily","🗝️","Escape Room Daily","5 rooms, one door code — new every day","Puzzle"],
+    ["pattern-puzzles","🧩","Pattern Puzzles","Number, emoji and code puzzles — pure logic","Logic"],
+    ["bo-class","🎓","Bo's Classroom","Short animated lessons, then practice","Lessons"],
     ["science-lab","🧪","Science Lab","Predict what happens, then watch the experiment","Science"]]],
   ["Explore & Build", [
     ["my-town","🏘️","My Town","Build your own town and visit friends","Build"],
@@ -59,7 +62,7 @@ const GAMES = [
     ["word-book","📕","Word Book","Your tricky Language questions, ready to practise","Words"],
     ["ready-check","✅","Level-Up Check","5 questions: am I ready for the next topic?","Check"]]]
 ];
-const LIVE = new Set(["quick-review","word-book","ready-check","island-adventure","friend-duel","story-maker","speak-with-bo","zen-mode","bo-tutor","class-board","zombie-defense","card-race","fractions-kitchen","word-detective","escape-daily","times-rhythm","dungeon","science-lab","my-town","geo-flight"]);
+const LIVE = new Set(["pattern-puzzles","bo-class","weekly-boss","quick-review","word-book","ready-check","island-adventure","friend-duel","story-maker","speak-with-bo","zen-mode","bo-tutor","class-board","zombie-defense","card-race","fractions-kitchen","word-detective","escape-daily","times-rhythm","dungeon","science-lab","my-town","geo-flight"]);
 document.getElementById("gr-list").innerHTML = GAMES.map(([sec, list]) => {
   const items = list.filter(g => LIVE.has(g[0]));
   if (!items.length) return "";

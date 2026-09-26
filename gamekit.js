@@ -73,10 +73,46 @@
     return P.rollMixed(() => mathQuestion(diff));
   }
 
-  let lastQ = null;
+  let lastQ = null, shieldArmed = false;
+  function toast(text) {
+    const t = document.createElement("div");
+    t.textContent = text;
+    t.style.cssText = "position:fixed;left:50%;bottom:74px;transform:translateX(-50%);z-index:100000;background:#3b0764;color:#fff;font-family:'Baloo 2',sans-serif;font-weight:800;padding:8px 16px;border-radius:100px;font-size:.85rem;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:88vw;text-align:center";
+    document.body.appendChild(t); setTimeout(() => t.remove(), 2600);
+  }
+  // Spell bar: a 🪄 row of the spells you've unlocked (one charge each per page load).
+  function mountSpells(spells) {
+    const have = spells.filter(x => x.unlocked);
+    if (!have.length || document.getElementById("kit-spells")) return;
+    const bar = document.createElement("div");
+    bar.id = "kit-spells";
+    bar.style.cssText = "position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:99989;display:flex;gap:6px;background:rgba(255,255,255,.92);padding:6px 10px;border-radius:100px;box-shadow:0 3px 10px rgba(0,0,0,.2)";
+    bar.innerHTML = `<span style="align-self:center;font-size:1rem">🪄</span>` + have.map(x => `<button type="button" data-s="${x.id}" title="${x.name}: ${x.desc}" style="border:0;background:#f3ecff;border-radius:100px;padding:5px 10px;font-weight:800;font-size:.78rem;cursor:pointer;color:#5b21b6">${x.emoji} ${x.name}</button>`).join("");
+    document.body.appendChild(bar);
+    bar.querySelectorAll("button").forEach(b => b.onclick = () => { if (castSpell(b.dataset.s)) { b.disabled = true; b.style.opacity = ".4"; } });
+  }
+  function castSpell(id) {
+    const q = lastQ;
+    if (id === "shield") { shieldArmed = true; toast("🛡️ Shield ready — your next mistake is forgiven."); return true; }
+    if (!q || !q.correctLabel) { toast("Cast this when a question is on screen!"); return false; }
+    if (id === "fifty") {
+      const wrong = [...document.querySelectorAll(".kit-opt:not(:disabled)")].filter(b => (b.dataset.o || b.textContent) !== q.correctLabel);
+      if (wrong.length < 2) { toast("Nothing to remove right now."); return false; }
+      shuffle(wrong).slice(0, 2).forEach(b => { b.disabled = true; b.style.opacity = ".25"; });
+      toast("✂️ Two wrong answers removed!"); return true;
+    }
+    if (id === "peek") {
+      const a = String(q.correctLabel), num = /^-?[\d,.]+/.test(a);
+      toast(num ? `🔎 The answer has ${a.replace(/[^\d]/g, "").length} digit(s) and is ${(parseInt(a.replace(/[^\d-]/g, ""), 10) % 2) ? "odd" : "even"}.` : `🔎 The answer starts with “${a[0]}” and has ${a.length} letters.`);
+      return true;
+    }
+    return false;
+  }
   // q (optional): the question that was just answered -- wrong multiple-choice ones go to the
   // spaced-repetition store (Quick Review / Word Book). Falls back to the last one generated.
   function record(gameId, key, ok, q) {
+    // Shield spell (PM round 13, item 3): the next wrong answer isn't counted against you.
+    if (!ok && shieldArmed) { shieldArmed = false; toast("🛡️ Shield! That one doesn't count against you."); return; }
     try {
       const qq = q || (lastQ && lastQ.key === key ? lastQ : null);
       if (!ok && qq && qq.options && qq.correctLabel && window.AIGLeaderboard && AIGLeaderboard.srsAdd) AIGLeaderboard.srsAdd(qq, qq.subject);
@@ -157,6 +193,7 @@
     return `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${emoji || "🎮"}</div><p class="kit-sub">Please sign in from the hub first.</p><a href="../" class="kit-btn block">Back to Hub</a></div></div>`;
   }
   async function ready() {
+    try { if (window.AIGLeaderboard && AIGLeaderboard.getSpells) { const sp = await AIGLeaderboard.getSpells(); mountSpells(sp.spells); } } catch (e) {}
     try { const p = signedIn(); const b = window.AIGLeaderboard && AIGLeaderboard.getBoStatus ? await AIGLeaderboard.getBoStatus() : null; bot = makeBot(b ? b.level : 2, p ? p.id : "x"); } catch (e) {}
     try { if (window.AIGLeaderboard && AIGLeaderboard.getWeeklyFocus) focus = await AIGLeaderboard.getWeeklyFocus(); } catch (e) {}
     try { if (window.AIGQuestionPools) await Promise.race([AIGQuestionPools.ensurePools(), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}

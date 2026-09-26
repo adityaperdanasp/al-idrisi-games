@@ -2823,6 +2823,166 @@
   }
 
   // =====================================================================
+  // PM ROUND 13, BATCH 2 -- Weekly Boss, Spell Book, Buddy pairs, lessons.
+  // =====================================================================
+  // ---- 1. Weekly Boss -- one big boss per week for the whole class; every
+  // correct answer anyone gives this week (players/*/weekly/{wk}.correct)
+  // damages it. Chest tier depends on your own hits.
+  const WEEKLY_BOSSES = [
+    { emoji: "🐉", name: "Number Dragon", lore: "Guards a hoard of tricky sums." },
+    { emoji: "🗿", name: "Grammar Golem", lore: "Made of stone and misplaced commas." },
+    { emoji: "🦑", name: "Science Kraken", lore: "Asks a hundred questions about the sea." },
+    { emoji: "👻", name: "Fraction Phantom", lore: "Splits itself into equal pieces." },
+    { emoji: "🦁", name: "Spelling Sphinx", lore: "Only lets word-wizards pass." },
+    { emoji: "🤖", name: "Mega Calculator", lore: "Beeps when it sees a wrong answer." }
+  ];
+  const WEEKLY_TIERS = [
+    { id: "gold", hits: 60, label: "Gold chest", reward: { coins: 60, gems: 2 } },
+    { id: "silver", hits: 30, label: "Silver chest", reward: { coins: 40, gems: 1 } },
+    { id: "bronze", hits: 10, label: "Bronze chest", reward: { coins: 20 } }
+  ];
+  function weeklyBossFor(wk) {
+    const idx = Math.floor(new Date(wk + "T00:00:00Z").getTime() / (7 * 86400000));
+    return WEEKLY_BOSSES[idx % WEEKLY_BOSSES.length];
+  }
+  async function weeklyBossState(wk, all, me) {
+    const rows = Object.entries(all).map(([id, d]) => ({ id, name: nameOf(id, d), hits: (d && d.weekly && d.weekly[wk] && d.weekly[wk].correct) || 0 })).filter(r => r.hits > 0).sort((a, b) => b.hits - a.hits);
+    const damage = rows.reduce((a, r) => a + r.hits, 0);
+    const hp = Math.max(400, rows.length * 35);
+    const mine = me ? ((rows.find(r => r.id === me.id) || {}).hits || 0) : 0;
+    const claim = me ? (await aigDb.ref(`players/${me.id}/weeklyBossClaims/${wk}`).get()) : null;
+    const tier = WEEKLY_TIERS.find(t => mine >= t.hits) || null;
+    const defeated = damage >= hp;
+    return { wk, boss: weeklyBossFor(wk), hp, damage, defeated, mine, top: rows.slice(0, 5), players: rows.length, tier, claimed: !!(claim && claim.exists()), canClaim: defeated && !!tier && !(claim && claim.exists()) };
+  }
+  async function getWeeklyBoss() {
+    const me = perksPlayer();
+    const all = await readAllPlayers();
+    const [cur, prev] = await Promise.all([weeklyBossState(weekKey(), all, me), weeklyBossState(prevWeekKey(), all, me)]);
+    return { current: cur, previous: prev, tiers: WEEKLY_TIERS };
+  }
+  async function claimWeeklyBoss(wk) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    allPlayersCache = { at: 0, val: null };
+    const all = await readAllPlayers();
+    const st = await weeklyBossState(wk, all, me);
+    if (!st.canClaim) return { ok: false, reason: "not-ready" };
+    await aigDb.ref(`players/${me.id}/weeklyBossClaims/${wk}`).set(st.tier.id); // marker BEFORE paying
+    await creditWallet(st.tier.reward);
+    return { ok: true, tier: st.tier };
+  }
+
+  // ---- 3. Spell Book -- three helper spells unlocked by learning milestones.
+  // Each spell has ONE charge per game page (the Game Room games show a 🪄 bar).
+  const SPELLS = [
+    { id: "fifty", emoji: "✂️", name: "Fifty-Fifty", desc: "Removes two wrong answers.", unlock: "Pass one Level-Up Check ✅" },
+    { id: "peek", emoji: "🔎", name: "Peek", desc: "Shows a clue about the right answer.", unlock: "Master a topic in Bo's Tutor Session, or master 3 questions in Quick Review" },
+    { id: "shield", emoji: "🛡️", name: "Shield", desc: "Your next wrong answer isn't counted against you.", unlock: "Earn a Topic Certificate, or master 10 questions in Quick Review" }
+  ];
+  async function getSpells() {
+    const me = perksPlayer();
+    if (!me) return { spells: SPELLS.map(s => ({ ...s, unlocked: false })), progress: {} };
+    const [ready, tutor, srsM, certs] = await Promise.all([getReadiness(), getTutorMastered(), aigDb.ref(`players/${me.id}/srsMastered`).get(), getTopicCerts()]);
+    const passed = Object.values(ready.passed).filter(x => x && x.passed).length;
+    const tutorN = Object.keys(tutor).length, srsN = srsM.exists() ? (srsM.val() || 0) : 0, certN = certs.filter(c => c.earned).length;
+    const unlocked = { fifty: passed >= 1, peek: tutorN >= 1 || srsN >= 3, shield: certN >= 1 || srsN >= 10 };
+    return { spells: SPELLS.map(s => ({ ...s, unlocked: !!unlocked[s.id] })), progress: { passed, tutor: tutorN, srs: srsN, certs: certN } };
+  }
+
+  // ---- 4. Buddy -- one best friend. Mutual request; shared weekly score,
+  // buddy streak (days you BOTH played in a row), daily cheers and nudges.
+  async function getBuddy() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const [b, reqs] = await Promise.all([aigDb.ref(`players/${me.id}/buddy`).get(), aigDb.ref(`leaderboard/buddyReq/${me.id}`).get()]);
+    const requests = reqs.exists() ? Object.entries(reqs.val()).map(([id, v]) => ({ id, name: v.name })) : [];
+    if (!b.exists()) return { buddy: null, requests };
+    const bud = b.val();
+    const all = await readAllPlayers();
+    const mine = all[me.id] || {}, theirs = all[bud.id] || {};
+    const wk = weekKey(), today = todayKey();
+    const wkOf = d => (d && d.weekly && d.weekly[wk] && d.weekly[wk].correct) || 0;
+    const played = (d, day) => !!(d && d.dailyStats && d.dailyStats[day] && d.dailyStats[day].correct > 0);
+    let streak = 0;
+    const cursor = new Date(today + "T00:00:00Z");
+    if (!(played(mine, today) && played(theirs, today))) cursor.setUTCDate(cursor.getUTCDate() - 1); // today isn't over yet
+    for (let i = 0; i < 60; i++) { const day = cursor.toISOString().slice(0, 10); if (played(mine, day) && played(theirs, day)) { streak++; cursor.setUTCDate(cursor.getUTCDate() - 1); } else break; }
+    const [cheer, nudge, claim] = await Promise.all([
+      aigDb.ref(`players/${bud.id}/cheers/${today}/${me.id}`).get(), aigDb.ref(`players/${me.id}/cheers/${today}`).get(), aigDb.ref(`players/${me.id}/buddyClaims/${wk}`).get()
+    ]);
+    const combined = wkOf(mine) + wkOf(theirs);
+    return { buddy: { id: bud.id, name: bud.name, hitsToday: (theirs.dailyStats && theirs.dailyStats[today] && theirs.dailyStats[today].correct) || 0 }, requests, mineWeek: wkOf(mine), theirWeek: wkOf(theirs), combined, goal: 100, streak,
+      cheeredToday: cheer.exists(), cheersForMe: nudge.exists() ? Object.keys(nudge.val()).length : 0, claimed: claim.exists() };
+  }
+  async function requestBuddy(id) {
+    const me = perksPlayer();
+    if (!me || !id || id === me.id) return { ok: false };
+    if ((await aigDb.ref(`players/${me.id}/buddy`).get()).exists()) return { ok: false, reason: "busy" };
+    await aigDb.ref(`leaderboard/buddyReq/${id}/${me.id}`).set({ name: me.name, at: Date.now() });
+    return { ok: true };
+  }
+  async function acceptBuddy(fromId) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    const req = await aigDb.ref(`leaderboard/buddyReq/${me.id}/${fromId}`).get();
+    if (!req.exists()) return { ok: false, reason: "gone" };
+    if ((await aigDb.ref(`players/${fromId}/buddy`).get()).exists() || (await aigDb.ref(`players/${me.id}/buddy`).get()).exists()) return { ok: false, reason: "busy" };
+    const since = Date.now();
+    await aigDb.ref(`players/${me.id}/buddy`).set({ id: fromId, name: req.val().name, since });
+    await aigDb.ref(`players/${fromId}/buddy`).set({ id: me.id, name: me.name, since });
+    await aigDb.ref(`leaderboard/buddyReq/${me.id}`).remove();
+    return { ok: true };
+  }
+  async function declineBuddy(fromId) {
+    const me = perksPlayer();
+    if (me) await aigDb.ref(`leaderboard/buddyReq/${me.id}/${fromId}`).remove();
+  }
+  async function removeBuddy() {
+    const me = perksPlayer();
+    const b = me && await getBuddy();
+    if (!b || !b.buddy) return { ok: false };
+    await aigDb.ref(`players/${b.buddy.id}/buddy`).remove();
+    await aigDb.ref(`players/${me.id}/buddy`).remove();
+    return { ok: true };
+  }
+  async function cheerBuddy() {
+    const me = perksPlayer();
+    const b = me && await getBuddy();
+    if (!b || !b.buddy) return { ok: false };
+    if (b.cheeredToday) return { ok: false, reason: "daily-limit" };
+    await aigDb.ref(`players/${b.buddy.id}/cheers/${todayKey()}/${me.id}`).set(true);
+    return { ok: true };
+  }
+  async function claimBuddyGoal() {
+    const me = perksPlayer();
+    const b = me && await getBuddy();
+    if (!b || !b.buddy || b.claimed || b.combined < b.goal) return { ok: false, reason: "not-ready" };
+    await aigDb.ref(`players/${me.id}/buddyClaims/${weekKey()}`).set(true); // marker BEFORE paying
+    await creditWallet({ coins: 25 });
+    return { ok: true, coins: 25 };
+  }
+
+  // ---- 10. Bo's classroom lessons -- stamps for finished lessons.
+  async function getLessons() {
+    const me = perksPlayer();
+    if (!me) return {};
+    const s = await aigDb.ref(`players/${me.id}/lessons`).get();
+    return s.exists() ? s.val() : {};
+  }
+  async function finishLesson(id, score) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    const ref = aigDb.ref(`players/${me.id}/lessons/${String(id).replace(/[.#$/\[\]]/g, "-")}`);
+    const snap = await ref.get();
+    const first = !snap.exists();
+    const best = Math.max(score, snap.exists() ? (snap.val().score || 0) : 0);
+    await ref.set({ score: best, at: todayKey() });
+    if (first) await creditWallet({ coins: 10 });
+    return { ok: true, first, coins: first ? 10 : 0 };
+  }
+
+  // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
   // players so skin.js can call it unconditionally.
@@ -5822,6 +5982,7 @@
     getSkinPrefs, awardMiniGame,
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
     getGeoStamps, addGeoStamp, getDungeon, saveDungeon,
+    getWeeklyBoss, claimWeeklyBoss, WEEKLY_TIERS, getSpells, SPELLS, getBuddy, requestBuddy, acceptBuddy, declineBuddy, removeBuddy, cheerBuddy, claimBuddyGoal, getLessons, finishLesson,
     getSettings, saveSettings, getPlayLimit, exportMyData, sendReport,
     srsAdd, srsAll, srsStats, srsDue, srsResult, getReadiness, saveReadiness, logMood, MOODS, getTopicCerts, getMoodSummary,
     getLetters, markLetterRead, solveLetter, getMuseum, getIslands, masterIsland, claimIslandEnding, getGameProgress,

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Weekly Boss — BrainBox</title>
+<meta name="theme-color" content="#b91c1c">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .kit-title{color:#fff!important}.kit-back{background:rgba(255,255,255,.2)!important;color:#fff!important}
+  .wbs-box{margin:0 14px 12px;border-radius:22px;padding:18px 14px;background:rgba(255,255,255,.08);color:#fff;text-align:center}
+  .wbs-em{font-size:6rem;line-height:1.1;display:inline-block;animation:wbsIdle 3s ease-in-out infinite}
+  .wbs-em.hit{animation:wbsHit .5s}
+  .wbs-em.dead{animation:none;filter:grayscale(1);transform:rotate(90deg) scale(.8);opacity:.6}
+  @keyframes wbsIdle{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}
+  @keyframes wbsHit{0%,100%{transform:translateX(0)}25%{transform:translateX(-14px)}75%{transform:translateX(14px)}}
+  .wbs-name{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.5rem}
+  .wbs-lore{font-weight:700;font-size:.82rem;opacity:.8;margin-bottom:8px}
+  .wbs-hp{height:22px;border-radius:100px;background:rgba(255,255,255,.18);overflow:hidden;position:relative}
+  .wbs-hp>i{display:block;height:100%;background:linear-gradient(90deg,#ef4444,#f59e0b);transition:width 1.2s}
+  .wbs-hp>b{position:absolute;inset:0;display:grid;place-items:center;font-size:.72rem;color:#fff;text-shadow:0 1px 2px #000}
+  .wbs-taunt{font-weight:800;font-style:italic;margin-top:8px;min-height:1.3em}
+  .wbs-card{margin:0 14px 12px;background:#fff;border-radius:18px;padding:14px}
+  .wbs-tier{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid #f1e6e8;font-weight:800;font-size:.85rem}
+  .wbs-tier.got{color:#15803d}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../" class="kit-back">←</a><div class="kit-title">🐉 Weekly Boss</div></div>
+
+  <div class="wbs-box" id="wbs-boss"></div>
+  <div class="wbs-card" id="wbs-me"></div>
+  <div class="wbs-card" id="wbs-top"></div>
+  <div class="wbs-card" id="wbs-prev" hidden></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Weekly Boss',accent:'#b91c1c',bg:'linear-gradient(180deg,#2b0f19,#5b1a2e)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

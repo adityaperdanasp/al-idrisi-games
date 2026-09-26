@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Pattern Puzzles — BrainBox</title>
+<meta name="theme-color" content="#7c3aed">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .pp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 auto 10px;max-width:220px}
+  .pp-cell{aspect-ratio:1;border-radius:12px;background:#f5efff;border:2px solid #e2d5f7;display:grid;place-items:center;font-size:1.9rem;font-family:"Baloo 2",sans-serif;font-weight:800}
+  .pp-cell.q{background:#fde68a;border-style:dashed;color:#b45309}
+  .pp-seq{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:6px 0 12px}
+  .pp-seq .pp-cell{width:52px;aspect-ratio:auto;height:52px;font-size:1.5rem}
+  .pp-type{font-size:.7rem;font-weight:800;color:#7c3aed;text-align:center;text-transform:uppercase;letter-spacing:.08em}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🧩 Pattern Puzzles</div></div>
+
+  <div class="kit-hud"><span>🧩 Puzzle <b id="pp-n">1</b>/10</span><span>⭐ <b id="pp-r">0</b></span><span id="pp-lv"></span></div>
+  <div class="kit-card"><div class="pp-type" id="pp-type"></div><div id="pp-view"></div><div class="kit-q" id="pp-q"></div><div class="kit-opts" id="pp-opts"></div>
+    <div class="kit-sub" id="pp-msg" style="text-align:center;margin:8px 0 0;min-height:1.3em"></div>
+    <div style="text-align:center"><button class="kit-btn alt" id="pp-hint" type="button">💡 Hint</button></div></div>
+  <div id="pp-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Pattern Puzzles',accent:'#7c3aed',bg:'linear-gradient(180deg,#f1e9ff,#ddd0fa)'});</script>
+<script src="script.js"></script>
+</body>
+</html>
