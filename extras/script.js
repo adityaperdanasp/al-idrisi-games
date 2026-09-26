@@ -728,7 +728,15 @@ SECTIONS.push({ id: "report", async render(el) {
     <p class="ex-sub" style="margin-top:10px;font-size:.82rem;color:#3d2e22">${trend}</p>
     ${r.best ? `<p class="ex-sub" style="font-size:.82rem;color:#3d2e22">⭐ Your strongest topic: <b>${esc(r.pretty(r.best.topic))}</b> (${pct(r.best.acc)} right in ${esc(r.gameLabel(r.best.game))}).</p>` : ""}
     ${r.weak ? `<p class="ex-sub" style="font-size:.82rem;color:#3d2e22">💪 Let's grow: <b>${esc(r.pretty(r.weak.topic))}</b> (${pct(r.weak.acc)}). Try <a href="../bo-tutor/" style="color:#8c2f6b;font-weight:800">Bo's Tutor Session</a>!</p>` : ""}
-    <div class="ex-row" style="background:#f6e3f0;border-radius:12px;padding:8px 12px"><span style="font-weight:800;font-size:.85rem">🎯 Goal for next week: ${r.goal} right answers</span></div>`;
+    <div class="ex-row" style="background:#f6e3f0;border-radius:12px;padding:8px 12px"><span style="font-weight:800;font-size:.85rem">🎯 Goal for next week: ${r.goal} right answers</span></div>
+    <div class="ex-row" style="margin-top:10px"><button class="ex-btn" id="rp-share">📤 Share with my parent</button><button class="ex-btn alt" id="rp-copy">📋 Copy</button><a class="ex-btn alt" id="rp-wa" style="text-decoration:none" target="_blank" rel="noopener">💬 WhatsApp</a><a class="ex-btn alt" id="rp-mail" style="text-decoration:none">✉️ Email</a></div><div class="ex-msg"></div>`;
+  // A plain-text summary a child can send to a parent (nothing is sent automatically).
+  const text = `📊 ${player.name}'s week on BrainBox\n✅ ${r.cur} right answers this week${r.change === null ? "" : ` (${r.change >= 0 ? "+" : ""}${r.change}% vs last week)`}\n🔥 ${r.streak}-day streak`
+    + (r.best ? `\n⭐ Strongest: ${r.pretty(r.best.topic)} (${pct(r.best.acc)})` : "") + (r.weak ? `\n💪 To practise: ${r.pretty(r.weak.topic)} (${pct(r.weak.acc)})` : "") + `\n🎯 Goal for next week: ${r.goal} right answers`;
+  el.querySelector("#rp-wa").href = "https://wa.me/?text=" + encodeURIComponent(text);
+  el.querySelector("#rp-mail").href = "mailto:?subject=" + encodeURIComponent(`${player.name}'s week on BrainBox`) + "&body=" + encodeURIComponent(text);
+  el.querySelector("#rp-copy").onclick = async () => { try { await navigator.clipboard.writeText(text); say(el, "📋 Copied! Paste it into a message."); } catch (e) { say(el, "Couldn't copy — try the Share button."); } };
+  el.querySelector("#rp-share").onclick = async () => { if (navigator.share) { try { await navigator.share({ title: "My week on BrainBox", text }); } catch (e) { /* cancelled */ } } else { try { await navigator.clipboard.writeText(text); say(el, "📋 Copied! Paste it into a message."); } catch (e) { say(el, "Use the WhatsApp or Email buttons."); } } };
 }});
 
 /* ---- 15. Mega Quest ---- */

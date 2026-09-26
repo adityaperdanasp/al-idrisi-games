@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Voice Quiz — BrainBox</title>
+<meta name="theme-color" content="#be185d">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .vq-mic{width:96px;height:96px;border-radius:50%;border:0;background:var(--kit-accent);color:#fff;font-size:2.4rem;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.2);display:block;margin:6px auto}
+  .vq-mic.rec{animation:vqP 1s infinite;background:#e11d48}
+  @keyframes vqP{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+  .vq-heard{text-align:center;font-weight:700;font-size:.85rem;color:#6b5a4a;min-height:1.4em;margin:8px 0}
+  .vq-opt{display:flex;gap:8px;align-items:center}
+  .vq-l{font-family:"Baloo 2",sans-serif;background:#fce7f3;border-radius:8px;padding:0 8px;font-size:.85rem}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🗣️ Voice Quiz</div></div>
+
+  <div class="kit-hud"><span>🗣️ Question <b id="vq-n">1</b>/8</span><span>⭐ <b id="vq-r">0</b></span></div>
+  <div class="kit-card"><div class="kit-q" id="vq-q"></div><div class="kit-opts" id="vq-opts"></div>
+    <button class="vq-mic" id="vq-mic" type="button" aria-label="Answer out loud">🎤</button>
+    <div class="vq-heard" id="vq-heard">Tap the mic and say your answer — or tap an answer.</div>
+    <div style="display:flex;gap:8px;justify-content:center"><button class="kit-btn alt" id="vq-listen" type="button">🔊 Read it to me</button></div></div>
+  <div id="vq-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Voice Quiz',accent:'#be185d',bg:'linear-gradient(180deg,#fde7f1,#f8cfe2)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

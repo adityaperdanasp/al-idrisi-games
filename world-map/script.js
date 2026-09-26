@@ -16,7 +16,7 @@ const REGIONS = [
     ["zombie-defense", "🧟", "Zombie Defense", "../zombie-defense/", "zombie-defense"], ["cooking-rush", "🍳", "Cooking Rush", "../cooking-rush/", "cooking-rush"]] },
   { name: "Word Woods", emoji: "🌲", bg: "linear-gradient(160deg,#d8f3dc,#95d5a6)", nodes: [
     ["azkacraft", "📖", "Language & Arts", "../azkacraft/", "language-arts"], ["word-detective", "🕵️", "Word Detective", "../word-detective/", "word-detective"],
-    ["story-maker", "✏️", "Story Maker", "../story-maker/", "story-maker"], ["speak-with-bo", "🎤", "Speak with Bo", "../speak-with-bo/", "speak-with-bo"]] },
+    ["story-maker", "✏️", "Story Maker", "../story-maker/", "story-maker"], ["speak-with-bo", "🎤", "Speak with Bo", "../speak-with-bo/", "speak-with-bo"], ["voice-quiz", "🗣️", "Voice Quiz", "../voice-quiz/", "voice-quiz"], ["music-corner", "🎼", "Music Corner", "../music-corner/", null]] },
   { name: "Science Peaks", emoji: "⛰️", bg: "linear-gradient(160deg,#dbeafe,#93c5fd)", nodes: [
     ["azkauniverse", "🪐", "SolarQuest", "../azkauniverse/", "solarquest"], ["science-lab", "🧪", "Science Lab", "../science-lab/", "science-lab"], ["geo-flight", "🌍", "Geo Flight", "../geo-flight/", "geo-flight"]] },
   { name: "Adventure Isle", emoji: "🏝️", bg: "linear-gradient(160deg,#fce7f3,#f9a8d4)", nodes: [

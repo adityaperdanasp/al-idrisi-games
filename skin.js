@@ -353,7 +353,18 @@
     }).catch(() => {});
   }
 
-  window.AIGSkin = { setA11y, get a11y() { return a11y; }, speak, playUsedMinutes() { return Math.round(usedSeconds() / 60); }, limitMinutes, onAnswer, refresh, popSticker, burst: (x, y) => burst(x == null ? lastX : x, y == null ? lastY : y), get prefs() { return prefs; } };
+  // ---- World scene (PM round 13, item 2): a little emoji landscape for a getWorldState() result.
+  function worldHtml(w, big) {
+    const sky = w.mood === "awake" ? "linear-gradient(180deg,#bfe6ff,#e8f7d4)" : w.mood === "drowsy" ? "linear-gradient(180deg,#fcd5a5,#e9d5f5)" : "linear-gradient(180deg,#1e1b4b,#3b3470)";
+    const size = big ? 2.2 : 1.4, dim = w.mood === "asleep" ? "filter:brightness(.65) saturate(.7)" : w.mood === "drowsy" ? "filter:brightness(.9)" : "";
+    const zzz = w.mood === "awake" ? "" : `<span style="position:absolute;right:10px;top:6px;font-size:${big ? 1.6 : 1.1}rem;animation:aigFamIdle 3s ease-in-out infinite">${w.mood === "asleep" ? "💤" : "🌙"}</span>`;
+    return `<div style="position:relative;border-radius:16px;padding:${big ? 18 : 10}px 12px;background:${sky};text-align:center;overflow:hidden;min-height:${big ? 110 : 54}px">${zzz}<div style="font-size:${size}rem;line-height:1.3;letter-spacing:4px;${dim}">${w.scene.join(" ")}</div></div>`;
+  }
+  function worldText(w) {
+    return w.mood === "awake" ? "Your world is thriving! 🌈" : w.mood === "drowsy" ? "Your world is getting sleepy… play today to wake it up 🌙" : "Your world is asleep 💤 — one round wakes it up!";
+  }
+
+  window.AIGSkin = { worldHtml, worldText, setA11y, get a11y() { return a11y; }, speak, playUsedMinutes() { return Math.round(usedSeconds() / 60); }, limitMinutes, onAnswer, refresh, popSticker, burst: (x, y) => burst(x == null ? lastX : x, y == null ? lastY : y), get prefs() { return prefs; } };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", load);
   else load();
 })();

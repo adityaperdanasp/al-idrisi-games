@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Music Corner — BrainBox</title>
+<meta name="theme-color" content="#7c3aed">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .mc-keys{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:8px 0 10px}
+  .mc-key{height:110px;border:0;border-radius:0 0 10px 10px;background:linear-gradient(180deg,#fff,#e7defa);box-shadow:0 4px 0 #b9a6ea;font-family:"Baloo 2",sans-serif;font-weight:800;color:#6d28d9;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px}
+  .mc-key:active,.mc-key.on{transform:translateY(3px);box-shadow:0 1px 0 #b9a6ea;background:#c4b5fd}
+  .mc-seq{display:flex;flex-wrap:wrap;gap:4px;min-height:38px;margin-bottom:8px}
+  .mc-note{background:#ede9fe;border-radius:8px;padding:2px 8px;font-weight:800;font-size:.8rem}
+  .mc-note.now{background:#f59e0b;color:#fff}
+  .mc-lyric{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.5rem;text-align:center;min-height:2.2em;color:#5b21b6}
+  .mc-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .mc-sel{border:2px solid #e2d5f7;background:#fff;border-radius:10px;padding:8px;font:inherit;font-weight:700}
+  .mc-song{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #f0e8f7;font-weight:800}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🎼 Music Corner</div></div>
+
+  <div class="kit-card"><div class="kit-q" style="text-align:left;margin:0 0 6px">Make a memory song</div>
+    <div class="kit-sub" style="margin:0 0 8px">Pick what to remember, tap keys to write a tune (up to 16 notes), then press Play — the words light up with each note!</div>
+    <div class="mc-row"><select class="mc-sel" id="mc-pack"></select><select class="mc-sel" id="mc-tempo"><option value="600">Slow</option><option value="420" selected>Medium</option><option value="300">Fast</option></select></div>
+    <div class="mc-lyric" id="mc-lyric">🎵</div>
+    <div class="mc-keys" id="mc-keys"></div>
+    <div class="mc-seq" id="mc-seq"></div>
+    <div class="mc-row"><button class="kit-btn" id="mc-play" type="button">▶ Play</button><button class="kit-btn alt" id="mc-undo" type="button">↩ Undo</button><button class="kit-btn alt" id="mc-clear" type="button">🗑 Clear</button></div>
+    <div class="mc-row"><input class="mc-sel" id="mc-title" maxlength="24" placeholder="Song name" style="flex:1"><button class="kit-btn" id="mc-save" type="button">💾 Save</button></div><div class="kit-bonus" id="mc-msg"></div></div>
+  <div class="kit-card"><div class="kit-q" style="text-align:left;margin:0 0 6px">My songs</div><div id="mc-songs"></div></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Music Corner',accent:'#7c3aed',bg:'linear-gradient(180deg,#f1e9ff,#ddd0fa)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

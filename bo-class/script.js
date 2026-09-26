@@ -57,7 +57,7 @@ if (!player) $("bc-overlay").innerHTML = K.signedOutHtml("🎓");
 else init();
 
 async function init() {
-  const done = await AIGLeaderboard.getLessons();
+  const done = await Promise.race([AIGLeaderboard.getLessons().catch(() => ({})), new Promise(r => setTimeout(() => r({}), 2500))]); // offline: start without stamps
   const menu = () => {
     $("bc-main").innerHTML = `<div class="kit-card"><div class="kit-q">Pick a lesson</div><p class="kit-sub" style="text-align:center">${Object.keys(done).length}/${LESSONS.length} lessons finished. Bo teaches a short lesson, then you try 3 questions.</p><div class="bc-lessons">${LESSONS.map((l, i) => `<button class="bc-l ${done[l.id] ? "done" : ""}" data-i="${i}"><span class="e">${l.emoji}</span>${l.title}<br><small>${done[l.id] ? "✅ done" : "3 slides"}</small></button>`).join("")}</div></div>`;
     $("bc-main").querySelectorAll(".bc-l").forEach(b => b.onclick = () => teach(LESSONS[+b.dataset.i]));
@@ -94,7 +94,7 @@ async function init() {
     ask();
   }
   async function finish(l, right) {
-    const r = await AIGLeaderboard.finishLesson(l.id, right);
+    const r = await Promise.race([AIGLeaderboard.finishLesson(l.id, right), new Promise(x => setTimeout(() => x({ ok: false, first: false, coins: 0 }), 4000))]);
     done[l.id] = { score: right };
     $("bc-main").innerHTML = "";
     $("bc-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${right === 3 ? "🌟" : "🎓"}</div><h2>Lesson complete!</h2><p class="kit-sub">${right}/3 questions right. ${r.first ? `First time finishing: +🪙${r.coins}` : ""}</p><div class="kit-bonus" id="bc-bonus"></div>

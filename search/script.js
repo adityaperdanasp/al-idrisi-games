@@ -18,6 +18,8 @@ const INDEX = [
   ["🃏", "Quiz Card Race", "../card-race/", "Play cards by answering", "card kartu race uno bot"],
   ["🥣", "Fractions Kitchen", "../fractions-kitchen/", "Measure recipes with fractions", "fractions pecahan kitchen cooking masak cup"],
   ["🕵️", "Word Detective", "../word-detective/", "Read a case, find the culprit", "reading membaca detective mystery comprehension"],
+  ["🗣️", "Voice Quiz", "../voice-quiz/", "Answer out loud", "voice speak answer suara bicara jawab lisan oral microphone"],
+  ["🎼", "Music Corner", "../music-corner/", "Make memory songs", "music song lagu musik nyanyi piano times tables planets memory hafal"],
   ["🧩", "Pattern Puzzles", "../pattern-puzzles/", "Logic puzzles and codes", "pattern puzzle logic teka-teki sandi code sequence urutan"],
   ["🎓", "Bo's Classroom", "../bo-class/", "Short animated lessons", "lesson class kelas belajar pelajaran teach explain"],
   ["🐉", "Weekly Boss", "../weekly-boss/", "The class fights a boss together", "boss weekly mingguan raid class kelas"],

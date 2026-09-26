@@ -349,6 +349,7 @@
         <div class="sc-hero-tagline">Pick a quest, have fun, and level up! 🎉</div>
       </div>
 
+      <a class="sc-world-strip" id="sc-world-strip" href="bo-home/?tab=world" hidden></a>
       <a class="sc-search-link" href="search/">🔍 Search games &amp; practice…</a>
 
       <!-- Seasonal event banner (PM round 10, item 9) -- leaderboard.js's SEASONS -->
@@ -1314,6 +1315,7 @@
     }
     document.getElementById("sc-player-avatar").textContent = current.name[0].toUpperCase();
     renderSeasonBanner();
+    renderWorldStrip();
     document.getElementById("sc-player-name").textContent = current.name;
     document.getElementById("sc-screen-select").classList.remove("active");
     document.getElementById("sc-screen-landing").classList.add("active");
@@ -2609,6 +2611,18 @@
         renderHubThemeList();
       };
     });
+  }
+
+  // World strip (PM round 13, item 2) -- a tiny picture of how your world is doing.
+  async function renderWorldStrip() {
+    const el = document.getElementById("sc-world-strip");
+    if (!el || !window.AIGLeaderboard || !AIGLeaderboard.getWorldState || !window.AIGSkin || !AIGSkin.worldHtml) return;
+    try {
+      const w = await AIGLeaderboard.getWorldState();
+      if (!w) { el.hidden = true; return; }
+      el.hidden = false;
+      el.innerHTML = AIGSkin.worldHtml(w, false) + `<div class="sc-world-text">${AIGSkin.worldText(w)}</div>`;
+    } catch (e) { el.hidden = true; }
   }
 
   // Seasonal banner (PM round 10, item 9). Links to Extras, where the gift is.

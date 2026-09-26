@@ -2982,6 +2982,24 @@
     return { ok: true, first, coins: first ? 10 : 0 };
   }
 
+  // ---- 2. World evolves (PM round 13) -- your world grows with total right
+  // answers and dozes off (never punishes) when you haven't played for days.
+  const WORLD_LEVELS = [0, 20, 60, 150, 300, 600];
+  const WORLD_SCENES = [["🌱"], ["🌱", "🌼"], ["🌳", "🏡", "🌼"], ["🌳", "🏡", "⛲", "🌷", "🦋"], ["🌳", "🏡", "⛲", "🏫", "🌈", "🐦"], ["🌳", "🏡", "⛲", "🏫", "🌈", "🏰", "🎡", "✨"]];
+  async function getWorldState() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const [t, d] = await Promise.all([aigDb.ref(`players/${me.id}/totalCorrect`).get(), aigDb.ref(`players/${me.id}/dailyStats`).get()]);
+    const total = t.exists() ? (t.val() || 0) : 0;
+    let level = 0; WORLD_LEVELS.forEach((need, i) => { if (total >= need) level = i; });
+    const days = d.exists() ? Object.keys(d.val()).sort() : [];
+    const last = days.length ? days[days.length - 1] : null;
+    const idle = last ? Math.max(0, Math.round((new Date(todayKey() + "T00:00:00Z") - new Date(last + "T00:00:00Z")) / 86400000)) : 99;
+    const mood = idle <= 2 ? "awake" : idle <= 6 ? "drowsy" : "asleep";
+    const next = level < WORLD_LEVELS.length - 1 ? WORLD_LEVELS[level + 1] : null;
+    return { level, total, idle, mood, scene: WORLD_SCENES[level], next, toNext: next ? next - total : 0, maxLevel: WORLD_LEVELS.length - 1 };
+  }
+
   // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
@@ -5983,6 +6001,7 @@
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
     getGeoStamps, addGeoStamp, getDungeon, saveDungeon,
     getWeeklyBoss, claimWeeklyBoss, WEEKLY_TIERS, getSpells, SPELLS, getBuddy, requestBuddy, acceptBuddy, declineBuddy, removeBuddy, cheerBuddy, claimBuddyGoal, getLessons, finishLesson,
+    getWorldState,
     getSettings, saveSettings, getPlayLimit, exportMyData, sendReport,
     srsAdd, srsAll, srsStats, srsDue, srsResult, getReadiness, saveReadiness, logMood, MOODS, getTopicCerts, getMoodSummary,
     getLetters, markLetterRead, solveLetter, getMuseum, getIslands, masterIsland, claimIslandEnding, getGameProgress,

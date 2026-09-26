@@ -125,7 +125,7 @@
   // Pays a small once-or-twice-a-day bonus (capped in leaderboard.js) and writes the result into `el`.
   async function finish(gameId, coins, el) {
     let r = null;
-    try { if (window.AIGLeaderboard && coins > 0) r = await AIGLeaderboard.awardMiniGame(gameId, coins); } catch (e) {}
+    try { if (window.AIGLeaderboard && coins > 0) r = await withTimeout(AIGLeaderboard.awardMiniGame(gameId, coins), 6000, null); } catch (e) {}
     if (el) el.textContent = r && r.paid ? `🪙 +${r.paid} bonus coins!` : r && r.capped ? "Daily bonus for this game already collected — come back tomorrow!" : "";
     try { moodRow(gameId, el); } catch (e) {}
     return r;
@@ -192,10 +192,26 @@
   function signedOutHtml(emoji) {
     return `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${emoji || "🎮"}</div><p class="kit-sub">Please sign in from the hub first.</p><a href="../" class="kit-btn block">Back to Hub</a></div></div>`;
   }
+  // Offline-friendly: every Firebase call in ready()/finish() gets a timeout, so a
+  // missing connection never freezes a game on "loading" (PM round 13, item 13).
+  const withTimeout = (p, ms, fallback) => Promise.race([Promise.resolve(p).catch(() => fallback), new Promise(r => setTimeout(() => r(fallback), ms))]);
+  function offlinePill() {
+    const show = () => {
+      let el = document.getElementById("kit-offline");
+      if (navigator.onLine) { if (el) el.remove(); return; }
+      if (el) return;
+      el = document.createElement("div"); el.id = "kit-offline";
+      el.textContent = "📴 Offline — progress will save when you're back online";
+      el.style.cssText = "position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:100000;background:#334155;color:#fff;font:800 .72rem 'Nunito',sans-serif;padding:5px 12px;border-radius:100px;box-shadow:0 2px 8px rgba(0,0,0,.3)";
+      document.body.appendChild(el);
+    };
+    window.addEventListener("online", show); window.addEventListener("offline", show); show();
+  }
   async function ready() {
-    try { if (window.AIGLeaderboard && AIGLeaderboard.getSpells) { const sp = await AIGLeaderboard.getSpells(); mountSpells(sp.spells); } } catch (e) {}
-    try { const p = signedIn(); const b = window.AIGLeaderboard && AIGLeaderboard.getBoStatus ? await AIGLeaderboard.getBoStatus() : null; bot = makeBot(b ? b.level : 2, p ? p.id : "x"); } catch (e) {}
-    try { if (window.AIGLeaderboard && AIGLeaderboard.getWeeklyFocus) focus = await AIGLeaderboard.getWeeklyFocus(); } catch (e) {}
+    try { offlinePill(); } catch (e) {}
+    try { if (window.AIGLeaderboard && AIGLeaderboard.getSpells) { const sp = await withTimeout(AIGLeaderboard.getSpells(), 2500, null); if (sp) mountSpells(sp.spells); } } catch (e) {}
+    try { const p = signedIn(); const b = window.AIGLeaderboard && AIGLeaderboard.getBoStatus ? await withTimeout(AIGLeaderboard.getBoStatus(), 2500, null) : null; bot = makeBot(b ? b.level : 2, p ? p.id : "x"); } catch (e) {}
+    try { if (window.AIGLeaderboard && AIGLeaderboard.getWeeklyFocus) focus = await withTimeout(AIGLeaderboard.getWeeklyFocus(), 2500, null); } catch (e) {}
     try { if (window.AIGQuestionPools) await Promise.race([AIGQuestionPools.ensurePools(), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}
   }
 

@@ -14,7 +14,7 @@
 
   const track = new Audio("audio/bgm/hub.mp3");
   track.loop = true;
-  track.preload = "auto";
+  track.preload = "metadata"; // don't pull the whole 4 MB mp3 on every hub load -- it streams once music actually starts
 
   let ctx = null;
   let gain = null;

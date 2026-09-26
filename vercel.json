@@ -1,6 +1,32 @@
 {
   "crons": [
-    { "path": "/api/send-push-reminder", "schedule": "0 13 * * *" },
-    { "path": "/api/send-player-count-digest", "schedule": "0 0 * * *" }
+    {
+      "path": "/api/send-push-reminder",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/send-player-count-digest",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/audio/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(png|jpg|jpeg|webp|svg|ico|mp3)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    }
   ]
 }

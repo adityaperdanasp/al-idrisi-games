@@ -197,6 +197,14 @@ TABS.push({ id: "spells", label: "🪄 Spells", async render(el) {
     <div class="kit-sub" style="margin:8px 0 0;text-align:center">Your progress: ✅ ${d.progress.passed} checks passed · 🎓 ${d.progress.tutor} tutor topics · 🔁 ${d.progress.srs} reviews mastered · 📜 ${d.progress.certs} certificates</div></div>`;
 }});
 
+/* ---- 2. My World ---- */
+TABS.push({ id: "world", label: "🌍 My World", async render(el) {
+  const w = await LB.getWorldState();
+  el.innerHTML = `<div class="kit-card">${boHeader(window.AIGSkin.worldText(w))}${window.AIGSkin.worldHtml(w, true)}
+    <div style="text-align:center;font-family:'Baloo 2',sans-serif;font-weight:800;margin-top:10px">World level ${w.level + 1}/${w.maxLevel + 1}</div>
+    <div class="kit-sub" style="text-align:center;margin:4px 0 0">${w.next ? `${w.toNext} more right answers to grow it further!` : "Your world is fully grown! 🏰"}${w.idle && w.idle < 99 ? ` Last played ${w.idle} day${w.idle === 1 ? "" : "s"} ago.` : ""}</div></div>`;
+}});
+
 /* ---- shell ---- */
 function show(id) {
   current = id;

@@ -2184,3 +2184,8 @@ html[data-hub-theme="volcano"] .sc-card { background: #fbe9dd; }
 
 /* PM round 13 -- hub search link */
 .sc-search-link { display: flex; align-items: center; gap: 8px; margin: 0 16px 12px; padding: 12px 16px; border-radius: 100px; background: #fff; color: #6b5a8a; font-weight: 800; font-size: .88rem; text-decoration: none; box-shadow: 0 3px 0 rgba(0,0,0,.06); }
+
+/* PM round 13 -- world strip on the hub */
+.sc-world-strip { display: block; margin: 0 16px 10px; text-decoration: none; color: inherit; }
+.sc-world-strip[hidden] { display: none; }
+.sc-world-text { text-align: center; font-weight: 800; font-size: .78rem; color: #6b5a4a; margin-top: 4px; }
