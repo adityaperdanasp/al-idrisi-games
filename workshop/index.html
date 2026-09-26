@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Workshop — BrainBox</title>
+<meta name="theme-color" content="#a16207">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .ws-row{display:flex;gap:10px;align-items:center;padding:9px 0;border-top:1px solid #f5e7b8}
+  .ws-row:first-child{border-top:0}
+  .ws-e{font-size:1.8rem;width:44px;text-align:center}
+  .ws-b{flex:1;min-width:0}.ws-n{font-family:"Baloo 2",sans-serif;font-weight:800}
+  .ws-t{display:inline-block;font-size:.66rem;font-weight:800;border-radius:100px;padding:1px 8px;background:#e5e7eb;color:#374151}
+  .ws-t.t2{background:#fde68a;color:#92400e}
+  .ws-t.t3{background:linear-gradient(90deg,#f9a8d4,#a5b4fc,#86efac);color:#3b0764}
+  .ws-h{font-family:"Baloo 2",sans-serif;font-weight:800;margin:6px 0 2px;color:#92400e}
+  .ws-d{font-size:.7rem;color:#8a7a6a;font-weight:700}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../" class="kit-back">←</a><div class="kit-title">✨ Workshop</div></div>
+
+  <div class="kit-hud"><span id="ws-wallet"></span></div>
+  <div class="kit-card"><div class="kit-sub" style="margin:0">Take things you own to the next level: <b>Gold</b> (🪙60) makes them shine and bigger, <b>Holo</b> (💎3) makes them shimmer in rainbow colours. Effects, trails, stickers, themes, costumes, backgrounds and plane ammo can all be upgraded.</div></div>
+  <div id="ws-main"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Workshop',accent:'#a16207',bg:'linear-gradient(180deg,#fff8dc,#ffe9a8)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

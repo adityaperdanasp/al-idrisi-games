@@ -15,7 +15,7 @@
    ================================================================= */
 (function () {
   const KEY = "aig_skin_prefs";
-  const DEFAULTS = { theme: "default", trail: "none", answerFx: "default", sticker: "", boHat: "none", boHatEmoji: "", familiar: "" };
+  const DEFAULTS = { theme: "default", trail: "none", answerFx: "default", sticker: "", boHat: "none", boHatEmoji: "", familiar: "", boForm: { id: "base", deco: [], aura: "" }, tiers: { answerFx: 1, trail: 1, sticker: 1, theme: 1 } };
   let prefs = Object.assign({}, DEFAULTS);
   // ---- Accessibility (PM round 13, item 14) -- read synchronously from
   // localStorage so the page paints right the first time.
@@ -48,6 +48,8 @@
     "sp-sakura": ["🌸", "🌸", "💮", "🌷"], "sp-gold": ["🪙", "🪙", "💰", "✨"], "sp-space": ["🚀", "☄️", "🌟", "🪐"], "sp-music": ["🎶", "🎵", "🎼", "🎤"]
   };
 
+  const tierOf = k => Math.max(1, Math.min(3, (prefs.tiers && prefs.tiers[k]) || 1));
+  const tierClass = k => tierOf(k) === 3 ? " aig-holo" : tierOf(k) === 2 ? " aig-gold" : "";
   function off() { try { return localStorage.getItem("aig_skin_off") === "1"; } catch (e) { return false; } }
   function reduced() { return (a11y.rm) || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); }
 
@@ -65,6 +67,10 @@
       @keyframes aigBurst{0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}100%{opacity:0;transform:translate(calc(-50% + var(--bx)),calc(-50% + var(--by))) scale(1.15) rotate(var(--br,0deg))}}
       .aig-sticker{position:fixed;left:50%;top:26%;z-index:99999;pointer-events:none;font-size:5.5rem;transform:translate(-50%,-50%);animation:aigSticker 1.5s cubic-bezier(.2,1.4,.4,1) forwards;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25))}
       @keyframes aigSticker{0%{opacity:0;transform:translate(-50%,-30%) scale(.2) rotate(-25deg)}22%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(8deg)}40%{transform:translate(-50%,-50%) scale(1) rotate(-4deg)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-90%) scale(1) rotate(0)}}
+      .aig-gold{filter:drop-shadow(0 0 4px #facc15) drop-shadow(0 0 8px #f59e0b)}
+      .aig-holo{animation-name:aigHoloSpin,var(--aig-anim,none)!important;filter:drop-shadow(0 0 6px #a78bfa)}
+      @keyframes aigHoloSpin{0%{filter:hue-rotate(0) drop-shadow(0 0 6px #a78bfa)}100%{filter:hue-rotate(360deg) drop-shadow(0 0 6px #a78bfa)}}
+      .aig-form-deco{position:absolute;pointer-events:none;line-height:1;z-index:5;animation:aigFamIdle 3s ease-in-out infinite}
       #aig-fam{position:fixed;left:8px;bottom:10px;z-index:99990;pointer-events:none;font-size:30px;line-height:1;animation:aigFamIdle 3.2s ease-in-out infinite;filter:drop-shadow(0 3px 4px rgba(0,0,0,.25))}
       #aig-fam.happy{animation:aigFamHappy .7s}
       #aig-fam.sad{animation:aigFamSad .6s}
@@ -88,12 +94,13 @@
     const layer = document.createElement("div");
     layer.id = "aig-world";
     layer.style.background = `radial-gradient(ellipse at 50% 0%, ${cfg.tint}, transparent 70%)`;
-    for (let i = 0; i < 9; i++) {
+    const amount = [9, 14, 20][tierOf("theme") - 1], scale = tierOf("theme") === 3 ? 1.3 : 1;
+    for (let i = 0; i < amount; i++) {
       const s = document.createElement("span");
       s.className = "aig-amb";
       s.textContent = cfg.icons[i % cfg.icons.length];
       s.style.left = (4 + Math.random() * 92) + "%";
-      s.style.fontSize = (14 + Math.random() * 16) + "px";
+      s.style.fontSize = ((14 + Math.random() * 16) * scale) + "px";
       s.style.animationDuration = (11 + Math.random() * 11) + "s";
       s.style.animationDelay = (-Math.random() * 18) + "s";
       s.style.setProperty("--dx", (Math.random() * 80 - 40) + "px");
@@ -113,10 +120,10 @@
     lastTrail = now;
     const icons = TRAILS[prefs.trail];
     const el = document.createElement("span");
-    el.className = "aig-trail";
-    el.textContent = icons[trailIdx++ % icons.length];
+    el.className = "aig-trail" + tierClass("trail");
+    el.textContent = tierOf("trail") >= 2 && trailIdx % 4 === 3 ? "✨" : icons[trailIdx % icons.length]; trailIdx++;
     el.style.left = e.clientX + "px"; el.style.top = e.clientY + "px";
-    el.style.fontSize = (12 + Math.random() * 10) + "px";
+    el.style.fontSize = ((12 + Math.random() * 10) * (tierOf("trail") >= 2 ? 1.3 : 1)) + "px";
     el.style.setProperty("--tx", (Math.random() * 30 - 15) + "px");
     el.style.setProperty("--ty", (prefs.trail === "fire" ? -30 : 26 + Math.random() * 20) + "px");
     document.body.appendChild(el);
@@ -133,11 +140,11 @@
   // ---- answer burst + combo sticker -----------------------------------
   function burst(x, y) {
     const icons = BURSTS[prefs.answerFx] || BURSTS.default;
-    const n = prefs.answerFx === "fireworks" ? 14 : 9;
+    const n = Math.round((prefs.answerFx === "fireworks" ? 14 : 9) * [1, 1.5, 2][tierOf("answerFx") - 1]);
     for (let i = 0; i < n; i++) {
       const el = document.createElement("span");
-      el.className = "aig-burst";
-      el.textContent = icons[i % icons.length];
+      el.className = "aig-burst" + tierClass("answerFx");
+      el.textContent = tierOf("answerFx") >= 2 && i % 5 === 4 ? "✨" : icons[i % icons.length];
       const a = (Math.PI * 2 * i) / n + Math.random() * 0.5, d = 50 + Math.random() * 70;
       el.style.left = x + "px"; el.style.top = y + "px";
       el.style.fontSize = (16 + Math.random() * 14) + "px";
@@ -151,7 +158,7 @@
   function popSticker() {
     if (!prefs.sticker) return;
     const el = document.createElement("div");
-    el.className = "aig-sticker";
+    el.className = "aig-sticker" + tierClass("sticker");
     el.textContent = prefs.sticker;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 1550);
@@ -196,15 +203,41 @@
       el.after(h);
     });
   }
+  // Bo's form (PM round 14, item 14): an aura plus little decorations either side of every Bo avatar.
+  function applyForm() {
+    document.querySelectorAll(".aig-form-deco").forEach(x => x.remove());
+    document.querySelectorAll("[data-aig-form]").forEach(x => { x.style.filter = ""; x.removeAttribute("data-aig-form"); });
+    const f = prefs.boForm;
+    if (!f || f.id === "base" || off()) return;
+    ensureStyle();
+    document.querySelectorAll(BO_SELECTORS).forEach(el => {
+      const host = el.parentElement, er = el.getBoundingClientRect(), w = er.width;
+      if (!host || w < 18 || w > 260) return;
+      if (getComputedStyle(host).position === "static") host.style.position = "relative";
+      if (el.tagName === "IMG") el.style.filter = `drop-shadow(0 0 ${Math.max(4, w / 8)}px ${f.aura})`;
+      el.setAttribute("data-aig-form", f.id);
+      const hr = host.getBoundingClientRect(), size = Math.round(w * 0.32);
+      [[0, "left"], [1, "right"]].forEach(([i, side]) => {
+        const d = document.createElement("span");
+        d.className = "aig-form-deco"; d.textContent = f.deco[i] || "";
+        d.style.fontSize = size + "px";
+        d.style.top = (er.top - hr.top + host.scrollTop + w * 0.35) + "px";
+        d.style.left = side === "left" ? (er.left - hr.left + host.scrollLeft - size * 0.7) + "px" : (er.left - hr.left + host.scrollLeft + w - size * 0.3) + "px";
+        d.style.animationDelay = (i * 0.6) + "s";
+        host.appendChild(d); // appended (not inserted after el) so the hat stays el's next sibling
+      });
+    });
+  }
   let hatTimer = null;
   function watchHat() {
     if (!window.MutationObserver || !document.body) return;
     new MutationObserver(() => {
-      if (!prefs.boHatEmoji) return;
+      if (!prefs.boHatEmoji && !(prefs.boForm && prefs.boForm.id !== "base")) return;
       clearTimeout(hatTimer);
       hatTimer = setTimeout(() => {
-        const need = [...document.querySelectorAll(BO_SELECTORS)].some(el => el.getBoundingClientRect().width >= 18 && el.getBoundingClientRect().width <= 260 && !(el.nextElementSibling && el.nextElementSibling.classList.contains("aig-bo-hat")));
-        if (need) applyHat();
+        const formOn = prefs.boForm && prefs.boForm.id !== "base";
+        const need = [...document.querySelectorAll(BO_SELECTORS)].some(el => { const w = el.getBoundingClientRect().width; return w >= 18 && w <= 260 && ((prefs.boHatEmoji && !(el.nextElementSibling && el.nextElementSibling.classList.contains("aig-bo-hat"))) || (formOn && !el.hasAttribute("data-aig-form"))); });
+        if (need) { applyHat(); applyForm(); }
       }, 600);
     }).observe(document.body, { childList: true, subtree: true });
   }
@@ -317,6 +350,7 @@
     try { applyWorld(); } catch (e) {}
     try { bindTrail(); } catch (e) {}
     try { applyHat(); } catch (e) {}
+    try { applyForm(); } catch (e) {}
   }
   function syncFromCloud() {
     // Once per browser session: pull settings + parent play limit so they follow the child across devices.

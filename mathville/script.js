@@ -2458,6 +2458,8 @@ let planeState = null;
 // (leaderboard.js's GAMEPLAY_FX_CATALOGS, type "plane-bullet"). Empty
 // string means the default bullet look (no extra class needed).
 let planeBulletFxClass = "";
+// Plane ammo (PM round 14, item 16): the equipped ammo id + its Workshop tier, loaded at launch.
+let planeAmmo = { id: "standard", tier: 1 };
 
 // `is2p` is passed only by p2pStartGame() once the DataChannel is open.
 // Everything role-specific keys off planeState.is2p / p2p.role from there
@@ -2469,6 +2471,9 @@ function launchPlaneMode(is2p) {
   if (window.AIGLeaderboard) {
     AIGLeaderboard.getEquippedCosmetic("plane-bullet", "default").then(id => {
       planeBulletFxClass = id !== "default" ? "fx-" + id : "";
+    }).catch(() => {});
+    AIGLeaderboard.getEquippedCosmetic("plane-ammo", "standard").then(async id => {
+      planeAmmo = { id, tier: AIGLeaderboard.getTier ? await AIGLeaderboard.getTier("plane-ammo", id) : 1 };
     }).catch(() => {});
   }
   planeState = {
@@ -2604,7 +2609,9 @@ function spawnPlaneBulletAt(x, y, angleDeg = 0) {
   const rad = (angleDeg * Math.PI) / 180;
   const vx = Math.sin(rad) * PLANE_BULLET_SPEED;
   const vy = -Math.cos(rad) * PLANE_BULLET_SPEED;
-  planeState.bullets.push({ id, x, y, vx, vy, el });
+  const ammo = planeAmmo.id, t = planeAmmo.tier;
+  if (ammo !== "standard") el.classList.add("ammo-" + ammo);
+  planeState.bullets.push({ id, x, y, vx, vy, el, ammo, tier: t, pierce: ammo === "pierce" ? t : 0, life: 0 });
 }
 
 // The ship's own fire -- spread power-up ADDS 2 angled shots alongside the
@@ -4183,6 +4190,11 @@ function startPlaneLoop() {
       // angled for spread-shot pellets -- see spawnPlaneBulletAt), drop
       // off-screen ones on any edge now that they aren't all purely vertical.
       planeState.bullets = planeState.bullets.filter(b => {
+        if (b.ammo === "homing" && planeState.enemies.length) { // steer toward the nearest enemy above it
+          let best = null, bd = 1e9;
+          for (const e of planeState.enemies) { const d = Math.abs(e.x - b.x) + Math.abs(e.y - b.y); if (e.y < b.y && d < bd) { bd = d; best = e; } }
+          if (best) { const steer = 0.035 * b.tier * PLANE_BULLET_SPEED; b.vx += Math.max(-steer, Math.min(steer, (best.x - b.x) * 0.08)); const m = Math.hypot(b.vx, b.vy) || 1; b.vx = b.vx / m * PLANE_BULLET_SPEED; b.vy = b.vy / m * PLANE_BULLET_SPEED; }
+        }
         b.x += b.vx;
         b.y += b.vy;
         if (b.y < -5 || b.x < -6 || b.x > 106) { b.el.remove(); return false; }
@@ -4242,14 +4254,21 @@ function startPlaneLoop() {
       // a power-up.
       for (const enemy of planeState.enemies.slice()) {
         for (const bullet of planeState.bullets.slice()) {
-          if (planePxDist(enemy.x, enemy.y, bullet.x, bullet.y) < PLANE_HIT_RADIUS_PX) {
+          const rad = PLANE_HIT_RADIUS_PX * (bullet.ammo === "fire" ? 1.25 + 0.25 * bullet.tier : 1); // Fireball: bigger blast
+          if (planePxDist(enemy.x, enemy.y, bullet.x, bullet.y) < rad) {
             spawnPlaneExplosion(enemy.x, enemy.y);
             if (Math.random() < PLANE_POWERUP_DROP_CHANCE) spawnPlanePowerup(enemy.x, enemy.y);
             enemy.el.remove();
-            bullet.el.remove();
+            if (bullet.pierce > 0) bullet.pierce--; else { bullet.el.remove(); planeState.bullets = planeState.bullets.filter(b => b !== bullet); } // Piercing Laser
             planeState.enemies = planeState.enemies.filter(e => e !== enemy);
-            planeState.bullets = planeState.bullets.filter(b => b !== bullet);
-            planeState.score += 1;
+            planeState.score += 1 + (bullet.ammo === "rainbow" ? bullet.tier : 0); // Rainbow Round: bonus score per kill
+            if (bullet.ammo === "lightning") { // Chain Lightning: jump to the nearest enemies
+              for (let c = 0; c < bullet.tier; c++) {
+                let near = null, nd = 1e9;
+                for (const e2 of planeState.enemies) { const d = planePxDist(enemy.x, enemy.y, e2.x, e2.y); if (d < nd) { nd = d; near = e2; } }
+                if (near && nd < 220) { spawnPlaneExplosion(near.x, near.y); near.el.remove(); planeState.enemies = planeState.enemies.filter(e => e !== near); planeState.score += 1; }
+              }
+            }
             updatePlaneScore();
             // Guest: the kill is applied here immediately so shooting feels
             // instant, then reported so the host drops it from the shared
@@ -4272,7 +4291,7 @@ function startPlaneLoop() {
             bullet.el.remove();
             planeState.bullets = planeState.bullets.filter(b => b !== bullet);
             spawnPlaneExplosion(bullet.x, bullet.y);
-            planeState.boss.hp -= 1;
+            planeState.boss.hp -= 1 + (bullet.ammo === "ice" && bullet.tier >= 2 ? 1 : 0) + (bullet.ammo === "ice" && bullet.tier >= 3 ? 1 : 0); // Frost Round: extra boss damage
             updatePlaneBossHp();
             // Guest: the local HP drop is just instant feedback -- the host
             // owns the boss, so report the hit and let the next snapshot be
@@ -7140,8 +7159,9 @@ function launchNinjaRunner() {
   // hub's Customize > Costumes tab) -- recolor is pure CSS, keyed off
   // this one data attribute (see mathville/style.css).
   if (window.AIGLeaderboard) {
-    AIGLeaderboard.getEquippedCosmetic("ninja-costume", "default").then(id => {
+    AIGLeaderboard.getEquippedCosmetic("ninja-costume", "default").then(async id => {
       $("ninja-runner").dataset.costume = id;
+      $("ninja-runner").dataset.tier = String(AIGLeaderboard.getTier ? await AIGLeaderboard.getTier("ninja-costume", id) : 1); // Workshop tier -> aura
     }).catch(() => {});
   }
   if (window.AIGBgm && AIGBgm.playPlaneTrack) AIGBgm.playPlaneTrack(); // reuse Plane Mode's energetic track (per explicit request instead of new/copyrighted music)

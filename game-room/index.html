@@ -36,6 +36,8 @@ AIGKit.mount({title:'Game Room',accent:'#5b3f9b',bg:'linear-gradient(180deg,#efe
 const GAMES = [
   ["Action & Strategy", [
     ["weekly-boss","🐉","Weekly Boss","The whole class fights one big boss","Class"],
+    ["dino-rider","🦖","Dino Rider","Ride a dino over question gates — it evolves!","Action"],
+    ["sea-mission","⛵","Sea Mission","Sink sea monsters with your cannon, dodge the waves","Action"],
     ["zombie-defense","🧟","Zombie Math Defense","Answer to shoot zombies before they reach your house","Action"],
     ["card-race","🃏","Quiz Card Race","Play cards by answering — first empty hand wins","Cards"],
     ["times-rhythm","🎵","Times Rhythm","Tap the right answer to the beat","Rhythm"],
@@ -49,6 +51,8 @@ const GAMES = [
     ["science-lab","🧪","Science Lab","Predict what happens, then watch the experiment","Science"]]],
   ["Explore & Build", [
     ["my-town","🏘️","My Town","Build your own town and visit friends","Build"],
+    ["garage","🔧","Garage","Upgrade, paint and rent vehicles","Upgrade"],
+    ["workshop","✨","Workshop","Make effects, themes and costumes Gold or Holo","Upgrade"],
     ["geo-flight","🌍","Geo Flight","Fly around the world, collect country stamps","Geography"],
     ["island-adventure","🏝️","Island Adventure","Sail between 4 islands and reach the volcano","Story"],
     ["class-board","🏆","Class Team Board","Big-screen scores for 4 class teams","Class"]]],
@@ -64,7 +68,7 @@ const GAMES = [
     ["word-book","📕","Word Book","Your tricky Language questions, ready to practise","Words"],
     ["ready-check","✅","Level-Up Check","5 questions: am I ready for the next topic?","Check"]]]
 ];
-const LIVE = new Set(["voice-quiz","music-corner","pattern-puzzles","bo-class","weekly-boss","quick-review","word-book","ready-check","island-adventure","friend-duel","story-maker","speak-with-bo","zen-mode","bo-tutor","class-board","zombie-defense","card-race","fractions-kitchen","word-detective","escape-daily","times-rhythm","dungeon","science-lab","my-town","geo-flight"]);
+const LIVE = new Set(["dino-rider","sea-mission","workshop","garage","voice-quiz","music-corner","pattern-puzzles","bo-class","weekly-boss","quick-review","word-book","ready-check","island-adventure","friend-duel","story-maker","speak-with-bo","zen-mode","bo-tutor","class-board","zombie-defense","card-race","fractions-kitchen","word-detective","escape-daily","times-rhythm","dungeon","science-lab","my-town","geo-flight"]);
 document.getElementById("gr-list").innerHTML = GAMES.map(([sec, list]) => {
   const items = list.filter(g => LIVE.has(g[0]));
   if (!items.length) return "";

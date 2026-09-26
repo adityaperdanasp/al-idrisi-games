@@ -285,6 +285,8 @@ function initBossRush() {
       // this is a straight swap.
       const fighterId = await AIGLeaderboard.getEquippedCosmetic("bossrush-fighter", "default").catch(() => "default");
       document.getElementById("br-player-emoji").textContent = BOSSRUSH_FIGHTER_EMOJI[fighterId] || "🥋";
+      // Workshop tier (PM round 14): a gold / holo aura around the fighter.
+      try { const t = AIGLeaderboard.getTier ? await AIGLeaderboard.getTier("bossrush-fighter", fighterId) : 1; const el = document.getElementById("br-player-emoji"); el.classList.toggle("aig-gold", t === 2); el.classList.toggle("aig-holo", t === 3); } catch (e) {}
     }
     state.playerHp = PLAYER_HP_MAX;
     state.bossesDefeated = 0;

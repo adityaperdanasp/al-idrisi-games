@@ -325,6 +325,7 @@
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return;
     ensureBoosterLoaded();
+    ensureFamPassiveLoaded();
     // Personal Booster / Coin Boost loadout (PM round 9): a SINGLE 2x on top
     // of Bonus Hour, using the larger of the two so they never stack with
     // each other (only with Bonus Hour/combo/streak, as those already do).
@@ -338,12 +339,15 @@
     // case (one correct answer, no combo, not Bonus Hour). Rounding in
     // the player's favor here only ever gives MORE coins than round()
     // would, never fewer.
-    const coinGain = Math.max(1, Math.ceil(1 * (comboMultiplier || 1) * bonusMult * streakMult));
+    const phoenix = famPassive.id === "phoenix" && new Date().getUTCDay() === 0 ? 1.25 : 1; // Phoenix Chick: Sundays +25%
+    const coinGain = Math.max(1, Math.ceil(1 * (comboMultiplier || 1) * bonusMult * streakMult * phoenix));
     aigDb.ref(`players/${player.id}/wallet`).transaction(cur => {
       const wallet = cur || { coins: 0, gems: 0, correctSinceGem: 0 };
       wallet.coins = (wallet.coins || 0) + coinGain;
       wallet.correctSinceGem = (wallet.correctSinceGem || 0) + 1;
-      if (wallet.correctSinceGem >= GEM_EVERY_N_CORRECT) {
+      if (famPassive.id === "robot" && wallet.correctSinceGem % 10 === 0) wallet.coins += 1; // Robo Pup: +1 coin every 10th right answer
+      const gemEvery = famPassive.id === "unicorn" && famPassive.level >= 3 ? 12 : GEM_EVERY_N_CORRECT; // Star Unicorn
+      if (wallet.correctSinceGem >= gemEvery) {
         wallet.gems = (wallet.gems || 0) + 1;
         wallet.correctSinceGem = 0;
       }
@@ -1538,6 +1542,7 @@
     Object.entries(GAMEPLAY_FX_CATALOGS).forEach(([t, c]) => add(t, c));
     Object.entries(COSTUME_CATALOGS).forEach(([t, c]) => { if (t !== "dino-skin") add(t, c.filter(x => !x.season)); });
     add("pet-accessory", PET_ACCESSORIES);
+    add("landmark", TOWN_LANDMARKS);
     return pool;
   }
   function rarityOf(cost) {
@@ -2121,24 +2126,42 @@
     { id: "ferris", emoji: "🎡", name: "Ferris Wheel", cost: { coins: 80 }, pts: 15 },
     { id: "castle", emoji: "🏰", name: "Castle", cost: { gems: 2 }, pts: 25 }
   ];
-  const beautyOf = tiles => Object.values(tiles || {}).reduce((a, id) => a + ((TOWN_BUILDINGS.find(b => b.id === id) || {}).pts || 0), 0);
+  // PM round 14, item 20 -- landmarks (rare, one each; won from the Auction / Sponsor / Egg) and building level 2.
+  const TOWN_LANDMARKS = [
+    { id: "lm-temple", emoji: "🛕", preview: "🛕", name: "Grand Temple", cost: { gems: 3 }, pts: 40, landmark: true },
+    { id: "lm-tower", emoji: "🗼", preview: "🗼", name: "Sky Tower", cost: { gems: 3 }, pts: 40, landmark: true },
+    { id: "lm-pirate", emoji: "🏴‍☠️", preview: "🏴‍☠️", name: "Pirate Ship", cost: { gems: 4 }, pts: 50, landmark: true },
+    { id: "lm-statue", emoji: "🗽", preview: "🗽", name: "Hero Statue", cost: { gems: 4 }, pts: 50, landmark: true }
+  ];
+  const LEVEL2_EMOJI = { house: "🏡", school: "🏛️", hospital: "🏨", fountain: "⛲", ferris: "🎢", playground: "🎪", castle: "🏯", tree: "🌲", flower: "🌻", road: "🛤️" };
+  const beautyOf = (tiles, levels) => Object.entries(tiles || {}).reduce((a, [idx, id]) => { const d = TOWN_BUILDINGS.concat(TOWN_LANDMARKS).find(b => b.id === id); return a + (d ? d.pts * ((levels && levels[idx]) === 2 ? 2 : 1) : 0); }, 0);
   async function getTown(ownerId) {
     const me = perksPlayer();
     const id = ownerId || (me && me.id);
     if (!id) return null;
-    const [t, l] = await Promise.all([aigDb.ref(`players/${id}/town/tiles`).get(), aigDb.ref(`players/${id}/townLikes/${todayKey()}`).get()]);
-    const tiles = t.exists() ? t.val() : {};
+    const [t, l, lv] = await Promise.all([aigDb.ref(`players/${id}/town/tiles`).get(), aigDb.ref(`players/${id}/townLikes/${todayKey()}`).get(), aigDb.ref(`players/${id}/town/levels`).get()]);
+    const tiles = t.exists() ? t.val() : {}, levels = lv.exists() ? lv.val() : {};
+    let ownedLandmarks = [];
+    if (me && me.id === id) { const oc = await readOwnedCosmetics(me); ownedLandmarks = TOWN_LANDMARKS.filter(x => oc.landmark && oc.landmark[x.id]); }
     const likes = l.exists() ? Object.keys(l.val()).length : 0;
     let claimed = 0;
     if (me && me.id === id) { const c = await aigDb.ref(`players/${id}/townClaim/${todayKey()}`).get(); claimed = c.exists() ? (c.val() || 0) : 0; }
-    return { id, tiles, beauty: beautyOf(tiles), likes, claimed, size: TOWN_SIZE, buildings: TOWN_BUILDINGS };
+    return { id, tiles, levels, beauty: beautyOf(tiles, levels), likes, claimed, size: TOWN_SIZE, buildings: TOWN_BUILDINGS, landmarks: ownedLandmarks, level2Emoji: LEVEL2_EMOJI };
   }
   async function placeBuilding(idx, type) {
     const me = perksPlayer();
-    const def = TOWN_BUILDINGS.find(b => b.id === type);
+    const lm = TOWN_LANDMARKS.find(b => b.id === type);
+    const def = TOWN_BUILDINGS.find(b => b.id === type) || lm;
     if (!me || !def || !(idx >= 0 && idx < TOWN_SIZE)) return { ok: false };
     const ref = aigDb.ref(`players/${me.id}/town/tiles/${idx}`);
     if ((await ref.get()).exists()) return { ok: false, reason: "busy" };
+    if (lm) { // landmarks are free to place, but you must own it and can only have one
+      const [oc, tl] = await Promise.all([readOwnedCosmetics(me), aigDb.ref(`players/${me.id}/town/tiles`).get()]);
+      if (!(oc.landmark && oc.landmark[type])) return { ok: false, reason: "not-ready" };
+      if (Object.values(tl.exists() ? tl.val() : {}).includes(type)) return { ok: false, reason: "busy" };
+      await ref.set(type);
+      return { ok: true };
+    }
     const paid = await spendWallet(def.cost);
     if (!paid.ok) return paid;
     await ref.set(type);
@@ -2149,17 +2172,34 @@
     if (!me) return { ok: false };
     const ref = aigDb.ref(`players/${me.id}/town/tiles/${idx}`);
     const snap = await ref.get();
-    const def = snap.exists() && TOWN_BUILDINGS.find(b => b.id === snap.val());
+    const def = snap.exists() && TOWN_BUILDINGS.concat(TOWN_LANDMARKS).find(b => b.id === snap.val());
     if (!def) return { ok: false };
+    const lvl = (await aigDb.ref(`players/${me.id}/town/levels/${idx}`).get()).val();
     await ref.remove(); // clear FIRST so a double-tap can't refund twice
+    await aigDb.ref(`players/${me.id}/town/levels/${idx}`).remove();
+    if (!def || def.landmark) return { ok: true, back: {} }; // landmarks stay in your collection, no refund
     const back = {};
-    if (def.cost.coins) back.coins = Math.floor(def.cost.coins / 2);
+    if (def.cost.coins) back.coins = Math.floor(def.cost.coins / 2) * (lvl === 2 ? 2 : 1);
     if (back.coins) await creditWallet(back);
     return { ok: true, back };
   }
+  // Level 2: +100% beauty and a fancier look, for 1.5x the building's coin price (gem buildings: 2 gems).
+  async function upgradeBuilding(idx) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    const snap = await aigDb.ref(`players/${me.id}/town/tiles/${idx}`).get();
+    const def = snap.exists() && TOWN_BUILDINGS.find(b => b.id === snap.val());
+    if (!def) return { ok: false, reason: "not-ready" };
+    const lvRef = aigDb.ref(`players/${me.id}/town/levels/${idx}`);
+    if ((await lvRef.get()).val() === 2) return { ok: false, reason: "max" };
+    const paid = await spendWallet(def.cost.coins ? { coins: Math.ceil(def.cost.coins * 1.5) } : { gems: 2 });
+    if (!paid.ok) return paid;
+    await lvRef.set(2);
+    return { ok: true };
+  }
   async function listTowns() {
     const players = await readAllPlayers();
-    return Object.entries(players).filter(([, d]) => d && d.town && d.town.tiles).map(([id, d]) => ({ id, name: nameOf(id, d), beauty: beautyOf(d.town.tiles) }))
+    return Object.entries(players).filter(([, d]) => d && d.town && d.town.tiles).map(([id, d]) => ({ id, name: nameOf(id, d), beauty: beautyOf(d.town.tiles, d.town.levels) }))
       .filter(t => t.beauty > 0).sort((a, b) => b.beauty - a.beauty).slice(0, 30);
   }
   async function likeTown(ownerId) {
@@ -2408,9 +2448,17 @@
     { id: "dragon", emoji: "🐉", name: "Baby Dragon", quip: "Tiny fire, big heart." },
     { id: "cloudcat", emoji: "🐱", name: "Cloud Cat", quip: "Soft as a sleepy cloud." },
     { id: "owl", emoji: "🦉", name: "Wise Owl", quip: "Always reading something." },
-    { id: "panda", emoji: "🐼", name: "Bamboo Panda", quip: "Slow, steady, smart." }
+    { id: "panda", emoji: "🐼", name: "Bamboo Panda", quip: "Slow, steady, smart." },
+    // PM round 14, item 18 -- rare familiars (bought with gems) that also carry a small passive perk.
+    { id: "robot", emoji: "🤖", name: "Robo Pup", quip: "Beep boop, good job!", rare: true, price: { gems: 6 }, passive: "+1 bonus coin every 10 right answers" },
+    { id: "unicorn", emoji: "🦄", name: "Star Unicorn", quip: "Sparkles follow me.", rare: true, price: { gems: 8 }, passive: "From level 3: a gem every 12 right answers instead of 15" },
+    { id: "phoenix", emoji: "🔥", name: "Phoenix Chick", quip: "I always come back.", rare: true, price: { gems: 10 }, passive: "Sundays: +25% coins" }
   ];
   const FAMILIAR_TREATS = { cost: { coins: 8 }, xp: 5 };
+  // 4 evolution stages by level: 1-3, 4-6, 7-9, 10.
+  const familiarStage = level => level >= 10 ? 4 : level >= 7 ? 3 : level >= 4 ? 2 : 1;
+  const familiarDisplay = (def, level) => { const st = familiarStage(level); return st === 1 ? def.emoji : st === 2 ? def.emoji + "✨" : st === 3 ? "👑" + def.emoji : "🌟" + def.emoji + "🌟"; };
+  const FAMILIAR_STAGE_NAMES = ["", "Cub", "Rising", "Royal", "Legend"];
 
   // ---- 2. Bo's level -- grows with lifetime correct answers; each level
   // unlocks a small perk (shown on the Bo page).
@@ -2496,27 +2544,50 @@
     return { ok: true };
   }
 
-  // ---- 3. Familiar -- adopt one (free), level it by answering questions and feeding treats.
+  // ---- 3. Familiar -- your first companion is free; rare ones cost gems. Each
+  // keeps its own growth (players/{id}/familiarPets/{species}); the one in
+  // players/{id}/familiar/species is the one following you around.
+  async function readPets(me) {
+    const [f, p] = await Promise.all([aigDb.ref(`players/${me.id}/familiar`).get(), aigDb.ref(`players/${me.id}/familiarPets`).get()]);
+    const legacy = f.exists() ? f.val() : null, pets = p.exists() ? p.val() : {};
+    if (legacy && legacy.species && !pets[legacy.species]) {
+      pets[legacy.species] = { name: legacy.name, adoptedAt: legacy.adoptedAt || 0, fed: legacy.fed || 0, lastFed: legacy.lastFed || null };
+      await aigDb.ref(`players/${me.id}/familiarPets/${legacy.species}`).set(pets[legacy.species]); // one-time migration
+    }
+    return { current: legacy && legacy.species, pets };
+  }
+  function petView(def, d, total) {
+    const xp = Math.max(0, total - (d.adoptedAt || 0)) + (d.fed || 0) * FAMILIAR_TREATS.xp;
+    const level = Math.min(10, Math.floor(xp / 25) + 1);
+    return { ...def, name: d.name || def.name, xp, level, stage: familiarStage(level), stageName: FAMILIAR_STAGE_NAMES[familiarStage(level)], display: familiarDisplay(def, level), xpInto: xp - (level - 1) * 25, fed: d.fed || 0, lastFed: d.lastFed || null, hungry: d.lastFed !== todayKey() };
+  }
   async function getFamiliar() {
     const me = perksPlayer();
     if (!me) return null;
-    const [f, t] = await Promise.all([aigDb.ref(`players/${me.id}/familiar`).get(), aigDb.ref(`players/${me.id}/totalCorrect`).get()]);
+    const [{ current, pets }, t] = await Promise.all([readPets(me), aigDb.ref(`players/${me.id}/totalCorrect`).get()]);
     const total = t.exists() ? (t.val() || 0) : 0;
-    const d = f.exists() ? f.val() : null;
-    if (!d || !d.species) return { adopted: null, species: FAMILIARS, treat: FAMILIAR_TREATS };
-    const def = FAMILIARS.find(x => x.id === d.species) || FAMILIARS[0];
-    const xp = Math.max(0, total - (d.adoptedAt || 0)) + (d.fed || 0) * FAMILIAR_TREATS.xp;
-    const level = Math.min(10, Math.floor(xp / 25) + 1);
-    return { adopted: { ...def, name: d.name || def.name, xp, level, xpInto: xp - (level - 1) * 25, fed: d.fed || 0, lastFed: d.lastFed || null, hungry: d.lastFed !== todayKey() }, species: FAMILIARS, treat: FAMILIAR_TREATS };
+    const owned = FAMILIARS.filter(f => pets[f.id]).map(f => petView(f, pets[f.id], total));
+    const cur = owned.find(x => x.id === current) || null;
+    return { adopted: cur, owned, species: FAMILIARS, treat: FAMILIAR_TREATS, hasFree: owned.length > 0 };
   }
   async function adoptFamiliar(speciesId, name) {
     const me = perksPlayer();
     const def = FAMILIARS.find(x => x.id === speciesId);
     if (!me || !def) return { ok: false };
     const cur = await getFamiliar();
-    if (cur.adopted) return { ok: false, reason: "busy" };
+    if (cur.owned.some(p => p.id === speciesId)) return { ok: false, reason: "busy" };
+    if (def.rare) { const paid = await spendWallet(def.price); if (!paid.ok) return paid; }
+    else if (cur.owned.some(p => !p.rare)) return { ok: false, reason: "busy" }; // only ONE free companion
     const t = await aigDb.ref(`players/${me.id}/totalCorrect`).get();
-    await aigDb.ref(`players/${me.id}/familiar`).set({ species: speciesId, name: cleanText(name, 14) || def.name, adoptedAt: t.exists() ? (t.val() || 0) : 0, fed: 0 });
+    await aigDb.ref(`players/${me.id}/familiarPets/${speciesId}`).set({ name: cleanText(name, 14) || def.name, adoptedAt: t.exists() ? (t.val() || 0) : 0, fed: 0 });
+    await aigDb.ref(`players/${me.id}/familiar/species`).set(speciesId);
+    return { ok: true };
+  }
+  async function switchFamiliar(speciesId) {
+    const me = perksPlayer();
+    const cur = me && await getFamiliar();
+    if (!cur || !cur.owned.some(p => p.id === speciesId)) return { ok: false };
+    await aigDb.ref(`players/${me.id}/familiar/species`).set(speciesId);
     return { ok: true };
   }
   async function feedFamiliar() {
@@ -2526,8 +2597,15 @@
     if (!f.adopted.hungry) return { ok: false, reason: "daily-limit" };
     const paid = await spendWallet(FAMILIAR_TREATS.cost);
     if (!paid.ok) return paid;
-    await aigDb.ref(`players/${me.id}/familiar`).update({ fed: f.adopted.fed + 1, lastFed: todayKey() });
+    await aigDb.ref(`players/${me.id}/familiarPets/${f.adopted.id}`).update({ fed: f.adopted.fed + 1, lastFed: todayKey() });
     return { ok: true };
+  }
+  // Passive perks are read synchronously by awardCurrency(); loaded once per page.
+  let famPassive = { id: "", level: 0 }, famPassiveFetched = false;
+  function ensureFamPassiveLoaded() {
+    if (famPassiveFetched) return;
+    famPassiveFetched = true;
+    getFamiliar().then(f => { if (f && f.adopted) famPassive = { id: f.adopted.id, level: f.adopted.level }; }).catch(() => {});
   }
 
   // =====================================================================
@@ -3275,23 +3353,132 @@
   }
 
   // =====================================================================
+  // PM ROUND 14, BATCH 3 -- Workshop tiers (Gold / Holo upgrades), Bo forms,
+  // town landmarks + building levels, Dino Rider, ammo.
+  // =====================================================================
+  // ---- 15/16/17/19. Workshop -- any owned item of these types can be
+  // upgraded Standard -> Gold (60 coins) -> Holo (3 gems).
+  const TIER_COST = [null, null, { coins: 60 }, { gems: 3 }];
+  const TIER_NAMES = ["", "Standard", "Gold", "Holo"];
+  function tierCatalogs() {
+    return { "answer-fx": ANSWER_FX, "touch-trail": TOUCH_TRAILS, "combo-sticker": COMBO_STICKERS, "ninja-costume": NINJA_COSTUMES, "bossrush-fighter": BOSSRUSH_FIGHTERS, "hub-theme": HUB_THEMES, "card-bg": CARD_BACKGROUNDS, "plane-ammo": PLANE_AMMO };
+  }
+  const TIER_LABELS = { "answer-fx": "Correct-answer effects", "touch-trail": "Finger trails", "combo-sticker": "Combo stickers", "ninja-costume": "Ninja costumes", "bossrush-fighter": "Boss Rush fighters", "hub-theme": "World themes", "card-bg": "Profile backgrounds", "plane-ammo": "Plane ammo" };
+  async function getWorkshop() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const [oc, tr] = await Promise.all([readOwnedCosmetics(me), aigDb.ref(`players/${me.id}/tiers`).get()]);
+    const tiers = tr.exists() ? tr.val() : {};
+    const groups = Object.entries(tierCatalogs()).map(([type, list]) => ({
+      type, label: TIER_LABELS[type],
+      items: list.filter(x => x.cost && !!(oc[type] && oc[type][x.id])).map(x => ({ type, id: x.id, name: x.name, preview: x.preview, tier: Math.max(1, Math.min(3, tiers[`${type}::${x.id}`] || 1)) }))
+    })).filter(g => g.items.length);
+    return { groups, costs: TIER_COST, names: TIER_NAMES };
+  }
+  async function getTier(type, id) {
+    const me = perksPlayer();
+    if (!me) return 1;
+    const s = await aigDb.ref(`players/${me.id}/tiers/${type}::${id}`).get();
+    return s.exists() ? Math.max(1, Math.min(3, s.val() | 0)) : 1;
+  }
+  async function upgradeTier(type, id) {
+    const me = perksPlayer();
+    const cat = tierCatalogs()[type];
+    if (!me || !cat) return { ok: false };
+    const oc = await readOwnedCosmetics(me);
+    const item = cat.find(x => x.id === id);
+    if (!item || !item.cost || !(oc[type] && oc[type][id])) return { ok: false, reason: "not-ready" };
+    const cur = await getTier(type, id);
+    if (cur >= 3) return { ok: false, reason: "max" };
+    const paid = await spendWallet(TIER_COST[cur + 1]);
+    if (!paid.ok) return paid;
+    await aigDb.ref(`players/${me.id}/tiers/${type}::${id}`).set(cur + 1);
+    return { ok: true, tier: cur + 1 };
+  }
+
+  // ---- 14. Bo's forms -- unlocked by Bo's level; skin.js dresses every Bo avatar.
+  const BO_FORMS = [
+    { id: "base", name: "Classic Bo", need: 1, deco: [], aura: "" },
+    { id: "astro", name: "Astro Bo", need: 3, deco: ["🚀", "🛰️"], aura: "#60a5fa" },
+    { id: "wizard", name: "Wizard Bo", need: 5, deco: ["🔮", "✨"], aura: "#a78bfa" },
+    { id: "ninja", name: "Ninja Bo", need: 7, deco: ["🥷", "⚔️"], aura: "#64748b" },
+    { id: "dragon", name: "Dragon Bo", need: 10, deco: ["🐲", "🔥"], aura: "#f97316" }
+  ];
+  async function getBoForms() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const [bo, eq] = await Promise.all([getBoStatus(), aigDb.ref(`players/${me.id}/equipped/bo-form`).get()]);
+    return { level: bo.level, equipped: eq.exists() ? eq.val() : "base", forms: BO_FORMS.map(f => ({ ...f, unlocked: bo.level >= f.need })) };
+  }
+  async function setBoForm(id) {
+    const me = perksPlayer();
+    const f = me && await getBoForms();
+    const def = f && f.forms.find(x => x.id === id);
+    if (!def || !def.unlocked) return { ok: false };
+    await aigDb.ref(`players/${me.id}/equipped/bo-form`).set(id);
+    return { ok: true };
+  }
+
+  // ---- 13. Dino Rider -- ride a dinosaur through question gates. Six
+  // species (unlock with coins/gems), each evolving through 3 stages as you
+  // ride (XP), with a small perk. Data: players/{id}/dinoRider/{species}.
+  const DINO_RIDERS = [
+    { id: "raptor", emoji: "🦖", name: "Rex", cost: null, stam: 0, note: "Balanced and brave" },
+    { id: "longneck", emoji: "🦕", name: "Longneck", cost: { coins: 40 }, stam: 1, note: "+1 stamina" },
+    { id: "ptero", emoji: "🦅", name: "Ptero", cost: { coins: 60 }, stam: 0, note: "Flies over your first mistake", shield: true },
+    { id: "ankylo", emoji: "🐢", name: "Armadillo-saur", cost: { coins: 60 }, stam: 2, note: "+2 stamina" },
+    { id: "spino", emoji: "🐊", name: "Spino", cost: { gems: 3 }, stam: 1, note: "+1 stamina, +20% coins", coin: 1.2 },
+    { id: "mega", emoji: "🐉", name: "Mega Drake", cost: { gems: 5 }, stam: 2, note: "+2 stamina, +30% coins", coin: 1.3 }
+  ];
+  const DINO_XP_STAGES = [0, 30, 100];
+  async function getDinoRider() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const s = await aigDb.ref(`players/${me.id}/dinoRider`).get();
+    const d = s.exists() ? s.val() : {};
+    return { species: DINO_RIDERS.map(x => { const own = !x.cost || !!(d[x.id] && d[x.id].owned); const xp = (d[x.id] && d[x.id].xp) || 0; const stage = DINO_XP_STAGES.filter(n => xp >= n).length; return { ...x, owned: own, xp, stage, nextXp: DINO_XP_STAGES[stage] || null }; }) };
+  }
+  async function unlockDinoRider(id) {
+    const me = perksPlayer();
+    const def = DINO_RIDERS.find(x => x.id === id);
+    if (!me || !def || !def.cost) return { ok: false };
+    const cur = (await getDinoRider()).species.find(x => x.id === id);
+    if (cur.owned) return { ok: true, already: true };
+    const paid = await spendWallet(def.cost);
+    if (!paid.ok) return paid;
+    await aigDb.ref(`players/${me.id}/dinoRider/${id}/owned`).set(true);
+    return { ok: true };
+  }
+  async function addDinoRiderXp(id, n) {
+    const me = perksPlayer();
+    if (!me || !DINO_RIDERS.some(x => x.id === id)) return { ok: false };
+    await aigDb.ref(`players/${me.id}/dinoRider/${id}/xp`).transaction(x => (x || 0) + Math.max(0, Math.min(40, n | 0)));
+    return { ok: true };
+  }
+
+  // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
   // players so skin.js can call it unconditionally.
   // =====================================================================
   async function getSkinPrefs() {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
-    const d = { theme: "default", trail: "none", answerFx: "default", sticker: "none", boHat: "none", boHatEmoji: "", familiar: "" };
+    const d = { theme: "default", trail: "none", answerFx: "default", sticker: "none", boHat: "none", boHatEmoji: "", familiar: "", boForm: { id: "base", deco: [], aura: "" }, tiers: { answerFx: 1, trail: 1, sticker: 1, theme: 1 } };
     if (!player || player.role === "parent") return d;
-    const [snap, famSnap] = await Promise.all([aigDb.ref(`players/${player.id}/equipped`).get(), aigDb.ref(`players/${player.id}/familiar/species`).get()]);
+    const [snap, tierSnap, famData] = await Promise.all([aigDb.ref(`players/${player.id}/equipped`).get(), aigDb.ref(`players/${player.id}/tiers`).get(), getFamiliar().catch(() => null)]);
     const e = snap.exists() ? snap.val() : {};
-    const fam = famSnap.exists() ? FAMILIARS.find(f => f.id === famSnap.val()) : null;
+    const tiers = tierSnap.exists() ? tierSnap.val() : {};
+    const tierOf = (type, id) => Math.max(1, Math.min(3, tiers[`${type}::${id}`] || 1));
+    const fam = famData && famData.adopted ? famData.adopted : null;
+    const form = BO_FORMS.find(f => f.id === (e["bo-form"] || "base")) || BO_FORMS[0];
     const hat = BO_HATS.find(h => h.id === (e["bo-costume"] || "none"));
     const sticker = COMBO_STICKERS.find(x => x.id === (e["combo-sticker"] || "none"));
     return {
       theme: e["hub-theme"] || "default", trail: e["touch-trail"] || "none", answerFx: e["answer-fx"] || "default",
       sticker: sticker && sticker.id !== "none" ? sticker.preview : "", boHat: hat ? hat.id : "none", boHatEmoji: hat ? hat.hat : "",
-      familiar: fam ? fam.emoji : ""
+      familiar: fam ? fam.display : "",
+      boForm: { id: form.id, deco: form.deco, aura: form.aura },
+      tiers: { answerFx: tierOf("answer-fx", e["answer-fx"] || "default"), trail: tierOf("touch-trail", e["touch-trail"] || "none"), sticker: tierOf("combo-sticker", e["combo-sticker"] || "none"), theme: tierOf("hub-theme", e["hub-theme"] || "default") }
     };
   }
 
@@ -4248,7 +4435,20 @@
     { id: "galaxy", name: "Galaxy", cost: { gems: 2 }, preview: "🪐" },
     { id: "gold", name: "Pure Gold", cost: { gems: 4 }, preview: "🥇" }
   ];
+  // PM round 14, item 16 -- ammo with real gameplay differences in Plane Mode
+  // (see mathville/script.js planeAmmo*). Upgrading its tier in the Workshop
+  // strengthens the effect.
+  const PLANE_AMMO = [
+    { id: "standard", name: "Standard Shot", cost: null, preview: "🔹", desc: "Plain and reliable." },
+    { id: "fire", name: "Fireball", cost: { coins: 40 }, preview: "🔥", desc: "Bigger blast radius." },
+    { id: "ice", name: "Frost Round", cost: { coins: 40 }, preview: "🧊", desc: "Hits boss for extra damage." },
+    { id: "lightning", name: "Chain Lightning", cost: { gems: 2 }, preview: "⚡", desc: "Kills jump to nearby enemies." },
+    { id: "homing", name: "Homing Missile", cost: { gems: 3 }, preview: "🎯", desc: "Curves toward enemies." },
+    { id: "pierce", name: "Piercing Laser", cost: { gems: 3 }, preview: "🔴", desc: "Flies through enemies." },
+    { id: "rainbow", name: "Rainbow Round", cost: { gems: 4 }, preview: "🌈", desc: "Every kill scores extra." }
+  ];
   const GAMEPLAY_FX_CATALOGS = {
+    "plane-ammo": PLANE_AMMO,
     "card-bg": CARD_BACKGROUNDS,
     "answer-fx": ANSWER_FX,
     "touch-trail": TOUCH_TRAILS,
@@ -4394,7 +4594,8 @@
         "answer-fx": equipped["answer-fx"] || "default",
         "card-bg": equipped["card-bg"] || "default",
         "touch-trail": equipped["touch-trail"] || "none",
-        "combo-sticker": equipped["combo-sticker"] || "none"
+        "combo-sticker": equipped["combo-sticker"] || "none",
+        "plane-ammo": equipped["plane-ammo"] || "standard"
       },
       costumes,
       equippedCostumes: {
@@ -6296,6 +6497,8 @@
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
     getGeoStamps, addGeoStamp, getDungeon, saveDungeon,
     getWeeklyBoss, claimWeeklyBoss, WEEKLY_TIERS, getSpells, SPELLS, getBuddy, requestBuddy, acceptBuddy, declineBuddy, removeBuddy, cheerBuddy, claimBuddyGoal, getLessons, finishLesson,
+    upgradeBuilding, TOWN_LANDMARKS, getDinoRider, unlockDinoRider, addDinoRiderXp, DINO_RIDERS, DINO_XP_STAGES,
+    getWorkshop, getTier, upgradeTier, TIER_COST, TIER_NAMES, getBoForms, setBoForm, BO_FORMS, switchFamiliar, familiarStage, PLANE_AMMO,
     getSponsorShop, getAuction, bidAuction, claimAuction, buyTournamentTicket, TOURNEY_TICKET, getGiftStatus, giftCoins,
     getGarage, startVehicleUpgrade, speedUpVehicle, applyPaint, savePaintPreset, applyPaintPreset, rentVehicle, GARAGE_UPGRADE, GARAGE_MAX_LEVEL, PAINT_PRICES, PAINT_NEONS, PAINT_STICKERS,
     getGoals, setGoal, buyGoal,

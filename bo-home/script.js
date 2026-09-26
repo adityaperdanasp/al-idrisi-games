@@ -68,28 +68,44 @@ TABS.push({ id: "level", label: "⬆️ Bo Level", async render(el) {
   };
 }});
 
-/* ---- 3. Familiar ---- */
+/* ---- 3. Familiar (+ rare pets & evolution, PM round 14 item 18) ---- */
 TABS.push({ id: "familiar", label: "🐾 Familiar", async render(el) {
   const f = await LB.getFamiliar();
-  if (!f.adopted) {
-    el.innerHTML = `<div class="kit-card"><div class="kit-q">Choose your companion</div><p class="kit-sub" style="text-align:center">Your familiar follows you into every game and cheers when you get answers right. You can only adopt one, so choose well!</p>
-      <div class="bh-shop" style="grid-template-columns:repeat(2,1fr)">${f.species.map(s => `<button class="bh-item" data-s="${s.id}"><span class="e" style="font-size:2.4rem">${s.emoji}</span>${s.name}<br><small>${s.quip}</small></button>`).join("")}</div>
-      <input id="fm-name" class="ed-input" maxlength="14" placeholder="Give it a name (optional)" style="width:100%;margin-top:10px;padding:10px;border:2px solid #e6dcf5;border-radius:12px;font:inherit"><div class="kit-bonus" id="fm-msg" style="margin-top:8px"></div></div>`;
+  const pickCommon = !f.owned.some(p => !p.rare);
+  const rares = f.species.filter(x => x.rare && !f.owned.some(p => p.id === x.id));
+  const shop = rares.length ? `<div class="kit-card"><div class="kit-sub" style="margin:0 0 6px;font-weight:800">✨ Rare companions</div><div class="bh-shop" style="grid-template-columns:repeat(3,1fr)">${rares.map(r => `<button class="bh-item" data-rare="${r.id}"><span class="e" style="font-size:2rem">${r.emoji}</span>${r.name}<br><small>💎${r.price.gems}</small></button>`).join("")}</div><div class="kit-sub" style="margin:6px 0 0;font-size:.72rem">${rares.map(r => `${r.emoji} ${K.esc(r.passive)}`).join("<br>")}</div><div class="kit-bonus" id="fm-msg2"></div></div>` : "";
+  if (!f.adopted && pickCommon) {
+    el.innerHTML = `<div class="kit-card"><div class="kit-q">Choose your first companion</div><p class="kit-sub" style="text-align:center">It follows you into every game and cheers when you get answers right. Your first companion is free — rare ones can be bought later with 💎.</p>
+      <div class="bh-shop" style="grid-template-columns:repeat(2,1fr)">${f.species.filter(x => !x.rare).map(sp => `<button class="bh-item" data-s="${sp.id}"><span class="e" style="font-size:2.4rem">${sp.emoji}</span>${sp.name}<br><small>${sp.quip}</small></button>`).join("")}</div>
+      <input id="fm-name" maxlength="14" placeholder="Give it a name (optional)" style="width:100%;margin-top:10px;padding:10px;border:2px solid #e6dcf5;border-radius:12px;font:inherit"><div class="kit-bonus" id="fm-msg"></div></div>${shop}`;
     el.querySelectorAll("[data-s]").forEach(b => b.onclick = async () => { const r = await LB.adoptFamiliar(b.dataset.s, $("fm-name").value); if (r.ok) { if (window.AIGSkin) { await AIGSkin.refresh(); AIGSkin.burst(innerWidth / 2, innerHeight / 3); } this.render(el); } });
-    return;
+  } else {
+    const a = f.adopted || f.owned[0];
+    el.innerHTML = `<div class="kit-card"><div class="bh-fam-big">${K.esc(a.display)}</div><div style="font-family:'Baloo 2',sans-serif;font-weight:800;text-align:center;font-size:1.3rem">${K.esc(a.name)} · Level ${a.level}</div>
+      <div class="kit-sub" style="text-align:center;margin:0">Stage ${a.stage}/4 — ${a.stageName}${a.passive && a.rare ? ` · ${K.esc(a.passive)}` : ""}</div>
+      <div class="kit-bar" style="margin:8px 0"><i style="width:${a.level >= 10 ? 100 : Math.round(a.xpInto / 25 * 100)}%;background:linear-gradient(90deg,#c08be8,#7c3aed)"></i></div>
+      <div class="kit-sub" style="text-align:center">${a.level >= 10 ? "Fully evolved! 🌟" : `${a.xpInto}/25 to level ${a.level + 1}`} · evolves at levels 4, 7 and 10.</div>
+      <button class="kit-btn block" id="fm-feed" ${a.hungry ? "" : "disabled"}>${a.hungry ? `🍖 Give a treat (🪙${f.treat.cost.coins}, +${f.treat.xp} growth)` : "😋 Full for today"}</button><div class="kit-bonus" id="fm-msg"></div></div>
+      ${f.owned.length > 1 ? `<div class="kit-card"><div class="kit-sub" style="margin:0 0 6px;font-weight:800">My companions</div><div class="bh-shop">${f.owned.map(o => `<button class="bh-item" data-sw="${o.id}" style="${o.id === a.id ? "border-color:#7c3aed;background:#efe6ff" : ""}"><span class="e">${K.esc(o.display)}</span>${K.esc(o.name)}<br><small>Lv ${o.level}${o.id === a.id ? " · with you" : ""}</small></button>`).join("")}</div></div>` : ""}${shop}`;
+    const feed = el.querySelector("#fm-feed");
+    if (feed) feed.onclick = async () => { const r = await LB.feedFamiliar(); if (!r.ok) return $("fm-msg").textContent = r.reason === "insufficient-funds" ? "Not enough coins yet!" : "Already fed today!"; if (window.AIGSkin) { await AIGSkin.refresh(); AIGSkin.burst(innerWidth / 2, innerHeight / 3); } this.render(el); };
+    el.querySelectorAll("[data-sw]").forEach(b => b.onclick = async () => { await LB.switchFamiliar(b.dataset.sw); if (window.AIGSkin) await AIGSkin.refresh(); this.render(el); });
   }
-  const a = f.adopted;
-  el.innerHTML = `<div class="kit-card"><div class="bh-fam-big">${a.emoji}</div><div style="font-family:'Baloo 2',sans-serif;font-weight:800;text-align:center;font-size:1.3rem">${K.esc(a.name)} · Level ${a.level}</div>
-    <div class="kit-bar" style="margin:8px 0"><i style="width:${a.level >= 10 ? 100 : Math.round(a.xpInto / 25 * 100)}%;background:linear-gradient(90deg,#c08be8,#7c3aed)"></i></div>
-    <div class="kit-sub" style="text-align:center">${a.level >= 10 ? "Fully grown! 🌟" : `${a.xpInto}/25 to level ${a.level + 1}`} — it grows from your right answers and treats.</div>
-    <button class="kit-btn block" id="fm-feed" ${a.hungry ? "" : "disabled"}>${a.hungry ? `🍖 Give a treat (🪙${f.treat.cost.coins}, +${f.treat.xp} growth)` : "😋 Full for today"}</button><div class="kit-bonus" id="fm-msg"></div></div>
-    <div class="kit-sub" style="text-align:center">Look for ${a.emoji} in the bottom-left corner of every page!</div>`;
-  el.querySelector("#fm-feed").onclick = async () => {
-    const r = await LB.feedFamiliar();
-    if (!r.ok) return $("fm-msg").textContent = r.reason === "insufficient-funds" ? "Not enough coins yet!" : "Already fed today!";
-    if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3);
+  el.querySelectorAll("[data-rare]").forEach(b => b.onclick = async () => {
+    const r = await LB.adoptFamiliar(b.dataset.rare, "");
+    if (!r.ok) { const m = $("fm-msg2") || $("fm-msg"); if (m) m.textContent = r.reason === "insufficient-funds" ? "Not enough gems yet — keep playing!" : "Couldn't adopt that."; return; }
+    if (window.AIGSkin) { await AIGSkin.refresh(); AIGSkin.burst(innerWidth / 2, innerHeight / 3); }
     this.render(el);
-  };
+  });
+}});
+
+/* ---- 14. Bo's Forms ---- */
+TABS.push({ id: "forms", label: "🦸 Forms", async render(el) {
+  const d = await LB.getBoForms();
+  el.innerHTML = `<div class="kit-card">${boHeader("Every few levels I can transform! Pick a form and I'll wear it everywhere.")}
+    <div class="bh-shop" style="grid-template-columns:repeat(2,1fr)">${d.forms.map(f => `<button class="bh-item" data-f="${f.id}" ${f.unlocked ? "" : "disabled"} style="${d.equipped === f.id ? "border-color:#7c3aed;background:#efe6ff" : ""}${f.unlocked ? "" : ";opacity:.5"}"><span class="e" style="font-size:2rem">${f.deco.length ? f.deco.join("") : "🧠"}</span>${K.esc(f.name)}<br><small>${f.unlocked ? (d.equipped === f.id ? "wearing" : "unlocked") : "Bo level " + f.need}</small></button>`).join("")}</div>
+    <div class="kit-sub" style="margin:8px 0 0;text-align:center">Bo is level ${d.level}. Keep answering to unlock more forms!</div></div>`;
+  el.querySelectorAll("[data-f]").forEach(b => b.onclick = async () => { const r = await LB.setBoForm(b.dataset.f); if (r.ok) { if (window.AIGSkin) { await AIGSkin.refresh(); AIGSkin.burst(innerWidth / 2, innerHeight / 3); } this.render(el); } });
 }});
 
 /* ---- 10. Radio ---- */

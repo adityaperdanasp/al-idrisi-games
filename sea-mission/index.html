@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Sea Mission — BrainBox</title>
+<meta name="theme-color" content="#0369a1">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .sm-sea{position:relative;height:300px;margin:0 14px 10px;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#38bdf8,#0369a1)}
+  .sm-lane{position:absolute;top:0;bottom:0;width:33.33%;border-right:1px dashed rgba(255,255,255,.25)}
+  .sm-obj{position:absolute;width:33.33%;text-align:center;font-size:2rem;line-height:1;transform:translateY(-50%)}
+  .sm-boat{position:absolute;bottom:8px;width:33.33%;display:grid;place-items:center;transition:left .2s}
+  .sm-boat svg{transform:scale(1.5) rotate(0deg)}
+  .sm-boom{position:absolute;font-size:1.8rem;animation:smBoom .5s forwards}
+  @keyframes smBoom{to{transform:scale(1.8);opacity:0}}
+  .sm-ctrl{display:flex;gap:8px;justify-content:center;margin-bottom:8px}
+  .sm-ctrl button{flex:1;max-width:120px}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">⛵ Sea Mission</div></div>
+
+  <div class="kit-hud"><span id="sm-hull"></span><span>🌊 Wave <b id="sm-wave">1</b></span><span>⚓ <b id="sm-kills">0</b></span></div>
+  <div class="sm-sea" id="sm-sea"><div class="sm-lane" style="left:0"></div><div class="sm-lane" style="left:33.33%"></div><div class="sm-lane" style="left:66.66%;border:0"></div><div class="sm-boat" id="sm-boat"></div></div>
+  <div class="sm-ctrl"><button class="kit-btn alt" id="sm-left" type="button">◀ Steer left</button><button class="kit-btn alt" id="sm-right" type="button">Steer right ▶</button></div>
+  <div class="kit-card"><div class="kit-q" id="sm-q"></div><div class="kit-opts" id="sm-opts"></div><div class="kit-sub" id="sm-msg" style="text-align:center;margin:8px 0 0;min-height:1.2em"></div></div>
+  <div id="sm-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../vehicles.js"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Sea Mission',accent:'#0369a1',bg:'linear-gradient(180deg,#d8f0ff,#8fd0f2)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

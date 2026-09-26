@@ -845,6 +845,7 @@ SECTIONS.unshift(...SECTIONS.splice(R14_START));
 /* ---- Quick links ---- */
 SECTIONS.push({ id: "gamelinks", async render(el) {
   el.innerHTML = `<h2>🎮 More to explore</h2><div class="ex-chip-row">
+    <a class="ex-item" href="../workshop/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">✨</div><div class="ex-item-name">Workshop</div></a>
     <a class="ex-item" href="../garage/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🔧</div><div class="ex-item-name">Garage</div></a>
     <a class="ex-item" href="../weekly-boss/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🐉</div><div class="ex-item-name">Weekly Boss</div></a>
     <a class="ex-item" href="../world-map/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🗺️</div><div class="ex-item-name">World Map</div></a>

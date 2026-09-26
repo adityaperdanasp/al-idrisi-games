@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Dino Rider — BrainBox</title>
+<meta name="theme-color" content="#15803d">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .dr-scene{position:relative;height:170px;margin:0 14px 10px;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#bfe6ff 0%,#e9f7d6 65%,#8bc56a 65%)}
+  .dr-ground{position:absolute;left:0;right:0;bottom:0;height:35%;background:repeating-linear-gradient(90deg,#7bb85a 0 40px,#6aa64a 40px 80px);animation:drGround .6s linear infinite}
+  .dr-ground.stop{animation:none}
+  @keyframes drGround{to{background-position:-80px 0}}
+  .dr-dino{position:absolute;left:14%;bottom:26%;font-size:3.4rem;line-height:1;transition:bottom .35s cubic-bezier(.2,.9,.3,1),transform .3s;filter:drop-shadow(0 4px 3px rgba(0,0,0,.25))}
+  .dr-dino.run{animation:drRun .35s ease-in-out infinite}
+  .dr-dino.jump{bottom:52%;transform:rotate(-12deg)}
+  .dr-dino.stumble{animation:drStumble .5s}
+  @keyframes drRun{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+  @keyframes drStumble{0%,100%{transform:rotate(0)}30%{transform:rotate(-25deg) translateX(-8px)}60%{transform:rotate(12deg)}}
+  .dr-gate{position:absolute;right:-60px;bottom:28%;font-size:2.6rem;transition:right 1.6s linear}
+  .dr-gate.go{right:88%}
+  .dr-hp{letter-spacing:2px}
+  .dr-sp{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .dr-s{border:2px solid rgba(0,0,0,.08);background:#faf6ff;border-radius:14px;padding:10px 4px;text-align:center;font-family:"Baloo 2",sans-serif;font-weight:800;cursor:pointer;color:inherit}
+  .dr-s .e{font-size:2.2rem;display:block}.dr-s small{display:block;color:#7a6a5a;font-weight:700;font-size:.68rem;line-height:1.3}
+  .dr-s.sel{border-color:#15803d;background:#e5f5e8}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🦖 Dino Rider</div></div>
+
+  <div id="dr-pick"></div>
+  <div id="dr-play" hidden>
+    <div class="kit-hud"><span class="dr-hp" id="dr-hp"></span><span>🚧 Gate <b id="dr-n">1</b>/12</span><span>⭐ <b id="dr-r">0</b></span></div>
+    <div class="dr-scene"><div class="dr-ground" id="dr-ground"></div><div class="dr-dino run" id="dr-dino"></div><div class="dr-gate" id="dr-gate"></div></div>
+    <div class="kit-card"><div class="kit-q" id="dr-q"></div><div class="kit-opts" id="dr-opts"></div><div class="kit-sub" id="dr-msg" style="text-align:center;margin:8px 0 0;min-height:1.2em"></div></div>
+  </div>
+  <div id="dr-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Dino Rider',accent:'#15803d',bg:'linear-gradient(180deg,#e7f6d9,#cdeab0)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

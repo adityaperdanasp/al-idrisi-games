@@ -15,9 +15,13 @@ async function init() {
 
   async function wallet() { const w = await LB.getWallet(); $("mt-wallet").textContent = `🪙 ${w.coins || 0}  💎 ${w.gems || 0}`; }
   const cost = c => c.coins ? `🪙${c.coins}` : `💎${c.gems}`;
-  const emojiOf = (t, id) => { const b = t.buildings.find(x => x.id === id); return b ? b.emoji : ""; };
+  const emojiOf = (t, id, idx) => {
+    const b = t.buildings.find(x => x.id === id) || t.landmarkAll.find(x => x.id === id);
+    if (!b) return "";
+    return t.levels && t.levels[idx] === 2 && t.level2Emoji[id] ? t.level2Emoji[id] : b.emoji; // level 2 = fancier look
+  };
 
-  async function load(ownerId) { town = await LB.getTown(ownerId); paint(); }
+  async function load(ownerId) { town = await LB.getTown(ownerId); town.landmarkAll = LB.TOWN_LANDMARKS; paint(); }
   function paint() {
     $("mt-beauty").textContent = town.beauty;
     const mine = view === "mine";
@@ -25,7 +29,7 @@ async function init() {
     $("mt-title").textContent = mine ? "Tap a tile to build. Tap a building to remove it (half your coins back)." : `Visiting ${visiting ? visiting.name : ""}'s town`;
     $("mt-grid").innerHTML = Array.from({ length: town.size }, (_, i) => {
       const b = town.tiles[i];
-      return `<button class="mt-tile ${b ? "has" : ""}" data-i="${i}">${b ? emojiOf(town, b) : ""}</button>`;
+      return `<button class="mt-tile ${b ? "has" : ""}" data-i="${i}" style="${town.levels && town.levels[i] === 2 ? "box-shadow:inset 0 0 0 3px #facc15" : ""}">${b ? emojiOf(town, b, i) : ""}</button>`;
     }).join("");
     $("mt-grid").querySelectorAll(".mt-tile").forEach(t => t.onclick = () => tile(+t.dataset.i));
     panel();
@@ -56,10 +60,15 @@ async function init() {
     if (sel !== null) {
       const cur = town.tiles[sel];
       if (cur) {
-        const b = town.buildings.find(x => x.id === cur);
-        html += `<div class="kit-sub" style="margin:6px 0">${b.emoji} ${b.name} on tile ${sel + 1}</div><button class="kit-btn alt block" id="mt-remove">Remove${b.cost.coins ? ` (+🪙${Math.floor(b.cost.coins / 2)})` : ""}</button>`;
+        const b = town.buildings.find(x => x.id === cur) || town.landmarkAll.find(x => x.id === cur);
+        const lv2 = town.levels && town.levels[sel] === 2, canUp = !b.landmark && !lv2;
+        const upCost = b.cost && b.cost.coins ? `🪙${Math.ceil(b.cost.coins * 1.5)}` : "💎2";
+        html += `<div class="kit-sub" style="margin:6px 0">${emojiOf(town, cur, sel)} ${b.name}${lv2 ? " (Level 2 ⭐)" : ""}${b.landmark ? " — a landmark!" : ""} on tile ${sel + 1}</div>
+          ${canUp ? `<button class="kit-btn block" id="mt-up" style="margin-bottom:6px">⬆️ Upgrade to Level 2 — ${upCost} (double beauty!)</button>` : ""}
+          <button class="kit-btn alt block" id="mt-remove">Remove${!b.landmark && b.cost.coins ? ` (+🪙${Math.floor(b.cost.coins / 2) * (lv2 ? 2 : 1)})` : ""}</button>`;
       } else {
-        html += `<div class="kit-sub" style="margin:6px 0">Build on tile ${sel + 1}:</div><div class="mt-sheet">${town.buildings.map(b => `<button class="mt-b" data-b="${b.id}"><span class="e">${b.emoji}</span>${b.name}<br><small>${cost(b.cost)} · ✨${b.pts}</small></button>`).join("")}</div>`;
+        const placed = Object.values(town.tiles), lms = (town.landmarks || []).filter(l => !placed.includes(l.id));
+        html += `<div class="kit-sub" style="margin:6px 0">Build on tile ${sel + 1}:</div>${lms.length ? `<div class="kit-sub" style="margin:6px 0 2px;font-weight:800">🌟 Your landmarks (free to place)</div><div class="mt-sheet">${lms.map(l => `<button class="mt-b" data-b="${l.id}"><span class="e">${l.emoji}</span>${l.name}<br><small>✨${l.pts}</small></button>`).join("")}</div>` : ""}<div class="mt-sheet">${town.buildings.map(b => `<button class="mt-b" data-b="${b.id}"><span class="e">${b.emoji}</span>${b.name}<br><small>${cost(b.cost)} · ✨${b.pts}</small></button>`).join("")}</div><div class="kit-sub" style="margin:8px 0 0;font-size:.72rem">Landmarks (temple, tower, pirate ship, statue) are rare — win them in the Daily Auction or the Mystery Egg.</div>`;
       }
     } else html += `<div class="kit-sub" style="margin:8px 0 0;text-align:center">Pick a tile above.</div>`;
     html += `<div class="kit-bonus" id="mt-msg" style="margin-top:10px"></div>`;
@@ -70,6 +79,8 @@ async function init() {
       if (!r.ok) { $("mt-msg").textContent = r.reason === "insufficient-funds" ? "Not enough coins/gems yet — answer some questions!" : "Couldn't build there."; return; }
       await wallet(); sel = null; await load();
     });
+    const up = $("mt-up");
+    if (up) up.onclick = async () => { const r = await LB.upgradeBuilding(sel); if (!r.ok) { $("mt-msg").textContent = r.reason === "insufficient-funds" ? "Not enough coins/gems yet!" : "Couldn't upgrade that."; return; } await wallet(); await load(); if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3); };
     const rm = $("mt-remove");
     if (rm) rm.onclick = async () => { await LB.removeBuilding(sel); await wallet(); sel = null; await load(); };
   }

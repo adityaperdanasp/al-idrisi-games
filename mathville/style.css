@@ -2028,3 +2028,14 @@ button { font-family: inherit; }
 
 /* PM round 14 -- neon underglow from the Garage paint shop */
 .vehicle-neon { filter: drop-shadow(0 0 6px var(--vehicle-glow)) drop-shadow(0 0 12px var(--vehicle-glow)); }
+
+/* PM round 14 -- Workshop tier auras on the Ninja Runner + plane ammo looks */
+.ninja-runner[data-tier="2"] { filter: drop-shadow(0 0 6px #facc15) drop-shadow(0 0 12px #f59e0b); }
+.ninja-runner[data-tier="3"] { animation: ninjaHolo 3s linear infinite; }
+@keyframes ninjaHolo { 0% { filter: hue-rotate(0) drop-shadow(0 0 8px #a78bfa); } 100% { filter: hue-rotate(360deg) drop-shadow(0 0 8px #a78bfa); } }
+.plane-bullet.ammo-fire { background: linear-gradient(180deg, #fff, #ff6b1a); box-shadow: 0 0 10px rgba(255,107,26,.95); width: 6px; }
+.plane-bullet.ammo-ice { background: linear-gradient(180deg, #fff, #7dd3fc); box-shadow: 0 0 8px rgba(125,211,252,.95); }
+.plane-bullet.ammo-lightning { background: linear-gradient(180deg, #fffbe6, #facc15); box-shadow: 0 0 10px rgba(250,204,21,.95); }
+.plane-bullet.ammo-homing { background: radial-gradient(circle, #fff, #a855f7); box-shadow: 0 0 9px rgba(168,85,247,.9); border-radius: 50%; }
+.plane-bullet.ammo-pierce { background: linear-gradient(180deg, #fff, #ef4444); box-shadow: 0 0 8px rgba(239,68,68,.95); height: 24px; }
+.plane-bullet.ammo-rainbow { background: linear-gradient(180deg, #ff3ea5, #ffd166, #7ee6ff); box-shadow: 0 0 10px rgba(255,255,255,.9); }
