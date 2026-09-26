@@ -33,16 +33,19 @@
     neon: { icons: ["💜", "⚡", "🔷", "✦"], tint: "rgba(150,40,220,.13)" },
     candy: { icons: ["🍬", "🍭", "🧁", "🍩"], tint: "rgba(255,120,190,.10)" },
     arctic: { icons: ["❄️", "🧊", "⛄", "❄️"], tint: "rgba(150,210,255,.14)" },
-    volcano: { icons: ["🔥", "🌋", "✨", "🔥"], tint: "rgba(255,80,20,.12)" }
+    volcano: { icons: ["🔥", "🌋", "✨", "🔥"], tint: "rgba(255,80,20,.12)" },
+    golden: { icons: ["✨", "🏅", "⭐", "🪙"], tint: "rgba(255,200,40,.14)" }
   };
   const TRAILS = {
     stars: ["⭐", "✨", "🌟"], hearts: ["❤️", "💖", "💗"], fire: ["🔥", "🔥", "✨"],
-    bubbles: ["🫧", "🫧", "○"], snow: ["❄️", "❄️", "•"], rainbow: ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣"]
+    bubbles: ["🫧", "🫧", "○"], snow: ["❄️", "❄️", "•"], rainbow: ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣"],
+    "sp-sakura": ["🌸", "🌸", "💮"], "sp-coins": ["🪙", "🪙", "✨"], "sp-notes": ["🎵", "🎶", "🎼"], "sp-galaxy": ["🌌", "⭐", "✨", "🪐"]
   };
   const BURSTS = {
     default: ["✨", "⭐"], hearts: ["💖", "💗", "💕", "❤️"], stars: ["🌠", "⭐", "🌟", "✨"],
     fireworks: ["🎆", "🎇", "✨", "💥"], animals: ["🐶", "🐱", "🐼", "🦊", "🐸", "🦄"],
-    rainbow: ["🌈", "🔴", "🟠", "🟡", "🟢", "🔵", "🟣"]
+    rainbow: ["🌈", "🔴", "🟠", "🟡", "🟢", "🔵", "🟣"],
+    "sp-sakura": ["🌸", "🌸", "💮", "🌷"], "sp-gold": ["🪙", "🪙", "💰", "✨"], "sp-space": ["🚀", "☄️", "🌟", "🪐"], "sp-music": ["🎶", "🎵", "🎼", "🎤"]
   };
 
   function off() { try { return localStorage.getItem("aig_skin_off") === "1"; } catch (e) { return false; } }

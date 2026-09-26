@@ -2189,3 +2189,8 @@ html[data-hub-theme="volcano"] .sc-card { background: #fbe9dd; }
 .sc-world-strip { display: block; margin: 0 16px 10px; text-decoration: none; color: inherit; }
 .sc-world-strip[hidden] { display: none; }
 .sc-world-text { text-align: center; font-weight: 800; font-size: .78rem; color: #6b5a4a; margin-top: 4px; }
+
+/* PM round 14 -- Golden Classroom hub theme (Class Fund reward) */
+html[data-hub-theme="golden"],
+html[data-hub-theme="golden"] .hub.sc-page { background: linear-gradient(180deg, #fff3b0 0%, #ffd66b 55%, #e0a526 100%); }
+html[data-hub-theme="golden"] .sc-card { background: #fff8dc; }

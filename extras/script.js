@@ -219,7 +219,7 @@ SECTIONS.push({ id: "fund", async render(el) {
     <div class="ex-row"><span class="ex-stat">🪙 ${f.total} / ${goal}</span><span class="ex-sub" style="margin:0">you gave ${f.mine}</span></div>
     <div style="height:10px;border-radius:10px;background:#eee4f7;margin:8px 0;overflow:hidden"><div style="height:100%;width:${Math.min(100, Math.round(f.total / goal * 100))}%;background:linear-gradient(90deg,#f7c548,#e4572e)"></div></div>
     ${f.tiers.map(t => `<div class="ex-row" style="margin-bottom:4px"><span style="flex:1;font-weight:800;font-size:.8rem">${t.reached ? "✅" : "🔒"} ${t.label} <span class="ex-sub" style="display:inline;margin:0">(${t.at} coins)</span></span>
-      ${t.reached && !t.claimed ? `<button class="ex-btn" data-tier="${t.index}">Claim 🪙${t.coins}</button>` : t.claimed ? '<span class="ex-sub" style="margin:0">claimed</span>' : ""}</div>`).join("")}
+      ${t.reached && !t.claimed ? `<button class="ex-btn" data-tier="${t.index}">Claim ${t.coins ? "🪙" + t.coins : ""}${t.gems ? " 💎" + t.gems : ""}${t.cosmetic ? " " + esc(t.cosmetic.name) : ""}</button>` : t.claimed ? '<span class="ex-sub" style="margin:0">claimed</span>' : ""}</div>`).join("")}
     <div class="ex-row" style="margin-top:10px"><input class="ex-input" id="cf-amt" type="number" min="1" max="100" value="10"><button class="ex-btn" id="cf-give">Donate</button></div>
     ${f.donors.length ? `<p class="ex-sub" style="margin-top:8px">Top donors: ${f.donors.map(d => `${d.name} (${d.donated})`).join(", ")}</p>` : ""}<div class="ex-msg"></div>`;
   el.querySelector("#cf-give").onclick = async () => {
@@ -230,7 +230,7 @@ SECTIONS.push({ id: "fund", async render(el) {
   el.querySelectorAll("[data-tier]").forEach(b => b.onclick = async () => {
     const r = await LB.claimClassFundTier(Number(b.dataset.tier));
     if (!r.ok) return say(el, "Not available.");
-    await refreshWallet(); await this.render(el); say(el, `🪙 +${r.coins}!`);
+    await refreshWallet(); await this.render(el); say(el, `🎉 ${r.coins ? "+🪙" + r.coins : ""}${r.gems ? " +💎" + r.gems : ""}${r.cosmetic ? " · new: " + r.cosmetic.name + " (equip it in 🎨 Customize)" : ""}`);
   });
 }});
 
@@ -561,13 +561,16 @@ SECTIONS.push({ id: "tourney", async render(el) {
     <p class="ex-sub">Sign up Mon–Fri (first ${t.size} in). On the weekend, play ⚡ Flash Challenge: quarter-finals = Saturday's best score, semi-finals = Sunday's, final = both days added. Winner earns a title + 🪙${t.reward.coins} 💎${t.reward.gems}.</p>
     <div class="ex-row"><span class="ex-stat">${cur.entrants.length}/${t.size}</span><span class="ex-sub" style="margin:0">signed up · ${t.phase === "entry" ? "sign-ups open" : "matches are live"} · ${t.titles} title${t.titles === 1 ? "" : "s"} won</span>
     ${t.phase === "entry" ? `<button class="ex-btn" id="tn-join" ${t.mine || cur.entrants.length >= t.size ? "disabled" : ""}>${t.mine ? "You're in ✓" : "Sign up"}</button>` : ""}</div>
-    ${t.canClaim ? `<div class="ex-row" style="margin-top:8px"><button class="ex-btn" id="tn-claim">🏆 You won last week! Claim prize</button></div>` : ""}
+    <div class="ex-row" style="margin-top:6px"><span class="ex-sub" style="margin:0">💰 VIP pot: 🪙${cur.pot}${t.mine && t.phase === "entry" ? "" : ""}</span>${t.phase === "entry" && t.mine ? `<button class="ex-btn alt" id="tn-ticket" ${cur.tickets[player.id] ? "disabled" : ""}>${cur.tickets[player.id] ? "Ticket bought ✓" : `🎟️ VIP ticket 🪙${LB.TOURNEY_TICKET}`}</button>` : ""}</div>
+    ${t.canClaim ? `<div class="ex-row" style="margin-top:8px"><button class="ex-btn" id="tn-claim">🏆 You won last week! Claim prize${t.last.pot ? ` (+ 🪙${t.last.pot} pot)` : ""}</button></div>` : ""}
     <div class="ex-msg"></div>
     ${live ? shown.map((r, i) => `<div class="ex-sub" style="margin:8px 0 2px;font-weight:800;color:#3d2e22">${["Quarter-finals", "Semi-finals", "Final"].slice(3 - shown.length)[i]}</div>${r.map(match).join("")}`).join("") + (cur.champion ? `<div class="ex-prize">👑 Leading: ${nm(cur.champion)}</div>` : "")
       : cur.entrants.length ? `<div class="ex-chip-row" style="margin-top:8px">${cur.entrants.map(e => `<span class="ex-item" style="flex:0 1 auto;padding:6px 10px;font-weight:800;font-size:.74rem;cursor:default">${esc(e.name)}</span>`).join("")}</div>` : ""}
     ${t.last.entrants.length >= 2 && t.last.champion ? `<div class="ex-sub" style="margin-top:10px">Last week's champion: <b>👑 ${esc(t.last.champion.name)}</b></div>` : ""}`;
   const j = el.querySelector("#tn-join");
   if (j) j.onclick = async () => { const r = await LB.enterTournament(); if (!r.ok) return say(el, r.reason === "full" ? "The bracket is full!" : "Sign-ups are closed."); this.render(el); };
+  const tk = el.querySelector("#tn-ticket");
+  if (tk) tk.onclick = async () => { const r = await LB.buyTournamentTicket(); if (!r.ok) return say(el, FAIL[r.reason] || "Couldn't buy a ticket."); await refreshWallet(); await this.render(el); say(el, "🎟️ Ticket bought — the champion wins the whole pot!"); };
   const c = el.querySelector("#tn-claim");
   if (c) c.onclick = async () => { const r = await LB.claimTournamentTitle(); if (!r.ok) return say(el, "Not ready."); await refreshWallet(); await this.render(el); say(el, "👑 Champion! Prize paid."); };
 }});
@@ -800,6 +803,43 @@ SECTIONS.push({ id: "goals", async render(el) {
   const add = el.querySelector("#gl-add");
   if (add) add.onclick = async () => { const [t, i] = el.querySelector("#gl-pick").value.split("::"); const r = await LB.setGoal(t, i, true); if (!r.ok) return say(el, "Three goals is the max."); this.render(el); };
 }});
+/* ---- 6. Sponsor Shop ---- */
+SECTIONS.push({ id: "sponsor", async render(el) {
+  const sh = await LB.getSponsorShop();
+  el.innerHTML = `<h2>🎪 Sponsor Shop</h2><p class="ex-sub">3 limited editions a week, paid in 💎. When the week ends they leave the shop — and become rare drops in the Mystery Egg. New picks in <b id="sp-left"></b>.</p>
+    <div class="ex-chip-row">${sh.items.map((it, i) => `<button class="ex-item" data-i="${i}" ${it.owned ? "disabled" : ""}><div class="ex-item-emoji">${it.preview}</div><div class="ex-item-name">${esc(it.name)}</div><div class="ex-item-own">${it.owned ? "Owned ✓" : "💎" + it.cost.gems}</div></button>`).join("")}</div><div class="ex-msg"></div>`;
+  el.querySelector("#sp-left").textContent = mmss(sh.endsAt - Date.now());
+  el.querySelectorAll("[data-i]").forEach(b => b.onclick = async () => { const it = sh.items[+b.dataset.i]; const r = await LB.unlockCosmetic(it.type, it.id, it.cost); if (!r.ok) return say(el, FAIL[r.reason] || "Couldn't buy."); await refreshWallet(); await this.render(el); say(el, `${it.preview} ${it.name} is yours! Equip it in 🎨 Customize.`); });
+}});
+
+/* ---- 3. Daily Auction ---- */
+let auctionTimer = null;
+SECTIONS.push({ id: "auction", async render(el) {
+  clearInterval(auctionTimer);
+  const a = await LB.getAuction();
+  if (!a.item) { el.style.display = "none"; return; }
+  const need = Math.max(a.item.minBid, a.top ? a.top.amount + 5 : 0), y = a.yesterday;
+  el.innerHTML = `<h2>🔨 Daily Auction</h2><p class="ex-sub">One rare item a day. Highest coin bid when the day ends wins it. If someone outbids you, your coins come straight back. Ends in <b id="au-left"></b>.</p>
+    <div class="ex-row"><span style="font-size:2.2rem">${a.item.preview}</span><div><b>${esc(a.item.name)}</b><div class="ex-sub" style="margin:0">${a.item.owned ? "You already own this" : a.top ? `Top bid: 🪙${a.top.amount} by ${a.mine ? "you 🎉" : esc(a.top.name)}` : `No bids yet — starts at 🪙${a.item.minBid}`}</div></div></div>
+    ${a.item.owned ? "" : `<div class="ex-row" style="margin-top:8px"><input class="ex-input" id="au-amt" type="number" min="${need}" value="${need}" inputmode="numeric" ${a.mine ? "disabled" : ""}><button class="ex-btn" id="au-bid" ${a.mine ? "disabled" : ""}>${a.mine ? "You're winning" : "Place bid"}</button></div>`}
+    ${y ? `<div class="ex-row" style="margin-top:10px;background:#f6f0ff;border-radius:12px;padding:8px 12px"><span class="ex-sub" style="margin:0;flex:1">Yesterday: ${y.item.preview} ${esc(y.item.name)} → <b>${esc(y.top.name)}</b> (🪙${y.top.amount})</span>${y.canClaim ? '<button class="ex-btn" id="au-claim">🎁 Collect!</button>' : y.claimed ? '<span class="ex-sub" style="margin:0">collected ✓</span>' : ""}</div>` : ""}<div class="ex-msg"></div>`;
+  const tick = () => { const n = el.querySelector("#au-left"); if (n) n.textContent = mmss(a.endsAt - Date.now()); };
+  tick(); auctionTimer = setInterval(tick, 1000);
+  const bid = el.querySelector("#au-bid");
+  if (bid) bid.onclick = async () => { const r = await LB.bidAuction(+el.querySelector("#au-amt").value); if (!r.ok) return say(el, r.reason === "insufficient-funds" ? "Not enough coins for that bid!" : r.reason === "bad-amount" ? `Bid at least 🪙${r.need}.` : "Someone bid higher just now — try again!"); await refreshWallet(); await this.render(el); say(el, `🔨 You're the top bidder with 🪙${r.amount}!`); };
+  const cl = el.querySelector("#au-claim");
+  if (cl) cl.onclick = async () => { const r = await LB.claimAuction(y.day); if (r.ok) { if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3); await this.render(el); say(el, `🎉 ${r.item.name} is yours! Equip it in 🎨 Customize.`); } };
+}});
+
+/* ---- 10. Gifts ---- */
+SECTIONS.push({ id: "gifts", async render(el) {
+  const g = await LB.getGiftStatus();
+  el.innerHTML = `<h2>💌 Help a Friend</h2><p class="ex-sub">Give a friend a few coins (up to 🪙${g.max} each, 🪙20 a day). Below are friends saving up for something — Bo sends them a thank-you card from you. ${g.left} of 20 left today.</p>
+    ${g.wishing.length ? g.wishing.map(w => `<div class="ex-row" style="justify-content:space-between;padding:4px 0"><span><b>${esc(w.name)}</b> <span class="ex-sub" style="display:inline;margin:0">wants ${esc(w.item)}</span></span><span><button class="ex-btn alt" data-to="${esc(w.id)}" data-n="5" style="padding:6px 10px">🪙5</button> <button class="ex-btn" data-to="${esc(w.id)}" data-n="10" style="padding:6px 10px">🪙10</button></span></div>`).join("") : '<div class="ex-empty">Nobody is saving for a goal right now.</div>'}
+    ${g.cards.length ? `<div class="ex-sub" style="margin:10px 0 4px;font-weight:800;color:#3d2e22">💌 Thank-you cards for you</div>${g.cards.map(c => `<div class="ex-sub" style="margin:2px 0">🧠 Bo: “${esc(c.from)} sent you 🪙${c.n} on ${esc(c.day)} — what a kind friend!”</div>`).join("")}` : ""}<div class="ex-msg"></div>`;
+  el.querySelectorAll("[data-to]").forEach(b => b.onclick = async () => { const r = await LB.giftCoins(b.dataset.to, +b.dataset.n); if (!r.ok) return say(el, r.reason === "insufficient-funds" ? "Not enough coins yet!" : r.reason === "daily-limit" ? "That's your daily gift limit — thank you for being kind!" : "Couldn't send that."); await refreshWallet(); await this.render(el); say(el, "💌 Sent! Bo will tell them it was from you."); });
+}});
+
 SECTIONS.unshift(...SECTIONS.splice(R14_START));
 
 /* ---- Quick links ---- */

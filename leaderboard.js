@@ -1293,7 +1293,11 @@
   const CLASS_FUND_TIERS = [
     { at: 150, coins: 10, label: "🎉 Party time" },
     { at: 400, coins: 20, label: "🌈 Rainbow class" },
-    { at: 900, coins: 40, label: "🏆 Class champions" }
+    { at: 900, coins: 40, label: "🏆 Class champions" },
+    // PM round 14, item 4 -- bigger class goals with special rewards.
+    { at: 1500, coins: 30, gems: 2, label: "🎊 Super class" },
+    { at: 2500, gems: 3, cosmetic: { type: "bo-costume", id: "c-halo", name: "Class Hero Halo 😇" }, label: "😇 Class heroes" },
+    { at: 4000, gems: 5, cosmetic: { type: "hub-theme", id: "golden", name: "Golden Classroom 🏅" }, label: "🏅 Golden classroom" }
   ];
   async function getClassFund() {
     const player = perksPlayer();
@@ -1332,8 +1336,9 @@
     const tier = fund.tiers[i];
     if (!tier || !tier.reached || tier.claimed) return { ok: false, reason: "not-available" };
     await aigDb.ref(`players/${player.id}/classFundClaims/t${i}`).set(true);
-    await creditWallet({ coins: tier.coins });
-    return { ok: true, coins: tier.coins };
+    await creditWallet({ coins: tier.coins || 0, gems: tier.gems || 0 });
+    if (tier.cosmetic) await aigDb.ref(`players/${player.id}/ownedCosmetics/${tier.cosmetic.type}/${tier.cosmetic.id}`).set(true);
+    return { ok: true, coins: tier.coins || 0, gems: tier.gems || 0, cosmetic: tier.cosmetic || null };
   }
 
   // ---- 11. Class Boss -- ONE boss per day for the whole class; every
@@ -1522,8 +1527,9 @@
   // =====================================================================
   function cosmeticPool() {
     const pool = [];
+    const sp = sponsorCurrentIds();
     const add = (type, list, fixedPreview) => list.forEach(x => {
-      if (x.cost) pool.push({ type, id: x.id, name: x.name, preview: fixedPreview || x.preview || "🎁", cost: x.cost });
+      if (x.cost && !x.noPool && !(x.sponsor && sp.has(type + "::" + x.id))) pool.push({ type, id: x.id, name: x.name, preview: fixedPreview || x.preview || "🎁", cost: x.cost });
     });
     add("frame", AVATAR_FRAMES, "🖼️");
     add("face", AVATAR_FACES);
@@ -1856,7 +1862,9 @@
     let final = null;
     if (sf.length >= 2) { const a = sf[0].win, b = sf[1].win; final = { a, b, win: decide(a, b, id => flash(id).sat + flash(id).sun), sa: a ? flash(a.id).sat + flash(a.id).sun : 0, sb: b ? flash(b.id).sat + flash(b.id).sun : 0 }; rounds.push([final]); }
     else if (sf.length === 1) final = sf[0];
-    return { wk, entrants, rounds, champion: final && final.win ? final.win : null };
+    const tk = await aigDb.ref(`leaderboard/tournament/${wk}/tickets`).get();
+    const tickets = tk.exists() ? tk.val() : {};
+    return { wk, entrants, rounds, champion: final && final.win ? final.win : null, tickets, pot: Object.values(tickets).reduce((a, n) => a + (n | 0), 0) };
   }
   async function getTournament() {
     const player = perksPlayer();
@@ -1891,8 +1899,9 @@
     const t = player && await getTournament();
     if (!t || !t.canClaim) return { ok: false, reason: "not-ready" };
     await aigDb.ref(`players/${player.id}/tournamentTitles/${t.canClaim}`).set(true);
-    await creditWallet(TOURNEY_REWARD);
-    return { ok: true, reward: TOURNEY_REWARD };
+    const reward = { coins: TOURNEY_REWARD.coins + (t.last.pot || 0), gems: TOURNEY_REWARD.gems }; // + the pot from VIP tickets
+    await creditWallet(reward);
+    return { ok: true, reward, pot: t.last.pot || 0 };
   }
 
   // ---- 17. Card Battle -- fought in the extras page; this is just the
@@ -3138,6 +3147,134 @@
   }
 
   // =====================================================================
+  // PM ROUND 14, BATCH 2 -- Daily Auction, Sponsor Shop, VIP tournament
+  // tickets, friend gifts.
+  // =====================================================================
+  const nextMidnightUtc = () => { const d = new Date(); d.setUTCHours(24, 0, 0, 0); return d.getTime(); };
+  async function creditWalletFor(id, coins) {
+    await aigDb.ref(`players/${id}/wallet`).transaction(cur => { const w = cur || { coins: 0, gems: 0, correctSinceGem: 0 }; w.coins = (w.coins || 0) + coins; return w; });
+  }
+  // ---- 6. Sponsor Shop -- 3 limited items a week (of 16), gems only.
+  const sponsorItems = () => {
+    const out = [];
+    const cats = { "answer-fx": ANSWER_FX, "touch-trail": TOUCH_TRAILS, "combo-sticker": COMBO_STICKERS, "bo-costume": BO_HATS };
+    Object.entries(cats).forEach(([type, list]) => list.forEach(x => { if (x.sponsor) out.push({ type, id: x.id, name: x.name, preview: x.preview, cost: x.cost }); }));
+    return out;
+  };
+  const weekIndex = () => Math.floor(new Date(weekKey() + "T00:00:00Z").getTime() / (7 * 86400000));
+  function sponsorCurrent() {
+    const all = sponsorItems();
+    if (!all.length) return [];
+    return [0, 1, 2].map(i => all[(weekIndex() * 3 + i) % all.length]);
+  }
+  function sponsorCurrentIds() { return new Set(sponsorCurrent().map(x => x.type + "::" + x.id)); }
+  async function getSponsorShop() {
+    const me = perksPlayer();
+    const owned = me ? await readOwnedCosmetics(me) : {};
+    const end = new Date(weekKey() + "T00:00:00Z"); end.setUTCDate(end.getUTCDate() + 7);
+    return { endsAt: end.getTime(), items: sponsorCurrent().map(x => ({ ...x, owned: isOwned(owned, x) })) };
+  }
+
+  // ---- 3. Daily Auction -- one rare item a day; highest coin bid at UTC
+  // midnight wins. Your bid is held (paid) until someone outbids you, then
+  // it's refunded automatically. The winner collects the item next day.
+  function auctionItemFor(day) {
+    const pool = cosmeticPool().filter(x => { const r = rarityOf(x.cost); return r === "epic" || r === "legendary"; });
+    if (!pool.length) return null;
+    const it = pool[seedFrom(day + "auction") % pool.length];
+    const coinValue = it.cost.coins || (it.cost.gems || 1) * 40;
+    return { ...it, minBid: Math.max(20, Math.ceil(coinValue * 0.5)) };
+  }
+  async function getAuction() {
+    const me = perksPlayer();
+    const today = todayKey(), yest = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const [t, y, cl] = await Promise.all([aigDb.ref(`leaderboard/auction/${today}/top`).get(), aigDb.ref(`leaderboard/auction/${yest}/top`).get(), me ? aigDb.ref(`players/${me.id}/auctionClaims/${yest}`).get() : Promise.resolve(null)]);
+    const top = t.exists() ? t.val() : null, ytop = y.exists() ? y.val() : null;
+    const owned = me ? await readOwnedCosmetics(me) : {};
+    const item = auctionItemFor(today), yItem = auctionItemFor(yest);
+    return { item: item && { ...item, owned: isOwned(owned, item) }, top, endsAt: nextMidnightUtc(), mine: !!(top && me && top.id === me.id),
+      yesterday: yItem && ytop ? { item: yItem, top: ytop, day: yest, canClaim: !!(me && ytop.id === me.id && !(cl && cl.exists())), claimed: !!(cl && cl.exists()) } : null };
+  }
+  async function bidAuction(amount) {
+    const me = perksPlayer();
+    amount = Math.floor(amount);
+    if (!me) return { ok: false };
+    const day = todayKey(), a = await getAuction();
+    if (!a.item || a.item.owned) return { ok: false, reason: "busy" };
+    const need = Math.max(a.item.minBid, a.top ? a.top.amount + 5 : 0);
+    if (!(amount >= need) || amount > 5000) return { ok: false, reason: "bad-amount", need };
+    if (a.top && a.top.id === me.id) return { ok: false, reason: "busy" }; // you're already winning
+    const paid = await spendWallet({ coins: amount });
+    if (!paid.ok) return paid;
+    let prev = null;
+    const res = await aigDb.ref(`leaderboard/auction/${day}/top`).transaction(cur => {
+      prev = cur || null;
+      if (cur && amount < cur.amount + 5) return undefined; // someone outbid us while we were paying -- abort
+      return { id: me.id, name: me.name, amount, at: Date.now() };
+    });
+    if (!res.committed) { await creditWallet({ coins: amount }); return { ok: false, reason: "busy", need: prev ? prev.amount + 5 : need }; }
+    if (prev && prev.id && prev.id !== me.id) await creditWalletFor(prev.id, prev.amount); // refund the outbid player
+    return { ok: true, amount };
+  }
+  async function claimAuction(day) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    const a = await getAuction();
+    if (!a.yesterday || a.yesterday.day !== day || !a.yesterday.canClaim) return { ok: false, reason: "not-ready" };
+    await aigDb.ref(`players/${me.id}/auctionClaims/${day}`).set(true); // marker BEFORE granting
+    const it = a.yesterday.item;
+    await aigDb.ref(`players/${me.id}/ownedCosmetics/${it.type}/${it.id}`).set(true);
+    return { ok: true, item: it };
+  }
+
+  // ---- 5. VIP tournament ticket -- 15 coins into the weekly pot (once, and
+  // only if you've signed up); the champion also wins the whole pot.
+  const TOURNEY_TICKET = 15;
+  async function buyTournamentTicket() {
+    const me = perksPlayer();
+    const t = me && await getTournament();
+    if (!t || t.phase !== "entry" || !t.mine) return { ok: false, reason: "not-ready" };
+    if (t.current.tickets[me.id]) return { ok: false, reason: "busy" };
+    const paid = await spendWallet({ coins: TOURNEY_TICKET });
+    if (!paid.ok) return paid;
+    await aigDb.ref(`leaderboard/tournament/${weekKey()}/tickets/${me.id}`).set(TOURNEY_TICKET);
+    return { ok: true, pot: t.current.pot + TOURNEY_TICKET };
+  }
+
+  // ---- 10. Friend gifts -- small coin gifts (max 10 each, 20 a day) with a
+  // thank-you card from Bo. Goals a friend is saving for are shown so a gift
+  // can help with something they actually want.
+  const GIFT_MAX = 10, GIFT_DAILY = 20;
+  async function getGiftStatus() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const [sent, recv, all] = await Promise.all([aigDb.ref(`players/${me.id}/giftsSent/${todayKey()}`).get(), aigDb.ref(`players/${me.id}/gifts`).get(), readAllPlayers()]);
+    const pool = cosmeticPool();
+    const days = recv.exists() ? recv.val() : {};
+    const cards = [];
+    Object.entries(days).forEach(([day, from]) => Object.entries(from || {}).forEach(([fid, g]) => cards.push({ day, from: g.name || fid, n: g.n || 0 })));
+    cards.sort((a, b) => b.day.localeCompare(a.day));
+    const wishing = Object.entries(all).filter(([id, d]) => id !== me.id && d && d.goals && d.goals.length).map(([id, d]) => {
+      const [type, gid] = String(d.goals[0]).split("::"); const it = pool.find(x => x.type === type && x.id === gid);
+      return it ? { id, name: nameOf(id, d), item: `${it.preview} ${it.name}` } : null;
+    }).filter(Boolean).slice(0, 12);
+    return { sentToday: sent.exists() ? (sent.val() || 0) : 0, left: GIFT_DAILY - (sent.exists() ? (sent.val() || 0) : 0), max: GIFT_MAX, cards: cards.slice(0, 10), wishing };
+  }
+  async function giftCoins(toId, n) {
+    const me = perksPlayer();
+    n = Math.floor(n);
+    if (!me || !toId || toId === me.id || !(n >= 1 && n <= GIFT_MAX)) return { ok: false, reason: "bad-amount" };
+    const st = await getGiftStatus();
+    if (n > st.left) return { ok: false, reason: "daily-limit" };
+    const paid = await spendWallet({ coins: n });
+    if (!paid.ok) return paid;
+    await aigDb.ref(`players/${me.id}/giftsSent/${todayKey()}`).set(st.sentToday + n);
+    await creditWalletFor(toId, n);
+    await aigDb.ref(`players/${toId}/gifts/${todayKey()}/${me.id}`).transaction(cur => ({ name: me.name, n: ((cur && cur.n) || 0) + n }));
+    return { ok: true };
+  }
+
+  // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
   // players so skin.js can call it unconditionally.
@@ -3764,7 +3901,9 @@
     { id: "neon", name: "Neon City", cost: { gems: 2 }, preview: "🌃" },
     { id: "candy", name: "Candyland", cost: { coins: 35 }, preview: "🍭" },
     { id: "arctic", name: "Arctic", cost: { coins: 35 }, preview: "🧊" },
-    { id: "volcano", name: "Volcano", cost: { gems: 3 }, preview: "🌋" }
+    { id: "volcano", name: "Volcano", cost: { gems: 3 }, preview: "🌋" },
+    // Class Fund reward (PM round 14) -- earned, never sold (noPool hides it until owned).
+    { id: "golden", name: "Golden Classroom", cost: { gems: 99 }, preview: "🏅", noPool: true }
   ];
   async function getHubThemes() {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
@@ -3775,7 +3914,7 @@
     ]);
     const owned = ownedSnap.exists() ? ownedSnap.val() : {};
     return {
-      themes: HUB_THEMES.map(t => ({ ...t, owned: !t.cost || !!owned[t.id] })),
+      themes: HUB_THEMES.map(t => ({ ...t, owned: !t.cost || !!owned[t.id] })).filter(t => !t.noPool || t.owned),
       equipped: equippedSnap.exists() ? equippedSnap.val() : "default"
     };
   }
@@ -4067,7 +4206,11 @@
     { id: "stars", name: "Star Shower", cost: { coins: 25 }, preview: "🌠" },
     { id: "fireworks", name: "Fireworks", cost: { coins: 30 }, preview: "🎆" },
     { id: "animals", name: "Animal Party", cost: { coins: 30 }, preview: "🐾" },
-    { id: "rainbow", name: "Rainbow Pop", cost: { gems: 2 }, preview: "🌈" }
+    { id: "rainbow", name: "Rainbow Pop", cost: { gems: 2 }, preview: "🌈" },
+    { id: "sp-sakura", name: "Sakura Storm", cost: { gems: 3 }, preview: "🌸", sponsor: true },
+    { id: "sp-gold", name: "Gold Rush", cost: { gems: 3 }, preview: "🪙", sponsor: true },
+    { id: "sp-space", name: "Space Salute", cost: { gems: 3 }, preview: "🚀", sponsor: true },
+    { id: "sp-music", name: "Music Burst", cost: { gems: 3 }, preview: "🎶", sponsor: true }
   ];
   const TOUCH_TRAILS = [
     { id: "none", name: "No Trail", cost: null, preview: "🚫" },
@@ -4076,7 +4219,11 @@
     { id: "fire", name: "Flames", cost: { coins: 25 }, preview: "🔥" },
     { id: "bubbles", name: "Bubbles", cost: { coins: 25 }, preview: "🫧" },
     { id: "snow", name: "Snowfall", cost: { gems: 2 }, preview: "❄️" },
-    { id: "rainbow", name: "Rainbow", cost: { gems: 3 }, preview: "🌈" }
+    { id: "rainbow", name: "Rainbow", cost: { gems: 3 }, preview: "🌈" },
+    { id: "sp-sakura", name: "Sakura Petals", cost: { gems: 3 }, preview: "🌸", sponsor: true },
+    { id: "sp-coins", name: "Coin Shower", cost: { gems: 3 }, preview: "🪙", sponsor: true },
+    { id: "sp-notes", name: "Music Notes", cost: { gems: 3 }, preview: "🎵", sponsor: true },
+    { id: "sp-galaxy", name: "Galaxy Trail", cost: { gems: 4 }, preview: "🌌", sponsor: true }
   ];
   const COMBO_STICKERS = [
     { id: "none", name: "No Sticker", cost: null, preview: "🚫" },
@@ -4086,7 +4233,12 @@
     { id: "fire", name: "On Fire", cost: { coins: 15 }, preview: "🔥" },
     { id: "brain", name: "Big Brain", cost: { coins: 20 }, preview: "🧠" },
     { id: "rocket", name: "Rocket", cost: { coins: 20 }, preview: "🚀" },
-    { id: "crown", name: "Champion", cost: { gems: 2 }, preview: "👑" }
+    { id: "crown", name: "Champion", cost: { gems: 2 }, preview: "👑" },
+    // Sponsor Shop editions (PM round 14, item 6) -- 3 of the 16 sponsor items are sold each week.
+    { id: "sp-dragon", name: "Dragon Roar", cost: { gems: 3 }, preview: "🐲", sponsor: true },
+    { id: "sp-unicorn", name: "Unicorn Magic", cost: { gems: 3 }, preview: "🦄", sponsor: true },
+    { id: "sp-alien", name: "Alien Hello", cost: { gems: 3 }, preview: "👽", sponsor: true },
+    { id: "sp-diamond", name: "Diamond Streak", cost: { gems: 4 }, preview: "💎", sponsor: true }
   ];
   const CARD_BACKGROUNDS = [
     { id: "default", name: "Cream", cost: null, preview: "🟨" },
@@ -4168,6 +4320,11 @@
     { id: "tophat", name: "Top Hat", cost: { coins: 25 }, preview: "🎩", hat: "🎩" },
     { id: "straw", name: "Sun Hat", cost: { coins: 20 }, preview: "👒", hat: "👒" },
     { id: "crown", name: "Royal Crown", cost: { gems: 3 }, preview: "👑", hat: "👑" },
+    { id: "c-halo", name: "Class Hero Halo", cost: { gems: 99 }, preview: "😇", hat: "😇", noPool: true },
+    { id: "sp-wizard", name: "Wizard Hat", cost: { gems: 3 }, preview: "🧙", hat: "🧙", sponsor: true },
+    { id: "sp-astro", name: "Space Helmet", cost: { gems: 3 }, preview: "🚀", hat: "🚀", sponsor: true },
+    { id: "sp-chef", name: "Chef's Toque", cost: { gems: 3 }, preview: "🍳", hat: "🍳", sponsor: true },
+    { id: "sp-viking", name: "Viking Helm", cost: { gems: 4 }, preview: "⚔️", hat: "⚔️", sponsor: true },
     // PM round 12, item 7 -- seasonal hats: buyable ONLY while their season
     // is on (see SEASONS), kept forever once owned, so old ones become rare.
     { id: "s-merdeka", name: "Merdeka Cap", cost: { coins: 30 }, preview: "🇮🇩", hat: "🇮🇩", season: "independence" },
@@ -4208,13 +4365,14 @@
     const equipped = equippedSnap.exists() ? equippedSnap.val() : {};
     const fx = {};
     Object.entries(GAMEPLAY_FX_CATALOGS).forEach(([type, catalog]) => {
-      fx[type] = catalog.map(e => ({ ...e, owned: !e.cost || !!(owned[type] && owned[type][e.id]) }));
+      fx[type] = catalog.map(e => ({ ...e, owned: !e.cost || !!(owned[type] && owned[type][e.id]) })).filter(e => !(e.sponsor || e.noPool) || e.owned);
     });
     const costumes = {};
     Object.entries(COSTUME_CATALOGS).forEach(([type, catalog]) => {
       costumes[type] = catalog.map(e => ({ ...e, owned: !e.cost || !!(owned[type] && owned[type][e.id]) }))
         // seasonal items: only shown while in season, or once you own them
-        .filter(e => !e.season || e.owned || (getSeason() && getSeason().id === e.season));
+        .filter(e => !e.season || e.owned || (getSeason() && getSeason().id === e.season))
+        .filter(e => !(e.sponsor || e.noPool) || e.owned);
     });
     return {
       frames: AVATAR_FRAMES.map(f => ({ ...f, owned: !f.cost || !!(owned.frame && owned.frame[f.id]) })),
@@ -6138,6 +6296,7 @@
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
     getGeoStamps, addGeoStamp, getDungeon, saveDungeon,
     getWeeklyBoss, claimWeeklyBoss, WEEKLY_TIERS, getSpells, SPELLS, getBuddy, requestBuddy, acceptBuddy, declineBuddy, removeBuddy, cheerBuddy, claimBuddyGoal, getLessons, finishLesson,
+    getSponsorShop, getAuction, bidAuction, claimAuction, buyTournamentTicket, TOURNEY_TICKET, getGiftStatus, giftCoins,
     getGarage, startVehicleUpgrade, speedUpVehicle, applyPaint, savePaintPreset, applyPaintPreset, rentVehicle, GARAGE_UPGRADE, GARAGE_MAX_LEVEL, PAINT_PRICES, PAINT_NEONS, PAINT_STICKERS,
     getGoals, setGoal, buyGoal,
     getWorldState,
