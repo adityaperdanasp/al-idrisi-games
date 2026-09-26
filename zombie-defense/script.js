@@ -71,7 +71,7 @@ function start() {
     if (st.locked || st.over) return;
     st.locked = true;
     const ok = opt === st.q.correctLabel;
-    K.record("zombie-defense", st.q.key, ok);
+    K.record("zombie-defense", st.q.key, ok, st.q);
     btn.classList.add(ok ? "right" : "wrong");
     if (ok) {
       const z = front();

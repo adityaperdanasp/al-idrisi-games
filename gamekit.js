@@ -60,7 +60,8 @@
     const key = focus.topics[rand(0, focus.topics.length - 1)];
     try { return { subject: "math", key, focus: true, ...buildMc(window.MATHVILLE_GENERATORS[key](diff)) }; } catch (e) { return null; }
   }
-  function question(opts) {
+  function question(opts) { const q = question0(opts); lastQ = q; return q; }
+  function question0(opts) {
     opts = opts || {};
     const P = window.AIGQuestionPools;
     const diff = opts.difficulty || "medium";
@@ -72,7 +73,14 @@
     return P.rollMixed(() => mathQuestion(diff));
   }
 
-  function record(gameId, key, ok) {
+  let lastQ = null;
+  // q (optional): the question that was just answered -- wrong multiple-choice ones go to the
+  // spaced-repetition store (Quick Review / Word Book). Falls back to the last one generated.
+  function record(gameId, key, ok, q) {
+    try {
+      const qq = q || (lastQ && lastQ.key === key ? lastQ : null);
+      if (!ok && qq && qq.options && qq.correctLabel && window.AIGLeaderboard && AIGLeaderboard.srsAdd) AIGLeaderboard.srsAdd(qq, qq.subject);
+    } catch (e) {}
     try { if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt(gameId, key, ok); } catch (e) { /* never block a round */ }
     try { if (focus && focus.topics.includes(key) && window.AIGLeaderboard && AIGLeaderboard.recordFocusAnswer) AIGLeaderboard.recordFocusAnswer(key, ok); } catch (e) {}
     try { if (window.AIGJuice) AIGJuice.answer(ok, (record.streak = ok ? (record.streak || 0) + 1 : 0) - 1); } catch (e) {}
@@ -83,7 +91,20 @@
     let r = null;
     try { if (window.AIGLeaderboard && coins > 0) r = await AIGLeaderboard.awardMiniGame(gameId, coins); } catch (e) {}
     if (el) el.textContent = r && r.paid ? `🪙 +${r.paid} bonus coins!` : r && r.capped ? "Daily bonus for this game already collected — come back tomorrow!" : "";
+    try { moodRow(gameId, el); } catch (e) {}
     return r;
+  }
+
+  // "How did that feel?" -- one tap, remembered for the parent report (PM round 12, item 18).
+  function moodRow(gameId, el) {
+    const modal = el && el.closest ? el.closest(".kit-modal") : null;
+    if (!modal || modal.querySelector(".kit-mood") || !window.AIGLeaderboard || !AIGLeaderboard.logMood) return;
+    const row = document.createElement("div");
+    row.className = "kit-mood";
+    row.innerHTML = `<div class="kit-sub" style="margin:4px 0 6px">How did that feel?</div><div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px">${AIGLeaderboard.MOODS.map(m => `<button type="button" data-e="${m[0]}" title="${m[1]}" style="font-size:1.6rem;border:0;background:#f3ecff;border-radius:12px;padding:4px 10px;cursor:pointer">${m[0]}</button>`).join("")}</div>`;
+    const first = modal.querySelector(".kit-btn");
+    modal.insertBefore(row, first);
+    row.querySelectorAll("button").forEach(b => b.onclick = () => { AIGLeaderboard.logMood(gameId, b.dataset.e); row.innerHTML = '<div class="kit-sub" style="margin:4px 0 12px">Thanks for telling me! 💜</div>'; });
   }
 
   const CSS = `

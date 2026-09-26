@@ -69,7 +69,7 @@ async function init() {
       $("ia-card").innerHTML = `<div class="kit-sub" style="margin:0 0 4px;font-weight:800">${ISLANDS[id].emoji} ${ISLANDS[id].name} — ${i + 1}/${total}</div><div class="kit-q">${K.esc(q.prompt)}</div><div class="kit-opts">${q.options.map(o => `<button class="kit-opt" data-o="${K.esc(o)}">${K.esc(o)}</button>`).join("")}</div><div class="kit-sub" id="ia-msg" style="text-align:center;margin:8px 0 0;min-height:1.2em"></div>`;
       $("ia-card").querySelectorAll(".kit-opt").forEach(b => b.onclick = () => {
         const ok = b.dataset.o === q.correctLabel;
-        K.record("island-adventure", q.key, ok);
+        K.record("island-adventure", q.key, ok, q);
         $("ia-card").querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.dataset.o === q.correctLabel) x.classList.add("right"); });
         if (ok) right++; else b.classList.add("wrong");
         $("ia-msg").textContent = ok ? "⛵ Smooth sailing!" : `The answer was ${q.correctLabel}`;

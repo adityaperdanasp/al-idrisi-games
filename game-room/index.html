@@ -54,9 +54,12 @@ const GAMES = [
     ["story-maker","📖","Story Maker","Build a story with the right grammar","Writing"],
     ["speak-with-bo","🎤","Speak with Bo","Read English aloud and get a score","Speaking"],
     ["zen-mode","🍃","Zen Mode","No timer, no lives — just calm practice","Calm"],
-    ["bo-tutor","🎓","Bo's Tutor Session","5 special questions on your trickiest topic","Coaching"]]]
+    ["bo-tutor","🎓","Bo's Tutor Session","5 special questions on your trickiest topic","Coaching"],
+    ["quick-review","🔁","Quick Review","Questions you missed come back at just the right time","Review"],
+    ["word-book","📕","Word Book","Your tricky Language questions, ready to practise","Words"],
+    ["ready-check","✅","Level-Up Check","5 questions: am I ready for the next topic?","Check"]]]
 ];
-const LIVE = new Set(["island-adventure","friend-duel","story-maker","speak-with-bo","zen-mode","bo-tutor","class-board","zombie-defense","card-race","fractions-kitchen","word-detective","escape-daily","times-rhythm","dungeon","science-lab","my-town","geo-flight"]);
+const LIVE = new Set(["quick-review","word-book","ready-check","island-adventure","friend-duel","story-maker","speak-with-bo","zen-mode","bo-tutor","class-board","zombie-defense","card-race","fractions-kitchen","word-detective","escape-daily","times-rhythm","dungeon","science-lab","my-town","geo-flight"]);
 document.getElementById("gr-list").innerHTML = GAMES.map(([sec, list]) => {
   const items = list.filter(g => LIVE.has(g[0]));
   if (!items.length) return "";

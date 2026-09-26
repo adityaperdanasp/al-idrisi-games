@@ -193,6 +193,9 @@
     // have; a parent checking here any time still sees where things stand) ----
     renderAchievements(player);
 
+    // ---- Feelings pattern (PM round 12, item 18) ----
+    renderMoods(player.moods || {});
+
     // ---- This week's focus (PM round 11, item 17) ----
     renderFocus(player.weeklyFocus || null);
 
@@ -273,6 +276,25 @@
         <span class="p-achievement-value">${escapeHtml(String(r.value))}</span>
         ${r.sub ? `<span class="p-achievement-sub">${escapeHtml(r.sub)}</span>` : ""}
       </div>`).join("");
+  }
+
+  function renderMoods(moods) {
+    const cutoff = Date.now() - 14 * 86400000, byMood = {}, byGame = {};
+    Object.values(moods).forEach(day => Object.values(day || {}).forEach(m => {
+      if (!m || m.at < cutoff) return;
+      byMood[m.e] = (byMood[m.e] || 0) + 1;
+      (byGame[m.g] = byGame[m.g] || {})[m.e] = (byGame[m.g][m.e] || 0) + 1;
+    }));
+    const box = document.getElementById("p-mood-summary");
+    const total = Object.values(byMood).reduce((a, b) => a + b, 0);
+    if (!total) { box.innerHTML = '<p class="p-empty-note">No feelings shared yet.</p>'; return; }
+    const names = { "😄": "Happy", "🙂": "Okay", "😕": "Confused", "😴": "Tired" };
+    const pretty = g => g.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const rows = ["😄", "🙂", "😕", "😴"].map(e => `<span style="margin-right:14px;font-weight:800">${e} ${byMood[e] || 0}<small style="font-weight:700;color:#8a7a6a"> ${names[e]}</small></span>`).join("");
+    // Games where confusion or tiredness is most of what was shared (needs 2+ answers to count as a pattern).
+    const flags = Object.entries(byGame).map(([g, m]) => { const n = Object.values(m).reduce((a, b) => a + b, 0); const hard = (m["😕"] || 0) + (m["😴"] || 0); return { g, n, hard }; })
+      .filter(x => x.n >= 2 && x.hard / x.n >= 0.5).map(x => `<li>${escapeHtml(pretty(x.g))} — ${x.hard} of ${x.n} times felt confusing or tiring</li>`).join("");
+    box.innerHTML = `<div class="p-quiz-card"><div>${rows}</div>${flags ? `<div style="margin-top:8px;font-weight:700;font-size:.85rem">👀 Worth a chat or a break:<ul style="margin:4px 0 0 18px">${flags}</ul></div>` : '<div style="margin-top:8px;font-weight:700;font-size:.85rem;color:#15803d">No worrying pattern — nothing stands out. 💚</div>'}</div>`;
   }
 
   const FOCUS_TOPICS = [["addition-subtraction-add", "Addition"], ["addition-subtraction-sub", "Subtraction"], ["multiplication", "Multiplication"], ["division", "Division"], ["measurement", "Measurement"], ["rounding", "Rounding"]];

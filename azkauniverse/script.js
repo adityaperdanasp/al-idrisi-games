@@ -1183,6 +1183,8 @@ function renderMC(stage, q) {
           kidAnswer: q.options[originalIndex],
           topic: state.levelId
         };
+        // Spaced repetition (PM round 12, item 17): remember this one for Quick Review.
+        if (!q.image && window.AIGLeaderboard && AIGLeaderboard.srsAdd) AIGLeaderboard.srsAdd({ prompt: q.question, options: q.options, correctLabel: q.options[q.answer], key: state.levelId }, "sci");
       }
       // Wrong answers keep the correct button highlighted green for 5s
       // (instead of the usual 1.5s) so Azka has time to see the right one.

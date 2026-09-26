@@ -33,13 +33,13 @@ function start() {
   function pick(btn, o) {
     const ok = o === q.correctLabel;
     if (ok) {
-      if (misses === 0) { right++; $("zm-r").textContent = right; K.record("zen-mode", q.key, true); }
+      if (misses === 0) { right++; $("zm-r").textContent = right; K.record("zen-mode", q.key, true, q); }
       btn.classList.add("right");
       $("zm-msg").textContent = CHEER[K.rand(0, CHEER.length - 1)];
       $("zm-opts").querySelectorAll(".kit-opt").forEach(b => b.disabled = true);
       setTimeout(() => { $("zm-msg").textContent = ""; next(); }, 900);
     } else {
-      if (misses === 0) K.record("zen-mode", q.key, false);
+      if (misses === 0) K.record("zen-mode", q.key, false, q);
       misses++; btn.disabled = true; btn.style.opacity = ".35";
       $("zm-msg").textContent = GENTLE[K.rand(0, GENTLE.length - 1)];
     }

@@ -59,7 +59,7 @@ async function init() {
       $("bt-body").innerHTML = `<div class="bt-stars">${Array.from({ length: 5 }, (_, i) => i < right ? "⭐" : "☆").join("")}</div><div class="kit-sub" style="text-align:center;margin:0">Question ${n}/5</div><div class="kit-q">${K.esc(q.prompt)}</div><div class="kit-opts">${q.options.map(o => `<button class="kit-opt" data-o="${K.esc(o)}">${K.esc(o)}</button>`).join("")}</div>`;
       $("bt-body").querySelectorAll(".kit-opt").forEach(b => b.onclick = () => {
         const ok = b.dataset.o === q.correctLabel;
-        K.record("bo-tutor", q.key, ok);
+        K.record("bo-tutor", q.key, ok, q);
         $("bt-body").querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.dataset.o === q.correctLabel) x.classList.add("right"); });
         if (ok) { right++; $("bt-say").textContent = "Yes! 🎉 Exactly right."; }
         else { b.classList.add("wrong"); $("bt-say").textContent = `Almost! The answer is ${q.correctLabel}. ${TIPS[subjectOf(t.game)]}`; }

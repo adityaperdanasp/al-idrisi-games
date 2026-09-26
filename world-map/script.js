@@ -25,6 +25,7 @@ const REGIONS = [
   { name: "Home Harbor", emoji: "⚓", bg: "linear-gradient(160deg,#ede9fe,#c4b5fd)", nodes: [
     ["bo-home", "🏠", "Bo's World", "../bo-home/", null], ["my-town", "🏘️", "My Town", "../my-town/", null], ["bo-tutor", "🎓", "Bo's Tutor", "../bo-tutor/", "bo-tutor"],
     ["friend-duel", "⚔️", "Friend Duel", "../friend-duel/", "friend-duel"], ["zen-mode", "🍃", "Zen Mode", "../zen-mode/", "zen-mode"], ["extras", "🎁", "Extras", "../extras/", null],
+    ["ready-check", "✅", "Level-Up Check", "../ready-check/", null], ["quick-review", "🔁", "Quick Review", "../quick-review/", "quick-review"], ["word-book", "📕", "Word Book", "../word-book/", "word-book"],
     ["game-room", "🎮", "Game Room", "../game-room/", null]] }
 ];
 

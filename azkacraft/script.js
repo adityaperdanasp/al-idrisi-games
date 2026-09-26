@@ -559,6 +559,8 @@ function handleMCAnswer(selected, q, grid) {
     session.lastWrong = { question: q.prompt, correctAnswer: q.answer, kidAnswer: selected, topic: session.chapter.topic };
     session.score += 3;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
+    // Spaced repetition (PM round 12, item 17): remember this one for Quick Review.
+    if (window.AIGLeaderboard && AIGLeaderboard.srsAdd && q.options && q.options.length === 4) AIGLeaderboard.srsAdd({ prompt: q.prompt, options: q.options, correctLabel: q.answer, key: session.chapter.topic }, "lang");
     nextQuestion(5000);
   }
 }

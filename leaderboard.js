@@ -2657,6 +2657,133 @@
   }
 
   // =====================================================================
+  // PM ROUND 12, BATCH 3 -- spaced repetition (also the Word Book),
+  // level-up readiness checks, feelings log, topic certificates.
+  // =====================================================================
+  // ---- 17 (+16). Spaced repetition -- every wrong multiple-choice answer is
+  // stored under players/{id}/srs and comes back after 1, 3, 7 and 14 days;
+  // answering right at the last step "masters" it. Language items double as
+  // the Word Book (subject "lang").
+  const SRS_STEPS = [1, 3, 7, 14]; // days
+  const srsId = text => "q" + seedFrom(String(text)).toString(36);
+  async function srsAdd(q, subject) {
+    const me = perksPlayer();
+    if (!me || !q || !q.prompt || !q.options || !q.correctLabel) return;
+    try {
+      const ref = aigDb.ref(`players/${me.id}/srs/${srsId(q.prompt)}`);
+      const snap = await ref.get();
+      const now = Date.now();
+      if (snap.exists()) {
+        const d = snap.val();
+        await ref.update({ n: (d.n || 1) + 1, step: 0, due: Math.min(d.due || now + SRS_STEPS[0] * 86400000, now + SRS_STEPS[0] * 86400000) });
+      } else {
+        await ref.set({ p: String(q.prompt).slice(0, 220), o: q.options.slice(0, 4).map(x => String(x).slice(0, 80)), a: String(q.correctLabel).slice(0, 80), s: subject || q.subject || "math", k: q.key || "", n: 1, step: 0, due: now + SRS_STEPS[0] * 86400000, at: now });
+      }
+    } catch (e) { /* never break a game over a review note */ }
+  }
+  async function srsAll() {
+    const me = perksPlayer();
+    if (!me) return [];
+    const snap = await aigDb.ref(`players/${me.id}/srs`).get();
+    return Object.entries(snap.exists() ? snap.val() : {}).map(([id, v]) => ({ id, ...v }));
+  }
+  async function srsStats() {
+    const all = await srsAll();
+    const now = Date.now();
+    const m = await aigDb.ref(`players/${(perksPlayer() || {}).id}/srsMastered`).get().catch(() => null);
+    return { total: all.length, due: all.filter(x => x.due <= now).length, mastered: m && m.exists() ? (m.val() || 0) : 0, words: all.filter(x => x.s === "lang").length };
+  }
+  async function srsDue(limit) {
+    const now = Date.now();
+    return (await srsAll()).filter(x => x.due <= now).sort((a, b) => a.due - b.due).slice(0, limit || 8);
+  }
+  async function srsResult(id, ok) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    const ref = aigDb.ref(`players/${me.id}/srs/${id}`);
+    const snap = await ref.get();
+    if (!snap.exists()) return { ok: false };
+    const d = snap.val(), now = Date.now();
+    if (!ok) { await ref.update({ step: 0, n: (d.n || 1) + 1, due: now + SRS_STEPS[0] * 86400000 }); return { ok: true, mastered: false }; }
+    const next = (d.step || 0) + 1;
+    if (next >= SRS_STEPS.length) {
+      await ref.remove();
+      await aigDb.ref(`players/${me.id}/srsMastered`).transaction(n => (n || 0) + 1);
+      return { ok: true, mastered: true };
+    }
+    await ref.update({ step: next, due: now + SRS_STEPS[next] * 86400000 });
+    return { ok: true, mastered: false, step: next };
+  }
+
+  // ---- 15. Level-up readiness -- a topic path where each topic lists what to
+  // know first. A passed 5-question check is remembered (players/{id}/ready).
+  const READY_PATH = [
+    { id: "multiplication", name: "Multiplication", after: null },
+    { id: "division", name: "Division", after: "multiplication" },
+    { id: "fractions", name: "Fractions", after: "division" },
+    { id: "measurement", name: "Measurement", after: "multiplication" },
+    { id: "rounding", name: "Rounding", after: null },
+    { id: "words", name: "Spelling & Grammar", after: null },
+    { id: "science", name: "Science Basics", after: null }
+  ];
+  async function getReadiness() {
+    const me = perksPlayer();
+    if (!me) return { path: READY_PATH, passed: {} };
+    const s = await aigDb.ref(`players/${me.id}/ready`).get();
+    return { path: READY_PATH, passed: s.exists() ? s.val() : {} };
+  }
+  async function saveReadiness(id, score) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    const ref = aigDb.ref(`players/${me.id}/ready/${id}`);
+    const snap = await ref.get();
+    const prev = snap.exists() ? snap.val() : null;
+    if (score >= 4) await ref.set({ score, at: todayKey(), passed: true }); else if (!prev) await ref.set({ score, at: todayKey(), passed: false });
+    return { ok: true, passed: score >= 4 };
+  }
+
+  // ---- 18. Feelings log -- one emoji after a session; parents see the pattern.
+  const MOODS = [["😄", "Happy"], ["🙂", "Okay"], ["😕", "Confused"], ["😴", "Tired"]];
+  async function logMood(gameId, emoji) {
+    const me = perksPlayer();
+    if (!me || !MOODS.some(m => m[0] === emoji)) return { ok: false };
+    await aigDb.ref(`players/${me.id}/moods/${todayKey()}`).push({ g: String(gameId).slice(0, 30), e: emoji, at: Date.now() });
+    return { ok: true };
+  }
+
+  // ---- 19. Topic certificates -- earned when a topic has 30+ answers at 85%+.
+  // (Each is remembered with the date it was first seen.)
+  async function getTopicCerts() {
+    const me = perksPlayer();
+    if (!me) return [];
+    const [ts, saved] = await Promise.all([readTopicStats(me), aigDb.ref(`players/${me.id}/topicCerts`).get()]);
+    const dates = saved.exists() ? saved.val() : {};
+    const out = [];
+    Object.entries(ts).forEach(([game, topics]) => Object.entries(topics || {}).forEach(([topic, v]) => {
+      const c = (v && v.correct) || 0, w = (v && v.wrong) || 0, n = c + w;
+      if (["drive-mode", "plane-mode", "ninja-runner", "speed-round", "focus-round", "azka-pr", "weekly-boss-rush", "perk-test", "island", "duel", "reading", "deduction", "grammar", "speaking", "geography", "science"].includes(topic)) return;
+      const key = `${game}--${topic}`.replace(/[.#$/\[\]]/g, "-");
+      const near = n >= 30 && c / n >= 0.85;
+      if (near && !dates[key]) { dates[key] = todayKey(); aigDb.ref(`players/${me.id}/topicCerts/${key}`).set(dates[key]).catch(() => {}); }
+      if (dates[key] || near) out.push({ key, game, topic, gameLabel: GAME_LABEL[game] || game, title: prettyTopic(topic), acc: Math.round(c / Math.max(1, n) * 100), n, date: dates[key] || todayKey(), earned: true });
+      else if (n >= 10) out.push({ key, game, topic, gameLabel: GAME_LABEL[game] || game, title: prettyTopic(topic), acc: Math.round(c / n * 100), n, earned: false });
+    }));
+    return out.sort((a, b) => (b.earned - a.earned) || (b.acc - a.acc));
+  }
+  async function getMoodSummary(childId, days) {
+    const snap = await aigDb.ref(`players/${childId}/moods`).get();
+    const all = snap.exists() ? snap.val() : {};
+    const cutoff = Date.now() - (days || 14) * 86400000;
+    const byMood = {}, byGame = {};
+    Object.values(all).forEach(day => Object.values(day || {}).forEach(m => {
+      if (m.at < cutoff) return;
+      byMood[m.e] = (byMood[m.e] || 0) + 1;
+      (byGame[m.g] = byGame[m.g] || {})[m.e] = ((byGame[m.g] || {})[m.e] || 0) + 1;
+    }));
+    return { byMood, byGame };
+  }
+
+  // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
   // players so skin.js can call it unconditionally.
@@ -5656,6 +5783,7 @@
     getSkinPrefs, awardMiniGame,
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
     getGeoStamps, addGeoStamp, getDungeon, saveDungeon,
+    srsAdd, srsAll, srsStats, srsDue, srsResult, getReadiness, saveReadiness, logMood, MOODS, getTopicCerts, getMoodSummary,
     getLetters, markLetterRead, solveLetter, getMuseum, getIslands, masterIsland, claimIslandEnding, getGameProgress,
     getBoStatus, claimBoGift, getBoHome, buyFurniture, placeFurniture, getFamiliar, adoptFamiliar, feedFamiliar, FAMILIARS, BO_PERKS,
     listPlayerNames, getWeeklyReport, getWeakTopics, getTutorMastered, markTutorMastered,

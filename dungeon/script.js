@@ -70,7 +70,7 @@ async function init() {
     function answer(btn, o) {
       if (locked) return; locked = true;
       const ok = o === q.correctLabel;
-      K.record("dungeon", q.key, ok);
+      K.record("dungeon", q.key, ok, q);
       btn.classList.add(ok ? "right" : "wrong");
       if (ok) {
         let dmg = atk + (cid === "wizard" && q.subject !== "math" ? 2 : 0);

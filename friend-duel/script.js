@@ -62,7 +62,7 @@ async function init() {
     $("fd-q").oninput = draw; draw();
   }
   function challenge(friend) {
-    const qs = Array.from({ length: 8 }, () => { const q = K.question({}); return { p: q.prompt, o: q.options, a: q.correctLabel, k: q.key }; });
+    const qs = Array.from({ length: 8 }, () => { const q = K.question({}); return { p: q.prompt, o: q.options, a: q.correctLabel, k: q.key, s: q.subject }; });
     play({ id: null, bot: !!friend.bot, from: { id: player.id, name: player.name }, to: friend, qs, createdAt: Date.now(), scores: {} });
   }
 
@@ -74,7 +74,7 @@ async function init() {
       $("fd-main").innerHTML = `<div class="kit-card"><div class="kit-sub" style="text-align:center;margin:0">Question ${i + 1}/8 · vs ${K.esc((d.from.id === player.id ? d.to : d.from).name)}</div><div class="kit-q">${K.esc(q.p)}</div><div class="kit-opts">${q.o.map(o => `<button class="kit-opt" data-o="${K.esc(o)}">${K.esc(o)}</button>`).join("")}</div></div>`;
       $("fd-main").querySelectorAll(".kit-opt").forEach(b => b.onclick = () => {
         const ok = b.dataset.o === q.a;
-        K.record("friend-duel", q.k || "duel", ok);
+        K.record("friend-duel", q.k || "duel", ok, { prompt: q.p, options: q.o, correctLabel: q.a, key: q.k, subject: q.s || "math" });
         $("fd-main").querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.dataset.o === q.a) x.classList.add("right"); });
         if (ok) n++; else b.classList.add("wrong");
         setTimeout(() => { i++; ask(); }, 700);

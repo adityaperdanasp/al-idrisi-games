@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Level-Up Check — BrainBox</title>
+<meta name="theme-color" content="#1d4ed8">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .rc-topic{display:flex;justify-content:space-between;align-items:center;width:100%;border:2px solid rgba(0,0,0,.08);background:#faf6ff;border-radius:14px;padding:12px;font-family:"Baloo 2",sans-serif;font-weight:800;cursor:pointer;color:inherit;margin-bottom:8px;text-align:left}
+  .rc-topic small{display:block;color:#7a6a5a;font-weight:700}
+  .rc-topic.pass{background:#e5f5e8;border-color:#34c759}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">✅ Level-Up Check</div></div>
+
+  <div class="kit-card" id="rc-main"></div>
+  <div id="rc-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Level-Up Check',accent:'#1d4ed8',bg:'linear-gradient(180deg,#dbeafe,#bfd7fb)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

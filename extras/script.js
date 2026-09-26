@@ -752,9 +752,32 @@ SECTIONS.push({ id: "megaquest", async render(el) {
   const nb = el.querySelector("#mq-new"); if (nb) nb.onclick = async () => { await LB.endMegaQuest(); this.render(el); };
 }});
 
+/* ---- 17. Quick Review + 19. Topic Certificates ---- */
+SECTIONS.push({ id: "review", async render(el) {
+  const st = await LB.srsStats();
+  el.innerHTML = `<h2>🔁 Quick Review</h2><p class="ex-sub">Questions you missed come back after 1, 3, 7 and 14 days so they really stick.</p>
+    <div class="ex-row"><span class="ex-stat">${st.due} due</span><span class="ex-sub" style="margin:0">${st.total} saved · ${st.mastered} mastered · ${st.words} word cards</span>
+    <a class="ex-btn" style="text-decoration:none;${st.due ? "" : "opacity:.5"}" href="../quick-review/">Review</a><a class="ex-btn alt" style="text-decoration:none" href="../word-book/">📕 Word Book</a></div>`;
+}});
+SECTIONS.push({ id: "topiccerts", async render(el) {
+  const list = await LB.getTopicCerts();
+  const earned = list.filter(c => c.earned);
+  if (!list.length) { el.innerHTML = '<h2>🎓 Topic Certificates</h2><p class="ex-sub">Answer 30+ questions in a topic with 85% or more right to earn a certificate for it. Keep playing!</p>'; return; }
+  el.innerHTML = `<h2>🎓 Topic Certificates</h2><p class="ex-sub">${earned.length} earned. A topic needs 30+ answers at 85%+ right. Tap an earned one to make a picture you can save.</p>
+    <div class="ex-chip-row">${list.slice(0, 24).map((c, i) => `<button class="ex-item" data-i="${i}" ${c.earned ? "" : "disabled"} style="flex:0 1 46%;${c.earned ? "" : "opacity:.55"}"><div class="ex-item-emoji">${c.earned ? "🎓" : "📈"}</div><div class="ex-item-name">${esc(c.title)}</div><div class="ex-item-own">${esc(c.gameLabel)} · ${c.acc}% (${c.n})</div></button>`).join("")}</div><div id="tc-view"></div>`;
+  el.querySelectorAll("[data-i]").forEach(b => b.onclick = () => {
+    const c = list[+b.dataset.i];
+    const url = drawCertificate({ emoji: "🎓", title: `${c.title} Master`, desc: `scored ${c.acc}% on ${c.n} ${c.gameLabel} questions in ${c.title}`, date: c.date }, player.name);
+    el.querySelector("#tc-view").innerHTML = `<img src="${url}" alt="Certificate" style="width:100%;border-radius:12px;margin-top:12px;box-shadow:0 3px 10px rgba(0,0,0,.15)"><div class="ex-row" style="justify-content:center;margin-top:8px"><a class="ex-btn" style="text-decoration:none" download="brainbox-${esc(c.key)}.png" href="${url}">💾 Save picture</a></div>`;
+    if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3);
+  });
+}});
+
 /* ---- Quick links ---- */
 SECTIONS.push({ id: "gamelinks", async render(el) {
   el.innerHTML = `<h2>🎮 More to explore</h2><div class="ex-chip-row">
+    <a class="ex-item" href="../world-map/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🗺️</div><div class="ex-item-name">World Map</div></a>
+    <a class="ex-item" href="../ready-check/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">✅</div><div class="ex-item-name">Level-Up Check</div></a>
     <a class="ex-item" href="../bo-home/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🏠</div><div class="ex-item-name">Bo's World</div></a>
     <a class="ex-item" href="../game-room/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🎮</div><div class="ex-item-name">Game Room</div></a>
     <a class="ex-item" href="../bo-tutor/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🎓</div><div class="ex-item-name">Bo's Tutor</div></a>

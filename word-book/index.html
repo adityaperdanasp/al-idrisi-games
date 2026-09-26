@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Word Book — BrainBox</title>
+<meta name="theme-color" content="#b91c1c">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .wb-tabs{display:flex;gap:8px;padding:0 14px 10px}
+  .wb-tab{flex:1;border:none;border-radius:12px;padding:9px;font-family:"Baloo 2",sans-serif;font-weight:800;background:rgba(0,0,0,.07);color:inherit;cursor:pointer}
+  .wb-tab.on{background:var(--kit-accent);color:#fff}
+  .wb-entry{padding:10px 0;border-top:1px solid #f4e6e6}.wb-entry:first-child{border-top:0}
+  .wb-a{display:inline-block;background:#dcfce7;color:#15803d;border-radius:8px;padding:1px 8px;font-weight:800;font-size:.85rem}
+  .wb-meta{font-size:.68rem;color:#8a7a6a;font-weight:700;margin-top:3px}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">📕 Word Book</div></div>
+
+  <div class="wb-tabs"><button class="wb-tab on" data-t="book">📕 My words</button><button class="wb-tab" data-t="practice">🎯 Practice</button></div>
+  <div id="wb-main"></div><div id="wb-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Word Book',accent:'#b91c1c',bg:'linear-gradient(180deg,#fdeeee,#f8d7d7)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

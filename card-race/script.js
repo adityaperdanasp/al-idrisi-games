@@ -44,7 +44,7 @@ function start() {
       b.className = "kit-opt"; b.type = "button"; b.textContent = o;
       b.onclick = () => {
         const ok = o === q.correctLabel;
-        K.record("card-race", q.key, ok);
+        K.record("card-race", q.key, ok, q);
         ov.querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.textContent === q.correctLabel) x.classList.add("right"); });
         if (!ok) b.classList.add("wrong");
         setTimeout(() => {
