@@ -193,6 +193,9 @@
     // have; a parent checking here any time still sees where things stand) ----
     renderAchievements(player);
 
+    // ---- Daily play limit (PM round 13, item 15) ----
+    renderLimit(player.playLimit ? (player.playLimit.minutes | 0) : 0);
+
     // ---- Feelings pattern (PM round 12, item 18) ----
     renderMoods(player.moods || {});
 
@@ -276,6 +279,16 @@
         <span class="p-achievement-value">${escapeHtml(String(r.value))}</span>
         ${r.sub ? `<span class="p-achievement-sub">${escapeHtml(r.sub)}</span>` : ""}
       </div>`).join("");
+  }
+
+  function renderLimit(current) {
+    const box = document.getElementById("p-limit-opts");
+    box.innerHTML = [[0, "No limit"], [30, "30 min"], [45, "45 min"], [60, "60 min"], [90, "90 min"]].map(([m, l]) => `<label style="display:inline-flex;align-items:center;gap:6px;margin:0 14px 8px 0;font-weight:700"><input type="radio" name="p-limit" value="${m}" ${m === current ? "checked" : ""}> ${l}</label>`).join("");
+    document.getElementById("p-limit-save").onclick = async () => {
+      const m = parseInt((box.querySelector("input:checked") || {}).value || "0", 10) || 0;
+      if (m) await aigDb.ref(`players/${childId}/playLimit`).set({ minutes: m, setAt: Date.now() }); else await aigDb.ref(`players/${childId}/playLimit`).remove();
+      document.getElementById("p-limit-msg").textContent = m ? `✅ Saved: ${m} minutes a day (applies the next time your child opens the app).` : "✅ Limit removed.";
+    };
   }
 
   function renderMoods(moods) {

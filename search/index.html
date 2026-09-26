@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Search — BrainBox</title>
+<meta name="theme-color" content="#2563eb">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .sr-in{width:calc(100% - 28px);margin:0 14px 12px;padding:14px;border:3px solid #93b4f0;border-radius:16px;font:inherit;font-weight:800;font-size:1.05rem}
+  .sr-chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
+  .sr-chip{border:0;background:#fff;border-radius:100px;padding:6px 12px;font-weight:800;font-size:.78rem;cursor:pointer;color:#1e40af}
+  .sr-res{display:flex;gap:10px;align-items:center;text-decoration:none;color:inherit;padding:10px 0;border-top:1px solid #eef2f9}
+  .sr-res:first-child{border-top:0}
+  .sr-e{font-size:1.8rem;width:44px;text-align:center}
+  .sr-n{font-family:"Baloo 2",sans-serif;font-weight:800}
+  .sr-d{font-size:.74rem;color:#6b7a90;font-weight:700}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../" class="kit-back">←</a><div class="kit-title">🔍 Search</div></div>
+
+  <input class="sr-in" id="sr-in" type="search" placeholder="Search: fractions, spelling, pets, …" autocomplete="off">
+  <div class="sr-chips" id="sr-chips"></div>
+  <div class="kit-card" id="sr-out"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Search',accent:'#2563eb',bg:'linear-gradient(180deg,#e6efff,#cfe0fb)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

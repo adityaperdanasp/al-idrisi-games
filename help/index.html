@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Help — BrainBox</title>
+<meta name="theme-color" content="#be123c">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  details{border-top:1px solid #f4e1e5;padding:10px 0}
+  details:first-of-type{border-top:0}
+  summary{font-family:"Baloo 2",sans-serif;font-weight:800;cursor:pointer;list-style:none}
+  summary::before{content:"❓ "}
+  details p{margin:8px 0 0;font-weight:700;font-size:.88rem;line-height:1.5;color:#4b3a3a}
+  .hp-ta{width:100%;min-height:90px;padding:10px;border:2px solid #f2c5cd;border-radius:12px;font:inherit;margin-bottom:8px}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../" class="kit-back">←</a><div class="kit-title">🆘 Help</div></div>
+
+  <div class="kit-card"><div class="kit-q" style="text-align:left;margin:0 0 4px">Bo, I'm confused!</div><div id="hp-faq"></div></div>
+  <div class="kit-card"><div class="kit-q" style="text-align:left;margin:0 0 4px">Something not working?</div><p class="kit-sub">Tell us what happened — what you were doing and what went wrong. A grown-up will read it.</p>
+    <textarea class="hp-ta" id="hp-text" maxlength="600" placeholder="Example: When I tapped Play in Zombie Defense the screen went white…"></textarea>
+    <button class="kit-btn block" id="hp-send">Send to Adit</button><div class="kit-bonus" id="hp-msg"></div></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Help',accent:'#be123c',bg:'linear-gradient(180deg,#ffeef1,#fbd6dc)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

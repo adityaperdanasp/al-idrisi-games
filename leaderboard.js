@@ -2784,6 +2784,45 @@
   }
 
   // =====================================================================
+  // PM ROUND 13, BATCH 1 -- settings that follow the player, play limit,
+  // data export, problem reports.
+  // =====================================================================
+  const SETTINGS_KEYS = ["fs", "hc", "dys", "rm", "ra", "juiceOff", "fxOff"];
+  async function getSettings() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const s = await aigDb.ref(`players/${me.id}/settings`).get();
+    return s.exists() ? s.val() : null;
+  }
+  async function saveSettings(obj) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    const clean = {};
+    SETTINGS_KEYS.forEach(k => { if (obj[k] !== undefined) clean[k] = typeof obj[k] === "number" ? obj[k] : !!obj[k]; });
+    await aigDb.ref(`players/${me.id}/settings`).set(clean);
+    return { ok: true };
+  }
+  async function getPlayLimit() {
+    const me = perksPlayer();
+    if (!me) return 0;
+    const s = await aigDb.ref(`players/${me.id}/playLimit`).get();
+    return s.exists() ? (s.val().minutes | 0) : 0;
+  }
+  async function exportMyData() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const s = await aigDb.ref(`players/${me.id}`).get();
+    return { player: me.name, id: me.id, exportedAt: new Date().toISOString(), note: "BrainBox progress backup. To use it on a new device just sign in with the same name and PIN.", data: s.exists() ? s.val() : {} };
+  }
+  async function sendReport(text, page) {
+    const me = perksPlayer();
+    const t = String(text || "").trim().slice(0, 600);
+    if (!me || t.length < 5) return { ok: false, reason: "bad-amount" };
+    await aigDb.ref("leaderboard/reports").push({ pid: me.id, name: me.name, text: t, page: String(page || "").slice(0, 80), at: Date.now(), ua: (navigator.userAgent || "").slice(0, 120) });
+    return { ok: true };
+  }
+
+  // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
   // players so skin.js can call it unconditionally.
@@ -5783,6 +5822,7 @@
     getSkinPrefs, awardMiniGame,
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
     getGeoStamps, addGeoStamp, getDungeon, saveDungeon,
+    getSettings, saveSettings, getPlayLimit, exportMyData, sendReport,
     srsAdd, srsAll, srsStats, srsDue, srsResult, getReadiness, saveReadiness, logMood, MOODS, getTopicCerts, getMoodSummary,
     getLetters, markLetterRead, solveLetter, getMuseum, getIslands, masterIsland, claimIslandEnding, getGameProgress,
     getBoStatus, claimBoGift, getBoHome, buyFurniture, placeFurniture, getFamiliar, adoptFamiliar, feedFamiliar, FAMILIARS, BO_PERKS,

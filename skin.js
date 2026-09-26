@@ -17,6 +17,11 @@
   const KEY = "aig_skin_prefs";
   const DEFAULTS = { theme: "default", trail: "none", answerFx: "default", sticker: "", boHat: "none", boHatEmoji: "", familiar: "" };
   let prefs = Object.assign({}, DEFAULTS);
+  // ---- Accessibility (PM round 13, item 14) -- read synchronously from
+  // localStorage so the page paints right the first time.
+  const A11Y_KEY = "aig_a11y";
+  let a11y = {};
+  try { a11y = JSON.parse(localStorage.getItem(A11Y_KEY) || "{}") || {}; } catch (e) { a11y = {}; }
   let lastX = window.innerWidth / 2, lastY = window.innerHeight * 0.6;
 
   const AMBIENT = {
@@ -41,7 +46,7 @@
   };
 
   function off() { try { return localStorage.getItem("aig_skin_off") === "1"; } catch (e) { return false; } }
-  function reduced() { return window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  function reduced() { return (a11y.rm) || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); }
 
   function ensureStyle() {
     if (document.getElementById("aig-skin-style")) return;
@@ -221,19 +226,115 @@
     el.appendChild(b); setTimeout(() => b.remove(), 1250);
   }
 
+  // Big text (zoom), high contrast, dyslexia-friendly font, calmer motion, read-aloud.
+  function applyA11y() {
+    const h = document.documentElement;
+    h.classList.toggle("aig-hc", !!a11y.hc);
+    h.classList.toggle("aig-dys", !!a11y.dys);
+    h.classList.toggle("aig-rm", !!a11y.rm);
+    h.classList.remove("aig-fs1", "aig-fs2");
+    if (a11y.fs === 1.15) h.classList.add("aig-fs1"); else if (a11y.fs === 1.3) h.classList.add("aig-fs2");
+    if (!document.getElementById("aig-a11y-style")) {
+      const st = document.createElement("style"); st.id = "aig-a11y-style";
+      st.textContent = `
+        html.aig-fs1 body{zoom:1.15} html.aig-fs2 body{zoom:1.3}
+        html.aig-hc body{filter:contrast(1.2)}
+        html.aig-hc .kit-opt,html.aig-hc .kit-card,html.aig-hc .kit-btn,html.aig-hc button{border-color:#111!important}
+        html.aig-dys,html.aig-dys *{font-family:"Atkinson Hyperlegible","Comic Sans MS","Trebuchet MS",Verdana,sans-serif!important;letter-spacing:.03em;word-spacing:.08em}
+        html.aig-rm *,html.aig-rm *::before,html.aig-rm *::after{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important;scroll-behavior:auto!important}`;
+      document.head.appendChild(st);
+    }
+    if (a11y.dys && !document.getElementById("aig-dys-font")) {
+      const l = document.createElement("link"); l.id = "aig-dys-font"; l.rel = "stylesheet";
+      l.href = "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap";
+      document.head.appendChild(l);
+    }
+    setupReadAloud();
+  }
+  // Read-aloud: speaks a question when it appears (speechSynthesis), or on tap of 🔊 anywhere.
+  let raObserver = null, raTimer = null, raLast = "";
+  const RA_SELECTOR = ".kit-q, .question-text, #question-text, #q-text, .prompt-text, [data-speak]";
+  function speak(text) {
+    try { if (!window.speechSynthesis || !text) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = 0.9; speechSynthesis.speak(u); } catch (e) {}
+  }
+  function setupReadAloud() {
+    if (raObserver) { raObserver.disconnect(); raObserver = null; }
+    if (!a11y.ra || !document.body || !window.MutationObserver) return;
+    raObserver = new MutationObserver(() => {
+      clearTimeout(raTimer);
+      raTimer = setTimeout(() => {
+        const el = document.querySelector(RA_SELECTOR);
+        const t = el && el.offsetParent !== null ? el.textContent.trim() : "";
+        if (t && t !== raLast && t.length < 300) { raLast = t; speak(t); }
+      }, 500);
+    });
+    raObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+  function setA11y(next) {
+    a11y = Object.assign({}, a11y, next);
+    try { localStorage.setItem(A11Y_KEY, JSON.stringify(a11y)); } catch (e) {}
+    try { localStorage.setItem("aig_juice_off", a11y.juiceOff ? "1" : "0"); localStorage.setItem("aig_skin_off", a11y.fxOff ? "1" : "0"); } catch (e) {}
+    applyA11y(); applyAll();
+  }
+
+  // ---- Play limit (PM round 13, item 15) -- a soft, device-side daily
+  // limit a parent sets in the Parent Portal. Counts visible seconds per day
+  // in localStorage; over the limit, only calm pages stay open.
+  const LIMIT_KEY = "aig_play_limit", TIME_KEY = () => "aig_play_time_" + new Date().toISOString().slice(0, 10);
+  const CALM_PATHS = ["/zen-mode/", "/quick-review/", "/bo-home/", "/settings/", "/help/", "/parents/", "/word-book/"];
+  function limitMinutes() { try { return parseInt(localStorage.getItem(LIMIT_KEY) || "0", 10) || 0; } catch (e) { return 0; } }
+  function usedSeconds() { try { return parseInt(localStorage.getItem(TIME_KEY()) || "0", 10) || 0; } catch (e) { return 0; } }
+  function isCalmPage() { return CALM_PATHS.some(p => location.pathname.includes(p)) || location.pathname === "/" || /\/index\.html$/.test(location.pathname) && !/\/[a-z-]+\/index\.html$/.test(location.pathname); }
+  let limitShown = false;
+  function checkLimit() {
+    const lim = limitMinutes();
+    if (!lim || limitShown || usedSeconds() < lim * 60 || isCalmPage() || !document.body) return;
+    limitShown = true;
+    ensureStyle();
+    const o = document.createElement("div");
+    o.style.cssText = "position:fixed;inset:0;z-index:100002;background:rgba(40,20,70,.92);display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Nunito',sans-serif";
+    o.innerHTML = `<div style="background:#fffaf2;border-radius:24px;padding:24px 20px;max-width:340px;text-align:center;color:#3d2e22"><img src="${(location.pathname.split("/").length > 2 ? "../" : "")}icon-192.png" alt="Bo" style="width:76px;height:76px;border-radius:20px"><h2 style="font-family:'Baloo 2',sans-serif;margin:8px 0 4px">Time for a rest! 🌙</h2>
+      <p style="font-weight:700;font-size:.9rem;line-height:1.5;margin:0 0 14px">You've played ${lim} minutes today — that's your limit. Your brain worked hard! Want to do something calm instead?</p>
+      <a href="${(location.pathname.split("/").length > 2 ? "../" : "")}zen-mode/" style="display:block;background:#2e8b6a;color:#fff;border-radius:14px;padding:12px;text-decoration:none;font-weight:800;margin-bottom:8px">🍃 Zen Mode</a>
+      <a href="${(location.pathname.split("/").length > 2 ? "../" : "")}quick-review/" style="display:block;background:#0f766e;color:#fff;border-radius:14px;padding:12px;text-decoration:none;font-weight:800;margin-bottom:8px">🔁 Quick Review</a>
+      <a href="${(location.pathname.split("/").length > 2 ? "../" : "")}" style="display:block;background:#eee4f7;color:#3d2e22;border-radius:14px;padding:12px;text-decoration:none;font-weight:800">🏠 Back to the hub</a></div>`;
+    document.body.appendChild(o);
+  }
+  function startPlayClock() {
+    setInterval(() => {
+      if (document.hidden || isCalmPage()) return;
+      try { localStorage.setItem(TIME_KEY(), String(usedSeconds() + 5)); } catch (e) {}
+      checkLimit();
+    }, 5000);
+    setTimeout(checkLimit, 1200);
+  }
+
   function applyAll() {
     try { applyFamiliar(); } catch (e) {}
     try { applyWorld(); } catch (e) {}
     try { bindTrail(); } catch (e) {}
     try { applyHat(); } catch (e) {}
   }
+  function syncFromCloud() {
+    // Once per browser session: pull settings + parent play limit so they follow the child across devices.
+    try {
+      if (sessionStorage.getItem("aig_cloud_sync") === "1" || !(window.AIGLeaderboard && AIGLeaderboard.getSettings)) return false;
+      sessionStorage.setItem("aig_cloud_sync", "1");
+      AIGLeaderboard.getSettings().then(st => { if (st) setA11y(st); }).catch(() => {});
+      AIGLeaderboard.getPlayLimit().then(m => { try { localStorage.setItem(LIMIT_KEY, String(m || 0)); } catch (e) {} checkLimit(); }).catch(() => {});
+      return true;
+    } catch (e) { return false; }
+  }
   function load() {
+    try { applyA11y(); } catch (e) {}
+    try { startPlayClock(); } catch (e) {}
     try { const c = JSON.parse(localStorage.getItem(KEY) || "null"); if (c) prefs = Object.assign({}, DEFAULTS, c); } catch (e) {}
     applyAll();
     watchHat();
     let tries = 0;
     (function fetchFresh() {
       if (window.AIGLeaderboard && AIGLeaderboard.getSkinPrefs) {
+        syncFromCloud();
         AIGLeaderboard.getSkinPrefs().then(p => {
           prefs = Object.assign({}, DEFAULTS, p);
           try { localStorage.setItem(KEY, JSON.stringify(prefs)); } catch (e) {}
@@ -252,7 +353,7 @@
     }).catch(() => {});
   }
 
-  window.AIGSkin = { onAnswer, refresh, popSticker, burst: (x, y) => burst(x == null ? lastX : x, y == null ? lastY : y), get prefs() { return prefs; } };
+  window.AIGSkin = { setA11y, get a11y() { return a11y; }, speak, playUsedMinutes() { return Math.round(usedSeconds() / 60); }, limitMinutes, onAnswer, refresh, popSticker, burst: (x, y) => burst(x == null ? lastX : x, y == null ? lastY : y), get prefs() { return prefs; } };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", load);
   else load();
 })();

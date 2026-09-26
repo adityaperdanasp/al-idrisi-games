@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Settings — BrainBox</title>
+<meta name="theme-color" content="#475569">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .st-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #edf0f4}
+  .st-row:first-child{border-top:0}
+  .st-row b{font-family:"Baloo 2",sans-serif}
+  .st-row small{display:block;color:#7a6a5a;font-weight:700;font-size:.72rem;line-height:1.3}
+  .st-sw{flex:none;width:50px;height:28px;border-radius:100px;border:0;background:#cbd5e1;position:relative;cursor:pointer}
+  .st-sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s}
+  .st-sw.on{background:#22c55e}.st-sw.on::after{left:25px}
+  .st-seg{display:flex;gap:4px}
+  .st-seg button{border:0;border-radius:10px;padding:6px 10px;background:#e2e8f0;font-family:"Baloo 2",sans-serif;font-weight:800;cursor:pointer;color:inherit}
+  .st-seg button.on{background:#475569;color:#fff}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../" class="kit-back">←</a><div class="kit-title">⚙️ Settings</div></div>
+
+  <div class="kit-card"><div class="kit-q" style="text-align:left;margin:0 0 6px">♿ Comfort &amp; accessibility</div><div id="st-a11y"></div></div>
+  <div class="kit-card"><div class="kit-q" style="text-align:left;margin:0 0 6px">🔔 Effects &amp; sound</div><div id="st-fx"></div></div>
+  <div class="kit-card"><div class="kit-q" style="text-align:left;margin:0 0 6px">💾 My data</div>
+    <p class="kit-sub">Your progress is saved online under your name. To use BrainBox on a new phone or tablet, just sign in with the <b>same name and PIN</b> — everything (coins, pets, streaks, settings) comes with you. You can also keep a copy:</p>
+    <button class="kit-btn block" id="st-export">⬇️ Download my progress (JSON)</button><div class="kit-bonus" id="st-msg"></div></div>
+  <div class="kit-card"><div class="kit-q" style="text-align:left;margin:0 0 6px">❓ More</div>
+    <a class="kit-btn alt block" href="../help/">🆘 Help &amp; report a problem</a>
+    <button class="kit-btn alt block" id="st-tour">🎬 Show the welcome tour again</button>
+    <div class="kit-sub" id="st-time" style="margin:8px 0 0"></div></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Settings',accent:'#475569',bg:'linear-gradient(180deg,#eef2f7,#dbe3ee)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

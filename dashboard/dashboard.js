@@ -168,8 +168,19 @@
       renderHeatmap(lastRows);
       renderRoster(lastRows);
       renderApprovals();
+      renderReports();
       renderActiveDay(activeDayPicker.value);
     });
+  }
+
+  // Problem reports sent from help/ (PM round 13, item 19) -- stored under leaderboard/reports.
+  function renderReports() {
+    const box = document.getElementById("reports-list");
+    if (!box) return;
+    const rows = Object.entries((cache.leaderboard && cache.leaderboard.reports) || {}).map(([id, r]) => ({ id, ...r })).sort((a, b) => b.at - a.at);
+    const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    box.innerHTML = rows.length ? rows.map(r => `<div class="db-insight-card"><div><b>${esc(r.name)}</b> · ${new Date(r.at).toLocaleString("id-ID")}</div><div style="margin:6px 0">${esc(r.text)}</div><div style="opacity:.6;font-size:.8em">${esc(r.page || "")} ${esc(r.ua || "")}</div><button class="db-btn" data-del-report="${esc(r.id)}">Hapus</button></div>`).join("") : "<p>Belum ada laporan.</p>";
+    box.querySelectorAll("[data-del-report]").forEach(b => b.addEventListener("click", async () => { await AIGLeaderboard.db.ref("leaderboard/reports/" + b.dataset.delReport).remove(); loadAndRender(); }));
   }
 
   document.getElementById("db-refresh").addEventListener("click", loadAndRender);
