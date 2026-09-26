@@ -51,7 +51,9 @@ async function init() {
 
   async function newDuel() {
     const friends = await AIGLeaderboard.listPlayerNames();
-    $("fd-main").innerHTML = `<div class="kit-card"><input class="fd-search" id="fd-q" placeholder="Search for a friend…"><div id="fd-list"></div></div>`;
+    $("fd-main").innerHTML = `<div class="kit-card"><div class="fd-row" style="border:0;padding-top:0"><span><b>${K.bot.emoji} ${K.esc(K.bot.name)}</b> <span class="fd-tag">Bo-Bot · Lv ${K.bot.level}</span><br><small>Instant duel — no waiting!</small></span><button class="kit-btn" id="fd-bot" style="padding:6px 14px">Duel</button></div>
+      <input class="fd-search" id="fd-q" placeholder="Search for a friend…"><div id="fd-list"></div></div>`;
+    $("fd-bot").onclick = () => challenge({ id: "__bot__", name: K.bot.name, bot: true });
     const draw = () => {
       const q = $("fd-q").value.trim().toLowerCase();
       $("fd-list").innerHTML = friends.filter(f => !q || f.name.toLowerCase().includes(q)).slice(0, 30).map(f => `<div class="fd-row"><b>${K.esc(f.name)}</b><button class="kit-btn" data-f="${K.esc(f.id)}" data-n="${K.esc(f.name)}" style="padding:6px 14px">Challenge</button></div>`).join("") || '<div class="kit-sub" style="margin:0">No one found.</div>';
@@ -61,7 +63,7 @@ async function init() {
   }
   function challenge(friend) {
     const qs = Array.from({ length: 8 }, () => { const q = K.question({}); return { p: q.prompt, o: q.options, a: q.correctLabel, k: q.key }; });
-    play({ id: null, from: { id: player.id, name: player.name }, to: friend, qs, createdAt: Date.now(), scores: {} });
+    play({ id: null, bot: !!friend.bot, from: { id: player.id, name: player.name }, to: friend, qs, createdAt: Date.now(), scores: {} });
   }
 
   function play(d) {
@@ -80,6 +82,15 @@ async function init() {
     };
     async function finish() {
       const me = { n, ms: Date.now() - t0 };
+      if (d.bot) {
+        let bn = 0; for (let k = 0; k < 8; k++) if (Math.random() < K.bot.acc) bn++;
+        const won = n > bn || (n === bn && Math.random() < 0.5);
+        $("fd-main").innerHTML = "";
+        $("fd-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${won ? "🏆" : K.bot.emoji}</div><h2>${won ? "You beat " + K.esc(K.bot.name) + "!" : K.esc(K.bot.name) + " wins!"}</h2><p class="kit-sub">You ${n}/8 · ${K.esc(K.bot.name)} ${bn}/8<br>${K.bot.emoji} “${K.bot.quip(won ? "lose" : "win")}”</p><div class="kit-bonus" id="fd-bonus"></div><button class="kit-btn block" id="fd-ok">Back</button></div></div>`;
+        $("fd-ok").onclick = () => { $("fd-overlay").innerHTML = ""; newDuel(); };
+        K.finish("friend-duel", won ? 10 : 3, $("fd-bonus"));
+        return;
+      }
       let id = d.id;
       if (!id) { const ref = db.ref("leaderboard/duels").push(); id = ref.key; await ref.set({ from: d.from, to: d.to, qs: d.qs, createdAt: d.createdAt, scores: { [player.id]: me } }); }
       else await db.ref(`leaderboard/duels/${id}/scores/${player.id}`).set(me);

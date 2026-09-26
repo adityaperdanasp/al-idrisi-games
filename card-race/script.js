@@ -21,15 +21,15 @@ function start() {
   function render() {
     $("cr-hand").innerHTML = mine.map(c => `<div class="cr-c ${c.subject}" data-id="${c.id}">${ICON[c.subject]}<small>${LABEL[c.subject]}</small></div>`).join("");
     $("cr-ai").innerHTML = Array.from({ length: ai }, () => '<div class="cr-c back" style="width:40px;height:56px;font-size:1rem">🂠</div>').join("");
-    $("cr-ai-label").textContent = `🤖 Bo-Bot's hand — ${ai} card${ai === 1 ? "" : "s"}`;
+    $("cr-ai-label").textContent = `${K.bot.emoji} ${K.bot.name}'s hand (Lv ${K.bot.level}) — ${ai} card${ai === 1 ? "" : "s"}`;
     $("cr-hand").querySelectorAll(".cr-c").forEach(el => el.onclick = () => play(+el.dataset.id));
   }
   function aiTurn() {
     if (over) return;
-    if (Math.random() < 0.7) ai--; else ai = Math.min(MAX, ai + 1);
+    if (Math.random() < K.bot.acc) { ai--; $("cr-msg").textContent = `${K.bot.emoji} ${K.bot.quip(ai <= 1 ? "think" : Math.random() < 0.4 ? "win" : "think")}`; } else { ai = Math.min(MAX, ai + 1); $("cr-msg").textContent = `${K.bot.emoji} ${K.bot.quip("slip")}`; }
     render();
     if (ai <= 0) return finish(false);
-    aiTimer = setTimeout(aiTurn, K.rand(4200, 7200));
+    aiTimer = setTimeout(aiTurn, K.rand(Math.round(K.bot.speedMs * 0.7), Math.round(K.bot.speedMs * 1.15)));
   }
   function play(id) {
     if (busy || over) return;
@@ -60,11 +60,11 @@ function start() {
   }
   async function finish(won) {
     over = true; clearTimeout(aiTimer);
-    $("cr-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${won ? "🏆" : "🤖"}</div><h2>${won ? "You win!" : "Bo-Bot wins!"}</h2>
-      <p class="kit-sub">${won ? "Your hand is empty — well played!" : `You still had ${mine.length} card${mine.length === 1 ? "" : "s"}. Rematch?`}</p><div class="kit-bonus" id="cr-bonus"></div>
+    $("cr-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${won ? "🏆" : "🤖"}</div><h2>${won ? "You win!" : K.bot.name + " wins!"}</h2>
+      <p class="kit-sub">${won ? `Your hand is empty — well played! ${K.bot.emoji} “${K.bot.quip("lose")}”` : `${K.bot.emoji} “${K.bot.quip("win")}” You still had ${mine.length} card${mine.length === 1 ? "" : "s"}. Rematch?`}</p><div class="kit-bonus" id="cr-bonus"></div>
       <button class="kit-btn block" onclick="location.reload()">Play again</button><a class="kit-btn alt block" href="../game-room/">Game Room</a></div></div>`;
     K.finish("card-race", won ? 15 : 3, $("cr-bonus"));
   }
   render();
-  aiTimer = setTimeout(aiTurn, 5000);
+  aiTimer = setTimeout(aiTurn, Math.round(K.bot.speedMs * 0.8));
 }

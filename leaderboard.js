@@ -2522,6 +2522,141 @@
   }
 
   // =====================================================================
+  // PM ROUND 12, BATCH 2 -- Letters from Bo, Museum, Island adventure,
+  // World-map progress.
+  // =====================================================================
+  // ---- 5. Letters from Bo -- a new letter every 3 days, personalised from
+  // the weekly report / streak / familiar. Each has a small riddle worth 5 coins.
+  const LETTER_EVERY_MS = 3 * 86400000, LETTER_RIDDLE_COINS = 5;
+  const LETTER_TEMPLATES = [
+    { title: "Hello from Bo's window", body: "Dear {name}, I was looking out of my window today and thought of you! You have a {streak}-day streak going — that's what I call dedication. Keep it up!", r: ["What has hands but can't clap?", ["A clock", "A tree", "A cat"], 0] },
+    { title: "A tip for tricky days", body: "Dear {name}, some days a question feels too hard. When that happens I take one slow breath and read it again. {weakLine}", r: ["I have keys but no locks. What am I?", ["A piano", "A door", "A pocket"], 0] },
+    { title: "Bo counted the stars", body: "Dear {name}, last night I counted stars from my roof. {bestLine} Maybe tonight you can count some too?", r: ["Bo has 3 bags with 4 stars in each. How many stars?", ["7", "12", "10"], 1] },
+    { title: "Guess who visited?", body: "Dear {name}, {famLine} They asked me to tell you: you're doing great, and so am I — I'm level {level} now!", r: ["What gets wetter the more it dries?", ["A towel", "A cloud", "A sponge cake"], 0] },
+    { title: "The library trip", body: "Dear {name}, I went to the library and found a book about {bestTopic}. It made me think of how much you've learned lately.", r: ["What has a neck but no head?", ["A bottle", "A rope", "A shoe"], 0] },
+    { title: "A tiny challenge", body: "Dear {name}, here's a challenge just for you: try one round of a game you haven't played in a while. New things make your brain grow!", r: ["What month has 28 days?", ["Only February", "All of them", "None"], 1] },
+    { title: "Rainy day thoughts", body: "Dear {name}, it rained here and I stayed in with a warm drink. {weakLine} Learning is like planting: a little every day makes it grow.", r: ["What comes down but never goes up?", ["Rain", "A bird", "A ladder"], 0] },
+    { title: "Thank you!", body: "Dear {name}, thank you for playing with me. Every right answer helps me grow, and I noticed you got {cur} answers right this week. That's wonderful!", r: ["What can you catch but not throw?", ["A cold", "A ball", "A fish"], 0] },
+    { title: "Bo's secret", body: "Dear {name}, I'll tell you a secret: I make mistakes too, and that's how I learn the best. {weakLine}", r: ["What has one eye but cannot see?", ["A needle", "A cat", "A potato"], 0] },
+    { title: "See you soon", body: "Dear {name}, I'm off to explore a new island tomorrow. {bestLine} Wish me luck — and come find me when you're back!", r: ["What has to be broken before you can use it?", ["An egg", "A window", "A promise"], 0] }
+  ];
+  async function ensureLetter(me) {
+    const ref = aigDb.ref(`players/${me.id}/letters`);
+    const snap = await ref.get();
+    const all = snap.exists() ? snap.val() : {};
+    const list = Object.entries(all).map(([k, v]) => ({ k, ...v })).sort((a, b) => a.n - b.n);
+    const last = list[list.length - 1];
+    if (last && Date.now() - last.at < LETTER_EVERY_MS) return all;
+    const n = last ? last.n + 1 : 1;
+    const tpl = LETTER_TEMPLATES[(n - 1) % LETTER_TEMPLATES.length];
+    const [rep, st, fam, bo] = await Promise.all([getWeeklyReport(), getStreak(), getFamiliar(), getBoStatus()]);
+    const pretty = rep ? rep.pretty : prettyTopic;
+    const fill = {
+      name: me.name, streak: st.count || 0, level: bo ? bo.level : 1, cur: rep ? rep.cur : 0,
+      bestTopic: rep && rep.best ? pretty(rep.best.topic) : "learning",
+      bestLine: rep && rep.best ? `I heard you're really good at ${pretty(rep.best.topic)}!` : "I hear you've been practising a lot.",
+      weakLine: rep && rep.weak ? `${pretty(rep.weak.topic)} can be tricky — want to practise it together in my Tutor Session?` : "Whatever feels hard today will feel easier next week.",
+      famLine: fam && fam.adopted ? `${fam.adopted.name} the ${fam.adopted.emoji} came by to say hi.` : "A little bird stopped by to say hi."
+    };
+    const body = tpl.body.replace(/\{(\w+)\}/g, (_, key) => fill[key] != null ? fill[key] : "");
+    const key = "L" + String(n).padStart(4, "0");
+    const rec = { n, at: Date.now(), title: tpl.title, body, riddle: { q: tpl.r[0], o: tpl.r[1], a: tpl.r[2] }, read: false, solved: false };
+    await ref.child(key).set(rec);
+    all[key] = rec;
+    return all;
+  }
+  async function getLetters() {
+    const me = perksPlayer();
+    if (!me) return { letters: [], unread: 0 };
+    const all = await ensureLetter(me);
+    const letters = Object.entries(all).map(([k, v]) => ({ k, ...v })).sort((a, b) => b.n - a.n).slice(0, 12);
+    return { letters, unread: letters.filter(l => !l.read).length, coins: LETTER_RIDDLE_COINS };
+  }
+  async function markLetterRead(key) {
+    const me = perksPlayer();
+    if (me) await aigDb.ref(`players/${me.id}/letters/${key}/read`).set(true);
+  }
+  async function solveLetter(key, choice) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    const ref = aigDb.ref(`players/${me.id}/letters/${key}`);
+    const snap = await ref.get();
+    if (!snap.exists()) return { ok: false };
+    const l = snap.val();
+    if (l.solved) return { ok: false, reason: "daily-limit" };
+    if (choice !== l.riddle.a) return { ok: true, correct: false };
+    await ref.child("solved").set(true); // marker BEFORE paying
+    await creditWallet({ coins: LETTER_RIDDLE_COINS });
+    return { ok: true, correct: true, coins: LETTER_RIDDLE_COINS };
+  }
+
+  // ---- 6. Museum -- a read-only tour of everything you've collected. Floors
+  // open as the total number of exhibits grows.
+  async function getMuseum() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const rd = async path => { const s = await aigDb.ref(`players/${me.id}/${path}`).get(); return s.exists() ? s.val() : null; };
+    const [col, stamps, books, det, dun, tt, adv, fam, dino, town, oc, cert, tm] = await Promise.all([
+      getCollection(), getGeoStamps(), rd("books"), rd("detective"), getDungeon(), rd("tournamentTitles"), rd("advent/opened"), getFamiliar(), rd("dino/stage"), rd("town/tiles"), rd("ownedCosmetics"), getCertificates(), getTutorMastered()
+    ]);
+    const cards = col.pool.filter(c => col.owned[c.id]);
+    const bookList = Object.values(books || {});
+    const certs = cert ? cert.certs.filter(c => c.earned) : [];
+    const cosmetics = Object.values(oc || {}).reduce((a, m) => a + Object.keys(m || {}).length, 0);
+    const counts = { cards: cards.length, stamps: Object.keys(stamps).length, books: bookList.length, cases: Object.keys(det || {}).length, gear: Object.keys(dun.gear).length,
+      titles: Object.keys(tt || {}).length, gifts: Object.keys(adv || {}).length, certs: certs.length, cosmetics, mastered: Object.keys(tm).length };
+    const total = counts.cards + counts.stamps + counts.books + counts.cases + counts.gear + counts.titles + counts.certs + counts.mastered + Math.floor(cosmetics / 3);
+    return { counts, total, cards, stamps: Object.keys(stamps), books: bookList, certs, dinoStage: dino || 0, familiar: fam && fam.adopted, town: beautyOf(town || {}),
+      floors: [{ name: "Floor 1 — Cards & Stamps", need: 0 }, { name: "Floor 2 — Stories & Cases", need: 15 }, { name: "Floor 3 — Treasures", need: 40 }] };
+  }
+
+  // ---- 4. Island Adventure -- four islands (each mastered with 3 of 4
+  // right) unlock the Volcano finale; the ending depends on how many.
+  const ISLAND_IDS = ["fractions", "shapes", "words", "science"];
+  const ISLAND_MASTER_COINS = 10;
+  async function getIslands() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const s = await aigDb.ref(`players/${me.id}/islands`).get();
+    const d = s.exists() ? s.val() : {};
+    return { mastered: d.mastered || {}, endings: d.endings || {}, ids: ISLAND_IDS };
+  }
+  async function masterIsland(id) {
+    const me = perksPlayer();
+    if (!me || !ISLAND_IDS.includes(id)) return { ok: false };
+    const ref = aigDb.ref(`players/${me.id}/islands/mastered/${id}`);
+    if ((await ref.get()).exists()) return { ok: true, first: false };
+    await ref.set(true); // marker BEFORE paying
+    await creditWallet({ coins: ISLAND_MASTER_COINS });
+    return { ok: true, first: true, coins: ISLAND_MASTER_COINS };
+  }
+  async function claimIslandEnding(endingId, coins) {
+    const me = perksPlayer();
+    if (!me) return { ok: false };
+    const ref = aigDb.ref(`players/${me.id}/islands/endings/${endingId}`);
+    if ((await ref.get()).exists()) return { ok: true, first: false };
+    await ref.set(true);
+    const c = Math.max(0, Math.min(60, coins | 0));
+    if (c) await creditWallet({ coins: c });
+    return { ok: true, first: true, coins: c };
+  }
+
+  // ---- 8. World map -- per-game answer counts from topicStats, used to
+  // colour each map node (new / learning / silver / gold).
+  async function getGameProgress() {
+    const me = perksPlayer();
+    if (!me) return {};
+    const ts = await readTopicStats(me);
+    const out = {};
+    Object.entries(ts).forEach(([game, topics]) => {
+      let c = 0, w = 0;
+      Object.values(topics || {}).forEach(v => { c += (v && v.correct) || 0; w += (v && v.wrong) || 0; });
+      out[game] = { correct: c, wrong: w };
+    });
+    return out;
+  }
+
+  // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
   // players so skin.js can call it unconditionally.
@@ -5521,6 +5656,7 @@
     getSkinPrefs, awardMiniGame,
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
     getGeoStamps, addGeoStamp, getDungeon, saveDungeon,
+    getLetters, markLetterRead, solveLetter, getMuseum, getIslands, masterIsland, claimIslandEnding, getGameProgress,
     getBoStatus, claimBoGift, getBoHome, buyFurniture, placeFurniture, getFamiliar, adoptFamiliar, feedFamiliar, FAMILIARS, BO_PERKS,
     listPlayerNames, getWeeklyReport, getWeakTopics, getTutorMastered, markTutorMastered,
     getMegaQuest, startMegaQuest, claimMegaQuest, endMegaQuest, MEGA_DAYS,

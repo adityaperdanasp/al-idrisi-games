@@ -2176,3 +2176,8 @@ html[data-hub-theme="volcano"] .sc-card { background: #fbe9dd; }
 .sc-game-card.boworld .sc-game-icon { background: transparent; }
 .sc-game-card.boworld .sc-game-title { color: #a1246b; }
 .sc-game-card.boworld .sc-game-sub { color: #8a5a78; }
+
+.sc-game-card.worldmap { background: #dff5e4; transform: rotate(-0.4deg); }
+.sc-game-card.worldmap .sc-game-icon { background: transparent; }
+.sc-game-card.worldmap .sc-game-title { color: #15803d; }
+.sc-game-card.worldmap .sc-game-sub { color: #4f7a5a; }

@@ -39,6 +39,21 @@
     return { key: "multiplication", ...buildMc({ prompt: `${a} × ${b} = ?`, answer: String(a * b) }) };
   }
   // opts.subject: "math" | "lang" | "sci" | undefined (mixed)
+  // ---- Bo-Bot (PM round 12, item 9) -- the game AI has a level (from Bo's
+  // level, so it gets sharper as you do) and one of three personalities.
+  const BOT_TYPES = [
+    { id: "sunny", name: "Sunny", emoji: "😄", accBonus: 0, speedMult: 1, say: { think: ["Hmm, let me think! 🤔", "Ooh, a fun one!"], win: ["Yay! I did it! 🎉", "That was easy peasy!"], lose: ["You're so good! 👏", "Wow, you beat me!"], slip: ["Oops, I made a mistake!", "Whoops! Try again, me…"] } },
+    { id: "sly", name: "Sly", emoji: "😏", accBonus: -0.03, speedMult: 0.85, say: { think: ["Watch this…", "Too easy."], win: ["Ha! Faster than you!", "Too slow!"], lose: ["Hmph. Lucky…", "Okay, okay — good game."], slip: ["That wasn't on purpose!", "Hmm… slipped."] } },
+    { id: "newton", name: "Newton", emoji: "🤓", accBonus: 0.03, speedMult: 1.2, say: { think: ["Calculating…", "According to my notes…"], win: ["As expected!", "Elementary, my friend."], lose: ["Fascinating. You win!", "I must study more."], slip: ["An error in my calculations!", "Hmm, a rounding mistake."] } }
+  ];
+  function makeBot(level, playerId) {
+    let h = 0; for (let i = 0; i < (playerId || "x").length; i++) h = (h * 31 + playerId.charCodeAt(i)) >>> 0;
+    const t = BOT_TYPES[h % BOT_TYPES.length];
+    const lvl = Math.max(1, Math.min(12, level || 1));
+    return { ...t, level: lvl, acc: Math.min(0.92, 0.5 + 0.04 * lvl + t.accBonus), speedMs: Math.max(3200, (7000 - lvl * 320) * t.speedMult),
+      quip: kind => t.say[kind][rand(0, t.say[kind].length - 1)] };
+  }
+  let bot = makeBot(2, "x");
   let focus = null; // parent-picked topics (PM round 11, item 17), loaded by ready()
   function focusQuestion(diff) {
     if (!focus || !focus.topics.length || Math.random() > 0.35) return null;
@@ -121,9 +136,10 @@
     return `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${emoji || "🎮"}</div><p class="kit-sub">Please sign in from the hub first.</p><a href="../" class="kit-btn block">Back to Hub</a></div></div>`;
   }
   async function ready() {
+    try { const p = signedIn(); const b = window.AIGLeaderboard && AIGLeaderboard.getBoStatus ? await AIGLeaderboard.getBoStatus() : null; bot = makeBot(b ? b.level : 2, p ? p.id : "x"); } catch (e) {}
     try { if (window.AIGLeaderboard && AIGLeaderboard.getWeeklyFocus) focus = await AIGLeaderboard.getWeeklyFocus(); } catch (e) {}
     try { if (window.AIGQuestionPools) await Promise.race([AIGQuestionPools.ensurePools(), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}
   }
 
-  window.AIGKit = { rand, shuffle, esc, question, mathQuestion, buildMc, record, finish, mount, signedIn, signedOutHtml, ready };
+  window.AIGKit = { get bot() { return bot; }, rand, shuffle, esc, question, mathQuestion, buildMc, record, finish, mount, signedIn, signedOutHtml, ready };
 })();

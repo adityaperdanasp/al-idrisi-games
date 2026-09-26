@@ -107,6 +107,57 @@ TABS.push({ id: "radio", label: "🎧 Radio", async render(el) {
   paint();
 }});
 
+/* ---- 5. Letters from Bo ---- */
+TABS.push({ id: "letters", label: "✉️ Letters", async render(el) {
+  const d = await LB.getLetters();
+  el.innerHTML = `<div class="kit-card">${boHeader(d.unread ? `You have ${d.unread} new letter${d.unread === 1 ? "" : "s"}! I write a new one every few days.` : "No new letters right now. I'll write again soon!")}</div>
+    ${d.letters.map(l => `<div class="kit-card" data-k="${l.k}"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-family:'Baloo 2',sans-serif">${l.read ? "📭" : "📬"} ${K.esc(l.title)}</b><small style="color:#8a7a6a">${new Date(l.at).toLocaleDateString()}</small></div><div class="lt-body" style="display:none"></div></div>`).join("")}`;
+  el.querySelectorAll("[data-k]").forEach(card => {
+    const l = d.letters.find(x => x.k === card.dataset.k), body = card.querySelector(".lt-body");
+    const open = async () => {
+      body.style.display = "block";
+      body.innerHTML = `<p class="kit-sub" style="margin:10px 0;color:#3d2e22;font-size:.9rem">${K.esc(l.body)}</p><p class="kit-sub" style="margin:0 0 6px;font-weight:800;color:#3d2e22">🧩 Bo's riddle: ${K.esc(l.riddle.q)}</p>
+        ${l.solved ? '<div class="kit-bonus">✅ You solved it!</div>' : `<div class="kit-opts" style="grid-template-columns:1fr">${l.riddle.o.map((o, i) => `<button class="kit-opt" data-i="${i}">${K.esc(o)}</button>`).join("")}</div><div class="kit-bonus" style="margin-top:6px"></div>`}`;
+      if (!l.read) { l.read = true; LB.markLetterRead(l.k); card.querySelector("b").textContent = "📭 " + l.title; }
+      body.querySelectorAll(".kit-opt").forEach(b => b.onclick = async () => {
+        const r = await LB.solveLetter(l.k, +b.dataset.i);
+        if (r.correct) { l.solved = true; b.classList.add("right"); body.querySelector(".kit-bonus").textContent = `🎉 Right! +🪙${r.coins}`; if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3); body.querySelectorAll(".kit-opt").forEach(x => x.disabled = true); }
+        else { b.classList.add("wrong"); b.disabled = true; body.querySelector(".kit-bonus").textContent = "Not quite — try another!"; }
+      });
+    };
+    card.querySelector("div").onclick = () => { body.style.display === "block" ? body.style.display = "none" : open(); };
+  });
+}});
+
+/* ---- 6. Museum ---- */
+TABS.push({ id: "museum", label: "🏛️ Museum", async render(el) {
+  const m = await LB.getMuseum();
+  const flag = code => String.fromCodePoint(...code.toUpperCase().split("").map(c => 127397 + c.charCodeAt(0)));
+  const stage = ["🥚", "🦎", "🦕", "🦖", "🐲"][m.dinoStage] || "🥚";
+  const tile = (e, label) => `<div class="mu-t" title="${K.esc(label || "")}">${e}</div>`;
+  const rooms = [
+    [`${m.counts.cards} Collector Cards`, m.cards.map(c => tile(c.emoji, c.name)).join("") || '<span class="kit-sub">No cards yet</span>'],
+    [`${m.counts.stamps} Passport Stamps`, m.stamps.map(c => tile(flag(c), c)).join("") || '<span class="kit-sub">No stamps yet — try Geo Flight!</span>']
+  ];
+  const rooms2 = [
+    [`${m.counts.books} Storybooks`, m.books.map(b => tile(b.emoji, b.title)).join("") || '<span class="kit-sub">None yet — Story Maker!</span>'],
+    [`${m.counts.cases} Solved Cases`, m.counts.cases ? Array.from({ length: m.counts.cases }, () => tile("🔎")).join("") : '<span class="kit-sub">Word Detective awaits</span>'],
+    [`${m.counts.certs} Certificates`, m.certs.map(c => tile(c.emoji, c.title)).join("") || '<span class="kit-sub">Keep learning!</span>'],
+    [`${m.counts.titles} Tournament Titles`, m.counts.titles ? Array.from({ length: m.counts.titles }, () => tile("🏆")).join("") : '<span class="kit-sub">Win the Weekend Tournament</span>']
+  ];
+  const rooms3 = [
+    [`Dino Companion`, tile(stage, "Dino")], [`Familiar`, m.familiar ? tile(m.familiar.emoji, m.familiar.name) : '<span class="kit-sub">Adopt one in the Familiar tab</span>'],
+    [`${m.counts.gear} Dungeon Gear`, m.counts.gear ? Array.from({ length: m.counts.gear }, () => tile("⚔️")).join("") : '<span class="kit-sub">Explore the Dungeon</span>'],
+    [`Town Beauty ✨ ${m.town}`, tile("🏘️")], [`${m.counts.mastered} Mastered Topics`, m.counts.mastered ? Array.from({ length: m.counts.mastered }, () => tile("⭐")).join("") : '<span class="kit-sub">Finish Bo\'s Tutor Sessions</span>'],
+    [`${m.counts.cosmetics} Cosmetics`, tile("🎨")]
+  ];
+  const floors = [rooms, rooms2, rooms3];
+  el.innerHTML = `<style>.mu-t{width:44px;height:44px;border-radius:10px;background:#fff;border:2px solid #ede4f7;display:grid;place-items:center;font-size:1.5rem}.mu-row{display:flex;flex-wrap:wrap;gap:6px}.mu-h{font-weight:800;font-size:.85rem;margin:10px 0 4px}</style>
+    <div class="kit-card">${boHeader(`Welcome to the museum! You've collected ${m.total} exhibit${m.total === 1 ? "" : "s"}. New floors open at 15 and 40.`)}</div>
+    ${m.floors.map((f, i) => { const open = m.total >= f.need; return `<div class="kit-card"><div class="kit-q" style="text-align:left;margin:0">${open ? "🏛️" : "🔒"} ${f.name}${open ? "" : ` — opens at ${f.need} exhibits (${m.total}/${f.need})`}</div>
+      ${open ? floors[i].map(([h, c]) => `<div class="mu-h">${h}</div><div class="mu-row">${c}</div>`).join("") : ""}</div>`; }).join("")}`;
+}});
+
 /* ---- shell ---- */
 function show(id) {
   current = id;

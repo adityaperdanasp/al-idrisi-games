@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Island Adventure — BrainBox</title>
+<meta name="theme-color" content="#0369a1">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .ia-sea{position:relative;height:360px;margin:0 14px 12px;border-radius:20px;overflow:hidden;background:radial-gradient(circle at 30% 20%,#7dd3fc,#0ea5e9 60%,#0369a1)}
+  .ia-isl{position:absolute;transform:translate(-50%,-50%);width:92px;text-align:center;border:0;background:none;cursor:pointer;color:#fff;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:.78rem}
+  .ia-isl .e{display:block;font-size:2.6rem;filter:drop-shadow(0 4px 4px rgba(0,0,0,.3));animation:iaBob 4s ease-in-out infinite}
+  .ia-isl.done .e{filter:drop-shadow(0 0 10px #fde047)}
+  .ia-isl.lock{opacity:.45;cursor:default}
+  @keyframes iaBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  .ia-boat{position:absolute;font-size:1.6rem;transition:left 1s,top 1s;transform:translate(-50%,-50%)}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🏝️ Island Adventure</div></div>
+
+  <div class="kit-hud"><span id="ia-hud"></span></div>
+  <div class="ia-sea" id="ia-sea"></div>
+  <div class="kit-card" id="ia-card"></div>
+  <div id="ia-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'Island Adventure',accent:'#0369a1',bg:'linear-gradient(180deg,#e0f2fe,#bae6fd)'});</script>
+<script src="script.js"></script>
+</body>
+</html>

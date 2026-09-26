@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>World Map — BrainBox</title>
+<meta name="theme-color" content="#15803d">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .wm-region{margin:0 14px 6px;border-radius:22px;padding:14px 12px 12px;position:relative}
+  .wm-region h2{margin:0 0 8px;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.05rem}
+  .wm-path{height:34px;margin:0 auto;width:0;border-left:4px dotted rgba(0,0,0,.25)}
+  .wm-nodes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .wm-node{display:block;text-decoration:none;color:inherit;text-align:center;position:relative}
+  .wm-ring{width:64px;height:64px;border-radius:50%;margin:0 auto 4px;display:grid;place-items:center;background:conic-gradient(var(--c,#94a3b8) calc(var(--p,0)*1%),rgba(0,0,0,.1) 0)}
+  .wm-in{width:52px;height:52px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:1.7rem;box-shadow:inset 0 0 0 2px rgba(0,0,0,.05)}
+  .wm-node.new .wm-ring{animation:wmPulse 1.6s infinite;--c:#f43f5e;--p:100}
+  .wm-node.gold .wm-ring{--c:#f59e0b}.wm-node.silver .wm-ring{--c:#94a3b8}.wm-node.bronze .wm-ring{--c:#b45309}
+  .wm-name{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:.72rem;line-height:1.15}
+  .wm-tag{position:absolute;top:-4px;right:8px;background:#f43f5e;color:#fff;font-size:.55rem;font-weight:800;border-radius:100px;padding:1px 6px}
+  @keyframes wmPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  .wm-sug{margin:0 14px 12px;background:#fff;border-radius:16px;padding:12px;display:flex;gap:10px;align-items:center;font-weight:700;font-size:.85rem}
+  .wm-sug img{width:44px;height:44px;border-radius:12px}
+  .wm-legend{text-align:center;font-size:.72rem;font-weight:700;color:#5a6b4a;margin:6px 14px 14px}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../" class="kit-back">←</a><div class="kit-title">🗺️ World Map</div></div>
+
+  <div class="wm-sug" id="wm-sug"></div>
+  <div id="wm-map"></div>
+  <div class="wm-legend">Ring colour = how well you're doing there: 🟠 gold (80%+) · ⚪ silver (60%+) · 🟤 bronze · 🔴 pulsing = not visited yet</div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:'World Map',accent:'#15803d',bg:'linear-gradient(180deg,#d9f2e0,#b7e4c7)'});</script>
+<script src="script.js"></script>
+</body>
+</html>
