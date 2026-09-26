@@ -1530,7 +1530,7 @@
     add("sound", SOUND_PACKS, "🎵");
     add("hub-theme", HUB_THEMES);
     Object.entries(GAMEPLAY_FX_CATALOGS).forEach(([t, c]) => add(t, c));
-    Object.entries(COSTUME_CATALOGS).forEach(([t, c]) => { if (t !== "dino-skin") add(t, c); });
+    Object.entries(COSTUME_CATALOGS).forEach(([t, c]) => { if (t !== "dino-skin") add(t, c.filter(x => !x.season)); });
     add("pet-accessory", PET_ACCESSORIES);
     return pool;
   }
@@ -2391,21 +2391,154 @@
   }
 
   // =====================================================================
+  // PM ROUND 12, BATCH 1 -- Bo's World: Bo's Home, Bo's level + daily gift,
+  // Familiar companion. Everything under players/{id}/...
+  // =====================================================================
+  const FAMILIARS = [
+    { id: "fox", emoji: "🦊", name: "Ember Fox", quip: "Clever and quick!" },
+    { id: "dragon", emoji: "🐉", name: "Baby Dragon", quip: "Tiny fire, big heart." },
+    { id: "cloudcat", emoji: "🐱", name: "Cloud Cat", quip: "Soft as a sleepy cloud." },
+    { id: "owl", emoji: "🦉", name: "Wise Owl", quip: "Always reading something." },
+    { id: "panda", emoji: "🐼", name: "Bamboo Panda", quip: "Slow, steady, smart." }
+  ];
+  const FAMILIAR_TREATS = { cost: { coins: 8 }, xp: 5 };
+
+  // ---- 2. Bo's level -- grows with lifetime correct answers; each level
+  // unlocks a small perk (shown on the Bo page).
+  const BO_PERKS = [
+    { lvl: 1, text: "Bo says hello and gives a tip each day" },
+    { lvl: 2, text: "Daily gift from Bo: 🪙 grows with Bo's level" },
+    { lvl: 3, text: "Bo's Home gets a 2nd row of furniture slots" },
+    { lvl: 4, text: "Bo's daily gift includes a bonus 💎 every 4th visit" },
+    { lvl: 5, text: "Bo's Home gets a 3rd row of furniture slots" },
+    { lvl: 6, text: "Bo knows a secret: gift coins are doubled on your streak-7 days" },
+    { lvl: 8, text: "Bo wears a golden aura in his house" },
+    { lvl: 10, text: "Legendary Bo! Max daily gift" }
+  ];
+  const boLevelFor = total => Math.min(12, Math.floor(Math.sqrt(Math.max(0, total) / 12)) + 1);
+  const boXpFor = lvl => (lvl - 1) * (lvl - 1) * 12;
+  async function getBoStatus() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const [t, g, st] = await Promise.all([aigDb.ref(`players/${me.id}/totalCorrect`).get(), aigDb.ref(`players/${me.id}/boGift`).get(), getStreak()]);
+    const total = t.exists() ? (t.val() || 0) : 0;
+    const level = boLevelFor(total);
+    const gift = g.exists() ? g.val() : {};
+    const visits = gift.visits || 0;
+    const coins = Math.min(30, 3 * level) * (level >= 6 && (st.count || 0) >= 7 ? 2 : 1);
+    const gems = level >= 4 && (visits + 1) % 4 === 0 ? 1 : 0;
+    return { total, level, xpInto: total - boXpFor(level), xpNext: level >= 12 ? 0 : boXpFor(level + 1) - boXpFor(level), perks: BO_PERKS,
+      giftReady: level >= 2 && gift.last !== todayKey(), giftReward: { coins, gems }, visits, maxed: level >= 12 };
+  }
+  async function claimBoGift() {
+    const me = perksPlayer();
+    const st = me && await getBoStatus();
+    if (!st || !st.giftReady) return { ok: false, reason: "daily-limit" };
+    await aigDb.ref(`players/${me.id}/boGift`).set({ last: todayKey(), visits: st.visits + 1 }); // marker BEFORE paying
+    await creditWallet(st.giftReward);
+    return { ok: true, reward: st.giftReward };
+  }
+
+  // ---- 1. Bo's Home -- 4 columns of furniture slots; rows unlock with Bo's level.
+  const BO_FURNITURE = [
+    { id: "bed", emoji: "🛏️", name: "Cozy Bed", cost: 15, mood: 2 },
+    { id: "books", emoji: "📚", name: "Bookshelf", cost: 20, mood: 3 },
+    { id: "desk", emoji: "🪑", name: "Study Desk", cost: 15, mood: 2 },
+    { id: "plant", emoji: "🪴", name: "Plant", cost: 8, mood: 1 },
+    { id: "lamp", emoji: "🛋️", name: "Sofa", cost: 25, mood: 3 },
+    { id: "rug", emoji: "🧶", name: "Cosy Rug", cost: 10, mood: 1 },
+    { id: "globe", emoji: "🌍", name: "Globe", cost: 30, mood: 4 },
+    { id: "tank", emoji: "🐠", name: "Fish Tank", cost: 35, mood: 4 },
+    { id: "piano", emoji: "🎹", name: "Little Piano", cost: 45, mood: 5 },
+    { id: "telescope", emoji: "🔭", name: "Telescope", cost: 40, mood: 5 },
+    { id: "trophy", emoji: "🏆", name: "Trophy Shelf", cost: 50, mood: 6 },
+    { id: "tv", emoji: "🖼️", name: "Painting", cost: 12, mood: 2 }
+  ];
+  const homeRows = level => level >= 5 ? 3 : level >= 3 ? 2 : 1;
+  async function getBoHome() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const [h, bo] = await Promise.all([aigDb.ref(`players/${me.id}/boHome`).get(), getBoStatus()]);
+    const d = h.exists() ? h.val() : {};
+    const slots = d.slots || {};
+    const rows = homeRows(bo.level);
+    const mood = Object.values(slots).reduce((a, id) => a + ((BO_FURNITURE.find(f => f.id === id) || {}).mood || 0), 0);
+    return { furniture: BO_FURNITURE, owned: d.owned || {}, slots, rows, total: rows * 4, mood, level: bo.level,
+      moodText: mood >= 20 ? "Bo is over the moon! 🥰" : mood >= 10 ? "Bo feels right at home 😊" : mood >= 4 ? "Bo likes it here 🙂" : "Bo's house is a bit empty… 🥺" };
+  }
+  async function buyFurniture(id) {
+    const me = perksPlayer();
+    const def = BO_FURNITURE.find(f => f.id === id);
+    if (!me || !def) return { ok: false };
+    const ref = aigDb.ref(`players/${me.id}/boHome/owned/${id}`);
+    if ((await ref.get()).exists()) return { ok: true, already: true };
+    const paid = await spendWallet({ coins: def.cost });
+    if (!paid.ok) return paid;
+    await ref.set(true);
+    return { ok: true };
+  }
+  async function placeFurniture(idx, id) {
+    const me = perksPlayer();
+    const home = me && await getBoHome();
+    if (!home || idx < 0 || idx >= home.total) return { ok: false };
+    if (id && !home.owned[id]) return { ok: false, reason: "not-ready" };
+    const ref = aigDb.ref(`players/${me.id}/boHome/slots/${idx}`);
+    if (id) await ref.set(id); else await ref.remove();
+    return { ok: true };
+  }
+
+  // ---- 3. Familiar -- adopt one (free), level it by answering questions and feeding treats.
+  async function getFamiliar() {
+    const me = perksPlayer();
+    if (!me) return null;
+    const [f, t] = await Promise.all([aigDb.ref(`players/${me.id}/familiar`).get(), aigDb.ref(`players/${me.id}/totalCorrect`).get()]);
+    const total = t.exists() ? (t.val() || 0) : 0;
+    const d = f.exists() ? f.val() : null;
+    if (!d || !d.species) return { adopted: null, species: FAMILIARS, treat: FAMILIAR_TREATS };
+    const def = FAMILIARS.find(x => x.id === d.species) || FAMILIARS[0];
+    const xp = Math.max(0, total - (d.adoptedAt || 0)) + (d.fed || 0) * FAMILIAR_TREATS.xp;
+    const level = Math.min(10, Math.floor(xp / 25) + 1);
+    return { adopted: { ...def, name: d.name || def.name, xp, level, xpInto: xp - (level - 1) * 25, fed: d.fed || 0, lastFed: d.lastFed || null, hungry: d.lastFed !== todayKey() }, species: FAMILIARS, treat: FAMILIAR_TREATS };
+  }
+  async function adoptFamiliar(speciesId, name) {
+    const me = perksPlayer();
+    const def = FAMILIARS.find(x => x.id === speciesId);
+    if (!me || !def) return { ok: false };
+    const cur = await getFamiliar();
+    if (cur.adopted) return { ok: false, reason: "busy" };
+    const t = await aigDb.ref(`players/${me.id}/totalCorrect`).get();
+    await aigDb.ref(`players/${me.id}/familiar`).set({ species: speciesId, name: cleanText(name, 14) || def.name, adoptedAt: t.exists() ? (t.val() || 0) : 0, fed: 0 });
+    return { ok: true };
+  }
+  async function feedFamiliar() {
+    const me = perksPlayer();
+    const f = me && await getFamiliar();
+    if (!f || !f.adopted) return { ok: false };
+    if (!f.adopted.hungry) return { ok: false, reason: "daily-limit" };
+    const paid = await spendWallet(FAMILIAR_TREATS.cost);
+    if (!paid.ok) return paid;
+    await aigDb.ref(`players/${me.id}/familiar`).update({ fed: f.adopted.fed + 1, lastFed: todayKey() });
+    return { ok: true };
+  }
+
+  // =====================================================================
   // PM ROUND 10 -- SKIN PREFS (one read for skin.js: theme, trail, answer
   // effect, combo sticker, Bo hat). Falls back to defaults for signed-out
   // players so skin.js can call it unconditionally.
   // =====================================================================
   async function getSkinPrefs() {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
-    const d = { theme: "default", trail: "none", answerFx: "default", sticker: "none", boHat: "none", boHatEmoji: "" };
+    const d = { theme: "default", trail: "none", answerFx: "default", sticker: "none", boHat: "none", boHatEmoji: "", familiar: "" };
     if (!player || player.role === "parent") return d;
-    const snap = await aigDb.ref(`players/${player.id}/equipped`).get();
+    const [snap, famSnap] = await Promise.all([aigDb.ref(`players/${player.id}/equipped`).get(), aigDb.ref(`players/${player.id}/familiar/species`).get()]);
     const e = snap.exists() ? snap.val() : {};
+    const fam = famSnap.exists() ? FAMILIARS.find(f => f.id === famSnap.val()) : null;
     const hat = BO_HATS.find(h => h.id === (e["bo-costume"] || "none"));
     const sticker = COMBO_STICKERS.find(x => x.id === (e["combo-sticker"] || "none"));
     return {
       theme: e["hub-theme"] || "default", trail: e["touch-trail"] || "none", answerFx: e["answer-fx"] || "default",
-      sticker: sticker && sticker.id !== "none" ? sticker.preview : "", boHat: hat ? hat.id : "none", boHatEmoji: hat ? hat.hat : ""
+      sticker: sticker && sticker.id !== "none" ? sticker.preview : "", boHat: hat ? hat.id : "none", boHatEmoji: hat ? hat.hat : "",
+      familiar: fam ? fam.emoji : ""
     };
   }
 
@@ -3418,7 +3551,18 @@
     { id: "grad", name: "Graduate", cost: { coins: 25 }, preview: "🎓", hat: "🎓" },
     { id: "tophat", name: "Top Hat", cost: { coins: 25 }, preview: "🎩", hat: "🎩" },
     { id: "straw", name: "Sun Hat", cost: { coins: 20 }, preview: "👒", hat: "👒" },
-    { id: "crown", name: "Royal Crown", cost: { gems: 3 }, preview: "👑", hat: "👑" }
+    { id: "crown", name: "Royal Crown", cost: { gems: 3 }, preview: "👑", hat: "👑" },
+    // PM round 12, item 7 -- seasonal hats: buyable ONLY while their season
+    // is on (see SEASONS), kept forever once owned, so old ones become rare.
+    { id: "s-merdeka", name: "Merdeka Cap", cost: { coins: 30 }, preview: "🇮🇩", hat: "🇮🇩", season: "independence" },
+    { id: "s-batik", name: "Batik Headband", cost: { coins: 25 }, preview: "👘", hat: "👘", season: "batik" },
+    { id: "s-pumpkin", name: "Pumpkin Hat", cost: { coins: 30 }, preview: "🎃", hat: "🎃", season: "halloween" },
+    { id: "s-teacher", name: "Teacher's Pet Apple", cost: { coins: 25 }, preview: "🍎", hat: "🍎", season: "teachers" },
+    { id: "s-santa", name: "Santa Hat", cost: { coins: 30 }, preview: "🎅", hat: "🎅", season: "christmas" },
+    { id: "s-party", name: "Party Hat", cost: { coins: 30 }, preview: "🥳", hat: "🥳", season: "newyear" },
+    { id: "s-ramadan", name: "Crescent Crown", cost: { coins: 30 }, preview: "🌙", hat: "🌙", season: "ramadan" },
+    { id: "s-eid", name: "Eid Lantern", cost: { coins: 30 }, preview: "🏮", hat: "🏮", season: "eid" },
+    { id: "s-kids", name: "Balloon Bunch", cost: { coins: 25 }, preview: "🎈", hat: "🎈", season: "kids" }
   ];
   const COSTUME_CATALOGS = {
     "bo-costume": BO_HATS,
@@ -3452,7 +3596,9 @@
     });
     const costumes = {};
     Object.entries(COSTUME_CATALOGS).forEach(([type, catalog]) => {
-      costumes[type] = catalog.map(e => ({ ...e, owned: !e.cost || !!(owned[type] && owned[type][e.id]) }));
+      costumes[type] = catalog.map(e => ({ ...e, owned: !e.cost || !!(owned[type] && owned[type][e.id]) }))
+        // seasonal items: only shown while in season, or once you own them
+        .filter(e => !e.season || e.owned || (getSeason() && getSeason().id === e.season));
     });
     return {
       frames: AVATAR_FRAMES.map(f => ({ ...f, owned: !f.cost || !!(owned.frame && owned.frame[f.id]) })),
@@ -5375,6 +5521,7 @@
     getSkinPrefs, awardMiniGame,
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
     getGeoStamps, addGeoStamp, getDungeon, saveDungeon,
+    getBoStatus, claimBoGift, getBoHome, buyFurniture, placeFurniture, getFamiliar, adoptFamiliar, feedFamiliar, FAMILIARS, BO_PERKS,
     listPlayerNames, getWeeklyReport, getWeakTopics, getTutorMastered, markTutorMastered,
     getMegaQuest, startMegaQuest, claimMegaQuest, endMegaQuest, MEGA_DAYS,
     getAdvent, openAdventDay, claimAdventStreak, restartAdvent, adventReward,

@@ -755,6 +755,7 @@ SECTIONS.push({ id: "megaquest", async render(el) {
 /* ---- Quick links ---- */
 SECTIONS.push({ id: "gamelinks", async render(el) {
   el.innerHTML = `<h2>🎮 More to explore</h2><div class="ex-chip-row">
+    <a class="ex-item" href="../bo-home/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🏠</div><div class="ex-item-name">Bo's World</div></a>
     <a class="ex-item" href="../game-room/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🎮</div><div class="ex-item-name">Game Room</div></a>
     <a class="ex-item" href="../bo-tutor/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🎓</div><div class="ex-item-name">Bo's Tutor</div></a>
     <a class="ex-item" href="../class-board/" style="text-decoration:none;color:inherit"><div class="ex-item-emoji">🏆</div><div class="ex-item-name">Class Board</div></a></div>`;

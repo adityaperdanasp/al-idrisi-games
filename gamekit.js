@@ -106,6 +106,12 @@
     if (cfg.accent) document.documentElement.style.setProperty("--kit-accent", cfg.accent);
     if (cfg.bg) document.documentElement.style.setProperty("--kit-bg", cfg.bg);
     document.title = `${cfg.title} — BrainBox`;
+    // Study radio (PM round 12, item 10): the 🎧 button appears on every Game Room page.
+    if (cfg.radio !== false) {
+      const sc = document.createElement("script");
+      sc.src = "../radio.js"; sc.onload = () => { try { AIGRadio.mountButton(); } catch (e) {} };
+      document.head.appendChild(sc);
+    }
   }
   function signedIn() {
     const p = window.AIGPlayer && AIGPlayer.getPlayer();

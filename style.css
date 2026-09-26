@@ -2170,3 +2170,9 @@ html[data-hub-theme="volcano"] .sc-card { background: #fbe9dd; }
 .sc-game-card.gameroom .sc-game-icon { background: transparent; }
 .sc-game-card.gameroom .sc-game-title { color: #5b3f9b; }
 .sc-game-card.gameroom .sc-game-sub { color: #6b5a8a; }
+
+/* Bo's World hub card (PM round 12) */
+.sc-game-card.boworld { background: #fde7f3; transform: rotate(0.5deg); }
+.sc-game-card.boworld .sc-game-icon { background: transparent; }
+.sc-game-card.boworld .sc-game-title { color: #a1246b; }
+.sc-game-card.boworld .sc-game-sub { color: #8a5a78; }

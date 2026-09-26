@@ -15,7 +15,7 @@
    ================================================================= */
 (function () {
   const KEY = "aig_skin_prefs";
-  const DEFAULTS = { theme: "default", trail: "none", answerFx: "default", sticker: "", boHat: "none", boHatEmoji: "" };
+  const DEFAULTS = { theme: "default", trail: "none", answerFx: "default", sticker: "", boHat: "none", boHatEmoji: "", familiar: "" };
   let prefs = Object.assign({}, DEFAULTS);
   let lastX = window.innerWidth / 2, lastY = window.innerHeight * 0.6;
 
@@ -57,6 +57,14 @@
       @keyframes aigBurst{0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}100%{opacity:0;transform:translate(calc(-50% + var(--bx)),calc(-50% + var(--by))) scale(1.15) rotate(var(--br,0deg))}}
       .aig-sticker{position:fixed;left:50%;top:26%;z-index:99999;pointer-events:none;font-size:5.5rem;transform:translate(-50%,-50%);animation:aigSticker 1.5s cubic-bezier(.2,1.4,.4,1) forwards;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25))}
       @keyframes aigSticker{0%{opacity:0;transform:translate(-50%,-30%) scale(.2) rotate(-25deg)}22%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(8deg)}40%{transform:translate(-50%,-50%) scale(1) rotate(-4deg)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-90%) scale(1) rotate(0)}}
+      #aig-fam{position:fixed;left:8px;bottom:10px;z-index:99990;pointer-events:none;font-size:30px;line-height:1;animation:aigFamIdle 3.2s ease-in-out infinite;filter:drop-shadow(0 3px 4px rgba(0,0,0,.25))}
+      #aig-fam.happy{animation:aigFamHappy .7s}
+      #aig-fam.sad{animation:aigFamSad .6s}
+      #aig-fam .b{position:absolute;left:34px;bottom:22px;font-size:16px;white-space:nowrap;opacity:0;animation:aigFamBubble 1.2s forwards}
+      @keyframes aigFamIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+      @keyframes aigFamHappy{0%{transform:translateY(0)}30%{transform:translateY(-22px) rotate(-12deg)}60%{transform:translateY(0) rotate(8deg)}100%{transform:none}}
+      @keyframes aigFamSad{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+      @keyframes aigFamBubble{0%{opacity:0;transform:translateY(6px)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translateY(-8px)}}
       .aig-bo-hat{position:absolute;transform:translateX(-50%) rotate(-9deg);pointer-events:none;line-height:1;z-index:5}
     `;
     document.head.appendChild(st);
@@ -143,6 +151,7 @@
   // combo = streak BEFORE this answer (same meaning as AIGJuice.answer's arg).
   function onAnswer(isCorrect, combo) {
     try {
+      famReact(!!isCorrect, combo);
       if (!isCorrect || off() || reduced() || !document.body) return;
       ensureStyle();
       // The default sparkle stays quiet for ordinary answers (it'd be noise
@@ -192,7 +201,28 @@
     }).observe(document.body, { childList: true, subtree: true });
   }
 
+  // ---- Familiar companion (PM round 12, item 3) -------------------------
+  function applyFamiliar() {
+    const old = document.getElementById("aig-fam");
+    if (old) old.remove();
+    if (!prefs.familiar || off() || !document.body || reduced()) return;
+    ensureStyle();
+    const el = document.createElement("div");
+    el.id = "aig-fam"; el.textContent = prefs.familiar;
+    document.body.appendChild(el);
+  }
+  function famReact(ok, combo) {
+    const el = document.getElementById("aig-fam");
+    if (!el) return;
+    el.classList.remove("happy", "sad"); void el.offsetWidth;
+    el.classList.add(ok ? "happy" : "sad");
+    const b = document.createElement("span");
+    b.className = "b"; b.textContent = ok ? ((combo || 0) >= 4 ? "🔥" : "💖") : "😅";
+    el.appendChild(b); setTimeout(() => b.remove(), 1250);
+  }
+
   function applyAll() {
+    try { applyFamiliar(); } catch (e) {}
     try { applyWorld(); } catch (e) {}
     try { bindTrail(); } catch (e) {}
     try { applyHat(); } catch (e) {}

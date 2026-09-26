@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Bo's World — BrainBox</title>
+<meta name="theme-color" content="#7c3aed">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+
+  .bh-tabs{display:flex;gap:6px;padding:0 14px 10px;overflow-x:auto;scrollbar-width:none}
+  .bh-tabs::-webkit-scrollbar{display:none}
+  .bh-tab{flex:none;border:none;border-radius:100px;padding:8px 14px;font-family:"Baloo 2",sans-serif;font-weight:800;background:rgba(0,0,0,.07);color:inherit;cursor:pointer;white-space:nowrap}
+  .bh-tab.on{background:var(--kit-accent);color:#fff}
+  .bh-bo{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+  .bh-bo img{width:64px;height:64px;border-radius:16px}
+  .bh-bo.aura img{box-shadow:0 0 0 4px #fde68a,0 0 22px 6px #fbbf24}
+  .bh-say{background:#f3ecff;border-radius:14px;padding:10px 12px;font-weight:700;font-size:.86rem;line-height:1.45;flex:1}
+  .bh-room{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px;border-radius:16px;background:linear-gradient(180deg,#fff1d6,#f4d9a8);border:3px solid #d9b26f}
+  .bh-slot{aspect-ratio:1;border:2px dashed rgba(0,0,0,.15);border-radius:12px;background:rgba(255,255,255,.5);font-size:1.9rem;cursor:pointer;display:grid;place-items:center;color:inherit;padding:0}
+  .bh-slot.has{border-style:solid;background:rgba(255,255,255,.85)}
+  .bh-slot.lock{opacity:.4;cursor:default}
+  .bh-shop{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .bh-item{border:2px solid rgba(0,0,0,.08);background:#faf6ff;border-radius:12px;padding:8px 4px;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:.78rem;cursor:pointer;color:inherit;text-align:center}
+  .bh-item .e{font-size:1.6rem;display:block}
+  .bh-item small{color:#7a6a5a;font-weight:700}
+  .bh-perk{display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid #f0e8f7;font-size:.82rem;font-weight:700}
+  .bh-perk.off{opacity:.45}
+  .bh-fam-big{font-size:5rem;text-align:center;line-height:1.1}
+  .bh-rad{display:block;width:100%;text-align:left;border:2px solid rgba(0,0,0,.08);background:#faf6ff;border-radius:14px;padding:12px;font-family:"Baloo 2",sans-serif;font-weight:800;cursor:pointer;color:inherit;margin-bottom:8px}
+  .bh-rad.on{background:#c4b5fd;border-color:#8b5cf6}
+
+</style>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🏠 Bo's World</div></div>
+
+  <div class="bh-tabs" id="bh-tabs"></div>
+  <div id="bh-main"></div>
+  <div id="bh-overlay"></div>
+
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="../gamekit.js"></script>
+<script>AIGKit.mount({title:"Bo's World",accent:'#7c3aed',bg:'linear-gradient(180deg,#f3ecff,#e2d5f8)'});</script>
+<script src="script.js"></script>
+</body>
+</html>
