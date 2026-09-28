@@ -392,16 +392,26 @@
 
   // ---- World scene (PM round 13, item 2): a little emoji landscape for a getWorldState() result.
   function worldHtml(w, big) {
-    const sky = w.mood === "awake" ? "linear-gradient(180deg,#bfe6ff,#e8f7d4)" : w.mood === "drowsy" ? "linear-gradient(180deg,#fcd5a5,#e9d5f5)" : "linear-gradient(180deg,#1e1b4b,#3b3470)";
-    const size = big ? 2.2 : 1.4, dim = w.mood === "asleep" ? "filter:brightness(.65) saturate(.7)" : w.mood === "drowsy" ? "filter:brightness(.9)" : "";
-    const zzz = w.mood === "awake" ? "" : `<span style="position:absolute;right:10px;top:6px;font-size:${big ? 1.6 : 1.1}rem;animation:aigFamIdle 3s ease-in-out infinite">${w.mood === "asleep" ? "💤" : "🌙"}</span>`;
-    return `<div style="position:relative;border-radius:16px;padding:${big ? 18 : 10}px 12px;background:${sky};text-align:center;overflow:hidden;min-height:${big ? 110 : 54}px">${zzz}<div style="font-size:${size}rem;line-height:1.3;letter-spacing:4px;${dim}">${w.scene.join(" ")}</div></div>`;
+    const asleep = w.mood === "asleep", drowsy = w.mood === "drowsy";
+    const sky = asleep ? "linear-gradient(180deg,#5b5499,#9a8fcf 70%,#c9b8e8)" : drowsy ? "linear-gradient(180deg,#fcd5a5,#f3d9ee)" : "linear-gradient(180deg,#bfe6ff,#e8f7d4)";
+    const ground = asleep ? "linear-gradient(180deg,#5f8f6a,#4a7756)" : "linear-gradient(180deg,#9bd67a,#7cc25f)";
+    const size = big ? 2.4 : 2, dim = asleep ? "filter:brightness(.85) saturate(.8)" : "";
+    const sky2 = asleep ? `<span style="position:absolute;left:14px;top:10px;font-size:${big ? 1.5 : 1.2}rem">🌙</span><span style="position:absolute;left:30%;top:14px;font-size:.8rem;opacity:.8">✨</span><span style="position:absolute;right:32%;top:22px;font-size:.7rem;opacity:.7">✨</span>` : drowsy ? `<span style="position:absolute;left:14px;top:10px;font-size:${big ? 1.5 : 1.2}rem">🌇</span>` : `<span style="position:absolute;left:14px;top:8px;font-size:${big ? 1.6 : 1.3}rem">☀️</span>`;
+    const zzz = w.mood === "awake" ? "" : `<span style="position:absolute;right:16px;top:8px;font-size:${big ? 1.5 : 1.15}rem;animation:aigFamIdle 3s ease-in-out infinite">${asleep ? "💤" : "🌙"}</span>`;
+    return `<div style="position:relative;border-radius:18px;background:${sky};overflow:hidden;min-height:${big ? 150 : 118}px;display:flex;align-items:flex-end;justify-content:center">${sky2}${zzz}<div style="position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:12px 14px;padding:${big ? "44px 22px 34px" : "38px 22px 28px"};font-size:${size}rem;line-height:1;${dim}">${w.scene.map(e => `<span>${e}</span>`).join("")}</div><div style="position:absolute;left:0;right:0;bottom:0;height:${big ? 22 : 18}px;background:${ground}"></div></div>`;
   }
+  // Hub card (PM round 15): title + level pill + scene + progress toward the next level.
+  function worldCardHtml(w) {
+    const prev = WORLD_STEP[w.level] || 0, pct = w.next ? Math.max(6, Math.min(100, Math.round((w.total - prev) / Math.max(1, w.next - prev) * 100))) : 100;
+    const line = w.next ? `${w.toNext} more right answers to grow it!` : "Fully grown! 🏰";
+    return `<div class="sc-world-card"><div class="sc-world-head"><span class="sc-world-title">🌍 My World</span><span class="sc-world-lvl">Level ${w.level + 1}/${w.maxLevel + 1}</span></div>${worldHtml(w, false)}<div class="sc-world-bar"><i style="width:${pct}%"></i></div><div class="sc-world-text">${worldText(w)}<br><small>${line}</small></div></div>`;
+  }
+  const WORLD_STEP = [0, 20, 60, 150, 300, 600];
   function worldText(w) {
     return w.mood === "awake" ? "Your world is thriving! 🌈" : w.mood === "drowsy" ? "Your world is getting sleepy… play today to wake it up 🌙" : "Your world is asleep 💤 — one round wakes it up!";
   }
 
-  window.AIGSkin = { worldHtml, worldText, setA11y, get a11y() { return a11y; }, speak, playUsedMinutes() { return Math.round(usedSeconds() / 60); }, limitMinutes, onAnswer, refresh, popSticker, burst: (x, y) => burst(x == null ? lastX : x, y == null ? lastY : y), get prefs() { return prefs; } };
+  window.AIGSkin = { worldHtml, worldCardHtml, worldText, setA11y, get a11y() { return a11y; }, speak, playUsedMinutes() { return Math.round(usedSeconds() / 60); }, limitMinutes, onAnswer, refresh, popSticker, burst: (x, y) => burst(x == null ? lastX : x, y == null ? lastY : y), get prefs() { return prefs; } };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", load);
   else load();
 })();

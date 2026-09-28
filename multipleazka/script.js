@@ -378,6 +378,13 @@ if (window.AIGLeaderboard && AIGLeaderboard.hasSecretMode) {
     if (t) t.hidden = !owned;
   }).catch(() => {});
 }
+// Azka (Grade 4) has outgrown Easy -- hide it for his own account (per parent's request).
+// Parent identities (role "parent") are untouched.
+if (/(^|-)azka$/.test((window.AIGPlayer && AIGPlayer.getPlayer() && AIGPlayer.getPlayer().id) || "")) { // ids "azka" and "e-g-azka"
+  const e = document.querySelector('#difficulty-seg [data-difficulty="easy"]');
+  if (e) e.hidden = true;
+  if (state.difficulty === "easy") state.difficulty = "medium";
+}
 document.querySelectorAll("#difficulty-seg .seg-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     state.difficulty = btn.dataset.difficulty;   // 'easy' | 'medium' | 'hard'

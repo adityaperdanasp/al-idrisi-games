@@ -2622,7 +2622,7 @@
       const w = await AIGLeaderboard.getWorldState();
       if (!w) { el.hidden = true; return; }
       el.hidden = false;
-      el.innerHTML = AIGSkin.worldHtml(w, false) + `<div class="sc-world-text">${AIGSkin.worldText(w)}</div>`;
+      el.innerHTML = AIGSkin.worldCardHtml ? AIGSkin.worldCardHtml(w) : AIGSkin.worldHtml(w, false) + `<div class="sc-world-text">${AIGSkin.worldText(w)}</div>`;
     } catch (e) { el.hidden = true; }
   }
 

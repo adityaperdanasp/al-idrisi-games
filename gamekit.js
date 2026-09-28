@@ -179,6 +179,10 @@
     if (cfg.bg) document.documentElement.style.setProperty("--kit-bg", cfg.bg);
     document.title = `${cfg.title} — BrainBox`;
     // Study radio (PM round 12, item 10): the 🎧 button appears on every Game Room page.
+    // Background music (PM round 15): synthesized mood per game folder (see game-music.js).
+    if (cfg.music !== false && !window.AIGMusic) {
+      const mu = document.createElement("script"); mu.src = "../game-music.js"; document.head.appendChild(mu);
+    }
     if (cfg.radio !== false) {
       const sc = document.createElement("script");
       sc.src = "../radio.js"; sc.onload = () => { try { AIGRadio.mountButton(); } catch (e) {} };

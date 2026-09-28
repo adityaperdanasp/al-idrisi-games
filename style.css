@@ -2186,9 +2186,17 @@ html[data-hub-theme="volcano"] .sc-card { background: #fbe9dd; }
 .sc-search-link { display: flex; align-items: center; gap: 8px; margin: 0 16px 12px; padding: 12px 16px; border-radius: 100px; background: #fff; color: #6b5a8a; font-weight: 800; font-size: .88rem; text-decoration: none; box-shadow: 0 3px 0 rgba(0,0,0,.06); }
 
 /* PM round 13 -- world strip on the hub */
-.sc-world-strip { display: block; margin: 0 16px 10px; text-decoration: none; color: inherit; }
+.sc-world-strip { display: block; margin: 14px 16px 16px; text-decoration: none; color: inherit; }
+.sc-world-card { background: #fff; border-radius: 22px; padding: 14px 14px 12px; box-shadow: 0 4px 14px rgba(90,70,50,.12); }
+.sc-world-head { display: flex; justify-content: space-between; align-items: center; margin: 0 4px 10px; }
+.sc-world-title { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.05rem; color: #5a3a5a; }
+.sc-world-lvl { font-weight: 800; font-size: .72rem; background: #efe6f7; color: #6a4a8a; border-radius: 999px; padding: 3px 10px; }
+.sc-world-bar { height: 8px; border-radius: 999px; background: #efe8dc; margin: 12px 4px 0; overflow: hidden; }
+.sc-world-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg,#9bd67a,#f5c24a); }
+.sc-world-card .sc-world-text { margin-top: 8px; line-height: 1.35; }
+.sc-world-card .sc-world-text small { font-weight: 700; color: #8a7a6a; }
 .sc-world-strip[hidden] { display: none; }
-.sc-world-text { text-align: center; font-weight: 800; font-size: .78rem; color: #6b5a4a; margin-top: 4px; }
+.sc-world-text { text-align: center; font-weight: 800; font-size: .82rem; color: #6b5a4a; margin-top: 4px; }
 
 /* PM round 14 -- Golden Classroom hub theme (Class Fund reward) */
 html[data-hub-theme="golden"],
