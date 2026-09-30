@@ -414,7 +414,7 @@ function loadProgress() {
     const raw = localStorage.getItem("mathville.progress");
     if (raw) return JSON.parse(raw);
   } catch (e) { /* corrupt data — fall through to fresh progress */ }
-  return { chapters: {}, xpTotal: 0, planeHighScore: 0, ninjaHighScore: 0 };
+  return { chapters: {}, xpTotal: 0, planeHighScore: 0, ninjaHighScore: 0, ninjaHighScore8: 0 };
 }
 let PROGRESS = loadProgress();
 
@@ -7013,8 +7013,20 @@ if (pendingJoinCode) {
    Entirely separate state from Drive Mode/Plane Mode -- no shared
    code beyond the question-pool helpers above and showScreen().
    ================================================================= */
+// PM round 15 -- Ninja Runner overhaul (20-item quality pass, see the PM
+// brainstorm this responds to). ninjaState.totalQ now holds the ACTUAL
+// round length (chosen on the new pre-round setup screen -- Quick 8 or
+// Classic 20); NINJA_TOTAL_Q stays only as the default/legacy value for
+// anything that reads it before a round exists (HUD's initial markup).
+const NINJA_LENGTHS = [8, 20];
 const NINJA_TOTAL_Q = 20;
 const NINJA_PTS = { easy: 10, medium: 25, hard: 50 };
+// A correct answer inside this window of picking the question earns a
+// "Quick answer" bonus on top of NINJA_PTS -- restores some of the
+// runner's time pressure during the (deliberately untimed, no-penalty)
+// question beat, without ever costing a life for thinking longer.
+const NINJA_QUICK_MS = 4000;
+const NINJA_QUICK_BONUS = 5;
 // Streak bonus -- consecutive correct answers (across any subject/
 // difficulty) add extra points on top of the question's own NINJA_PTS
 // value, tiered so hitting each milestone feels like a small celebration
@@ -7041,15 +7053,46 @@ function updateNinjaStreakHud() {
 }
 
 // Same positioning/animation as showPlaneToast, own color + parent
-// (#ninja-world instead of #plane-world).
-function showNinjaToast(msg) {
+// (#ninja-world instead of #plane-world). `kind` ("good"/"bad", round 15)
+// picks the color -- a life lost now reads as a distinct red warning
+// instead of the same orange used for streak/boss-defeat celebrations.
+function showNinjaToast(msg, kind) {
   const world = $("ninja-world");
   const toast = document.createElement("div");
-  toast.className = "drive-toast ninja-toast-good";
+  toast.className = "drive-toast " + (kind === "bad" ? "ninja-toast-bad" : "ninja-toast-good");
   toast.textContent = msg;
   world.appendChild(toast);
   setTimeout(() => toast.remove(), 1600);
 }
+// Subject-specific correct-answer chime (round 15) -- tiny synthesized
+// tones (no audio file, same reasoning as the hub's Sound Pack cosmetics)
+// so Math/Language/Science feel a little distinct from each other beyond
+// just card color. Self-contained, no shared audio module touched.
+let ninjaAudioCtx = null;
+function ninjaTone(freqs, dur) {
+  try {
+    const C = window.AudioContext || window.webkitAudioContext;
+    if (!C) return;
+    ninjaAudioCtx = ninjaAudioCtx || new C();
+    if (ninjaAudioCtx.state === "suspended") ninjaAudioCtx.resume();
+    let t = ninjaAudioCtx.currentTime;
+    freqs.forEach(f => {
+      const o = ninjaAudioCtx.createOscillator(), g = ninjaAudioCtx.createGain();
+      o.type = "triangle";
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.15, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(ninjaAudioCtx.destination);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+      t += dur * 0.55;
+    });
+  } catch (e) { /* silent -- never blocks the game */ }
+}
+const NINJA_SUBJECT_CHIME = { math: [523.25, 659.25], lang: [440, 554.37], sci: [349.23, 466.16, 587.33] };
+function ninjaPlaySubjectChime(subjectKey) { ninjaTone(NINJA_SUBJECT_CHIME[subjectKey] || [523.25], 0.16); }
+
 // Obstacle/enemy variety for the run-lane beat -- was always the same
 // 🪨/👹 pair every round, per feedback that felt monotonous. Picked fresh
 // each round via rand(), purely visual (doesn't change jump-dodge/
@@ -7057,12 +7100,17 @@ function showNinjaToast(msg) {
 const NINJA_OBSTACLE_TYPES = ["🪨", "🪵", "🌵", "🧱"];
 const NINJA_ENEMY_TYPES = ["👹", "👺", "🥷", "🐍"];
 
-// Boss checkpoint every NINJA_BOSS_EVERY questions (with NINJA_TOTAL_Q=20
-// that's a single checkpoint at question 11). Needs NINJA_BOSS_HP correct
-// answers to defeat -- wrong answers during a boss fight cost nothing but
-// don't chip its HP either, same forgiving philosophy as the rest of Ninja
-// Runner. Cycles through NINJA_BOSS_TYPES by bossesDefeated so repeat boss
-// checkpoints (if NINJA_TOTAL_Q ever grows) aren't the same enemy.
+// Boss checkpoint every NINJA_BOSS_EVERY questions (a mid-run checkpoint at
+// question 11 for a Classic/20 round), PLUS a guaranteed finale boss on the
+// very LAST question of any length (round 15 -- a single checkpoint deep
+// into a 20-question run read as a token gesture rather than a real climax;
+// Quick/8 runs only ever hit this finale one, which also gives them a real
+// ending beat). The finale is a notch tougher (NINJA_BOSS_HP+1, its own
+// boss type) so it actually reads as the bigger fight. Wrong answers during
+// a boss fight cost a life same as any wrong answer, but don't chip its HP
+// either -- see ninjaState.bossMissStreak below for the extra "counter-
+// attack" stakes on repeated misses. Cycles through NINJA_BOSS_TYPES by
+// bossesDefeated so repeat checkpoints aren't the same enemy.
 const NINJA_BOSS_EVERY = 10;
 const NINJA_BOSS_HP = 3;
 const NINJA_BOSS_BONUS = 100;
@@ -7071,6 +7119,12 @@ const NINJA_BOSS_TYPES = [
   { emoji: "🐉", name: "Dragon Boss" },
   { emoji: "🦂", name: "Scorpion Boss" }
 ];
+const NINJA_FINAL_BOSS = { emoji: "🥷", name: "Ninja Master" };
+// 2 wrong answers in a row DURING a boss fight (without a correct one in
+// between) triggers a visual "counter-attack" (screen shake + red flash) on
+// top of the normal life loss -- makes a boss fight feel like it actually
+// bites back instead of being a slightly-relabeled regular question.
+const NINJA_BOSS_COUNTER_MISSES = 2;
 
 // Lives -- per explicit request, turns Ninja Runner from a zero-penalty
 // practice mode into one with real (but recoverable) risk. Losing all
@@ -7110,17 +7164,27 @@ async function applyArmedLoadout(kind) {
   }
 }
 
-function ninjaLoseLife() {
+// `reason` (round 15 -- "obstacle" / "shuriken" / "wrong") makes a lost
+// life actually LEGIBLE: a distinct toast + hit color per cause, and a
+// running tally (ninjaState.lifeLossLog) shown as a breakdown on the
+// finish screen ("Lost a life to: 💢 2 obstacles · ❌ 1 wrong answer") --
+// before this, every loss just quietly decremented the same hearts.
+const NINJA_LOSS_MSG = { obstacle: "💢 Bumped by the obstacle!", shuriken: "⚡ Hit by a shuriken!", wrong: "❌ Wrong answer!" };
+function ninjaLoseLife(reason) {
   if (ninjaState.loadoutShield) {
     ninjaState.loadoutShield = false;
     showNinjaToast("🛡️ Shield blocked it!");
     return;
   }
   ninjaState.lives -= 1;
+  if (reason && ninjaState.lifeLossLog) ninjaState.lifeLossLog[reason] = (ninjaState.lifeLossLog[reason] || 0) + 1;
   updateNinjaLivesHud();
   const runner = $("ninja-runner");
+  runner.classList.remove("hit-obstacle", "hit-shuriken", "hit-wrong");
   runner.classList.add("hit");
-  setTimeout(() => runner.classList.remove("hit"), 300);
+  if (reason) runner.classList.add("hit-" + reason);
+  setTimeout(() => runner.classList.remove("hit", "hit-obstacle", "hit-shuriken", "hit-wrong"), 300);
+  if (reason && NINJA_LOSS_MSG[reason]) showNinjaToast(NINJA_LOSS_MSG[reason], "bad");
 }
 
 function updateNinjaLivesHud() {
@@ -7152,6 +7216,15 @@ let ninjaGhost = null; // {score, checkpoints} of the player's best-ever run, fe
 // string means the default kunai look (no extra class needed).
 let ninjaSlashFxClass = "";
 
+// Pre-round setup choice (round 15) -- remembered across runs so a kid who
+// always plays Quick/Relaxed doesn't have to reselect it every time.
+const NINJA_SETUP_KEY = "aig_ninja_setup";
+function loadNinjaSetup() {
+  try { const s = JSON.parse(localStorage.getItem(NINJA_SETUP_KEY) || "{}"); return { len: NINJA_LENGTHS.includes(s.len) ? s.len : 20, relaxed: !!s.relaxed }; }
+  catch (e) { return { len: 20, relaxed: false }; }
+}
+function saveNinjaSetup(len, relaxed) { try { localStorage.setItem(NINJA_SETUP_KEY, JSON.stringify({ len, relaxed })); } catch (e) {} }
+
 function launchNinjaRunner() {
   ensurePlaneQuestionPools();
   showScreen("screen-ninja");
@@ -7164,23 +7237,46 @@ function launchNinjaRunner() {
       $("ninja-runner").dataset.tier = String(AIGLeaderboard.getTier ? await AIGLeaderboard.getTier("ninja-costume", id) : 1); // Workshop tier -> aura
     }).catch(() => {});
   }
+  $("ninja-finish-overlay").classList.add("hidden");
+  $("ninja-review-overlay").classList.add("hidden");
+  const setup = loadNinjaSetup();
+  const lenRow = $("ninja-setup-len"), modeRow = $("ninja-setup-mode");
+  const paint = () => {
+    lenRow.querySelectorAll(".ninja-setup-opt").forEach(b => b.classList.toggle("sel", +b.dataset.len === setup.len));
+    modeRow.querySelectorAll(".ninja-setup-opt").forEach(b => b.classList.toggle("sel", b.dataset.mode === (setup.relaxed ? "relaxed" : "normal")));
+  };
+  lenRow.querySelectorAll(".ninja-setup-opt").forEach(b => b.onclick = () => { setup.len = +b.dataset.len; paint(); });
+  modeRow.querySelectorAll(".ninja-setup-opt").forEach(b => b.onclick = () => { setup.relaxed = b.dataset.mode === "relaxed"; paint(); });
+  paint();
+  $("ninja-setup-start").onclick = () => {
+    saveNinjaSetup(setup.len, setup.relaxed);
+    $("ninja-setup-overlay").classList.add("hidden");
+    ninjaBeginRun(setup.len, setup.relaxed);
+  };
+  $("ninja-setup-overlay").classList.remove("hidden");
+}
+
+function ninjaBeginRun(totalQ, relaxed) {
   if (window.AIGBgm && AIGBgm.playPlaneTrack) AIGBgm.playPlaneTrack(); // reuse Plane Mode's energetic track (per explicit request instead of new/copyrighted music)
   if (ninjaState && ninjaState.laneTimer) clearTimeout(ninjaState.laneTimer); // a stale timer from a previous run must not fire into this fresh state
   ninjaState = {
-    qnum: 1, score: 0, streak: 0, hardCorrectCount: 0, wrongLog: [], ended: false, laneTimer: null,
-    pendingBoss: false, inBoss: false, bossHp: 0, bossesDefeated: 0,
+    qnum: 1, totalQ, relaxed, score: 0, streak: 0, hardCorrectCount: 0, wrongLog: [], ended: false, completed: false, laneTimer: null,
+    pendingBoss: false, inBoss: false, bossHp: 0, bossesDefeated: 0, isFinaleBoss: false, bossMissStreak: 0,
+    rerollCharges: 1, startedAt: Date.now(),
+    lifeLossLog: { obstacle: 0, shuriken: 0, wrong: 0 },
+    subjectStats: { math: { c: 0, a: 0 }, lang: { c: 0, a: 0 }, sci: { c: 0, a: 0 } },
     // Extra Life Charm upgrade (leaderboard.js's UPGRADE_CATALOG) adds 1
     // starting life, capped by NINJA_MAX_LIVES (5) same as any in-round gain.
     // Tier 2 REPLACES tier 1's bonus (2 extra lives total, not 1+2=3),
     // same convention as Plane Mode's Shield Booster above.
     lives: Math.min(NINJA_MAX_LIVES, NINJA_START_LIVES + (ownedUpgrades["ninja-extra-life-2"] ? 2 : ownedUpgrades["ninja-extra-life"] ? 1 : 0)), totalAnswered: 0, myCheckpoints: [], isNewHighScoreRun: false
   };
+  $("ninja-world").dataset.scene = "dawn";
   $("ninja-streak").classList.add("hidden");
   $("ninja-boss-hp").classList.add("hidden");
   $("ninja-ghost-delta").classList.add("hidden");
-  $("ninja-finish-overlay").classList.add("hidden");
-  $("ninja-review-overlay").classList.add("hidden");
-  $("ninja-qnum").textContent = `Q 1/${NINJA_TOTAL_Q}`;
+  $("ninja-reroll-btn").classList.add("hidden"); // only shown once renderNinjaGates() actually renders cards
+  $("ninja-qnum").textContent = `Q 1/${totalQ}`;
   $("ninja-score").textContent = "⭐ 0";
   updateNinjaBestHud();
   updateNinjaLivesHud();
@@ -7191,7 +7287,7 @@ function launchNinjaRunner() {
   // player's very first-ever run with nothing recorded yet).
   ninjaGhost = null;
   if (window.AIGLeaderboard) {
-    AIGLeaderboard.getNinjaGhost().then(g => { ninjaGhost = g; }).catch(() => {});
+    AIGLeaderboard.getNinjaGhost(totalQ).then(g => { ninjaGhost = g; }).catch(() => {});
     AIGLeaderboard.getEquippedCosmetic("ninja-slash", "default").then(id => {
       ninjaSlashFxClass = id !== "default" ? "fx-" + id : "";
     }).catch(() => {});
@@ -7207,22 +7303,42 @@ function launchNinjaRunner() {
 // reason to chase a personal best across replays, not just this round's
 // score. Called on every point change instead of a raw $("ninja-score")
 // assignment so the high-score check never gets skipped at a call site.
+// High score key (round 15) -- Quick (8) and Classic (20) scores aren't
+// comparable (fewer questions = a naturally lower ceiling), so each length
+// keeps its OWN high score. `ninjaHighScore` is the pre-existing field name
+// (used when totalQ is the original 20, no migration needed); Quick gets
+// a new `ninjaHighScore8`.
+function ninjaHighScoreKey() { return ninjaState && ninjaState.totalQ === 8 ? "ninjaHighScore8" : "ninjaHighScore"; }
+
 function updateNinjaScore() {
   $("ninja-score").textContent = `⭐ ${ninjaState.score}`;
-  if (ninjaState.score > (PROGRESS.ninjaHighScore || 0)) {
-    PROGRESS.ninjaHighScore = ninjaState.score;
+  const key = ninjaHighScoreKey();
+  if (ninjaState.score > (PROGRESS[key] || 0)) {
+    PROGRESS[key] = ninjaState.score;
     saveProgressToStorage();
     updateNinjaBestHud();
     // Flagged (not saved yet) -- ninjaFinishCommon() checks this at the
     // END of the run to decide whether to persist a new ghost. Checking
-    // PROGRESS.ninjaHighScore there directly wouldn't work: it's already
-    // been bumped to match ninjaState.score right here, mid-run.
+    // PROGRESS[key] there directly wouldn't work: it's already been
+    // bumped to match ninjaState.score right here, mid-run.
     ninjaState.isNewHighScoreRun = true;
   }
 }
 
 function updateNinjaBestHud() {
-  $("ninja-best").textContent = "🏅 " + (PROGRESS.ninjaHighScore || 0);
+  $("ninja-best").textContent = "🏅 " + (PROGRESS[ninjaHighScoreKey()] || 0);
+}
+
+// Reroll charges (round 15, addresses random-difficulty-punishes-your-
+// favorite-subject feedback): 1 free reroll per round, +1 refilled on
+// every boss defeated (capped at 2) -- lets a kid escape an unlucky
+// all-hard-ish spread without making difficulty fully choosable (still
+// the point of "pick by subject, not by difficulty").
+const NINJA_REROLL_MAX = 2;
+function updateNinjaRerollHud() {
+  const btn = $("ninja-reroll-btn");
+  btn.classList.toggle("hidden", ninjaState.rerollCharges <= 0);
+  $("ninja-reroll-n").textContent = ninjaState.rerollCharges;
 }
 
 function ninjaSetGuard(on) {
@@ -7337,11 +7453,25 @@ function ninjaHideDodgeBtns() {
   $("ninja-dodge-btn").classList.add("hidden");
 }
 
+// Relaxed mode (round 15, pre-round setup) -- skips the jump/dodge reflex
+// beat entirely: no obstacle, no life risk from timing, straight to the
+// subject-card picker after a short cosmetic "running" beat (still shows
+// the ninja running so the screen isn't jarring, just nothing to react
+// to). The quiz itself -- and its life risk on a wrong answer -- is
+// unchanged, since that's the actual educational content of the mode.
+const NINJA_RELAXED_RUN_MS = 900;
 function ninjaStartRunLane() {
   $("ninja-gates").classList.add("hidden");
+  $("ninja-reroll-btn").classList.add("hidden");
   $("ninja-qcard").classList.add("hidden");
   $("ninja-bubbles").classList.add("hidden");
   ninjaSetGuard(false);
+
+  if (ninjaState.relaxed) {
+    $("ninja-hint").textContent = "🏃 Running ahead...";
+    ninjaState.laneTimer = setTimeout(ninjaResolveEnemy, NINJA_RELAXED_RUN_MS);
+    return;
+  }
 
   if (!ninjaState.pendingBoss && Math.random() < NINJA_FLYING_CHANCE) {
     ninjaStartFlyingEncounter();
@@ -7392,7 +7522,7 @@ function ninjaResolveFlying() {
   ninjaHideDodgeBtns();
 
   if (!dodged) {
-    ninjaLoseLife();
+    ninjaLoseLife("shuriken");
     if (flying) {
       flying.classList.add("hit-flash");
       setTimeout(() => flying.classList.remove("hit-flash"), 250);
@@ -7436,7 +7566,7 @@ function ninjaResolveObstacle() {
     setTimeout(() => obstacle.remove(), 350);
   }
   if (bumped) {
-    ninjaLoseLife();
+    ninjaLoseLife("obstacle");
     if (ninjaState.lives <= 0) {
       // let the bump animation read before cutting to the finish screen
       ninjaState.laneTimer = setTimeout(ninjaGameOver, 400);
@@ -7446,10 +7576,12 @@ function ninjaResolveObstacle() {
   const enemy = document.createElement("div");
   enemy.id = "ninja-enemy-el";
   if (ninjaState.pendingBoss) {
-    const bossType = NINJA_BOSS_TYPES[ninjaState.bossesDefeated % NINJA_BOSS_TYPES.length];
-    enemy.className = "ninja-enemy ninja-boss-enemy";
+    // The finale boss (round 15 -- last question of ANY length) is its own
+    // tougher fight, not just another cycle of the checkpoint roster.
+    const bossType = ninjaState.isFinaleBoss ? NINJA_FINAL_BOSS : NINJA_BOSS_TYPES[ninjaState.bossesDefeated % NINJA_BOSS_TYPES.length];
+    enemy.className = "ninja-enemy ninja-boss-enemy" + (ninjaState.isFinaleBoss ? " ninja-finale-boss" : "");
     enemy.innerHTML = ninjaEnemyBodyHtml(bossType.emoji);
-    $("ninja-hint").textContent = `⚔️ ${bossType.name} is approaching!`;
+    $("ninja-hint").textContent = ninjaState.isFinaleBoss ? `⚔️ Final fight! ${bossType.name} blocks your way!` : `⚔️ ${bossType.name} is approaching!`;
   } else {
     enemy.className = "ninja-enemy";
     const faceEmoji = NINJA_ENEMY_TYPES[rand(0, NINJA_ENEMY_TYPES.length - 1)];
@@ -7474,7 +7606,9 @@ function ninjaResolveEnemy() {
   if (ninjaState.pendingBoss) {
     ninjaState.pendingBoss = false;
     ninjaState.inBoss = true;
-    ninjaState.bossHp = NINJA_BOSS_HP;
+    ninjaState.bossMissStreak = 0;
+    ninjaState.bossMaxHp = NINJA_BOSS_HP + (ninjaState.isFinaleBoss ? 1 : 0);
+    ninjaState.bossHp = ninjaState.bossMaxHp;
     $("ninja-boss-hp").classList.remove("hidden");
     updateNinjaBossHp();
   }
@@ -7524,6 +7658,12 @@ function ninjaSlashEnemy(removeEnemy) {
         updateNinjaLivesHud();
         showNinjaToast("❤️ +1 life!");
       }
+      // A little extra flourish for a higher Workshop tier costume (round
+      // 15) -- purely cosmetic, same tier that already drives the aura on
+      // #ninja-runner (dataset.tier, see mathville/style.css).
+      if (window.AIGSkin && $("ninja-runner").dataset.tier >= "2") {
+        try { const r = enemy.getBoundingClientRect(); AIGSkin.burst(r.left + r.width / 2, r.top + r.height / 2); } catch (e) {}
+      }
     } else {
       enemy.classList.add("hit-flash");
       setTimeout(() => enemy.classList.remove("hit-flash"), 250);
@@ -7532,25 +7672,50 @@ function ninjaSlashEnemy(removeEnemy) {
 }
 
 function updateNinjaBossHp() {
-  $("ninja-boss-hp-fill").style.width = (ninjaState.bossHp / NINJA_BOSS_HP * 100) + "%";
+  $("ninja-boss-hp-fill").style.width = (ninjaState.bossHp / (ninjaState.bossMaxHp || NINJA_BOSS_HP) * 100) + "%";
 }
 
-// A boss fight is won -- flat score bonus, boss HP bar hidden, then
-// continues into the next regular question same as any other advance.
+// A boss fight is won -- flat score bonus (doubled for the finale, it's the
+// bigger fight), boss HP bar hidden, then continues into the next regular
+// question same as any other advance. Also refills 1 reroll charge (capped
+// at NINJA_REROLL_MAX) -- a small "you earned another shot at a better
+// spread" reward for clearing the checkpoint.
 function defeatNinjaBoss() {
   ninjaState.inBoss = false;
   ninjaState.bossesDefeated += 1;
-  ninjaState.score += NINJA_BOSS_BONUS;
+  const bonus = NINJA_BOSS_BONUS * (ninjaState.isFinaleBoss ? 2 : 1);
+  ninjaState.score += bonus;
   updateNinjaScore();
+  ninjaState.rerollCharges = Math.min(NINJA_REROLL_MAX, ninjaState.rerollCharges + 1);
+  updateNinjaRerollHud();
   $("ninja-boss-hp").classList.add("hidden");
-  showNinjaToast(`💥 Boss defeated! +${NINJA_BOSS_BONUS} bonus`);
+  showNinjaToast(`💥 Boss defeated! +${bonus} bonus`);
   ninjaAdvance();
+}
+
+// Lang/Science lean on Plane Mode's existing cross-game pools, which have
+// no per-question difficulty tag (documented limitation, round 14). Round
+// 15 adds a light proxy instead of leaving Easy/Medium/Hard as pure point
+// multipliers: sample a few candidates and pick the one whose prompt reads
+// longest (Hard) or shortest (Easy) as a stand-in for complexity -- not a
+// real difficulty signal, but better than "same question either way".
+function pickFromPlanePoolByDifficulty(pool, difficulty) {
+  const tries = difficulty === "medium" ? 1 : 3;
+  let best = null;
+  for (let i = 0; i < tries; i++) {
+    const q = pickFromPlanePool(pool);
+    if (!q) continue;
+    if (!best) { best = q; continue; }
+    if (difficulty === "hard" && q.prompt.length > best.prompt.length) best = q;
+    else if (difficulty === "easy" && q.prompt.length < best.prompt.length) best = q;
+  }
+  return best;
 }
 
 function ninjaBuildQuestion(subjectKey, difficulty) {
   if (subjectKey === "math") return buildQuickMc(rollDriveQuestion(difficulty));
   const pool = subjectKey === "lang" ? planeLanguagePool : planeSolarPool;
-  return pickFromPlanePool(pool) || buildQuickMc(rollDriveQuestion(difficulty)); // pool not ready/empty -- fall back to math rather than block the round
+  return pickFromPlanePoolByDifficulty(pool, difficulty) || buildQuickMc(rollDriveQuestion(difficulty)); // pool not ready/empty -- fall back to math rather than block the round
 }
 
 // Small painted face (white eyes + dark pupils + smile curve) matching the
@@ -7574,6 +7739,29 @@ const NINJA_CARD_FACE_SVG = `
 // key (easy/medium/hard) is unchanged -- still drives points + badge color.
 const NINJA_DIFF_LABELS = { easy: "Twig Sprout", medium: "Star Ninja", hard: "Golden Sensei" };
 
+// Session-local adaptive difficulty (round 15) -- after a couple of
+// answers in a subject, leans the NEXT card's difficulty toward what this
+// run's own performance suggests: struggling (accuracy < 50%) biases
+// toward Easy/Medium, doing very well (> 85%) biases toward Hard. Stays
+// uniform random before that (not enough signal yet). No new Firebase
+// reads -- purely from ninjaState.subjectStats accumulated this round.
+function weightedPick(items, weights) {
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < items.length; i++) { r -= weights[i]; if (r <= 0) return items[i]; }
+  return items[items.length - 1];
+}
+function ninjaPickDifficulty(subjectKey) {
+  const s = ninjaState.subjectStats[subjectKey];
+  let weights = [1, 1, 1];
+  if (s.a >= 2) {
+    const acc = s.c / s.a;
+    if (acc < 0.5) weights = [3, 2, 0.5];
+    else if (acc > 0.85) weights = [0.5, 2, 3];
+  }
+  return weightedPick(NINJA_DIFFS, weights);
+}
+
 function renderNinjaGates() {
   ninjaSetGuard(false);
   const gates = $("ninja-gates");
@@ -7585,11 +7773,19 @@ function renderNinjaGates() {
     ? `⚔️ Defeat the boss! Answer correctly (HP left: ${ninjaState.bossHp})`
     : "Pick a subject (each card's difficulty is random):";
 
-  Object.keys(NINJA_SUBJECTS).forEach(key => {
-    const diff = NINJA_DIFFS[rand(0, 2)];
+  const keys = Object.keys(NINJA_SUBJECTS);
+  const diffs = keys.map(ninjaPickDifficulty);
+  // Never let all 3 land on Hard -- a kid picking their favorite subject
+  // shouldn't be able to get unlucky into a round with no lighter option
+  // at all (round 15, addresses "punishes picking your favorite subject").
+  if (diffs.every(d => d === "hard")) diffs[rand(0, diffs.length - 1)] = "medium";
+
+  keys.forEach((key, i) => {
+    const diff = diffs[i];
     const card = document.createElement("button");
     card.type = "button";
-    card.className = `ninja-card ${key}${diff === "hard" ? " diff-hard" : ""}`;
+    card.className = `ninja-card ${key}${diff === "hard" ? " diff-hard" : ""} gate-in`;
+    card.style.animationDelay = (i * 70) + "ms";
     card.innerHTML = `
       <div class="ninja-inner-frame"><div class="ninja-face-wrap">${NINJA_CARD_FACE_SVG}</div></div>
       <div class="ninja-card-title">${NINJA_SUBJECTS[key]}</div>
@@ -7598,15 +7794,33 @@ function renderNinjaGates() {
     card.addEventListener("click", () => ninjaPickCard(key, diff));
     gates.appendChild(card);
   });
+  updateNinjaRerollHud();
 }
 
+$("ninja-reroll-btn").addEventListener("click", () => {
+  if (!ninjaState || ninjaState.rerollCharges <= 0) return;
+  ninjaState.rerollCharges -= 1;
+  renderNinjaGates();
+});
+
 function ninjaPickCard(subjectKey, difficulty) {
+  // Guard (round 15) -- the gate cards from the last question before the
+  // round ended stay in the DOM (just hidden via CSS) until the next round
+  // overwrites them; this stops a stray late tap/event from spawning a
+  // question after ninjaFinishCommon() has already run.
+  if (!ninjaState || ninjaState.ended) return;
   $("ninja-gates").classList.add("hidden");
+  $("ninja-reroll-btn").classList.add("hidden");
   ninjaSetGuard(true);
   const q = ninjaBuildQuestion(subjectKey, difficulty);
+  ninjaState.qStart = performance.now(); // round 15 -- Quick Answer bonus window, see the answer handler below
   const qcard = $("ninja-qcard");
   qcard.classList.remove("hidden");
   qcard.innerHTML = `<span>${q.prompt}</span>`;
+
+  const quickBar = $("ninja-quick-bar");
+  quickBar.classList.remove("hidden");
+  quickBar.classList.remove("run"); void quickBar.offsetWidth; quickBar.classList.add("run"); // restart the CSS shrink animation
 
   const bubbles = $("ninja-bubbles");
   bubbles.innerHTML = "";
@@ -7618,19 +7832,30 @@ function ninjaPickCard(subjectKey, difficulty) {
     btn.className = "ninja-rbubble";
     btn.textContent = opt;
     btn.addEventListener("click", () => {
+      $("ninja-quick-bar").classList.add("hidden");
       const isCorrect = labelsEqual(opt, q.correctLabel);
       if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("mathville", "ninja-runner", isCorrect);
+      const stats = ninjaState.subjectStats[subjectKey];
+      stats.a += 1;
+      if (isCorrect) stats.c += 1;
       if (isCorrect) {
         ninjaState.totalAnswered += 1;
         const prevBonus = ninjaStreakBonus(ninjaState.streak);
         ninjaState.streak += 1;
         const bonus = ninjaStreakBonus(ninjaState.streak);
         if (difficulty === "hard") ninjaState.hardCorrectCount += 1;
-        ninjaState.score += NINJA_PTS[difficulty] + bonus;
+        // Quick Answer bonus (round 15) -- restores some time pressure to
+        // the deliberately-untimed question beat without ever costing a
+        // life for thinking longer than NINJA_QUICK_MS.
+        const quick = performance.now() - ninjaState.qStart <= NINJA_QUICK_MS;
+        ninjaState.score += NINJA_PTS[difficulty] + bonus + (quick ? NINJA_QUICK_BONUS : 0);
         updateNinjaScore();
         updateNinjaStreakHud();
+        ninjaPlaySubjectChime(subjectKey);
+        if (quick) showNinjaToast(`⚡ Quick answer! +${NINJA_QUICK_BONUS}`);
         if (bonus > prevBonus) showNinjaToast(`🔥 ${ninjaState.streak} in a row! +${bonus} bonus`);
         if (ninjaState.inBoss) {
+          ninjaState.bossMissStreak = 0;
           ninjaState.bossHp -= 1;
           updateNinjaBossHp();
           ninjaSlashEnemy(ninjaState.bossHp <= 0); // only the finishing hit fully removes the boss
@@ -7644,11 +7869,27 @@ function ninjaPickCard(subjectKey, difficulty) {
         }
       } else {
         ninjaState.totalAnswered += 1;
+        // Streak-break feedback (round 15) -- only worth calling out if a
+        // real streak was actually lost, not on every single miss.
+        if (ninjaState.streak >= 3) showNinjaToast("💔 Streak broken!", "bad");
         ninjaState.streak = 0;
         updateNinjaStreakHud();
         ninjaState.wrongLog.push({ prompt: q.prompt, subject: NINJA_SUBJECTS[subjectKey], your: opt, correct: q.correctLabel });
         btn.classList.add("wrong-flash");
-        ninjaLoseLife();
+        ninjaLoseLife("wrong");
+        // Boss "counter-attack" (round 15) -- 2 wrong answers in a row
+        // during a boss fight (not just any wrong answer) triggers an
+        // extra shake+flash on top of the normal life loss, so repeated
+        // misses against a boss read as genuinely more dangerous.
+        if (ninjaState.inBoss) {
+          ninjaState.bossMissStreak = (ninjaState.bossMissStreak || 0) + 1;
+          if (ninjaState.bossMissStreak >= NINJA_BOSS_COUNTER_MISSES) {
+            ninjaState.bossMissStreak = 0;
+            const world = $("ninja-world");
+            world.classList.remove("shake"); void world.offsetWidth; world.classList.add("shake");
+            showNinjaToast("💥 The boss counter-attacks!", "bad");
+          }
+        }
         setTimeout(() => {
           if (ninjaState.lives <= 0) { ninjaGameOver(); return; }
           if (ninjaState.inBoss) renderNinjaGates(); // boss fight isn't over -- try again, doesn't advance qnum
@@ -7680,11 +7921,19 @@ function ninjaAdvance() {
   ninjaState.myCheckpoints[ninjaState.qnum - 1] = ninjaState.score;
   updateNinjaGhostHud();
   ninjaState.qnum++;
-  if (ninjaState.qnum > NINJA_TOTAL_Q) { ninjaShowFinish(); return; }
-  $("ninja-qnum").textContent = `Q ${ninjaState.qnum}/${NINJA_TOTAL_Q}`;
-  // Boss checkpoint every NINJA_BOSS_EVERY questions -- flagged here, then
-  // actually activated once the enemy "reaches" the runner (ninjaResolveEnemy).
-  ninjaState.pendingBoss = (ninjaState.qnum - 1) % NINJA_BOSS_EVERY === 0;
+  if (ninjaState.qnum > ninjaState.totalQ) { ninjaShowFinish(); return; }
+  $("ninja-qnum").textContent = `Q ${ninjaState.qnum}/${ninjaState.totalQ}`;
+  // Environment progression (round 15) -- purely cosmetic scene swap by
+  // how far through the round this is, same idea as DinoRace's distance
+  // scenes: never touches obstacle/enemy/collision logic at all.
+  const progress = (ninjaState.qnum - 1) / ninjaState.totalQ;
+  $("ninja-world").dataset.scene = progress < 1 / 3 ? "dawn" : progress < 2 / 3 ? "day" : "dusk";
+  // Boss checkpoint every NINJA_BOSS_EVERY questions, PLUS a guaranteed
+  // finale boss on the round's very last question (round 15) -- flagged
+  // here, then actually activated once the enemy "reaches" the runner
+  // (ninjaResolveEnemy).
+  ninjaState.isFinaleBoss = ninjaState.qnum === ninjaState.totalQ;
+  ninjaState.pendingBoss = (ninjaState.qnum - 1) % NINJA_BOSS_EVERY === 0 || ninjaState.isFinaleBoss;
   ninjaStartRunLane();
 }
 
@@ -7705,8 +7954,9 @@ function updateNinjaGhostHud() {
 const NINJA_WIN_XP = 20;
 
 function ninjaShowFinish() {
+  ninjaState.completed = true;
   $("ninja-finish-title").textContent = "🏁 Your journey has completed.";
-  $("ninja-finish-sub").textContent = `${NINJA_TOTAL_Q} questions answered!`;
+  $("ninja-finish-sub").textContent = `${ninjaState.totalQ} questions answered!`;
   ninjaFinishCommon();
 }
 
@@ -7724,19 +7974,46 @@ function ninjaFinishCommon() {
   ninjaSetGuard(false);
   $("ninja-runner").classList.remove("running");
   $("ninja-gates").classList.add("hidden");
+  $("ninja-reroll-btn").classList.add("hidden");
   $("ninja-qcard").classList.add("hidden");
+  $("ninja-quick-bar").classList.add("hidden");
   $("ninja-bubbles").classList.add("hidden");
   $("ninja-hint").textContent = "";
   $("ninja-final-score").textContent = `${ninjaState.score} points`;
-  $("ninja-final-best").textContent = `Best: ${Math.max(ninjaState.score, PROGRESS.ninjaHighScore || 0)}`;
+  $("ninja-final-best").textContent = `Best: ${Math.max(ninjaState.score, PROGRESS[ninjaHighScoreKey()] || 0)}`;
   const rank = ninjaComputeRank();
   $("ninja-finish-badge").innerHTML = `${rank.emoji} ${rank.label}`;
+
+  // Life-loss breakdown (round 15) -- makes "why did I lose lives" legible
+  // at a glance instead of just a final heart count.
+  const L = ninjaState.lifeLossLog, parts = [];
+  if (L.obstacle) parts.push(`💢 ${L.obstacle} obstacle${L.obstacle > 1 ? "s" : ""}`);
+  if (L.shuriken) parts.push(`⚡ ${L.shuriken} shuriken${L.shuriken > 1 ? "s" : ""}`);
+  if (L.wrong) parts.push(`❌ ${L.wrong} wrong answer${L.wrong > 1 ? "s" : ""}`);
+  const lossEl = $("ninja-lifeloss-breakdown");
+  lossEl.classList.toggle("hidden", parts.length === 0);
+  lossEl.textContent = parts.length ? "Lost a life to: " + parts.join(" · ") : "";
+
+  // Pace comparison (round 15) -- only for a genuinely completed run (not
+  // a game-over cut short), so the elapsed time is comparable to the
+  // ghost's. Ghost is already scoped per-length (see leaderboard.js), so
+  // this never compares a Quick run's time against a Classic one's.
+  const timeEl = $("ninja-time-compare");
+  const elapsedMs = Date.now() - ninjaState.startedAt;
+  if (ninjaState.completed && ninjaGhost && ninjaGhost.timeMs != null) {
+    const deltaS = Math.round((ninjaGhost.timeMs - elapsedMs) / 1000);
+    timeEl.classList.remove("hidden");
+    timeEl.textContent = deltaS > 0 ? `⏱ ${deltaS}s faster than your best run!` : deltaS < 0 ? `⏱ ${-deltaS}s slower than your best run.` : "⏱ Same pace as your best run!";
+  } else {
+    timeEl.classList.add("hidden");
+  }
+
   $("ninja-finish-overlay").classList.remove("hidden");
   saveChapterProgress("ninja-runner", 3, NINJA_WIN_XP);
   // A new personal best replaces the ghost future runs race against --
   // fire-and-forget, same as every other Firebase write on this screen.
   if (ninjaState.isNewHighScoreRun && window.AIGLeaderboard) {
-    AIGLeaderboard.saveNinjaGhost(ninjaState.score, ninjaState.myCheckpoints).catch(() => {});
+    AIGLeaderboard.saveNinjaGhost(ninjaState.totalQ, ninjaState.score, ninjaState.myCheckpoints, ninjaState.completed ? elapsedMs : null).catch(() => {});
   }
 }
 
@@ -7754,16 +8031,18 @@ let ninjaReviewIdx = 0;
 function ninjaShowReview() {
   $("ninja-finish-overlay").classList.add("hidden");
   $("ninja-review-overlay").classList.remove("hidden");
-  const prevBtn = $("ninja-review-prev"), nextBtn = $("ninja-review-next");
+  const prevBtn = $("ninja-review-prev"), nextBtn = $("ninja-review-next"), askBtn = $("ninja-review-ask-bo");
   if (ninjaState.wrongLog.length === 0) {
     $("ninja-review-title").textContent = "Bo here! Perfect, nothing to review!";
     $("ninja-review-qbox").innerHTML = `<div class="ninja-review-q">🎉 Every question answered correctly!</div>`;
     prevBtn.classList.add("hidden");
     nextBtn.classList.add("hidden");
+    askBtn.classList.add("hidden");
     return;
   }
   prevBtn.classList.remove("hidden");
   nextBtn.classList.remove("hidden");
+  askBtn.classList.remove("hidden");
   ninjaReviewIdx = 0;
   ninjaRenderReviewCard();
 }
@@ -7778,7 +8057,41 @@ function ninjaRenderReviewCard() {
   `;
   $("ninja-review-prev").disabled = ninjaReviewIdx === 0;
   $("ninja-review-next").disabled = ninjaReviewIdx === ninjaState.wrongLog.length - 1;
+  // Reset the "Ask Bo" state per card -- an explanation for one wrong
+  // answer shouldn't linger when Prev/Next moves to a different one.
+  const askBtn = $("ninja-review-ask-bo"), answerEl = $("ninja-review-bo-answer");
+  askBtn.disabled = false;
+  askBtn.textContent = "💡 Ask Bo to explain";
+  answerEl.classList.add("hidden");
+  answerEl.textContent = "";
 }
+
+// "Ask Bo to explain" (round 15) -- one-shot, reuses the same
+// /api/generate-hint endpoint + callAiHint() helper already wired up for
+// the chapter reward screen's AI Tutor, just without the multi-turn chat
+// thread (a single explanation is enough for a quick post-round review).
+async function ninjaAskBoExplain() {
+  const item = ninjaState.wrongLog[ninjaReviewIdx];
+  if (!item) return;
+  const btn = $("ninja-review-ask-bo"), answerEl = $("ninja-review-bo-answer");
+  btn.disabled = true;
+  btn.textContent = "Thinking…";
+  answerEl.classList.remove("hidden");
+  answerEl.textContent = "…";
+  try {
+    const data = await callAiHint({
+      studentName: CHILD_NAME, gameLabel: "Ninja Runner",
+      question: item.prompt, correctAnswer: item.correct, kidAnswer: item.your, topic: "ninja-runner"
+    });
+    answerEl.textContent = data.hint;
+  } catch (e) {
+    answerEl.textContent = "Hmm, I can't think right now -- try again in a bit!";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "💡 Ask Bo to explain";
+  }
+}
+$("ninja-review-ask-bo").addEventListener("click", ninjaAskBoExplain);
 
 $("ninja-review-prev").addEventListener("click", () => { if (ninjaReviewIdx > 0) { ninjaReviewIdx--; ninjaRenderReviewCard(); } });
 $("ninja-review-next").addEventListener("click", () => { if (ninjaReviewIdx < ninjaState.wrongLog.length - 1) { ninjaReviewIdx++; ninjaRenderReviewCard(); } });

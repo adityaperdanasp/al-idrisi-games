@@ -34,7 +34,7 @@
 <script src="../leaderboard.js"></script>
 <script src="../skin.js"></script>
 
-<link rel="stylesheet" href="style.css?v=102" />
+<link rel="stylesheet" href="style.css?v=103" />
 </head>
 <body>
 
@@ -1076,6 +1076,25 @@
        Drive Mode/Plane Mode beyond those question-pool helpers.
        =============================================================== -->
   <section id="screen-ninja" class="screen">
+    <!-- Pre-round setup (PM round 15 -- Ninja Runner overhaul): length +
+         reflex-mode choice, shown every time before a run actually starts.
+         Doubles as the warm-up beat (no obstacle/enemy is live yet here). -->
+    <div class="ninja-overlay hidden" id="ninja-setup-overlay">
+      <div class="ninja-finish-card">
+        <div class="ninja-finish-title">🥋 Get ready, ninja!</div>
+        <div class="ninja-setup-label">Run length</div>
+        <div class="ninja-setup-row" id="ninja-setup-len">
+          <button type="button" class="ninja-setup-opt" data-len="8">⚡ Quick<br><small>8 questions</small></button>
+          <button type="button" class="ninja-setup-opt" data-len="20">🏁 Classic<br><small>20 questions</small></button>
+        </div>
+        <div class="ninja-setup-label">Mode</div>
+        <div class="ninja-setup-row" id="ninja-setup-mode">
+          <button type="button" class="ninja-setup-opt" data-mode="normal">🥋 Normal<br><small>jump/dodge obstacles</small></button>
+          <button type="button" class="ninja-setup-opt" data-mode="relaxed">🧘 Relaxed<br><small>skip reflex, just quiz</small></button>
+        </div>
+        <button class="btn btn-primary" id="ninja-setup-start" style="width:100%;margin-top:14px">▶ Start!</button>
+      </div>
+    </div>
     <div class="map-header drive-header">
       <div>
         <h2 class="title-lg">Ninja Runner</h2>
@@ -1122,11 +1141,13 @@
 
       <div class="ninja-encounter">
         <div class="ninja-qcard hidden" id="ninja-qcard"></div>
+        <div class="ninja-quick-bar hidden" id="ninja-quick-bar"><i id="ninja-quick-bar-fill"></i></div>
         <div class="ninja-bubbles hidden" id="ninja-bubbles"></div>
       </div>
     </div>
 
     <div class="ninja-hint" id="ninja-hint">Pick a subject (each card's difficulty is random):</div>
+    <button type="button" class="ninja-reroll-btn hidden" id="ninja-reroll-btn">🔄 Reroll (<span id="ninja-reroll-n">1</span>)</button>
 
     <div class="ninja-overlay hidden" id="ninja-finish-overlay">
       <div class="ninja-finish-card">
@@ -1134,6 +1155,8 @@
         <div class="ninja-finish-sub" id="ninja-finish-sub">20 questions answered!</div>
         <div class="ninja-finish-score" id="ninja-final-score">0 points</div>
         <div class="ninja-finish-best" id="ninja-final-best">Best: 0</div>
+        <div class="ninja-time-compare hidden" id="ninja-time-compare"></div>
+        <div class="ninja-lifeloss hidden" id="ninja-lifeloss-breakdown"></div>
         <div class="ninja-finish-badge" id="ninja-finish-badge"></div>
         <button class="btn btn-primary" id="ninja-review-btn">Review with Bo →</button>
       </div>
@@ -1144,6 +1167,8 @@
         <img class="ninja-review-bo" src="../icon-192.png" alt="Bo">
         <div class="ninja-review-title" id="ninja-review-title">Bo here! Let's go over this...</div>
         <div class="ninja-review-qbox" id="ninja-review-qbox"></div>
+        <button type="button" class="btn btn-secondary ninja-ask-bo-btn" id="ninja-review-ask-bo">💡 Ask Bo to explain</button>
+        <div class="ninja-review-bo-answer hidden" id="ninja-review-bo-answer"></div>
         <div class="ninja-review-nav">
           <button class="btn btn-secondary" id="ninja-review-prev">← Prev</button>
           <button class="btn btn-secondary" id="ninja-review-next">Next →</button>
@@ -1188,6 +1213,6 @@
 <script src="bgm.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
 <script src="../vehicles.js?v=1"></script>
-<script src="script.js?v=144"></script>
+<script src="script.js?v=145"></script>
 </body>
 </html>

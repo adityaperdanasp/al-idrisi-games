@@ -2039,3 +2039,114 @@ button { font-family: inherit; }
 .plane-bullet.ammo-homing { background: radial-gradient(circle, #fff, #a855f7); box-shadow: 0 0 9px rgba(168,85,247,.9); border-radius: 50%; }
 .plane-bullet.ammo-pierce { background: linear-gradient(180deg, #fff, #ef4444); box-shadow: 0 0 8px rgba(239,68,68,.95); height: 24px; }
 .plane-bullet.ammo-rainbow { background: linear-gradient(180deg, #ff3ea5, #ffd166, #7ee6ff); box-shadow: 0 0 10px rgba(255,255,255,.9); }
+
+/* ---------- Ninja Runner overhaul (PM round 15) ---------- */
+
+/* Pre-round setup overlay -- length + reflex-mode choice, shown every
+   launch (see launchNinjaRunner/ninjaBeginRun). Reuses .ninja-overlay/
+   .ninja-finish-card's look. */
+.ninja-setup-label { font: 800 12px "Baloo 2", sans-serif; color: var(--ink-soft); margin: 12px 0 6px; text-align: left; }
+.ninja-setup-row { display: flex; gap: 8px; }
+.ninja-setup-opt {
+  flex: 1; padding: 10px 6px; border-radius: 12px; border: 2px solid var(--taupe);
+  background: var(--cream); font: 700 12px "Baloo 2", sans-serif; color: var(--ink); cursor: pointer;
+  transition: transform .1s ease, border-color .1s ease, background .1s ease;
+}
+.ninja-setup-opt small { display: block; font: 700 10px "Nunito", sans-serif; color: var(--ink-soft); margin-top: 2px; }
+.ninja-setup-opt.sel { border-color: var(--wood); background: #fff3d9; }
+.ninja-setup-opt:active { transform: translateY(2px); }
+
+/* Environment progression -- purely cosmetic scene swap by how far
+   through the round this is (see ninjaAdvance/ninjaBeginRun), same idea
+   as DinoRace's distance scenes. Never touches gameplay/collision. */
+.ninja-world[data-scene="day"] { background: linear-gradient(180deg, #eaf6ff 0%, #cfe9c8 100%); }
+.ninja-world[data-scene="dusk"] { background: linear-gradient(180deg, #f9d9b0 0%, #e7b6d6 60%, #c48fc9 100%); }
+.ninja-world[data-scene="dusk"] .ninja-ground { background: repeating-linear-gradient(90deg, #b98a6e 0 24px, transparent 24px 48px); }
+
+/* Whole-arena shake -- the boss "counter-attack" on 2 misses in a row
+   during a boss fight (see NINJA_BOSS_COUNTER_MISSES). */
+.ninja-world.shake { animation: ninjaWorldShake .35s ease; }
+@keyframes ninjaWorldShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(3px); }
+}
+
+/* Telegraph pulse right before an obstacle/enemy "arrives" -- a glowing
+   ::after overlay with its own independent animation, timed via
+   animation-delay to land in roughly the last 400ms of the approach
+   (NINJA_OBSTACLE_MS/NINJA_ENEMY_MS/NINJA_FLYING_MS are all 1800ms in
+   script.js -- keep this delay in sync if those ever change). Kept
+   entirely OFF the element's own `animation` property on purpose: that
+   property is already reused dynamically for dodged/bumped/hit-flash/
+   boss-shake, and layering onto it risks silently clobbering those. */
+.ninja-obstacle, .ninja-enemy:not(.ninja-boss-enemy) { position: absolute; }
+.ninja-obstacle::after, .ninja-enemy:not(.ninja-boss-enemy)::after {
+  content: ""; position: absolute; inset: -6px; border-radius: 50%; pointer-events: none;
+  animation: ninjaWarnPulse .35s ease-in-out 1.4s 2;
+}
+@keyframes ninjaWarnPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } 50% { box-shadow: 0 0 14px 5px rgba(255,255,255,.85); } }
+
+/* Distinct hit-reason tint (round 15) -- same shake choreography as the
+   base .ninja-runner.hit (ninjaRunnerHit), just a different glow color per
+   cause, so WHY a life was lost reads at a glance. Higher specificity
+   (3 classes vs 2) than `.ninja-runner.hit`'s own rule wins the cascade
+   regardless of source order, and only `animation-name` is overridden --
+   duration/timing-function still come from that shorthand rule. */
+.ninja-runner.hit.hit-obstacle { animation-name: ninjaRunnerHitObstacle; }
+.ninja-runner.hit.hit-shuriken { animation-name: ninjaRunnerHitShuriken; }
+.ninja-runner.hit.hit-wrong { animation-name: ninjaRunnerHitWrong; }
+@keyframes ninjaRunnerHitObstacle {
+  0%, 100% { filter: brightness(1); transform: translateX(0); }
+  25% { filter: brightness(2) drop-shadow(0 0 6px #e4572e); transform: translateX(-6px); }
+  50% { transform: translateX(6px); } 75% { transform: translateX(-3px); }
+}
+@keyframes ninjaRunnerHitShuriken {
+  0%, 100% { filter: brightness(1); transform: translateX(0); }
+  25% { filter: brightness(2) drop-shadow(0 0 6px #7ee6ff); transform: translateX(-6px); }
+  50% { transform: translateX(6px); } 75% { transform: translateX(-3px); }
+}
+@keyframes ninjaRunnerHitWrong {
+  0%, 100% { filter: brightness(1); transform: translateX(0); }
+  25% { filter: brightness(2) drop-shadow(0 0 6px #b53d18); transform: translateX(-6px); }
+  50% { transform: translateX(6px); } 75% { transform: translateX(-3px); }
+}
+
+.ninja-toast-bad { background: #b53d18; }
+
+/* Reroll button (below #ninja-world, next to the hint text -- NOT
+   absolutely positioned over the world, so it can never overlap the
+   subject cards) + subject-card entrance pop (round 15) */
+.ninja-reroll-btn {
+  display: block; margin: 6px auto 0;
+  padding: 5px 14px; border-radius: 999px; border: none; background: #fff; color: var(--ink);
+  font: 800 11px "Baloo 2", sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,.18); cursor: pointer;
+}
+.ninja-reroll-btn:active { transform: translateY(2px); }
+.ninja-card.gate-in { animation: ninjaGateIn .35s ease backwards; }
+@keyframes ninjaGateIn { 0% { opacity: 0; transform: translateY(18px) scale(.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* Finale boss (last question of any round length) -- a slightly hotter
+   glow than a regular checkpoint boss's .ninja-boss-enemy shake alone. */
+.ninja-finale-boss { filter: drop-shadow(0 0 10px #b53d18); }
+
+/* Quick Answer bonus bar -- shrinks over NINJA_QUICK_MS (4s); answering
+   before it empties earns NINJA_QUICK_BONUS on top of the question's
+   normal points. Purely a bonus, never a penalty for going slower. */
+.ninja-quick-bar { height: 5px; border-radius: 3px; background: rgba(0,0,0,.08); margin: 0 12px 8px; overflow: hidden; }
+.ninja-quick-bar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #f7c548, #e4572e); transform-origin: left; }
+.ninja-quick-bar.run i { animation: ninjaQuickShrink 4s linear forwards; }
+@keyframes ninjaQuickShrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* Finish-screen extras -- pace comparison + life-loss breakdown */
+.ninja-time-compare { font: 800 13px "Baloo 2", sans-serif; color: var(--ink); margin-bottom: 6px; }
+.ninja-lifeloss { font: 700 12px "Nunito", sans-serif; color: var(--ink-soft); margin-bottom: 10px; }
+
+/* "Ask Bo to explain" on the review card */
+.ninja-ask-bo-btn { width: 100%; margin-bottom: 10px; }
+.ninja-review-bo-answer {
+  background: #fff3d9; border: 2px solid var(--wood); border-radius: 12px; padding: 10px 12px;
+  font: 700 13px "Nunito", sans-serif; color: var(--ink); text-align: left; margin-bottom: 12px; line-height: 1.5;
+}

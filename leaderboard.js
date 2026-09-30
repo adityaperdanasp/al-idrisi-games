@@ -3565,17 +3565,27 @@
   // PROGRESS.ninjaHighScore. Stored at players/{id}/ninjaGhost, nested
   // under the already-open `players` path, no rules change needed.
   // =====================================================================
-  async function getNinjaGhost() {
+  // `len` (PM round 15 -- Ninja Runner overhaul, Quick Run mode) picks WHICH
+  // ghost: the original 20-question length keeps using the field name
+  // `ninjaGhost` exactly as before (no migration needed, existing bests are
+  // untouched), and the new 8-question "Quick Run" length gets its own
+  // separate field `ninjaGhost8` -- a short run's score is never a fair
+  // comparison against a full 20-question one, so they never mix.
+  function ninjaGhostField(len) { return len === 8 ? "ninjaGhost8" : "ninjaGhost"; }
+
+  async function getNinjaGhost(len) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return null;
-    const snap = await aigDb.ref(`players/${player.id}/ninjaGhost`).get();
-    return snap.exists() ? snap.val() : null; // {score, checkpoints: [cumulative score after each question]}
+    const snap = await aigDb.ref(`players/${player.id}/${ninjaGhostField(len)}`).get();
+    return snap.exists() ? snap.val() : null; // {score, checkpoints: [cumulative score after each question], timeMs?}
   }
 
-  async function saveNinjaGhost(score, checkpoints) {
+  async function saveNinjaGhost(len, score, checkpoints, timeMs) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return;
-    await aigDb.ref(`players/${player.id}/ninjaGhost`).set({ score, checkpoints });
+    const data = { score, checkpoints };
+    if (timeMs != null) data.timeMs = timeMs;
+    await aigDb.ref(`players/${player.id}/${ninjaGhostField(len)}`).set(data);
   }
 
   // =====================================================================
