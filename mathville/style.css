@@ -1768,7 +1768,10 @@ button { font-family: inherit; }
      visibly clear) so a well-timed jump actually looks like it clears it. */
   position: absolute; bottom: 40px; font-size: 22px;
   filter: drop-shadow(0 3px 3px rgba(0,0,0,.2));
-  animation: ninjaObstacleRun 1.8s linear forwards;
+  /* Slow-Mo charm (round 19, item 2) -- #ninja-run-lane sets
+     --ninja-obstacle-ms when a charm stretches this one encounter; the
+     fallback keeps every other obstacle at the original 1.8s. */
+  animation: ninjaObstacleRun var(--ninja-obstacle-ms, 1.8s) linear forwards;
 }
 /* Enemy body -- torso+legs+face instead of a bare emoji, sized the same
    as .ninja-runner (54x90) so it reads as an actual character (see
@@ -2495,7 +2498,10 @@ button { font-family: inherit; }
 .ninja-ground-shadow {
   position: absolute; bottom: 38px; width: 22px; height: 7px; border-radius: 50%;
   background: rgba(60, 45, 25, .3); z-index: 1; filter: blur(1px);
-  animation: ninjaObstacleRun 1.8s linear forwards;
+  /* Round 19, item 2 -- must stay in lockstep with .ninja-obstacle's own
+     duration (same --ninja-obstacle-ms var) or Slow-Mo would desync the
+     shadow from the obstacle it's supposed to travel with. */
+  animation: ninjaObstacleRun var(--ninja-obstacle-ms, 1.8s) linear forwards;
 }
 
 /* Loading shimmer (item 30) -- a brief pulse as the question card
@@ -2517,3 +2523,162 @@ button { font-family: inherit; }
   .ninja-setup-row-wrap .ninja-setup-opt { flex-basis: 100%; }
   .ninja-jump-btn, .ninja-dodge-btn { font-size: 12px; padding: 10px 14px; }
 }
+
+/* =================================================================
+   ROUND 19 -- 30 more gameplay/UI-UX additions. See script.js for the
+   JS half of each item; comments here only note what's new/why.
+   ================================================================= */
+
+/* Lives-lost shake direction by cause (item 28) -- horizontal for a
+   physical bump (obstacle/shuriken), vertical for a wrong answer, layered
+   on top of the existing .hit color-flash (that one is untouched). */
+.ninja-runner.shake-h { animation: ninjaShakeH .3s ease; }
+.ninja-runner.shake-v { animation: ninjaShakeV .3s ease; }
+@keyframes ninjaShakeH { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@keyframes ninjaShakeV { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(-5px); } 75% { transform: translateY(4px); } }
+
+/* Low-life heartbeat glow (item 30) -- a slow pulsing glow on the hearts
+   pill once down to the last life. */
+.drive-hud-pill#ninja-lives.ninja-lowlife { animation: ninjaLowlifeGlow 1s ease-in-out infinite; }
+@keyframes ninjaLowlifeGlow { 0%, 100% { box-shadow: 0 0 0 rgba(228,87,46,0); } 50% { box-shadow: 0 0 10px 2px rgba(228,87,46,.55); } }
+
+/* Near-miss micro slow-mo (item 14) -- a brief visual-only stretch on a
+   Perfect-timing dodge, fires AFTER the collision outcome is already
+   decided so it can never affect it. */
+.ninja-runner.nearmiss-slowmo { animation: ninjaNearmissPulse .26s ease; }
+@keyframes ninjaNearmissPulse { 0% { filter: brightness(1); } 40% { filter: brightness(1.5) saturate(1.3); } 100% { filter: brightness(1); } }
+
+/* Glide (item 5) -- a subtle sustained glow while a held jump is being
+   extended, distinguishing it from a plain tap hop. */
+.ninja-runner.gliding .ninja-torso, .ninja-runner.gliding .ninja-head { filter: drop-shadow(0 0 6px rgba(255,214,120,.8)); }
+
+/* Idle fidget (item 17) -- a small restless wiggle if a kid sits at the
+   subject-pick screen without choosing for a while. Only ever added while
+   .running is also present (see ninjaResetIdleFidget's own guard), so it
+   can't fight the jumping/ducking/guard poses. */
+.ninja-runner.idle-fidget .ninja-head { animation: ninjaIdleFidget 1.8s ease-in-out infinite; }
+@keyframes ninjaIdleFidget { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+
+/* Dodge-button ripple (item 16) -- a radial ping synced to the exact
+   frame JUMP/DODGE is pressed, via ::after so it never fights the
+   button's own background/border. */
+.ninja-jump-btn, .ninja-dodge-btn { position: relative; overflow: hidden; }
+.ninja-jump-btn.ripple::after, .ninja-dodge-btn.ripple::after {
+  content: ""; position: absolute; inset: 0; margin: auto; width: 10px; height: 10px; border-radius: 50%;
+  background: rgba(255,255,255,.85); animation: ninjaBtnRipple .45s ease-out;
+}
+@keyframes ninjaBtnRipple { from { width: 10px; height: 10px; opacity: .85; } to { width: 140px; height: 140px; opacity: 0; } }
+
+/* Boss attack "tell" pulse (item 24) -- a brief wind-up glow on the boss
+   itself right as a telegraph begins, alongside the hint text/button
+   timing bar rather than delaying them. */
+.ninja-enemy.attack-tell { animation: ninjaAttackTell .3s ease; }
+@keyframes ninjaAttackTell { 0% { filter: brightness(1); } 40% { filter: brightness(1.8) drop-shadow(0 0 10px rgba(228,87,46,.8)); } 100% { filter: brightness(1); } }
+
+/* Boss HP crack visual (item 25) -- cumulative marks on top of the
+   existing color-coded fill, via ::before/::after on the BAR (not the
+   fill itself, so they don't get clipped/scaled by its shrinking width). */
+.plane-boss-hp { position: relative; }
+.plane-boss-hp.crack-1::before, .plane-boss-hp.crack-2::after {
+  content: ""; position: absolute; top: -2px; width: 2px; height: calc(100% + 4px);
+  background: rgba(20,8,8,.55); transform: rotate(12deg);
+}
+.plane-boss-hp.crack-1::before { left: 55%; }
+.plane-boss-hp.crack-2::after { left: 30%; transform: rotate(-10deg); }
+
+/* HUD pop-in stagger at round start (item 23) -- the score/lives/qnum
+   pills fade/scale in one after another instead of all at once. Scoped
+   to #ninja-hud specifically so Drive Mode's own .drive-hud elsewhere
+   never picks this up. */
+#ninja-hud.popin .drive-hud-pill, #ninja-hud.popin .ninja-progress-dots, #ninja-hud.popin .ninja-peek-btn {
+  animation: ninjaHudPopin .35s ease backwards;
+}
+#ninja-hud.popin .drive-hud-pill:nth-child(1) { animation-delay: 0ms; }
+#ninja-hud.popin .drive-hud-pill:nth-child(2), #ninja-hud.popin .ninja-progress-dots { animation-delay: 60ms; }
+#ninja-hud.popin .drive-hud-pill:nth-child(4) { animation-delay: 120ms; }
+#ninja-hud.popin .drive-hud-pill:nth-child(5) { animation-delay: 180ms; }
+#ninja-hud.popin .drive-hud-pill:nth-child(6) { animation-delay: 240ms; }
+#ninja-hud.popin .ninja-peek-btn { animation-delay: 300ms; }
+@keyframes ninjaHudPopin { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }
+
+/* Progress dot-trail (item 22) -- small dots next to the Q X/Y pill,
+   filled progressively via updateNinjaProgressDots. */
+.ninja-progress-dots { display: inline-flex; gap: 3px; align-items: center; }
+.ninja-progress-dots i { width: 5px; height: 5px; border-radius: 50%; background: rgba(43,58,85,.2); display: inline-block; }
+.ninja-progress-dots i.on { background: #e4572e; }
+
+/* Score-pop color coding by source (item 21) -- "base" keeps the pop's
+   original color (no extra class added, see ninjaSpawnScorePop). */
+.ninja-score-pop.pop-mystery { color: #c45fd1; }
+.ninja-score-pop.pop-charm { color: #4fa9e6; }
+.ninja-score-pop.pop-variety { color: #2faa7a; }
+.ninja-score-pop.pop-quick { color: #f0a500; }
+.ninja-score-pop.pop-streak { color: #e4572e; }
+
+/* Colorblind-safe obstacle/dash shapes (item 12) -- a small shape badge
+   layered via ::after, ONLY while high-contrast mode is on (complements
+   the existing .hc filter rather than always-on clutter). */
+.ninja-world.hc .ninja-obstacle { position: relative; }
+.ninja-world.hc .ninja-obstacle::after {
+  content: ""; position: absolute; top: -6px; right: -4px; width: 10px; height: 10px;
+  background: #fff; border: 2px solid #000;
+}
+.ninja-world.hc .ninja-obstacle[data-shape="jump"]::after { border-radius: 0; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+.ninja-world.hc .ninja-obstacle[data-shape="duck"]::after { border-radius: 0; clip-path: polygon(50% 100%, 0% 0%, 100% 0%); }
+.ninja-world.hc .ninja-obstacle[data-shape="dash"]::after { border-radius: 50%; }
+
+/* Dash obstacle (item 6) -- a visually distinct "breeze" look even
+   outside high-contrast mode, so it doesn't read as just another rock. */
+.ninja-obstacle-dash { filter: drop-shadow(0 0 6px rgba(120,200,255,.7)) !important; }
+
+/* Finish-screen section stagger reveal (item 26) -- each
+   .ninja-finish-section fades/slides in one after another instead of all
+   appearing at once when the overlay unhides. */
+#ninja-finish-overlay:not(.hidden) .ninja-finish-section {
+  animation: ninjaFinishSectionIn .4s ease backwards;
+}
+#ninja-finish-overlay:not(.hidden) .ninja-finish-section:nth-of-type(1) { animation-delay: 0ms; }
+#ninja-finish-overlay:not(.hidden) .ninja-finish-section:nth-of-type(2) { animation-delay: 120ms; }
+#ninja-finish-overlay:not(.hidden) .ninja-finish-section:nth-of-type(3) { animation-delay: 240ms; }
+@keyframes ninjaFinishSectionIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Victory lap (item 15) -- a quick sprint-across-and-settle flourish on a
+   genuine completion only (ninjaFinishCommon gates this to .completed). */
+.ninja-runner.lap { animation: ninjaVictoryLap .7s ease; }
+@keyframes ninjaVictoryLap { 0% { transform: translateX(0); } 50% { transform: translateX(40px) scale(1.05); } 100% { transform: translateX(0); } }
+
+/* Ambient background particle drift (item 29) -- a handful of slow specks,
+   always-on regardless of weather/scene, pure decoration (no JS). */
+.ninja-ambient { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.ninja-ambient i {
+  position: absolute; bottom: -10px; width: 3px; height: 3px; border-radius: 50%;
+  background: rgba(255,255,255,.5); animation: ninjaAmbientDrift linear infinite;
+}
+.ninja-ambient i:nth-child(1) { left: 12%; animation-duration: 9s; animation-delay: 0s; }
+.ninja-ambient i:nth-child(2) { left: 30%; animation-duration: 12s; animation-delay: 2s; }
+.ninja-ambient i:nth-child(3) { left: 52%; animation-duration: 10s; animation-delay: 4s; }
+.ninja-ambient i:nth-child(4) { left: 71%; animation-duration: 13s; animation-delay: 1s; }
+.ninja-ambient i:nth-child(5) { left: 88%; animation-duration: 11s; animation-delay: 3s; }
+@keyframes ninjaAmbientDrift { 0% { transform: translateY(0) translateX(0); opacity: 0; } 10% { opacity: .6; } 90% { opacity: .6; } 100% { transform: translateY(-260px) translateX(14px); opacity: 0; } }
+
+/* Subject mastery crowns (item 18) -- small badge row on the setup
+   screen, distinct from the overall rank ladder above it. */
+.ninja-subject-mastery { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+.ninja-mastery-crown {
+  font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+  background: linear-gradient(135deg, #fff3cc, #ffe299); color: #8a6d1d; border: 1px solid #e8c468;
+}
+
+/* Length-conditioned backdrop tint (item 9) -- a color-grade filter layer
+   on the existing parallax (ninja-bg-far/near), independent of the
+   data-backdrop cosmetic swap below (one tints, the other swaps imagery). */
+.ninja-world[data-len="boss"] .ninja-bg-far, .ninja-world[data-len="boss"] .ninja-bg-near { filter: hue-rotate(-18deg) saturate(1.3); }
+.ninja-world[data-len="daily"] .ninja-bg-far, .ninja-world[data-len="daily"] .ninja-bg-near { filter: hue-rotate(28deg) saturate(1.15); }
+.ninja-world[data-len="40"] .ninja-bg-far, .ninja-world[data-len="40"] .ninja-bg-near { filter: brightness(.92) saturate(1.1); }
+
+/* Unlockable run-lane backdrop cosmetic (item 19) -- swaps the parallax
+   layers' own tint/pattern by equipped choice (data-backdrop), distinct
+   lever from the length tint above (both can apply at once). */
+.ninja-world[data-backdrop="village"] .ninja-bg-far { filter: sepia(.35) hue-rotate(-10deg); }
+.ninja-world[data-backdrop="mountain"] .ninja-bg-far { filter: grayscale(.25) brightness(1.08); }
+.ninja-world[data-backdrop="cloud"] .ninja-bg-far { filter: brightness(1.25) saturate(.7); }

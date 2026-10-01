@@ -34,7 +34,7 @@
 <script src="../leaderboard.js"></script>
 <script src="../skin.js"></script>
 
-<link rel="stylesheet" href="style.css?v=107" />
+<link rel="stylesheet" href="style.css?v=108" />
 </head>
 <body>
 
@@ -1083,6 +1083,17 @@
     <div class="ninja-overlay hidden" id="ninja-intro-overlay">
       <div class="ninja-finish-card" id="ninja-intro-card"></div>
     </div>
+    <!-- Checkpoint resume (round 19, item 8) -- shown INSTEAD of the intro/
+         setup overlay when launchNinjaRunner finds a fresh (<10 min) saved
+         mid-run snapshot (see ninjaLoadCheckpoint). -->
+    <div class="ninja-overlay hidden" id="ninja-resume-overlay">
+      <div class="ninja-finish-card">
+        <div class="ninja-finish-title">🥷 Pick up where you left off?</div>
+        <div class="ninja-finish-sub" id="ninja-resume-sub"></div>
+        <button class="btn btn-primary" id="ninja-resume-btn" style="width:100%;margin-top:14px">▶ Resume run</button>
+        <button class="btn btn-secondary" id="ninja-resume-skip-btn" style="width:100%;margin-top:8px">Start a new run instead</button>
+      </div>
+    </div>
     <!-- Pre-round setup (PM round 15 -- Ninja Runner overhaul; extended
          round 18 with the rank ladder, loss nudge, 3 more lengths, Practice
          mode, weapon swatches, achievements and 2 utility buttons). Shown
@@ -1124,6 +1135,17 @@
              cosmetic slot so a costume + weapon can be mixed freely. -->
         <div class="ninja-setup-label">Weapon</div>
         <div class="ninja-setup-costumes" id="ninja-setup-weapons"></div>
+        <!-- Backdrop quick-switch (round 19, item 19) -- same pattern again,
+             separate cosmetic slot ("ninja-backdrop"), tints the parallax
+             scenery via a `data-backdrop` attribute on #ninja-world. -->
+        <div class="ninja-setup-label">Backdrop</div>
+        <div class="ninja-setup-costumes" id="ninja-setup-backdrops"></div>
+
+        <!-- Subject mastery crowns (round 19, item 18) -- per-subject
+             lifetime accuracy badge, distinct from the overall-runs rank
+             ladder above (that one tracks TOTAL runs, this tracks being
+             genuinely strong in one specific subject). -->
+        <div class="ninja-subject-mastery hidden" id="ninja-subject-mastery"></div>
 
         <div class="ninja-setup-utility">
           <button type="button" id="ninja-howto-btn">❓ How to play</button>
@@ -1140,8 +1162,11 @@
     <div class="map-header drive-header">
       <div>
         <h2 class="title-lg">Ninja Runner</h2>
-        <div class="drive-hud">
+        <div class="drive-hud" id="ninja-hud">
           <span class="drive-hud-pill" id="ninja-qnum">Q 1/20</span>
+          <!-- Progress dot-trail (round 19, item 22) -- a visual complement
+               to the Q X/Y text above, filled via updateNinjaProgressDots. -->
+          <span class="ninja-progress-dots" id="ninja-progress-dots"></span>
           <span class="drive-hud-pill" id="ninja-score">⭐ 0</span>
           <span class="drive-hud-pill" id="ninja-best">🏅 0</span>
           <span class="drive-hud-pill" id="ninja-lives">❤️❤️❤️🖤🖤</span>
@@ -1178,6 +1203,10 @@
       <!-- Weather overlay (round 18, item 7) -- rain streaks, toggled via
            .weather-rain on #ninja-world, rolled once per run. -->
       <div class="ninja-rain" id="ninja-rain"></div>
+      <!-- Ambient particle drift (round 19, item 29) -- a few slow-floating
+           dust/firefly specks, always-on regardless of weather/scene,
+           purely decorative (CSS-only, no JS ever touches this). -->
+      <div class="ninja-ambient" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
       <!-- Boss preview card (round 18, item 8) -- a brief "here's what
            you're fighting" beat before the first telegraph/question. -->
       <div class="ninja-boss-preview hidden" id="ninja-boss-preview"></div>
@@ -1312,6 +1341,6 @@
 <script src="bgm.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
 <script src="../vehicles.js?v=1"></script>
-<script src="script.js?v=149"></script>
+<script src="script.js?v=150"></script>
 </body>
 </html>

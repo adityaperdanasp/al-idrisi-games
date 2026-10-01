@@ -4704,6 +4704,17 @@
     { id: "staff", name: "Bo Staff", cost: { gems: 2 }, preview: "🥢" },
     { id: "flame", name: "Flame Blade", cost: { gems: 3 }, preview: "🔥" }
   ];
+  // Run-lane backdrop (round 19, item 19) -- purely cosmetic alternate
+  // parallax scenery for Ninja Runner, separate slot from the costume/
+  // weapon above so all 3 can be mixed freely. Read via a `data-backdrop`
+  // attribute on #ninja-world (mathville/style.css), same recolor-by-
+  // attribute trick as every other costume category here.
+  const NINJA_BACKDROPS = [
+    { id: "default", name: "Forest Trail", cost: null, preview: "🌲" },
+    { id: "village", name: "Village Rooftops", cost: { coins: 25 }, preview: "🏮" },
+    { id: "mountain", name: "Mountain Pass", cost: { coins: 30 }, preview: "⛰️" },
+    { id: "cloud", name: "Cloud Temple", cost: { gems: 2 }, preview: "☁️" }
+  ];
   const BOSSRUSH_FIGHTERS = [
     { id: "default", name: "Classic", cost: null, preview: "🥋" },
     { id: "boxer", name: "Boxer", cost: { coins: 15 }, preview: "🥊" },
@@ -4758,6 +4769,7 @@
     "bo-costume": BO_HATS,
     "ninja-costume": NINJA_COSTUMES,
     "ninja-weapon": NINJA_WEAPONS,
+    "ninja-backdrop": NINJA_BACKDROPS,
     "bossrush-fighter": BOSSRUSH_FIGHTERS,
     "dino-skin": DINO_SKINS
   };
@@ -4819,6 +4831,7 @@
       equippedCostumes: {
         "ninja-costume": equipped["ninja-costume"] || "default",
         "ninja-weapon": equipped["ninja-weapon"] || "default",
+        "ninja-backdrop": equipped["ninja-backdrop"] || "default",
         "bossrush-fighter": equipped["bossrush-fighter"] || "default",
         "dino-skin": equipped["dino-skin"] || "default",
         "bo-costume": equipped["bo-costume"] || "none"
@@ -6645,7 +6658,7 @@
 
   window.AIGLeaderboard = {
     recordPlay, startSession, watchGame, getProgress, setProgress, recordTopicAttempt, getTopicStats,
-    getWallet, watchWallet, getOwnedVehicles, unlockVehicle,
+    getWallet, watchWallet, getOwnedVehicles, unlockVehicle, creditWallet,
     getStreak, getStreakMultiplierInfo, getDailyQuests, claimDailyQuest, claimDailyBonus, getQuestLabel,
     claimBossWin,
     getWeeklyBossRushStatus, claimWeeklyBossRush,

@@ -7054,6 +7054,10 @@ const NINJA_QUICK_BONUS = 5;
 // rather than a smooth ramp. Resets to 0 on any wrong answer.
 // { streak: bonus } -- looked up via the highest key <= current streak.
 const NINJA_STREAK_BONUS_TIERS = [[3, 5], [5, 15], [10, 30]];
+// Streak Shield (round 19, item 7) -- see ninjaPickCard's answer handler.
+const NINJA_STREAK_SHIELD_AT = 5;
+// Subject-variety combo (round 19, item 1) -- see ninjaPickCard's answer handler.
+const NINJA_VARIETY_BONUS = 15;
 function ninjaStreakBonus(streak) {
   let bonus = 0;
   for (const [need, pts] of NINJA_STREAK_BONUS_TIERS) if (streak >= need) bonus = pts;
@@ -7129,6 +7133,14 @@ function ninjaTone(freqs, dur, vol) {
 }
 const NINJA_SUBJECT_CHIME = { math: [523.25, 659.25], lang: [440, 554.37], sci: [349.23, 466.16, 587.33] };
 function ninjaPlaySubjectChime(subjectKey) { ninjaTone(NINJA_SUBJECT_CHIME[subjectKey] || [523.25], 0.16); }
+// Streak sparkle (round 19, item 10) -- a short rising arpeggio layered
+// on top of (never replacing) the BGM track, synthesized the same way as
+// the subject chime above rather than a second audio stem -- the
+// intensity "layering" effect is a stinger tied to streak milestones, not
+// an actual multi-track mix. Reuses the hub's established synthesized-
+// sound convention (see the Engagement Pack's Sound Packs) instead of
+// sourcing/licensing a new audio asset.
+function ninjaStreakSparkle() { ninjaTone([659.25, 783.99, 987.77], 0.12, 0.12); }
 
 // Obstacle/enemy variety for the run-lane beat -- was always the same
 // 🪨/👹 pair every round, per feedback that felt monotonous. Picked fresh
@@ -7153,6 +7165,15 @@ const NINJA_ENEMY_TYPES = ["👹", "👺", "🥷", "🐍"];
 // pass/fail check.
 const NINJA_NEARMISS_WINDOW_MS = 150;
 const NINJA_NEARMISS_BONUS = 8;
+// "Close Call" tier (round 19, item 3) -- a step below Perfect: still a
+// deliberately-timed late dodge, just outside the tight Perfect window,
+// worth a smaller bonus. A dodge comfortably earlier than this still
+// gets no toast at all, same as before this tier existed.
+const NINJA_CLOSECALL_WINDOW_MS = 400;
+const NINJA_CLOSECALL_BONUS = 3;
+// Dash obstacle chance (round 19, item 6) -- see ninjaStartRunLane/
+// ninjaResolveObstacle.
+const NINJA_DASH_CHANCE = 0.12;
 
 // Rare run-lane pickup (round 16, item A2) -- rides alongside a jump-type
 // obstacle (never a duck one or during a boss/flying encounter, to keep
@@ -7161,13 +7182,28 @@ const NINJA_NEARMISS_BONUS = 8;
 // into the obstacle loses the charm too, not just the obstacle's own
 // life penalty.
 const NINJA_PICKUP_CHANCE = 0.18;
-const NINJA_PICKUP_EMOJI = { double: "💎", shield: "🛡️", life: "❤️" };
+// Coin Magnet + Slow-Mo (round 19, item 2) -- 2 new charms alongside the
+// existing double/shield/life ones, same collection rule (only on a
+// genuine dodge). Coin Magnet is a flat bonus-coin credit on pickup
+// (reads as "found treasure" rather than a lingering buff, simplest to
+// implement safely); Slow-Mo stretches the NEXT obstacle/enemy's approach
+// timer, giving a bit more reaction room without touching the deadline-
+// check logic itself (ninjaResolveObstacle still just checks whatever
+// class is present at the deadline instant).
+const NINJA_PICKUP_EMOJI = { double: "💎", shield: "🛡️", life: "❤️", magnet: "🧲", slowmo: "🐌" };
 const NINJA_PICKUP_TYPES = Object.keys(NINJA_PICKUP_EMOJI);
 const NINJA_SCORE_BOOST_HITS = 3; // how many correct answers the "double" charm's 2x lasts for
+const NINJA_MAGNET_COINS = 5;
+const NINJA_SLOWMO_EXTRA_MS = 700;
 function ninjaGrantPickup(kind) {
   if (kind === "double") { ninjaState.scoreBoostLeft = NINJA_SCORE_BOOST_HITS; showNinjaToast("💎 Charm collected! 2× points for 3 answers"); }
   else if (kind === "shield") { ninjaState.loadoutShield = true; showNinjaToast("🛡️ Charm collected! Blocks your next hit"); }
   else if (kind === "life") { ninjaState.lives = Math.min(NINJA_MAX_LIVES, ninjaState.lives + 1); updateNinjaLivesHud(); showNinjaToast("❤️ Charm collected! +1 life"); }
+  else if (kind === "magnet") {
+    if (window.AIGLeaderboard && AIGLeaderboard.creditWallet) AIGLeaderboard.creditWallet({ coins: NINJA_MAGNET_COINS }).catch(() => {});
+    showNinjaToast(`🧲 Coin Magnet! +${NINJA_MAGNET_COINS} coins`);
+  }
+  else if (kind === "slowmo") { ninjaState.slowmoCharges = (ninjaState.slowmoCharges || 0) + 1; showNinjaToast("🐌 Slow-Mo charm! Next encounter is slower"); }
 }
 
 // Boss checkpoint every NINJA_BOSS_EVERY questions (a mid-run checkpoint at
@@ -7264,20 +7300,31 @@ function ninjaLoseLife(reason) {
   ninjaState.lives -= 1;
   if (reason && ninjaState.lifeLossLog) ninjaState.lifeLossLog[reason] = (ninjaState.lifeLossLog[reason] || 0) + 1;
   updateNinjaLivesHud();
-  // Haptic feedback (round 16, item B16) -- same navigator.vibrate pattern
-  // already used by Glass Bridge Challenge; no-ops silently on desktop/
-  // browsers without the API.
-  try { if (navigator.vibrate) navigator.vibrate(60); } catch (e) {}
+  // Haptic pattern variety (round 19, item 13) -- a distinct vibrate
+  // pattern per cause instead of one generic buzz for every loss, so the
+  // cause is legible by feel alone (useful mid-run when eyes are on the
+  // obstacle, not the toast text).
+  const NINJA_HAPTIC = { obstacle: 60, shuriken: [40, 40, 40], wrong: 30, boss: [100, 50, 100] };
+  try { if (navigator.vibrate) navigator.vibrate(NINJA_HAPTIC[reason] || 60); } catch (e) {}
   const runner = $("ninja-runner");
-  runner.classList.remove("hit-obstacle", "hit-shuriken", "hit-wrong", "hit-boss");
+  runner.classList.remove("hit-obstacle", "hit-shuriken", "hit-wrong", "hit-boss", "shake-h", "shake-v");
   runner.classList.add("hit");
   if (reason) runner.classList.add("hit-" + reason);
-  setTimeout(() => runner.classList.remove("hit", "hit-obstacle", "hit-shuriken", "hit-wrong", "hit-boss"), 300);
+  // Shake direction by cause (round 19, item 28) -- horizontal for a
+  // physical bump (obstacle/shuriken), vertical for a wrong answer, a
+  // subconscious cue on top of the color-coded flash above.
+  if (reason === "obstacle" || reason === "shuriken") runner.classList.add("shake-h");
+  else if (reason === "wrong") runner.classList.add("shake-v");
+  setTimeout(() => runner.classList.remove("hit", "hit-obstacle", "hit-shuriken", "hit-wrong", "hit-boss", "shake-h", "shake-v"), 300);
   if (reason && NINJA_LOSS_MSG[reason]) showNinjaToast(NINJA_LOSS_MSG[reason], "bad");
 }
 
 function updateNinjaLivesHud() {
   $("ninja-lives").textContent = "❤️".repeat(Math.max(0, ninjaState.lives)) + "🖤".repeat(NINJA_MAX_LIVES - Math.max(0, ninjaState.lives));
+  // Low-life heartbeat glow (round 19, item 30) -- a slow pulsing glow on
+  // the hearts pill once down to the last life, for ambient urgency
+  // without another toast/sound.
+  $("ninja-lives").classList.toggle("ninja-lowlife", ninjaState.lives === 1);
 }
 
 // Overall performance rank shown at finish (see ninjaComputeRank) --
@@ -7298,6 +7345,36 @@ function ninjaComputeRank() {
 
 const NINJA_DIFFS = ["easy", "medium", "hard"];
 const NINJA_SUBJECTS = { math: "MATH", lang: "LANG & ARTS", sci: "SCIENCE" };
+// Long-press peek (round 19, item 11) -- a STATIC "here's roughly what
+// this subject covers" blurb, not a true preview of the actual upcoming
+// question (that's only built lazily in ninjaPickCard, right when
+// committing -- previewing it for real would mean building 2 separate
+// question-generation paths that could drift out of sync with each
+// other). Deliberately vague/generic rather than wrong.
+const NINJA_SUBJECT_TOPICS = {
+  math: "addition, multiplication, place value, rounding and more",
+  lang: "spelling, synonyms, prefixes/suffixes and more",
+  sci: "the solar system, animals, weather and more"
+};
+const NINJA_PEEK_HOLD_MS = 450;
+// Sensei tip (round 19, item 20) -- occasional flavor-only line from Bo,
+// shown in place of the default gate-picker hint text. Purely narrative,
+// never replaces the boss-fight hint (that HP readout is functional, not
+// flavor) and never fires on the very first gate render of a run (see
+// its roll site) so a kid always sees the plain instruction at least once.
+const NINJA_SENSEI_CHANCE = 0.2;
+const NINJA_SENSEI_TIPS = [
+  "🥷 Sensei says: a calm mind dodges better than a fast hand.",
+  "🥷 Sensei says: even a master ninja gets a question wrong sometimes.",
+  "🥷 Sensei says: the mystery card rewards the brave, not just the lucky.",
+  "🥷 Sensei says: three correct answers in a row is the start of true mastery.",
+  "🥷 Sensei says: a ninja who tries every subject grows strongest."
+];
+// Idle fidget (round 19, item 17) -- if a kid sits at the subject-pick
+// screen without choosing for a while, the runner does a small restless
+// animation so the screen doesn't feel frozen. Timer lives on ninjaState
+// so a fresh gate render / an actual pick can always cancel a stale one.
+const NINJA_IDLE_FIDGET_MS = 6000;
 let ninjaState = null;
 let ninjaGhost = null; // {score, checkpoints} of the player's best-ever run, fetched fresh each launch -- see launchNinjaRunner/ninjaAdvance
 // Cosmetic only -- bought/equipped via the hub's Customize > Game FX tab
@@ -7323,6 +7400,78 @@ function loadNinjaSetup() {
   } catch (e) { return { len: "20", mode: "normal" }; }
 }
 function saveNinjaSetup(lenId, mode) { try { localStorage.setItem(NINJA_SETUP_KEY, JSON.stringify({ lenId, mode })); } catch (e) {} }
+
+// Checkpoint resume (round 19, item 8) -- a lightweight snapshot written
+// after every question resolves (see ninjaAdvance), so an interrupted run
+// (tab/app closed mid-round) can pick back up instead of losing all
+// progress. Deliberately local-only (no Firebase) -- this is a same-
+// device "oops, come back" convenience, not a cross-device sync feature.
+// Resuming always lands at the NEXT subject-card pick (never mid-
+// obstacle/mid-boss-attack/mid-question) -- the only point that's fully
+// safe to reconstruct from a handful of plain fields, see ninjaResumeRun.
+const NINJA_CHECKPOINT_KEY = "aig_ninja_checkpoint";
+const NINJA_CHECKPOINT_MAX_AGE_MS = 10 * 60 * 1000;
+function ninjaSaveCheckpoint() {
+  if (!ninjaState || ninjaState.ended || ninjaState.lenId === "daily") return; // Daily Challenge's seeded RNG can't be faithfully resumed from a plain snapshot, skip it entirely
+  try {
+    localStorage.setItem(NINJA_CHECKPOINT_KEY, JSON.stringify({
+      savedAt: Date.now(), qnum: ninjaState.qnum, totalQ: ninjaState.totalQ, lenId: ninjaState.lenId,
+      relaxed: ninjaState.relaxed, practice: ninjaState.practice, bossEvery: ninjaState.bossEvery,
+      score: ninjaState.score, streak: ninjaState.streak, hardCorrectCount: ninjaState.hardCorrectCount,
+      lives: ninjaState.lives, totalAnswered: ninjaState.totalAnswered, wrongLog: ninjaState.wrongLog,
+      lifeLossLog: ninjaState.lifeLossLog, subjectStats: ninjaState.subjectStats, bossesDefeated: ninjaState.bossesDefeated,
+      myCheckpoints: ninjaState.myCheckpoints, startedAt: ninjaState.startedAt
+    }));
+  } catch (e) {}
+}
+function ninjaClearCheckpoint() { try { localStorage.removeItem(NINJA_CHECKPOINT_KEY); } catch (e) {} }
+function ninjaLoadCheckpoint() {
+  try {
+    const c = JSON.parse(localStorage.getItem(NINJA_CHECKPOINT_KEY) || "null");
+    if (!c || Date.now() - c.savedAt > NINJA_CHECKPOINT_MAX_AGE_MS) return null;
+    return c;
+  } catch (e) { return null; }
+}
+// Reconstructs ninjaState from a saved checkpoint and jumps straight to
+// the next subject-card pick -- skips ninjaBeginRun entirely (that reset
+// path is only for a genuinely fresh "Start!"), so none of its one-time
+// setup (weather roll, cosmetics fetch, etc.) re-runs; good enough for a
+// resumed run since those are all cosmetic, not scoring-relevant.
+function ninjaResumeRun(c) {
+  if (window.AIGBgm && AIGBgm.playPlaneTrack) AIGBgm.playPlaneTrack();
+  ninjaClearCheckpoint();
+  ninjaState = {
+    qnum: c.qnum, totalQ: c.totalQ, relaxed: c.relaxed, practice: c.practice, lenId: c.lenId, bossEvery: c.bossEvery,
+    rng: null, score: c.score, streak: c.streak, hardCorrectCount: c.hardCorrectCount, wrongLog: c.wrongLog,
+    ended: false, completed: false, laneTimer: null, pendingBoss: false, inBoss: false, bossHp: 0,
+    bossesDefeated: c.bossesDefeated, isFinaleBoss: false, bossMissStreak: 0, bossTurn: 0, rerollCharges: 1,
+    startedAt: c.startedAt, scoreBoostLeft: 0, pickupPending: null, mysteryBonus: false, lifeLossLog: c.lifeLossLog,
+    subjectStats: c.subjectStats, subjectCombo: [], streakShieldCharges: 0, streakShieldGranted: false, slowmoCharges: 0,
+    lives: c.lives, totalAnswered: c.totalAnswered, myCheckpoints: c.myCheckpoints, isNewHighScoreRun: false
+  };
+  $("ninja-world").dataset.scene = c.qnum - 1 < c.totalQ / 3 ? "dawn" : c.qnum - 1 < c.totalQ * 2 / 3 ? "day" : "dusk";
+  $("ninja-world").dataset.len = c.lenId;
+  if (window.AIGLeaderboard && AIGLeaderboard.getEquippedCosmetic) {
+    AIGLeaderboard.getEquippedCosmetic("ninja-backdrop", "default").then(id => { $("ninja-world").dataset.backdrop = id; }).catch(() => {});
+  }
+  $("ninja-world").classList.remove("weather-rain", "boss-mode");
+  $("ninja-runner").classList.remove("victory", "defeat");
+  $("ninja-qnum").textContent = `Q ${c.qnum}/${c.totalQ}`;
+  updateNinjaScore();
+  updateNinjaBestHud();
+  updateNinjaLivesHud();
+  updateNinjaStreakHud();
+  updateNinjaProgressDots();
+  ninjaGhost = null;
+  if (window.AIGLeaderboard && c.lenId !== "daily") {
+    AIGLeaderboard.getNinjaGhost(c.lenId).then(g => { ninjaGhost = g; }).catch(() => {});
+  }
+  if (window.AIGLeaderboard) {
+    AIGLeaderboard.getEquippedCosmetic("ninja-slash", "default").then(id => { ninjaSlashFxClass = id !== "default" ? "fx-" + id : ""; }).catch(() => {});
+    if (AIGLeaderboard.getNinjaSubjectLifetime) AIGLeaderboard.getNinjaSubjectLifetime().then(d => { ninjaState.subjectLifetime = d; }).catch(() => {});
+  }
+  renderNinjaGates();
+}
 
 // Consecutive game-overs (round 18, item 16) -- a purely local counter
 // (no Firebase) used only to decide whether to show the gentle nudge
@@ -7403,8 +7552,16 @@ function launchNinjaRunner() {
   }
   ninjaRenderCostumeSwatches(null); // clear any stale swatches from a previous launch while the fresh fetch is in flight
   ninjaRenderWeaponSwatches(null);
+  ninjaRenderBackdropSwatches(null);
   if (window.AIGLeaderboard && AIGLeaderboard.getCosmetics) {
-    AIGLeaderboard.getCosmetics().then(c => { ninjaRenderCostumeSwatches(c); ninjaRenderWeaponSwatches(c); }).catch(() => {});
+    AIGLeaderboard.getCosmetics().then(c => { ninjaRenderCostumeSwatches(c); ninjaRenderWeaponSwatches(c); ninjaRenderBackdropSwatches(c); }).catch(() => {});
+  }
+  // Subject mastery crowns (round 19, item 18) -- fetched here (setup
+  // screen) in addition to ninjaBeginRun's own fetch for difficulty
+  // weighting, since this display needs to be visible BEFORE a run starts.
+  $("ninja-subject-mastery").classList.add("hidden");
+  if (window.AIGLeaderboard && AIGLeaderboard.getNinjaSubjectLifetime) {
+    AIGLeaderboard.getNinjaSubjectLifetime().then(ninjaRenderSubjectMastery).catch(() => {});
   }
 
   // Rank ladder (round 18, item 13) + achievements (item 9) -- both read
@@ -7417,6 +7574,17 @@ function launchNinjaRunner() {
     if (AIGLeaderboard.getNinjaLifetimeSummary) {
       AIGLeaderboard.getNinjaLifetimeSummary().then(ninjaRenderRankLadder).catch(() => {});
     }
+  }
+
+  // Checkpoint resume (round 19, item 8) -- takes priority over BOTH the
+  // intro and the normal setup overlay when a fresh snapshot exists.
+  const checkpoint = ninjaLoadCheckpoint();
+  if (checkpoint) {
+    $("ninja-resume-sub").textContent = `Q ${checkpoint.qnum}/${checkpoint.totalQ} -- ${checkpoint.score} points so far`;
+    $("ninja-resume-overlay").classList.remove("hidden");
+    $("ninja-resume-btn").onclick = () => { $("ninja-resume-overlay").classList.add("hidden"); ninjaResumeRun(checkpoint); };
+    $("ninja-resume-skip-btn").onclick = () => { ninjaClearCheckpoint(); $("ninja-resume-overlay").classList.add("hidden"); $("ninja-setup-overlay").classList.remove("hidden"); };
+    return;
   }
 
   // One-time intro (round 16, item B13) -- shown before the setup screen,
@@ -7469,6 +7637,42 @@ function ninjaRenderWeaponSwatches(cosmetics) {
     cosmetics.equippedCostumes["ninja-weapon"] = id;
     ninjaRenderWeaponSwatches(cosmetics);
   });
+}
+
+// Backdrop quick-switch (round 19, item 19) -- same pattern again, slot
+// "ninja-backdrop", sets #ninja-world's data-backdrop attribute (read by
+// the CSS parallax layers).
+function ninjaRenderBackdropSwatches(cosmetics) {
+  const wrap = $("ninja-setup-backdrops");
+  if (!cosmetics) { wrap.innerHTML = ""; return; }
+  const owned = cosmetics.costumes["ninja-backdrop"].filter(c => c.owned);
+  const equipped = cosmetics.equippedCostumes["ninja-backdrop"];
+  wrap.innerHTML = owned.map(c => `<button type="button" class="ninja-costume-swatch ${c.id === equipped ? "sel" : ""}" data-id="${c.id}" title="${c.name}">${c.preview}</button>`).join("");
+  wrap.querySelectorAll(".ninja-costume-swatch").forEach(b => b.onclick = async () => {
+    const id = b.dataset.id;
+    if (window.AIGLeaderboard) await AIGLeaderboard.equipCosmetic("ninja-backdrop", id);
+    $("ninja-world").dataset.backdrop = id;
+    cosmetics.equippedCostumes["ninja-backdrop"] = id;
+    ninjaRenderBackdropSwatches(cosmetics);
+  });
+}
+
+// Subject mastery crowns (round 19, item 18) -- per-subject lifetime
+// accuracy badge on the setup screen, distinct from the overall-runs rank
+// ladder (ninjaRenderRankLadder) -- this one calls out being genuinely
+// strong in ONE specific subject rather than total play count.
+const NINJA_MASTERY_MIN_ATTEMPTS = 20;
+const NINJA_MASTERY_MIN_ACC = 0.85;
+function ninjaRenderSubjectMastery(subjectLifetime) {
+  const el = $("ninja-subject-mastery");
+  if (!subjectLifetime) { el.classList.add("hidden"); return; }
+  const crowned = Object.keys(NINJA_SUBJECTS).filter(key => {
+    const d = subjectLifetime[key];
+    return d && d.a >= NINJA_MASTERY_MIN_ATTEMPTS && (d.c / d.a) >= NINJA_MASTERY_MIN_ACC;
+  });
+  if (!crowned.length) { el.classList.add("hidden"); return; }
+  el.innerHTML = crowned.map(key => `<span class="ninja-mastery-crown" title="${NINJA_SUBJECTS[key]} mastery">👑 ${NINJA_SUBJECTS[key]}</span>`).join("");
+  el.classList.remove("hidden");
 }
 
 // Achievements (round 18, item 9) -- a compact badge row, locked ones
@@ -7581,13 +7785,21 @@ function ninjaBeginRun(lenDef, mode) {
     rerollCharges: 1, startedAt: Date.now(), scoreBoostLeft: 0, pickupPending: null, mysteryBonus: false,
     lifeLossLog: { obstacle: 0, shuriken: 0, wrong: 0, boss: 0 },
     subjectStats: { math: { c: 0, a: 0 }, lang: { c: 0, a: 0 }, sci: { c: 0, a: 0 } },
+    // Round 19 additions -- subject-variety combo (item 1), Streak Shield
+    // (item 7), Slow-Mo charm charges (item 2).
+    subjectCombo: [], streakShieldCharges: 0, streakShieldGranted: false, slowmoCharges: 0,
     // Extra Life Charm upgrade (leaderboard.js's UPGRADE_CATALOG) adds 1
     // starting life, capped by NINJA_MAX_LIVES (5) same as any in-round gain.
     // Tier 2 REPLACES tier 1's bonus (2 extra lives total, not 1+2=3),
     // same convention as Plane Mode's Shield Booster above.
     lives: Math.min(NINJA_MAX_LIVES, NINJA_START_LIVES + (ownedUpgrades["ninja-extra-life-2"] ? 2 : ownedUpgrades["ninja-extra-life"] ? 1 : 0)), totalAnswered: 0, myCheckpoints: [], isNewHighScoreRun: false
   };
+  ninjaClearCheckpoint(); // round 19, item 8 -- a fresh "Start!" always invalidates any saved mid-run snapshot
   $("ninja-world").dataset.scene = "dawn";
+  $("ninja-world").dataset.len = lenDef.id; // round 19, item 9 -- length-conditioned backdrop tint, purely a CSS color-grade layered over the existing parallax
+  if (window.AIGLeaderboard && AIGLeaderboard.getEquippedCosmetic) {
+    AIGLeaderboard.getEquippedCosmetic("ninja-backdrop", "default").then(id => { $("ninja-world").dataset.backdrop = id; }).catch(() => {});
+  }
   // Random weather (round 18, item 7) -- purely decorative, rolled once
   // per run (not re-rolled per scene change) so it doesn't flicker on/off.
   $("ninja-world").classList.remove("weather-rain");
@@ -7604,6 +7816,13 @@ function ninjaBeginRun(lenDef, mode) {
   $("ninja-score").textContent = "⭐ 0";
   updateNinjaBestHud();
   updateNinjaLivesHud();
+  updateNinjaProgressDots();
+  // HUD pop-in stagger (round 19, item 23) -- the score/lives/qnum pills
+  // fade/scale in one after another as a run begins, instead of all
+  // appearing at once. Force-reflow so this re-triggers on every "Start!",
+  // not just the very first run of the page load.
+  const hud = $("ninja-hud");
+  hud.classList.remove("popin"); void hud.offsetWidth; hud.classList.add("popin");
   applyArmedLoadout("ninja");
   // Fire-and-forget -- the ghost is a nice-to-have comparison, never
   // worth blocking round start on. A run started before this resolves
@@ -7688,6 +7907,22 @@ function ninjaSetGuard(on) {
   runner.classList.toggle("running", !on);
 }
 
+// Idle fidget (round 19, item 17) -- see NINJA_IDLE_FIDGET_MS. Called from
+// renderNinjaGates (every fresh gate-pick screen cancels any stale timer
+// and starts a new one) and from ninjaPickCard (committing a pick cancels
+// it outright, same as a real timer-based "you're not idle anymore").
+function ninjaResetIdleFidget() {
+  if (ninjaState && ninjaState.idleFidgetTimer) clearTimeout(ninjaState.idleFidgetTimer);
+  $("ninja-runner").classList.remove("idle-fidget");
+  if (!ninjaState) return;
+  ninjaState.idleFidgetTimer = setTimeout(() => {
+    // Still sitting at the gate-pick screen (not mid-question/mid-reflex)?
+    // -- the only safe guard against firing into a state this was never
+    // meant for, since a pick already cancels this timer directly too.
+    if (!$("ninja-gates").classList.contains("hidden")) $("ninja-runner").classList.add("idle-fidget");
+  }, NINJA_IDLE_FIDGET_MS);
+}
+
 // One-shot jump hop -- player-triggered. Whether this actually dodges the
 // obstacle is decided by TIMING, not by pressing at all (see
 // ninjaResolveObstacle): the obstacle "arrives" when its approach animation
@@ -7695,21 +7930,46 @@ function ninjaSetGuard(on) {
 // same as Dino Race -- jump too early or too late and you still get
 // bumped. Temporarily drops .running so the leg-swing animation doesn't
 // fight the hop's translateY, restores it once the hop finishes.
+const NINJA_JUMP_MS = 450;
+// Glide (round 19, item 5) -- a plain tap lands at NINJA_JUMP_MS exactly
+// as before; HOLDING the button (see the pointerdown/pointerup listeners
+// near the bottom of this file) instead calls ninjaExtendGlide, which
+// pushes the landing out further, up to NINJA_GLIDE_MAX_MS total. Purely
+// additive: ninjaResolveObstacle only ever reads whichever class is
+// present at its deadline instant, never how long the hop has run for,
+// so stretching it later (never shorter) can't change how that check works.
+const NINJA_GLIDE_MAX_MS = 900;
 function ninjaDoJump() {
   const runner = $("ninja-runner");
   if (runner.classList.contains("guard") || runner.classList.contains("jumping")) return;
   if (ninjaState) ninjaState.lastInputAt = performance.now(); // round 16 -- near-miss bonus window, see ninjaResolveObstacle
+  ninjaBtnRipple($("ninja-jump-btn")); // round 19, item 16
   runner.classList.remove("running");
   runner.classList.add("jumping");
-  setTimeout(() => {
+  const land = () => {
     runner.classList.remove("jumping");
     runner.classList.add("running");
     ninjaSpawnDust(runner);
-  }, 450);
+  };
+  if (ninjaState) { ninjaState._jumpLand = land; ninjaState._jumpDownAt = performance.now(); }
+  const timer = setTimeout(land, NINJA_JUMP_MS);
+  if (ninjaState) ninjaState._jumpTimer = timer;
   // Boss "sweep" attack (round 18, item 4) -- the jump-flavored boss
   // attack variant, mirrors bossAttackActive's duck/dodge handling in
   // ninjaDoDuck below.
   if (ninjaState && ninjaState.bossAttackActive && ninjaState.bossAttackType === "jump") ninjaState.bossJumped = true;
+}
+function ninjaExtendGlide() {
+  if (!ninjaState || !ninjaState._jumpTimer || !ninjaState._jumpDownAt) return;
+  const runner = $("ninja-runner");
+  if (!runner.classList.contains("jumping")) return;
+  const held = performance.now() - ninjaState._jumpDownAt;
+  if (held < 220) return; // a plain tap -- let the normal NINJA_JUMP_MS landing stand
+  clearTimeout(ninjaState._jumpTimer);
+  const remaining = Math.max(0, Math.min(NINJA_GLIDE_MAX_MS, NINJA_JUMP_MS + held) - held);
+  ninjaState._jumpTimer = setTimeout(ninjaState._jumpLand, remaining);
+  runner.classList.add("gliding");
+  setTimeout(() => runner.classList.remove("gliding"), remaining);
 }
 
 // Landing dust puff (PM round 8 batch A, item 4) -- two small puffs kick out
@@ -7741,6 +8001,19 @@ function ninjaCameraPunch() {
   world.classList.add("punch");
 }
 
+// Near-miss micro slow-mo (round 19, item 14) -- a brief visual-only time
+// dilation on a Perfect-timing dodge: the CSS class below very slightly
+// stretches the runner's own pose transition for a few frames. Purely
+// decorative, fires AFTER ninjaResolveObstacle has already decided
+// dodged/bumped, so it can never affect the collision outcome itself.
+function ninjaNearMissSlowMo() {
+  const runner = $("ninja-runner");
+  runner.classList.remove("nearmiss-slowmo");
+  void runner.offsetWidth;
+  runner.classList.add("nearmiss-slowmo");
+  setTimeout(() => runner.classList.remove("nearmiss-slowmo"), 260);
+}
+
 // Dodge afterimage (round 17, item B16) -- 2 fading clones of the runner's
 // CURRENT pose left behind on a successful dodge, for a "fast reflex"
 // feel. Clones the live innerHTML so costume/tier recolors carry over
@@ -7763,11 +8036,13 @@ function ninjaSpawnAfterimage() {
 // pill, separate from (and in addition to) the toast messages already
 // shown for bonuses, so a plain correct answer still gets SOME visual
 // payoff beyond the silent HUD number update.
-function ninjaSpawnScorePop(amount) {
+function ninjaSpawnScorePop(amount, kind) {
   const hud = $("ninja-score");
   if (!hud) return;
   const pop = document.createElement("div");
-  pop.className = "ninja-score-pop";
+  // Color coding by source (round 19, item 21) -- "base" (a plain correct
+  // answer, no bonus) keeps the original color via no extra class.
+  pop.className = "ninja-score-pop" + (kind && kind !== "base" ? " pop-" + kind : "");
   pop.textContent = "+" + amount;
   const r = hud.getBoundingClientRect(), worldR = $("ninja-world").getBoundingClientRect();
   pop.style.left = (r.left - worldR.left + r.width / 2 - 10) + "px";
@@ -7791,10 +8066,17 @@ $("ninja-runner").addEventListener("animationiteration", e => {
 // flags duckedInTime instead of obstacleDodged. Kept as its own function
 // (rather than overloading ninjaDoJump) since the two dodges animate
 // differently and gate on different on-screen elements.
+// Dodge-button ripple (round 19, item 16) -- a radial ripple synced to
+// the exact frame of input, shared by both JUMP and DODGE.
+function ninjaBtnRipple(btn) {
+  if (!btn) return;
+  btn.classList.remove("ripple"); void btn.offsetWidth; btn.classList.add("ripple");
+}
 function ninjaDoDuck() {
   const runner = $("ninja-runner");
   if (runner.classList.contains("guard") || runner.classList.contains("ducking")) return;
   if (ninjaState) ninjaState.lastInputAt = performance.now(); // round 16 -- near-miss bonus window, see ninjaResolveObstacle
+  ninjaBtnRipple($("ninja-dodge-btn"));
   runner.classList.remove("running");
   runner.classList.add("ducking");
   setTimeout(() => {
@@ -7895,31 +8177,50 @@ function ninjaStartRunLane() {
     return;
   }
 
-  ninjaState.obstacleType = !ninjaState.pendingBoss && ninjaRand() < NINJA_DUCK_OBSTACLE_CHANCE ? "duck" : "jump";
-  const obstacleEmoji = ninjaState.obstacleType === "duck"
-    ? NINJA_DUCK_OBSTACLES[rand(0, NINJA_DUCK_OBSTACLES.length - 1)]
+  // Dash obstacle (round 19, item 6) -- a forgiving variant: ANY jump
+  // press during its approach clears it (checked by timestamp in
+  // ninjaResolveObstacle), not precise end-of-approach timing like a
+  // normal jump/duck obstacle. Reads as a fun "freebie" beat breaking up
+  // the always-precise-timing tension. Never during a boss round (same
+  // restriction as duck obstacles) and rolled independently of duck so
+  // the 3 types don't need their chances to sum to 1.
+  const dash = !ninjaState.pendingBoss && ninjaRand() < NINJA_DASH_CHANCE;
+  ninjaState.obstacleType = dash ? "dash" : !ninjaState.pendingBoss && ninjaRand() < NINJA_DUCK_OBSTACLE_CHANCE ? "duck" : "jump";
+  const obstacleEmoji = ninjaState.obstacleType === "dash" ? "💨"
+    : ninjaState.obstacleType === "duck" ? NINJA_DUCK_OBSTACLES[rand(0, NINJA_DUCK_OBSTACLES.length - 1)]
     : NINJA_JUMP_OBSTACLES[rand(0, NINJA_JUMP_OBSTACLES.length - 1)];
-  $("ninja-hint").textContent = ninjaState.obstacleType === "duck"
-    ? "Low branch ahead! Tap DODGE to duck under " + obstacleEmoji
+  $("ninja-hint").textContent = ninjaState.obstacleType === "dash" ? "Dash chance! Tap JUMP anytime to clear it " + obstacleEmoji
+    : ninjaState.obstacleType === "duck" ? "Low branch ahead! Tap DODGE to duck under " + obstacleEmoji
     : "Obstacle ahead! Tap JUMP to hop over " + obstacleEmoji;
+
+  // Slow-Mo charm (round 19, item 2) -- consumed on the very next
+  // encounter after collection, stretches this one obstacle's approach
+  // timer only (resolve/button-timing both read the same `obstacleMs`
+  // local instead of the NINJA_OBSTACLE_MS constant directly, so the
+  // precise-timing deadline check in ninjaResolveObstacle is unaffected
+  // except for simply firing later).
+  let obstacleMs = NINJA_OBSTACLE_MS;
+  if (ninjaState.slowmoCharges > 0) { ninjaState.slowmoCharges -= 1; obstacleMs += NINJA_SLOWMO_EXTRA_MS; showNinjaToast("🐌 Slow-Mo active!"); }
 
   const lane = $("ninja-run-lane");
   // Ground shadow (round 18, item 22) -- travels in sync with the obstacle
   // (same animation/duration) but ALWAYS at ground level, even for a duck-
   // type obstacle positioned higher up, so a kid can read its ground
   // position/distance at a glance.
-  let html = `<div class="ninja-ground-shadow"></div><div class="ninja-obstacle${ninjaState.obstacleType === "duck" ? " ninja-obstacle-duck" : ""}" id="ninja-obstacle-el">${obstacleEmoji}</div>`;
+  let html = `<div class="ninja-ground-shadow"></div><div class="ninja-obstacle${ninjaState.obstacleType === "duck" ? " ninja-obstacle-duck" : ninjaState.obstacleType === "dash" ? " ninja-obstacle-dash" : ""}" id="ninja-obstacle-el" data-shape="${ninjaState.obstacleType}">${obstacleEmoji}</div>`;
   ninjaState.pickupPending = null;
   if (ninjaState.obstacleType === "jump" && ninjaRand() < NINJA_PICKUP_CHANCE) {
     ninjaState.pickupPending = NINJA_PICKUP_TYPES[rand(0, NINJA_PICKUP_TYPES.length - 1)];
     html += `<div class="ninja-pickup" id="ninja-pickup-el">${NINJA_PICKUP_EMOJI[ninjaState.pickupPending]}</div>`;
   }
   lane.innerHTML = html;
+  lane.style.setProperty("--ninja-obstacle-ms", obstacleMs + "ms");
   lane.classList.remove("hidden");
-  ninjaShowDodgeBtns(NINJA_OBSTACLE_MS);
+  ninjaShowDodgeBtns(obstacleMs);
 
   ninjaState.obstacleStartAt = performance.now(); // round 16 -- near-miss bonus window, see ninjaResolveObstacle
-  ninjaState.laneTimer = setTimeout(ninjaResolveObstacle, NINJA_OBSTACLE_MS);
+  ninjaState.obstacleMs = obstacleMs; // round 19, item 2 -- Slow-Mo can vary this per-encounter, ninjaResolveObstacle reads it back instead of the constant
+  ninjaState.laneTimer = setTimeout(ninjaResolveObstacle, obstacleMs);
 }
 
 // Chained obstacles (round 18, items 1+2 -- a two-stage jump-then-duck
@@ -8002,24 +8303,33 @@ function ninjaResolveObstacle() {
   const obstacle = document.getElementById("ninja-obstacle-el");
   let bumped = false;
   if (obstacle) {
-    // The obstacle's approach animation ends exactly now -- real
-    // collision, not "did you press jump at some point during the whole
-    // approach": only a hop/duck still active at this instant clears it
-    // (which class depends on ninjaState.obstacleType, see ninjaStartRunLane).
-    const dodgeClass = ninjaState.obstacleType === "duck" ? "ducking" : "jumping";
-    const dodged = $("ninja-runner").classList.contains(dodgeClass);
+    // Dash obstacle (round 19, item 6) -- forgiving variant: a jump press
+    // ANY TIME during the approach clears it, not just one still active at
+    // this exact instant. Every other type keeps the original precise
+    // end-of-approach check.
+    const dodged = ninjaState.obstacleType === "dash"
+      ? ninjaState.lastInputAt != null && ninjaState.obstacleStartAt != null && ninjaState.lastInputAt >= ninjaState.obstacleStartAt
+      : $("ninja-runner").classList.contains(ninjaState.obstacleType === "duck" ? "ducking" : "jumping");
     bumped = !dodged;
     obstacle.classList.add(dodged ? "dodged" : "bumped");
     setTimeout(() => obstacle.remove(), 350);
-    // Near-miss bonus (round 16, item A9) -- on top of the pass/fail check
-    // above, reward a press that landed close to the actual deadline
-    // rather than any successful dodge equally.
-    if (dodged && ninjaState.lastInputAt != null && ninjaState.obstacleStartAt != null) {
-      const precision = (ninjaState.obstacleStartAt + NINJA_OBSTACLE_MS) - ninjaState.lastInputAt;
+    // Near-miss tiers (round 16 item A9, extended round 19 item 3) --
+    // "Perfect" for a press landing right at the deadline, a wider
+    // "Close Call" tier below that for a press that was still comfortably
+    // timed but not razor-precise, nothing for an early/lazy dodge (same
+    // as before this round -- not every successful dodge needs a toast).
+    const obstacleMs = ninjaState.obstacleMs || NINJA_OBSTACLE_MS;
+    if (dodged && ninjaState.obstacleType !== "dash" && ninjaState.lastInputAt != null && ninjaState.obstacleStartAt != null) {
+      const precision = (ninjaState.obstacleStartAt + obstacleMs) - ninjaState.lastInputAt;
       if (precision >= 0 && precision <= NINJA_NEARMISS_WINDOW_MS) {
         ninjaState.score += NINJA_NEARMISS_BONUS;
         updateNinjaScore();
         showNinjaToast(`✨ Perfect timing! +${NINJA_NEARMISS_BONUS}`);
+        ninjaNearMissSlowMo(); // round 19, item 14
+      } else if (precision > NINJA_NEARMISS_WINDOW_MS && precision <= NINJA_CLOSECALL_WINDOW_MS) {
+        ninjaState.score += NINJA_CLOSECALL_BONUS;
+        updateNinjaScore();
+        showNinjaToast(`👍 Close call! +${NINJA_CLOSECALL_BONUS}`);
       }
     }
     if (dodged) ninjaSpawnAfterimage(); // round 17, item B16
@@ -8100,7 +8410,12 @@ function ninjaResolveEnemy() {
     ninjaState.inBoss = true;
     ninjaState.bossMissStreak = 0;
     ninjaState.bossTurn = 0;
-    ninjaState.bossMaxHp = NINJA_BOSS_HP + (ninjaState.isFinaleBoss ? 1 : 0);
+    // Escalating boss HP (round 19, item 4) -- each boss checkpoint
+    // already BEATEN this run adds +1 max HP to the next one, on top of
+    // the finale's own existing +1 -- a long run (Director's Cut's 4
+    // checkpoints, Boss Rush's 3) gets progressively tougher instead of
+    // every checkpoint being an identical fight.
+    ninjaState.bossMaxHp = NINJA_BOSS_HP + ninjaState.bossesDefeated + (ninjaState.isFinaleBoss ? 1 : 0);
     ninjaState.bossHp = ninjaState.bossMaxHp;
     $("ninja-boss-hp").classList.remove("hidden");
     updateNinjaBossHp();
@@ -8152,6 +8467,12 @@ function ninjaBossTelegraphAttack() {
   ninjaState.bossAttackType = ninjaRand() < 0.5 ? "dodge" : "jump";
   ninjaState.bossAttackActive = true;
   $("ninja-hint").textContent = ninjaState.bossAttackType === "jump" ? "⚠️ The boss sweeps low! Tap JUMP!" : "⚠️ The boss attacks! Tap DODGE!";
+  // Attack "tell" pulse (round 19, item 24) -- a brief wind-up glow on the
+  // boss itself, playing alongside (not delaying) the hint text/dodge
+  // buttons above, so the warning reads from body language first and text
+  // second rather than text alone.
+  const bossEl = document.getElementById("ninja-enemy-el");
+  if (bossEl) { bossEl.classList.remove("attack-tell"); void bossEl.offsetWidth; bossEl.classList.add("attack-tell"); }
   ninjaShowDodgeBtns(NINJA_BOSS_ATTACK_MS);
   ninjaState.laneTimer = setTimeout(ninjaResolveBossAttack, NINJA_BOSS_ATTACK_MS);
 }
@@ -8235,6 +8556,13 @@ function updateNinjaBossHp() {
   // instead of a flat color, so "almost defeated" reads at a glance.
   fill.classList.remove("hp-high", "hp-mid", "hp-low");
   fill.classList.add(pct > 60 ? "hp-high" : pct > 30 ? "hp-mid" : "hp-low");
+  // Crack visual (round 19, item 25) -- cumulative, on top of the color
+  // change above: a crack mark appears once HP first drops to/through
+  // each threshold and stays (never removed mid-fight), a second visible
+  // layer of "this is getting serious" besides color alone.
+  const bar = $("ninja-boss-hp");
+  bar.classList.toggle("crack-1", pct <= 60);
+  bar.classList.toggle("crack-2", pct <= 30);
 }
 
 // A boss fight is won -- flat score bonus (doubled for the finale, it's the
@@ -8365,14 +8693,19 @@ const NINJA_MYSTERY_CHANCE = 0.2;
 
 function renderNinjaGates() {
   ninjaSetGuard(false);
+  ninjaResetIdleFidget(); // round 19, item 17
   const gates = $("ninja-gates");
   gates.innerHTML = "";
   gates.classList.remove("hidden");
   $("ninja-qcard").classList.add("hidden");
   $("ninja-bubbles").classList.add("hidden");
+  // Sensei tip (round 19, item 20) -- occasional flavor swap, never during
+  // a boss fight (that hint text is functional, the HP readout).
+  const senseiTip = !ninjaState.inBoss && Math.random() < NINJA_SENSEI_CHANCE
+    ? NINJA_SENSEI_TIPS[rand(0, NINJA_SENSEI_TIPS.length - 1)] : null;
   $("ninja-hint").textContent = ninjaState.inBoss
     ? `⚔️ Defeat the boss! Answer correctly (HP left: ${ninjaState.bossHp})`
-    : "Pick a subject (each card's difficulty is random):";
+    : senseiTip || "Pick a subject (each card's difficulty is random):";
 
   const keys = Object.keys(NINJA_SUBJECTS);
   const diffs = keys.map(ninjaPickDifficulty);
@@ -8392,7 +8725,20 @@ function renderNinjaGates() {
       <div class="ninja-card-title">${NINJA_SUBJECTS[key]}</div>
       <div class="ninja-diff-badge ${diff}">${NINJA_DIFF_ICONS[diff]} ${NINJA_DIFF_LABELS[diff]}</div>
     `;
-    card.addEventListener("click", () => ninjaPickCard(key, diff));
+    // Long-press peek (round 19, item 11) -- hold (not tap) to see a
+    // generic blurb of what this subject covers, without committing. A
+    // browser still fires `click` after a long-press-release in place, so
+    // the peek flag below suppresses JUST that one click -- a kid has to
+    // tap cleanly (not holding) to actually commit to the card.
+    let peekTimer = null, peeked = false;
+    const cancelPeek = () => { if (peekTimer) { clearTimeout(peekTimer); peekTimer = null; } };
+    card.addEventListener("pointerdown", () => {
+      cancelPeek();
+      peeked = false;
+      peekTimer = setTimeout(() => { peeked = true; showNinjaToast(`📚 ${NINJA_SUBJECTS[key]}: ${NINJA_SUBJECT_TOPICS[key]}`); }, NINJA_PEEK_HOLD_MS);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(evt => card.addEventListener(evt, cancelPeek));
+    card.addEventListener("click", () => { if (peeked) { peeked = false; return; } ninjaPickCard(key, diff); });
     gates.appendChild(card);
   });
 
@@ -8426,6 +8772,8 @@ function ninjaPickCard(subjectKey, difficulty, opts) {
   // overwrites them; this stops a stray late tap/event from spawning a
   // question after ninjaFinishCommon() has already run.
   if (!ninjaState || ninjaState.ended) return;
+  if (ninjaState.idleFidgetTimer) clearTimeout(ninjaState.idleFidgetTimer); // round 19, item 17 -- a committed pick is no longer idle
+  $("ninja-runner").classList.remove("idle-fidget");
   $("ninja-gates").classList.add("hidden");
   $("ninja-reroll-btn").classList.add("hidden");
   ninjaSetGuard(true);
@@ -8467,6 +8815,16 @@ function ninjaPickCard(subjectKey, difficulty, opts) {
         const prevBonus = ninjaStreakBonus(ninjaState.streak);
         ninjaState.streak += 1;
         const bonus = ninjaStreakBonus(ninjaState.streak);
+        // Streak Shield (round 19, item 7) -- earned once per climb to a
+        // 5+ streak, forgives exactly the next wrong answer's streak break
+        // (the life is still lost as normal -- this only protects the
+        // streak counter itself). Re-earnable after the streak resets and
+        // climbs back to 5 again (see the wrong-answer branch below).
+        if (ninjaState.streak >= NINJA_STREAK_SHIELD_AT && !ninjaState.streakShieldGranted) {
+          ninjaState.streakShieldGranted = true;
+          ninjaState.streakShieldCharges = (ninjaState.streakShieldCharges || 0) + 1;
+          showNinjaToast("🛡️ Streak Shield earned! Your next miss won't break it");
+        }
         if (difficulty === "hard") ninjaState.hardCorrectCount += 1;
         // Quick Answer bonus (round 15) -- restores some time pressure to
         // the deliberately-untimed question beat without ever costing a
@@ -8480,16 +8838,34 @@ function ninjaPickCard(subjectKey, difficulty, opts) {
         if (ninjaState.mysteryBonus) mult *= 2;
         let usedBoost = false;
         if (ninjaState.scoreBoostLeft > 0) { mult *= 2; ninjaState.scoreBoostLeft -= 1; usedBoost = true; }
-        const gained = NINJA_PTS[difficulty] * mult + bonus + (quick ? NINJA_QUICK_BONUS : 0);
+        // Subject-variety combo (round 19, item 1) -- 3 DIFFERENT subjects
+        // answered correctly in a row (not just any 3-in-a-row, which the
+        // streak bonus above already rewards) earns an extra flat bonus,
+        // nudging toward trying subjects outside a favorite. Tracks only
+        // correct answers (a wrong one doesn't reset the combo window,
+        // since it already costs a life/streak separately).
+        ninjaState.subjectCombo = (ninjaState.subjectCombo || []).concat(subjectKey).slice(-3);
+        let varietyBonus = 0;
+        if (ninjaState.subjectCombo.length === 3 && new Set(ninjaState.subjectCombo).size === 3) {
+          varietyBonus = NINJA_VARIETY_BONUS;
+          ninjaState.subjectCombo = [];
+        }
+        const gained = NINJA_PTS[difficulty] * mult + bonus + (quick ? NINJA_QUICK_BONUS : 0) + varietyBonus;
         ninjaState.score += gained;
         updateNinjaScore();
         updateNinjaStreakHud();
         ninjaPlaySubjectChime(subjectKey);
-        ninjaSpawnScorePop(gained); // round 17, item B19
+        // Score-pop color coding (round 19, item 21) -- the pop's color
+        // reflects whichever bonus was the headline reason for this gain,
+        // picked by priority since more than one can apply to the same
+        // answer (see the multiplier stacking comment above).
+        const popKind = ninjaState.mysteryBonus ? "mystery" : usedBoost ? "charm" : varietyBonus ? "variety" : quick ? "quick" : bonus > 0 ? "streak" : "base";
+        ninjaSpawnScorePop(gained, popKind); // round 17, item B19
         if (ninjaState.mysteryBonus) showNinjaToast("✨ Mystery bonus! ×2 points");
         if (usedBoost) showNinjaToast(`💎 2× charm active!${ninjaState.scoreBoostLeft > 0 ? ` (${ninjaState.scoreBoostLeft} left)` : ""}`);
         if (quick) showNinjaToast(`⚡ Quick answer! +${NINJA_QUICK_BONUS}`);
-        if (bonus > prevBonus) showNinjaToast(`🔥 ${ninjaState.streak} in a row! +${bonus} bonus`);
+        if (bonus > prevBonus) { showNinjaToast(`🔥 ${ninjaState.streak} in a row! +${bonus} bonus`); ninjaStreakSparkle(); } // round 19, item 10
+        if (varietyBonus) showNinjaToast(`🎭 Subject variety! +${varietyBonus}`);
         if (ninjaState.inBoss) {
           ninjaState.bossMissStreak = 0;
           ninjaState.bossHp -= 1;
@@ -8505,10 +8881,20 @@ function ninjaPickCard(subjectKey, difficulty, opts) {
         }
       } else {
         ninjaState.totalAnswered += 1;
-        // Streak-break feedback (round 15) -- only worth calling out if a
-        // real streak was actually lost, not on every single miss.
-        if (ninjaState.streak >= 3) showNinjaToast("💔 Streak broken!", "bad");
-        ninjaState.streak = 0;
+        // Streak Shield (round 19, item 7) -- consumes 1 charge to forgive
+        // THIS answer's streak break (the life is still lost below as
+        // normal). Re-arms once the streak climbs back to the threshold.
+        if (ninjaState.streakShieldCharges > 0) {
+          ninjaState.streakShieldCharges -= 1;
+          ninjaState.streakShieldGranted = false;
+          showNinjaToast("🛡️ Streak Shield used -- streak protected!");
+        } else {
+          // Streak-break feedback (round 15) -- only worth calling out if a
+          // real streak was actually lost, not on every single miss.
+          if (ninjaState.streak >= 3) showNinjaToast("💔 Streak broken!", "bad");
+          ninjaState.streak = 0;
+          ninjaState.streakShieldGranted = false;
+        }
         updateNinjaStreakHud();
         ninjaState.wrongLog.push({ prompt: q.prompt, subject: NINJA_SUBJECTS[subjectKey], your: opt, correct: q.correctLabel });
         btn.classList.add("wrong-flash");
@@ -8559,6 +8945,8 @@ function ninjaAdvance() {
   ninjaState.qnum++;
   if (ninjaState.qnum > ninjaState.totalQ) { ninjaShowFinish(); return; }
   $("ninja-qnum").textContent = `Q ${ninjaState.qnum}/${ninjaState.totalQ}`;
+  updateNinjaProgressDots(); // round 19, item 22
+  ninjaSaveCheckpoint(); // round 19, item 8 -- a clean boundary (next question not yet started)
   ninjaState.chainActive = false; // round 18, items 1+2 -- a fresh question beat can chain again
   // Environment progression (round 15) -- purely cosmetic scene swap by
   // how far through the round this is, same idea as DinoRace's distance
@@ -8592,6 +8980,38 @@ function updateNinjaGhostHud() {
   else { pill.textContent = "👻 tied"; }
 }
 
+// Progress dot-trail (round 19, item 22) -- a visual complement to the
+// "Q X/Y" text pill. Capped at 20 dots even for a 40-question Director's
+// Cut run (one dot would get too small/numerous otherwise) -- each dot
+// then represents a fixed SHARE of the round rather than literally one
+// question, which is fine since this is a glance-able progress cue, not
+// a precise per-question tracker.
+const NINJA_PROGRESS_DOTS_MAX = 20;
+function updateNinjaProgressDots() {
+  const el = $("ninja-progress-dots");
+  if (!el || !ninjaState) return;
+  const dotCount = Math.min(ninjaState.totalQ, NINJA_PROGRESS_DOTS_MAX);
+  const filled = Math.round(((ninjaState.qnum - 1) / ninjaState.totalQ) * dotCount);
+  el.innerHTML = Array.from({ length: dotCount }, (_, i) => `<i class="${i < filled ? "on" : ""}"></i>`).join("");
+}
+
+// Score roll-up (round 19, item 27) -- counts up from 0 to the final
+// score instead of the number just appearing already-set, on the finish
+// screen only (mid-run score pops stay instant, those already have their
+// own "+N" pop-up for payoff). Duration is fixed, not per-point, so a
+// huge score doesn't take forever to count.
+const NINJA_ROLLUP_MS = 700;
+function ninjaAnimateScoreRollup(el, target, suffix) {
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min(1, (now - start) / NINJA_ROLLUP_MS);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = `${Math.round(target * eased)}${suffix}`;
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 const NINJA_WIN_XP = 20;
 
 function ninjaShowFinish() {
@@ -8612,6 +9032,7 @@ function ninjaGameOver() {
 
 function ninjaFinishCommon() {
   ninjaState.ended = true;
+  ninjaClearCheckpoint(); // round 19, item 8 -- a finished/lost run has nothing left worth resuming
   ninjaSetGuard(false);
   if (window.AIGBgm && AIGBgm.setPlaybackRate) AIGBgm.setPlaybackRate(1); // round 16 -- safety net if the round ended mid-boss-fight
   $("ninja-world").classList.remove("boss-mode"); // round 17 -- safety net, same reasoning as the playback-rate reset above
@@ -8630,8 +9051,17 @@ function ninjaFinishCommon() {
   $("ninja-combo-bar").classList.add("hidden");
   $("ninja-bubbles").classList.add("hidden");
   $("ninja-hint").textContent = "";
-  $("ninja-final-score").textContent = `${ninjaState.score} points`;
+  ninjaAnimateScoreRollup($("ninja-final-score"), ninjaState.score, " points"); // round 19, item 27
   $("ninja-final-best").textContent = `Best: ${Math.max(ninjaState.score, PROGRESS[ninjaHighScoreKey()] || 0)}`;
+  // Victory lap (round 19, item 15) -- a small sprint-across flourish on a
+  // genuine completion only (not a game-over cut short, which should read
+  // as abrupt, not celebratory). Purely a CSS keyframe on the existing
+  // runner element -- the finish overlay still reveals at the same time,
+  // this just plays underneath/behind it.
+  if (ninjaState.completed) {
+    const runner = $("ninja-runner");
+    runner.classList.remove("lap"); void runner.offsetWidth; runner.classList.add("lap");
+  }
   const rank = ninjaComputeRank();
   $("ninja-finish-badge").innerHTML = `${rank.emoji} ${rank.label}`;
 
@@ -8869,6 +9299,13 @@ $("ninja-review-done").addEventListener("click", () => {
 
 $("ninja-jump-btn").addEventListener("click", ninjaDoJump);
 $("ninja-dodge-btn").addEventListener("click", ninjaDoDuck);
+// Glide (round 19, item 5) -- pointerdown starts the hop immediately
+// (instead of waiting for the click that follows pointerup), so holding
+// can be measured; the click above still fires afterward too, but
+// ninjaDoJump's own "already jumping" guard makes that a harmless no-op.
+// pointerup then extends the hop if it was genuinely held, not just tapped.
+$("ninja-jump-btn").addEventListener("pointerdown", ninjaDoJump);
+$("ninja-jump-btn").addEventListener("pointerup", ninjaExtendGlide);
 
 // Mid-run progress peek (round 16, item A6) -- a toast summary, not a
 // pausing overlay, so it never interrupts an obstacle timer or steals
