@@ -3588,6 +3588,81 @@
     await aigDb.ref(`players/${player.id}/${ninjaGhostField(len)}`).set(data);
   }
 
+  // Ninja Runner weekly best (round 16, item A7) -- separate from the
+  // cross-game weekly leaderboard above: ranks by this week's best
+  // Classic(20) score only (Quick-mode scores use their own high-score
+  // field and aren't comparable, see mathville/script.js). Written only
+  // when a run beats the stored weekly best, same trigger as the
+  // high-score/ghost writes it sits next to in ninjaFinishCommon().
+  async function touchNinjaWeeklyBest(score) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    const ref = aigDb.ref(`players/${player.id}/ninjaWeekly/${weekKey()}`);
+    const snap = await ref.get();
+    const cur = snap.exists() ? snap.val() : null;
+    if (!cur || score > cur.score) await ref.set({ score, name: player.name });
+  }
+  // Reads the whole players/ tree once (same acceptable-for-a-small-
+  // roster tradeoff as getWeeklyLeaderboard above) -- only called when the
+  // Ninja Runner finish screen is actually shown, not on every hub load.
+  async function getNinjaWeeklyRank() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const wk = weekKey();
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return null;
+    const all = snap.val();
+    const ranking = Object.entries(all)
+      .map(([id, data]) => { const w = data.ninjaWeekly && data.ninjaWeekly[wk]; return { id, name: (w && w.name) || id, score: (w && w.score) || 0 }; })
+      .filter(r => r.score > 0)
+      .sort((a, b) => b.score - a.score);
+    const myIdx = ranking.findIndex(r => r.id === player.id);
+    return { rank: myIdx >= 0 ? myIdx + 1 : null, total: ranking.length, top: ranking.slice(0, 3) };
+  }
+
+  // Ninja Runner's own daily play streak (round 16, item B12) -- separate
+  // from the hub's general login streak (players/{id}/streak), since this
+  // one should only count days this SPECIFIC game was actually played.
+  // Updated once per completed/ended round (ninjaFinishCommon), not on
+  // launch, so just opening the setup screen and backing out doesn't
+  // count. A second run the same day is a no-op (lastDate already today).
+  async function touchNinjaDailyStreak() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const ref = aigDb.ref(`players/${player.id}/ninjaDailyStreak`);
+    const snap = await ref.get();
+    const d = snap.exists() ? snap.val() : { count: 0, lastDate: null };
+    const today = todayKey();
+    if (d.lastDate === today) return d;
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const next = { count: d.lastDate === yesterday ? (d.count || 0) + 1 : 1, lastDate: today };
+    await ref.set(next);
+    return next;
+  }
+  async function getNinjaDailyStreak() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { count: 0, lastDate: null };
+    const snap = await aigDb.ref(`players/${player.id}/ninjaDailyStreak`).get();
+    return snap.exists() ? snap.val() : { count: 0, lastDate: null };
+  }
+
+  // Ninja Runner lifetime mastery counters (round 16, item B11) -- a badge
+  // on the finish screen derived from runs actually completed (not game-
+  // overs) and perfect (zero wrong answers) runs, lifetime. Deliberately
+  // kept simple (2 counters, computed thresholds client-side in
+  // mathville/script.js) rather than a new catalog/unlock system.
+  async function touchNinjaMastery(perfect) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const ref = aigDb.ref(`players/${player.id}/ninjaMastery`);
+    const snap = await ref.get();
+    const d = snap.exists() ? snap.val() : { runs: 0, perfectRuns: 0 };
+    d.runs = (d.runs || 0) + 1;
+    if (perfect) d.perfectRuns = (d.perfectRuns || 0) + 1;
+    await ref.set(d);
+    return d;
+  }
+
   // =====================================================================
   // SEASON PASS (Battle Pass) — a monthly cumulative track, separate from
   // the daily quests above. Earns 1 "season point" (SP) per correct
@@ -6440,7 +6515,7 @@
     getStreak, getStreakMultiplierInfo, getDailyQuests, claimDailyQuest, claimDailyBonus, getQuestLabel,
     claimBossWin,
     getWeeklyBossRushStatus, claimWeeklyBossRush,
-    getNinjaGhost, saveNinjaGhost,
+    getNinjaGhost, saveNinjaGhost, touchNinjaWeeklyBest, getNinjaWeeklyRank, touchNinjaDailyStreak, getNinjaDailyStreak, touchNinjaMastery,
     getBattlePass, claimBattlePassTier,
     getCollection,
     getCosmetics, unlockCosmetic, equipCosmetic, getEquippedCosmetic, getDailyDeal, getDailyDealStatus,

@@ -34,7 +34,7 @@
 <script src="../leaderboard.js"></script>
 <script src="../skin.js"></script>
 
-<link rel="stylesheet" href="style.css?v=103" />
+<link rel="stylesheet" href="style.css?v=104" />
 </head>
 <body>
 
@@ -1076,12 +1076,20 @@
        Drive Mode/Plane Mode beyond those question-pool helpers.
        =============================================================== -->
   <section id="screen-ninja" class="screen">
+    <!-- One-time intro (round 16, item B13) -- shown ONLY before a kid's
+         very first-ever run (localStorage flag), 3 static steps. Sits
+         ABOVE the setup overlay (both start hidden; launchNinjaRunner
+         decides which one to reveal first). -->
+    <div class="ninja-overlay hidden" id="ninja-intro-overlay">
+      <div class="ninja-finish-card" id="ninja-intro-card"></div>
+    </div>
     <!-- Pre-round setup (PM round 15 -- Ninja Runner overhaul): length +
          reflex-mode choice, shown every time before a run actually starts.
          Doubles as the warm-up beat (no obstacle/enemy is live yet here). -->
     <div class="ninja-overlay hidden" id="ninja-setup-overlay">
       <div class="ninja-finish-card">
         <div class="ninja-finish-title">🥋 Get ready, ninja!</div>
+        <div class="ninja-setup-daily hidden" id="ninja-setup-daily"></div>
         <div class="ninja-setup-label">Run length</div>
         <div class="ninja-setup-row" id="ninja-setup-len">
           <button type="button" class="ninja-setup-opt" data-len="8">⚡ Quick<br><small>8 questions</small></button>
@@ -1092,6 +1100,10 @@
           <button type="button" class="ninja-setup-opt" data-mode="normal">🥋 Normal<br><small>jump/dodge obstacles</small></button>
           <button type="button" class="ninja-setup-opt" data-mode="relaxed">🧘 Relaxed<br><small>skip reflex, just quiz</small></button>
         </div>
+        <!-- Costume quick-switch (round 16, item B20) -- cycles OWNED
+             ninja-costume cosmetics without leaving for Customize. -->
+        <div class="ninja-setup-label">Costume</div>
+        <div class="ninja-setup-costumes" id="ninja-setup-costumes"></div>
         <button class="btn btn-primary" id="ninja-setup-start" style="width:100%;margin-top:14px">▶ Start!</button>
       </div>
     </div>
@@ -1105,9 +1117,17 @@
           <span class="drive-hud-pill" id="ninja-lives">❤️❤️❤️🖤🖤</span>
           <span class="drive-hud-pill ninja-streak-pill hidden" id="ninja-streak">🔥 0</span>
           <span class="drive-hud-pill ninja-ghost-pill hidden" id="ninja-ghost-delta">👻 +0</span>
+          <!-- Mid-run progress peek (round 16, item A6) -- a toast, not a
+               pausing overlay; only enabled while the subject-card picker
+               itself is showing (see ninjaShowPeek), never mid-reflex. -->
+          <button type="button" class="drive-hud-pill ninja-peek-btn" id="ninja-peek-btn">📊</button>
         </div>
       </div>
     </div>
+    <!-- Combo meter (round 16, item A5) -- fills toward the NEXT streak
+         bonus tier (NINJA_STREAK_BONUS_TIERS), a visual complement to the
+         🔥 streak pill's raw number. -->
+    <div class="ninja-combo-bar hidden" id="ninja-combo-bar"><i id="ninja-combo-bar-fill"></i></div>
     <!-- Boss health bar -- hidden until a boss checkpoint starts (every
          NINJA_BOSS_EVERY questions), same pattern as Plane Mode's
          #plane-boss-hp. -->
@@ -1158,6 +1178,12 @@
         <div class="ninja-time-compare hidden" id="ninja-time-compare"></div>
         <div class="ninja-lifeloss hidden" id="ninja-lifeloss-breakdown"></div>
         <div class="ninja-finish-badge" id="ninja-finish-badge"></div>
+        <!-- Mastery badge (B11), weekly rank (A7), weak-subject tip (B18)
+             -- round 16, all best-effort/fire-and-forget, hidden if the
+             underlying data isn't available (offline, brand-new player). -->
+        <div class="ninja-mastery hidden" id="ninja-mastery"></div>
+        <div class="ninja-weekly-rank hidden" id="ninja-weekly-rank"></div>
+        <div class="ninja-weak-tip hidden" id="ninja-weak-tip"></div>
         <button class="btn btn-primary" id="ninja-review-btn">Review with Bo →</button>
       </div>
     </div>
@@ -1166,6 +1192,10 @@
       <div class="ninja-review-card">
         <img class="ninja-review-bo" src="../icon-192.png" alt="Bo">
         <div class="ninja-review-title" id="ninja-review-title">Bo here! Let's go over this...</div>
+        <!-- Per-subject accuracy summary (round 16, item B14) -- one line
+             above the wrong-answer pager, e.g. "MATH 4/5 · LANG & ARTS
+             2/3 · SCIENCE 3/3", so the review isn't just a flat list. -->
+        <div class="ninja-review-subjects" id="ninja-review-subjects"></div>
         <div class="ninja-review-qbox" id="ninja-review-qbox"></div>
         <button type="button" class="btn btn-secondary ninja-ask-bo-btn" id="ninja-review-ask-bo">💡 Ask Bo to explain</button>
         <div class="ninja-review-bo-answer hidden" id="ninja-review-bo-answer"></div>
@@ -1213,6 +1243,6 @@
 <script src="bgm.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
 <script src="../vehicles.js?v=1"></script>
-<script src="script.js?v=145"></script>
+<script src="script.js?v=146"></script>
 </body>
 </html>

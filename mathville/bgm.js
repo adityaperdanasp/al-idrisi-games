@@ -102,10 +102,18 @@
   // Exposed so a question round can duck the music if it ever needs to
   // (matches the other games' AIGBgm.stop()/start() convention) — MathVille
   // doesn't call these today since there's no timed pressure to protect.
+  // Playback rate nudge (round 16, Ninja Runner item B15) -- raises both
+  // tempo and pitch together (the simple, universally-supported way to do
+  // this with a plain <audio> element, no pitch-correction library) during
+  // a boss fight so the music itself feels more urgent. Ramped by the
+  // caller back to 1 once the fight ends; this just sets the raw value.
+  function setPlaybackRate(rate) { try { track.playbackRate = rate; } catch (e) {} }
+
   window.AIGBgm = {
     stop: fadeOut,
     start: fadeIn,
     switchTrack,
+    setPlaybackRate,
     playPlaneTrack: () => switchTrack("audio/bgm/plane-bgm.mp3"),
     playDefaultTrack: () => switchTrack(DEFAULT_SRC)
   };

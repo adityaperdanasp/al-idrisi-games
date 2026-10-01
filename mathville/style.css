@@ -2150,3 +2150,61 @@ button { font-family: inherit; }
   background: #fff3d9; border: 2px solid var(--wood); border-radius: 12px; padding: 10px 12px;
   font: 700 13px "Nunito", sans-serif; color: var(--ink); text-align: left; margin-bottom: 12px; line-height: 1.5;
 }
+
+/* ---------- Ninja Runner round 16 additions ---------- */
+
+/* Intro overlay (B13) + pre-round setup extras (daily streak, costumes) */
+.ninja-setup-daily { font: 800 12px "Baloo 2", sans-serif; color: #c9821f; text-align: center; margin: -4px 0 10px; }
+.ninja-setup-costumes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 4px; }
+.ninja-costume-swatch {
+  width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--taupe); background: var(--cream);
+  font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.ninja-costume-swatch.sel { border-color: var(--wood); background: #fff3d9; box-shadow: 0 0 0 2px rgba(228,87,46,.25); }
+
+/* Mid-run progress peek button, next to the HUD pills */
+.ninja-peek-btn { border: none; cursor: pointer; font: inherit; }
+
+/* Combo meter -- fills toward the next streak bonus tier */
+.ninja-combo-bar { height: 5px; border-radius: 3px; background: rgba(0,0,0,.08); margin: 4px 12px 0; overflow: hidden; }
+.ninja-combo-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffb347, #e4572e); transition: width .25s ease; }
+
+/* Duck-under ground obstacle (A1) -- framed as a low branch at head
+   height rather than a ground-level rock, so DODGE (crouch) reads as the
+   right response instead of JUMP. */
+.ninja-obstacle-duck { bottom: 78px !important; }
+
+/* Run-lane pickup charm (A2) -- rides alongside a jump-type obstacle at
+   the same approach speed/duration, just higher up so it doesn't visually
+   overlap the obstacle emoji itself. */
+.ninja-pickup {
+  position: absolute; bottom: 100px; font-size: 20px;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.2));
+  animation: ninjaObstacleRun 1.8s linear forwards;
+}
+.ninja-pickup.collected { animation: ninjaPickupCollected .35s ease forwards; }
+.ninja-pickup.missed { animation: ninjaPickupMissed .35s ease forwards; }
+@keyframes ninjaPickupCollected { to { transform: translateY(-24px) scale(1.4); opacity: 0; } }
+@keyframes ninjaPickupMissed { to { transform: translateY(10px) scale(.6); opacity: 0; } }
+
+/* Mystery wildcard card (A3) -- sparkly, deliberately distinct from the
+   3 subject colors so it reads as a bonus/wildcard, not a 4th subject. */
+.ninja-card.mystery { background: linear-gradient(180deg, #f3e8ff, #d8b4fe); border: 3px solid #9333ea; animation: ninjaMysteryGlow 1.4s ease-in-out infinite, ninjaGateIn .35s ease backwards; }
+@keyframes ninjaMysteryGlow { 0%, 100% { box-shadow: 0 5px 0 rgba(0,0,0,.16), 0 8px 14px rgba(0,0,0,.15); } 50% { box-shadow: 0 5px 0 rgba(0,0,0,.16), 0 8px 14px rgba(0,0,0,.15), 0 0 16px 4px rgba(147,51,234,.6); } }
+.ninja-card.mystery .ninja-face-wrap.mystery-face { background: #9333ea; border-radius: 50%; font-size: 28px; }
+.ninja-diff-badge.mystery { background: #9333ea; }
+
+/* Boss-attack hit reason (A4) -- distinct glow color from the other 3 */
+@keyframes ninjaRunnerHitBoss {
+  0%, 100% { filter: brightness(1); transform: translateX(0); }
+  25% { filter: brightness(2) drop-shadow(0 0 6px #9333ea); transform: translateX(-6px); }
+  50% { transform: translateX(6px); } 75% { transform: translateX(-3px); }
+}
+.ninja-runner.hit.hit-boss { animation-name: ninjaRunnerHitBoss; }
+
+/* Finish-screen extras */
+.ninja-mastery, .ninja-weekly-rank, .ninja-weak-tip { font: 700 12px "Nunito", sans-serif; color: var(--ink-soft); margin-bottom: 8px; }
+.ninja-mastery { color: #c9821f; font-weight: 800; }
+
+/* Review per-subject summary line */
+.ninja-review-subjects { font: 700 12px "Nunito", sans-serif; color: var(--ink-soft); margin: -6px 0 10px; }
