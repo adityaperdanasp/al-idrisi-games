@@ -2561,8 +2561,13 @@ button { font-family: inherit; }
 
 /* Dodge-button ripple (item 16) -- a radial ping synced to the exact
    frame JUMP/DODGE is pressed, via ::after so it never fights the
-   button's own background/border. */
-.ninja-jump-btn, .ninja-dodge-btn { position: relative; overflow: hidden; }
+   button's own background/border. Both buttons are already `position:
+   absolute` (see the original rule near the top of this file, pinning
+   them to the bottom of #ninja-world) -- that already establishes a
+   containing block for the ::after below, so this must NOT also set
+   `position: relative` here, which would override/cancel the absolute
+   positioning and dump both buttons into normal document flow instead
+   (exactly the "stacked overlapping at the top" bug this fixes). */
 .ninja-jump-btn.ripple::after, .ninja-dodge-btn.ripple::after {
   content: ""; position: absolute; inset: 0; margin: auto; width: 10px; height: 10px; border-radius: 50%;
   background: rgba(255,255,255,.85); animation: ninjaBtnRipple .45s ease-out;
