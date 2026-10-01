@@ -3786,6 +3786,91 @@
   }
 
   // =====================================================================
+  // MATH HOOPS (basketball/) lifetime stats + achievements + weekly/daily
+  // leaderboards — mirrors the equivalent Ninja Runner functions above
+  // exactly (same weekKey/todayKey helpers, same read-whole-players-tree-
+  // once ranking pattern); basketball just never had any of this before.
+  // =====================================================================
+  async function touchBasketballStats(opts) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const ref = aigDb.ref(`players/${player.id}/basketballStats`);
+    const snap = await ref.get();
+    const d = snap.exists() ? snap.val() : { roundsPlayed: 0, totalMakes: 0, totalShots: 0, bestStreak: 0, perfectRounds: 0, bestRoundMade: 0 };
+    d.roundsPlayed = (d.roundsPlayed || 0) + 1;
+    d.totalMakes = (d.totalMakes || 0) + (opts.made || 0);
+    d.totalShots = (d.totalShots || 0) + (opts.total || 0);
+    if ((opts.bestStreakThisRound || 0) > (d.bestStreak || 0)) d.bestStreak = opts.bestStreakThisRound;
+    if (opts.made === opts.total) d.perfectRounds = (d.perfectRounds || 0) + 1;
+    if ((opts.made || 0) > (d.bestRoundMade || 0)) d.bestRoundMade = opts.made;
+    await ref.set(d);
+    return d;
+  }
+  const BASKETBALL_ACHIEVEMENTS = [
+    { id: "first-hoop", name: "First Hoop", emoji: "🏀", need: d => d.totalMakes >= 1 },
+    { id: "sharpshooter", name: "Sharpshooter", emoji: "🎯", need: d => d.totalMakes >= 50 },
+    { id: "on-fire", name: "On Fire", emoji: "🔥", need: d => d.bestStreak >= 5 },
+    { id: "perfect-game", name: "Perfect Game", emoji: "💯", need: d => d.perfectRounds >= 1 },
+    { id: "allstar", name: "All-Star", emoji: "🏆", need: d => d.roundsPlayed >= 10 },
+    { id: "legend", name: "Hoops Legend", emoji: "🐐", need: d => d.totalMakes >= 200 }
+  ];
+  async function getBasketballLifetimeSummary() {
+    const empty = { roundsPlayed: 0, totalMakes: 0, totalShots: 0, bestStreak: 0, perfectRounds: 0, bestRoundMade: 0 };
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return empty;
+    const snap = await aigDb.ref(`players/${player.id}/basketballStats`).get();
+    return snap.exists() ? snap.val() : empty;
+  }
+  async function getBasketballAchievements() {
+    const d = await getBasketballLifetimeSummary();
+    return BASKETBALL_ACHIEVEMENTS.map(a => ({ id: a.id, name: a.name, emoji: a.emoji, unlocked: a.need(d) }));
+  }
+  async function touchBasketballWeeklyBest(made) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    const ref = aigDb.ref(`players/${player.id}/basketballWeekly/${weekKey()}`);
+    const snap = await ref.get();
+    const cur = snap.exists() ? snap.val() : null;
+    if (!cur || made > cur.made) await ref.set({ made, name: player.name });
+  }
+  async function getBasketballWeeklyRank() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const wk = weekKey();
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return null;
+    const all = snap.val();
+    const ranking = Object.entries(all)
+      .map(([id, data]) => { const w = data.basketballWeekly && data.basketballWeekly[wk]; return { id, name: (w && w.name) || id, made: (w && w.made) || 0 }; })
+      .filter(r => r.made > 0)
+      .sort((a, b) => b.made - a.made);
+    const myIdx = ranking.findIndex(r => r.id === player.id);
+    return { rank: myIdx >= 0 ? myIdx + 1 : null, total: ranking.length, top: ranking.slice(0, 3) };
+  }
+  async function touchBasketballDailyChallenge(made) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    const ref = aigDb.ref(`players/${player.id}/basketballDaily/${todayKey()}`);
+    const snap = await ref.get();
+    const cur = snap.exists() ? snap.val() : null;
+    if (!cur || made > cur.made) await ref.set({ made, name: player.name });
+  }
+  async function getBasketballDailyChallengeRank() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const today = todayKey();
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return null;
+    const all = snap.val();
+    const ranking = Object.entries(all)
+      .map(([id, data]) => { const d = data.basketballDaily && data.basketballDaily[today]; return { id, name: (d && d.name) || id, made: (d && d.made) || 0 }; })
+      .filter(r => r.made > 0)
+      .sort((a, b) => b.made - a.made);
+    const myIdx = ranking.findIndex(r => r.id === player.id);
+    return { rank: myIdx >= 0 ? myIdx + 1 : null, total: ranking.length, top: ranking.slice(0, 3) };
+  }
+
+  // =====================================================================
   // SEASON PASS (Battle Pass) — a monthly cumulative track, separate from
   // the daily quests above. Earns 1 "season point" (SP) per correct
   // answer, same trigger as coins (parallel counter, doesn't touch/consume
@@ -4715,6 +4800,21 @@
     { id: "mountain", name: "Mountain Pass", cost: { coins: 30 }, preview: "⛰️" },
     { id: "cloud", name: "Cloud Temple", cost: { gems: 2 }, preview: "☁️" }
   ];
+  // Math Hoops ball skin + court skin (basketball round 1, items 21-22) --
+  // same generic cosmetic pattern as every other category here, 2 separate
+  // slots so a ball skin + court skin can be mixed freely. Read via
+  // `data-ball`/`data-court` attributes in basketball/script.js.
+  const BASKETBALL_BALLS = [
+    { id: "default", name: "Classic", cost: null, preview: "🏀" },
+    { id: "fire", name: "Fireball", cost: { coins: 25 }, preview: "🔥" },
+    { id: "galaxy", name: "Galaxy", cost: { gems: 2 }, preview: "🌌" },
+    { id: "gold", name: "Golden Ball", cost: { gems: 3 }, preview: "✨" }
+  ];
+  const BASKETBALL_COURTS = [
+    { id: "default", name: "Gym Court", cost: null, preview: "🏟️" },
+    { id: "street", name: "Streetball", cost: { coins: 25 }, preview: "🏙️" },
+    { id: "sunset", name: "Rooftop Sunset", cost: { gems: 2 }, preview: "🌇" }
+  ];
   const BOSSRUSH_FIGHTERS = [
     { id: "default", name: "Classic", cost: null, preview: "🥋" },
     { id: "boxer", name: "Boxer", cost: { coins: 15 }, preview: "🥊" },
@@ -4770,6 +4870,8 @@
     "ninja-costume": NINJA_COSTUMES,
     "ninja-weapon": NINJA_WEAPONS,
     "ninja-backdrop": NINJA_BACKDROPS,
+    "basketball-ball": BASKETBALL_BALLS,
+    "basketball-court": BASKETBALL_COURTS,
     "bossrush-fighter": BOSSRUSH_FIGHTERS,
     "dino-skin": DINO_SKINS
   };
@@ -4832,6 +4934,8 @@
         "ninja-costume": equipped["ninja-costume"] || "default",
         "ninja-weapon": equipped["ninja-weapon"] || "default",
         "ninja-backdrop": equipped["ninja-backdrop"] || "default",
+        "basketball-ball": equipped["basketball-ball"] || "default",
+        "basketball-court": equipped["basketball-court"] || "default",
         "bossrush-fighter": equipped["bossrush-fighter"] || "default",
         "dino-skin": equipped["dino-skin"] || "default",
         "bo-costume": equipped["bo-costume"] || "none"
@@ -6698,6 +6802,8 @@
     awardReferralBonus,
     awardTeachBoBonus,
     awardBasketballRoundBonus,
+    touchBasketballStats, getBasketballLifetimeSummary, getBasketballAchievements,
+    touchBasketballWeeklyBest, getBasketballWeeklyRank, touchBasketballDailyChallenge, getBasketballDailyChallengeRank,
     awardMemoryMatchBonus,
     awardTreasureDigLoot, awardTreasureDigRoundBonus,
     awardNumberLineJumpBonus,
