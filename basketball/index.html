@@ -57,11 +57,17 @@
   .bh-crowd i:nth-child(3n) { height: 85%; animation-duration: 3.2s; }
   @keyframes bhCrowdSway { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
 
-  /* Scoreboard (round 1, item 2) -- a digital-readout strip just under the
-     crowd, separate from the pill-style HUD above (that one stays for
-     coins/gems/streak; this is the "arena display" for made/total/timer). */
+  /* Scoreboard (round 1, item 2) -- a digital-readout strip, separate from
+     the pill-style HUD above (that one stays for coins/gems/streak; this
+     is the "arena display" for made/total/timer).
+     Fix (reported 2026-10-02: "angka ketutup ring" -- the numbers were
+     covered by the hoop): top:8% put this BETWEEN the backboard (6%) and
+     rim (9.5%), so the rim visually overlapped/covered the scoreboard
+     text. Moved below the whole backboard+rim+net cluster (net's own
+     bottom edge sits around ~19.5%) instead of just bumping z-index,
+     which would've left the board floating oddly on top of the hoop. */
   .bh-scoreboard {
-    position: absolute; top: 8%; left: 50%; transform: translateX(-50%); z-index: 2;
+    position: absolute; top: 21%; left: 50%; transform: translateX(-50%); z-index: 2;
     background: #1c2740; color: #ffce6b; border-radius: 10px; padding: 5px 16px;
     font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; letter-spacing: .5px;
     box-shadow: 0 3px 0 rgba(0,0,0,.25); display: flex; gap: 14px; align-items: center;
