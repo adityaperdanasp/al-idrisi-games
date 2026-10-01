@@ -34,7 +34,7 @@
 <script src="../leaderboard.js"></script>
 <script src="../skin.js"></script>
 
-<link rel="stylesheet" href="style.css?v=105" />
+<link rel="stylesheet" href="style.css?v=107" />
 </head>
 <body>
 
@@ -1083,27 +1083,57 @@
     <div class="ninja-overlay hidden" id="ninja-intro-overlay">
       <div class="ninja-finish-card" id="ninja-intro-card"></div>
     </div>
-    <!-- Pre-round setup (PM round 15 -- Ninja Runner overhaul): length +
-         reflex-mode choice, shown every time before a run actually starts.
-         Doubles as the warm-up beat (no obstacle/enemy is live yet here). -->
+    <!-- Pre-round setup (PM round 15 -- Ninja Runner overhaul; extended
+         round 18 with the rank ladder, loss nudge, 3 more lengths, Practice
+         mode, weapon swatches, achievements and 2 utility buttons). Shown
+         every time before a run actually starts. Doubles as the warm-up
+         beat (no obstacle/enemy is live yet here). Scrollable (round 18,
+         item 29) now that there's more content than fits every screen. -->
     <div class="ninja-overlay hidden" id="ninja-setup-overlay">
-      <div class="ninja-finish-card">
+      <div class="ninja-finish-card ninja-setup-card">
         <div class="ninja-finish-title">🥋 Get ready, ninja!</div>
+        <!-- Long-term rank ladder (round 18, item 13) -- lifetime progress,
+             separate from the per-run rank badge on the finish screen. -->
+        <div class="ninja-rank-ladder hidden" id="ninja-rank-ladder"></div>
         <div class="ninja-setup-daily hidden" id="ninja-setup-daily"></div>
+        <!-- Auto-nudge to Relaxed/Practice (round 18, item 16) -- only
+             shown after a few game-overs in a row, see ninjaConsecutiveLosses. -->
+        <div class="ninja-nudge hidden" id="ninja-nudge"></div>
+
         <div class="ninja-setup-label">Run length</div>
-        <div class="ninja-setup-row" id="ninja-setup-len">
+        <div class="ninja-setup-row ninja-setup-row-wrap" id="ninja-setup-len">
           <button type="button" class="ninja-setup-opt" data-len="8">⚡ Quick<br><small>8 questions</small></button>
           <button type="button" class="ninja-setup-opt" data-len="20">🏁 Classic<br><small>20 questions</small></button>
+          <button type="button" class="ninja-setup-opt" data-len="40">🎬 Director's Cut<br><small>40 questions</small></button>
+          <button type="button" class="ninja-setup-opt" data-len="boss">⚔️ Boss Rush<br><small>boss every 5!</small></button>
+          <button type="button" class="ninja-setup-opt ninja-setup-opt-daily" data-len="daily">📅 Daily Challenge<br><small>same for everyone today</small></button>
         </div>
+
         <div class="ninja-setup-label">Mode</div>
         <div class="ninja-setup-row" id="ninja-setup-mode">
           <button type="button" class="ninja-setup-opt" data-mode="normal">🥋 Normal<br><small>jump/dodge obstacles</small></button>
-          <button type="button" class="ninja-setup-opt" data-mode="relaxed">🧘 Relaxed<br><small>skip reflex, just quiz</small></button>
+          <button type="button" class="ninja-setup-opt" data-mode="relaxed">🧘 Relaxed<br><small>skip reflex, quiz risk</small></button>
+          <button type="button" class="ninja-setup-opt" data-mode="practice">🌱 Practice<br><small>zero risk, just learn</small></button>
         </div>
+
         <!-- Costume quick-switch (round 16, item B20) -- cycles OWNED
              ninja-costume cosmetics without leaving for Customize. -->
         <div class="ninja-setup-label">Costume</div>
         <div class="ninja-setup-costumes" id="ninja-setup-costumes"></div>
+        <!-- Weapon quick-switch (round 18, item 17) -- same idea, separate
+             cosmetic slot so a costume + weapon can be mixed freely. -->
+        <div class="ninja-setup-label">Weapon</div>
+        <div class="ninja-setup-costumes" id="ninja-setup-weapons"></div>
+
+        <div class="ninja-setup-utility">
+          <button type="button" id="ninja-howto-btn">❓ How to play</button>
+          <button type="button" id="ninja-contrast-btn">🔆 High Contrast</button>
+        </div>
+
+        <!-- Achievements (round 18, item 9) -- unlocked ones in color, a
+             locked one stays grayscale. -->
+        <div class="ninja-achievements hidden" id="ninja-achievements"></div>
+
         <button class="btn btn-primary" id="ninja-setup-start" style="width:100%;margin-top:14px">▶ Start!</button>
       </div>
     </div>
@@ -1145,6 +1175,12 @@
            .boss-mode class on #ninja-world, see ninjaResolveEnemy/
            defeatNinjaBoss/ninjaGameOver/ninjaFinishCommon. -->
       <div class="ninja-vignette" id="ninja-vignette"></div>
+      <!-- Weather overlay (round 18, item 7) -- rain streaks, toggled via
+           .weather-rain on #ninja-world, rolled once per run. -->
+      <div class="ninja-rain" id="ninja-rain"></div>
+      <!-- Boss preview card (round 18, item 8) -- a brief "here's what
+           you're fighting" beat before the first telegraph/question. -->
+      <div class="ninja-boss-preview hidden" id="ninja-boss-preview"></div>
 
       <div class="ninja-runner running" id="ninja-runner">
         <div class="ninja-leg l1"></div><div class="ninja-leg l2"></div>
@@ -1155,6 +1191,11 @@
         <div class="ninja-arm a2"></div>
         <div class="ninja-sword"></div>
       </div>
+      <!-- Pet companion (round 18, item 18) -- purely cosmetic, trails
+           just behind/below the ninja with its own idle bob. No game
+           state reads this element and nothing reads it back, so it
+           can't affect scoring/collision no matter what it's doing. -->
+      <div class="ninja-pet" id="ninja-pet">🦊</div>
 
       <!-- Chrome-dino-style running beat between questions -- ground
            obstacles need JUMP, flying enemies' shurikens need DODGE.
@@ -1181,21 +1222,38 @@
     <button type="button" class="ninja-reroll-btn hidden" id="ninja-reroll-btn">🔄 Reroll (<span id="ninja-reroll-n">1</span>)</button>
 
     <div class="ninja-overlay hidden" id="ninja-finish-overlay">
-      <div class="ninja-finish-card">
+      <div class="ninja-finish-card ninja-finish-card-scroll">
         <div class="ninja-finish-title" id="ninja-finish-title">🏁 Your journey has completed.</div>
         <div class="ninja-finish-sub" id="ninja-finish-sub">20 questions answered!</div>
-        <div class="ninja-finish-score" id="ninja-final-score">0 points</div>
-        <div class="ninja-finish-best" id="ninja-final-best">Best: 0</div>
-        <div class="ninja-time-compare hidden" id="ninja-time-compare"></div>
-        <div class="ninja-lifeloss hidden" id="ninja-lifeloss-breakdown"></div>
-        <div class="ninja-finish-badge" id="ninja-finish-badge"></div>
-        <!-- Mastery badge (B11), weekly rank (A7), weak-subject tip (B18)
-             -- round 16, all best-effort/fire-and-forget, hidden if the
-             underlying data isn't available (offline, brand-new player). -->
-        <div class="ninja-mastery hidden" id="ninja-mastery"></div>
-        <div class="ninja-weekly-rank hidden" id="ninja-weekly-rank"></div>
-        <div class="ninja-weak-tip hidden" id="ninja-weak-tip"></div>
-        <button class="btn btn-primary" id="ninja-review-btn">Review with Bo →</button>
+
+        <!-- Reorganized into labeled sections (round 18, item 27) -- was a
+             long flat stack of small text lines, now grouped so it reads
+             as "here's your score", "here's your progress", "here's your
+             badge" instead of one undifferentiated list. -->
+        <div class="ninja-finish-section">
+          <div class="ninja-finish-score" id="ninja-final-score">0 points</div>
+          <div class="ninja-finish-best" id="ninja-final-best">Best: 0</div>
+          <div class="ninja-time-compare hidden" id="ninja-time-compare"></div>
+          <div class="ninja-lifeloss hidden" id="ninja-lifeloss-breakdown"></div>
+        </div>
+
+        <!-- Mastery (B11), weekly/daily rank (A7/item 10), weak-subject
+             (B18)/MVP (item 12) tips, cross-game unlock (item 15) -- all
+             best-effort/fire-and-forget, hidden if unavailable (offline,
+             brand-new player, or not the relevant run type). -->
+        <div class="ninja-finish-section" id="ninja-progress-section">
+          <div class="ninja-mastery hidden" id="ninja-mastery"></div>
+          <div class="ninja-weekly-rank hidden" id="ninja-weekly-rank"></div>
+          <div class="ninja-weekly-rank hidden" id="ninja-daily-rank"></div>
+          <div class="ninja-mastery hidden" id="ninja-cross-unlock"></div>
+          <div class="ninja-weak-tip hidden" id="ninja-mvp"></div>
+          <div class="ninja-weak-tip hidden" id="ninja-weak-tip"></div>
+        </div>
+
+        <div class="ninja-finish-section">
+          <div class="ninja-finish-badge" id="ninja-finish-badge"></div>
+          <button class="btn btn-primary" id="ninja-review-btn">Review with Bo →</button>
+        </div>
       </div>
     </div>
 
@@ -1254,6 +1312,6 @@
 <script src="bgm.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
 <script src="../vehicles.js?v=1"></script>
-<script src="script.js?v=147"></script>
+<script src="script.js?v=149"></script>
 </body>
 </html>

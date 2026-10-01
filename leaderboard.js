@@ -3571,7 +3571,18 @@
   // untouched), and the new 8-question "Quick Run" length gets its own
   // separate field `ninjaGhost8` -- a short run's score is never a fair
   // comparison against a full 20-question one, so they never mix.
-  function ninjaGhostField(len) { return len === 8 ? "ninjaGhost8" : "ninjaGhost"; }
+  // `len` is the mode's string id now (round 18 added "40"/"boss" alongside
+  // the original 8/20 -- see NINJA_LENGTH_DEFS in mathville/script.js), but
+  // callers may still pass the old numeric 8/20 (backward compatible: same
+  // 2 field names as before, no data migration). "daily" has its own
+  // separate leaderboard (touchNinjaDailyChallenge) instead of a ghost.
+  function ninjaGhostField(len) {
+    const key = String(len);
+    if (key === "8") return "ninjaGhost8";
+    if (key === "40") return "ninjaGhost40";
+    if (key === "boss") return "ninjaGhostBoss";
+    return "ninjaGhost";
+  }
 
   async function getNinjaGhost(len) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
@@ -3661,6 +3672,117 @@
     if (perfect) d.perfectRuns = (d.perfectRuns || 0) + 1;
     await ref.set(d);
     return d;
+  }
+
+  // Cross-game cosmetic unlock (round 18, item 15) -- a one-time free grant
+  // once Ninja Mastery crosses NINJA_CROSSUNLOCK_RUNS, written directly to
+  // ownedCosmetics (same low-level pattern as evolveDino's mega-skin grant
+  // above) rather than through unlockCosmetic(), since this is a REWARD,
+  // not a purchase -- no wallet should be touched. Picked Boss Rush's
+  // "dragon" fighter specifically: thematically close to a ninja boss
+  // fight, and it's normally gem-gated so it reads as a real reward.
+  // Idempotent (checks ownership first) so calling this every run once the
+  // threshold is passed is harmless and needs no separate "already granted"
+  // flag.
+  const NINJA_CROSSUNLOCK_RUNS = 10;
+  async function grantNinjaCrossUnlock(runsSoFar) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent" || runsSoFar < NINJA_CROSSUNLOCK_RUNS) return false;
+    const ref = aigDb.ref(`players/${player.id}/ownedCosmetics/bossrush-fighter/dragon`);
+    const snap = await ref.get();
+    if (snap.exists() && snap.val()) return false; // already granted
+    await ref.set(true);
+    return true;
+  }
+
+  // Lifetime per-subject accuracy (round 18, item 11) -- separate from the
+  // SESSION-local subjectStats tracked in mathville/script.js's
+  // ninjaState (which resets every run); this persists across runs so
+  // difficulty can lean on a real historical pattern, not just "how this
+  // one run is going so far". Mirrors topicStats' {correct, attempts}
+  // shape used elsewhere.
+  async function touchNinjaSubjectLifetime(subjectKey, isCorrect) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    const ref = aigDb.ref(`players/${player.id}/ninjaSubjectLifetime/${subjectKey}`);
+    const snap = await ref.get();
+    const d = snap.exists() ? snap.val() : { c: 0, a: 0 };
+    d.a = (d.a || 0) + 1;
+    if (isCorrect) d.c = (d.c || 0) + 1;
+    await ref.set(d);
+  }
+  async function getNinjaSubjectLifetime() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref(`players/${player.id}/ninjaSubjectLifetime`).get();
+    return snap.exists() ? snap.val() : null;
+  }
+
+  // Lifetime stats + achievements (round 18, item 9) -- a handful of simple
+  // milestone badges computed CLIENT-SIDE from a couple of counters that
+  // just keep incrementing, rather than a new unlock-catalog system.
+  async function touchNinjaLifetimeStats(opts) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const ref = aigDb.ref(`players/${player.id}/ninjaStats`);
+    const snap = await ref.get();
+    const d = snap.exists() ? snap.val() : { bossesDefeated: 0, questionsAnswered: 0 };
+    if (opts && opts.bossesDefeated) d.bossesDefeated = (d.bossesDefeated || 0) + opts.bossesDefeated;
+    if (opts && opts.questionsAnswered) d.questionsAnswered = (d.questionsAnswered || 0) + opts.questionsAnswered;
+    await ref.set(d);
+    return d;
+  }
+  const NINJA_ACHIEVEMENTS = [
+    { id: "first-blood", name: "First Steps", emoji: "🥾", need: d => d.runs >= 1 },
+    { id: "ten-runs", name: "Dedicated Runner", emoji: "🏃", need: d => d.runs >= 10 },
+    { id: "boss-slayer", name: "Boss Slayer", emoji: "⚔️", need: d => d.bossesDefeated >= 5 },
+    { id: "boss-legend", name: "Boss Legend", emoji: "🐉", need: d => d.bossesDefeated >= 20 },
+    { id: "scholar", name: "Scholar", emoji: "📚", need: d => d.questionsAnswered >= 100 },
+    { id: "flawless", name: "Flawless", emoji: "✨", need: d => d.perfectRuns >= 1 }
+  ];
+  // Combined lifetime summary -- both the rank ladder (item 13) and the
+  // achievement list (item 9) are derived from this same one read.
+  async function getNinjaLifetimeSummary() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return { runs: 0, perfectRuns: 0, bossesDefeated: 0, questionsAnswered: 0 };
+    const [masterySnap, statsSnap] = await Promise.all([
+      aigDb.ref(`players/${player.id}/ninjaMastery`).get(),
+      aigDb.ref(`players/${player.id}/ninjaStats`).get()
+    ]);
+    return { ...(masterySnap.exists() ? masterySnap.val() : { runs: 0, perfectRuns: 0 }), ...(statsSnap.exists() ? statsSnap.val() : { bossesDefeated: 0, questionsAnswered: 0 }) };
+  }
+  async function getNinjaAchievements() {
+    const d = await getNinjaLifetimeSummary();
+    return NINJA_ACHIEVEMENTS.map(a => ({ id: a.id, name: a.name, emoji: a.emoji, unlocked: a.need(d) }));
+  }
+
+  // Daily Challenge leaderboard (round 18, item 10) -- everyone who plays
+  // the Daily Challenge on a given calendar day gets the SAME seeded
+  // obstacle/difficulty pattern (seeding itself happens client-side in
+  // mathville/script.js), so comparing scores here is apples-to-apples.
+  // Same read-whole-players-tree-once pattern as getNinjaWeeklyRank/
+  // getWeeklyLeaderboard above -- fine for a ~26-kid roster, opened rarely.
+  async function touchNinjaDailyChallenge(score) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    const ref = aigDb.ref(`players/${player.id}/ninjaDaily/${todayKey()}`);
+    const snap = await ref.get();
+    const cur = snap.exists() ? snap.val() : null;
+    if (!cur || score > cur.score) await ref.set({ score, name: player.name });
+  }
+  async function getNinjaDailyChallengeRank() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const today = todayKey();
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return null;
+    const all = snap.val();
+    const ranking = Object.entries(all)
+      .map(([id, data]) => { const d = data.ninjaDaily && data.ninjaDaily[today]; return { id, name: (d && d.name) || id, score: (d && d.score) || 0 }; })
+      .filter(r => r.score > 0)
+      .sort((a, b) => b.score - a.score);
+    const myIdx = ranking.findIndex(r => r.id === player.id);
+    return { rank: myIdx >= 0 ? myIdx + 1 : null, total: ranking.length, top: ranking.slice(0, 3) };
   }
 
   // =====================================================================
@@ -4572,6 +4694,16 @@
     { id: "astronaut", name: "Astronaut", cost: { gems: 3 }, preview: "🧑‍🚀" },
     { id: "chef", name: "Chef", cost: { coins: 25 }, preview: "👨‍🍳" }
   ];
+  // Weapon skin (round 18, item 17) -- separate from the costume above, so
+  // a kid can mix a body costume with a different weapon look. Recolors
+  // #ninja-sword via a `data-weapon` attribute, same CSS trick as costumes.
+  const NINJA_WEAPONS = [
+    { id: "default", name: "Kunai", cost: null, preview: "🗡️" },
+    { id: "katana", name: "Katana", cost: { coins: 20 }, preview: "⚔️" },
+    { id: "fan", name: "War Fan", cost: { coins: 20 }, preview: "🪭" },
+    { id: "staff", name: "Bo Staff", cost: { gems: 2 }, preview: "🥢" },
+    { id: "flame", name: "Flame Blade", cost: { gems: 3 }, preview: "🔥" }
+  ];
   const BOSSRUSH_FIGHTERS = [
     { id: "default", name: "Classic", cost: null, preview: "🥋" },
     { id: "boxer", name: "Boxer", cost: { coins: 15 }, preview: "🥊" },
@@ -4625,6 +4757,7 @@
   const COSTUME_CATALOGS = {
     "bo-costume": BO_HATS,
     "ninja-costume": NINJA_COSTUMES,
+    "ninja-weapon": NINJA_WEAPONS,
     "bossrush-fighter": BOSSRUSH_FIGHTERS,
     "dino-skin": DINO_SKINS
   };
@@ -4685,6 +4818,7 @@
       costumes,
       equippedCostumes: {
         "ninja-costume": equipped["ninja-costume"] || "default",
+        "ninja-weapon": equipped["ninja-weapon"] || "default",
         "bossrush-fighter": equipped["bossrush-fighter"] || "default",
         "dino-skin": equipped["dino-skin"] || "default",
         "bo-costume": equipped["bo-costume"] || "none"
@@ -6516,6 +6650,8 @@
     claimBossWin,
     getWeeklyBossRushStatus, claimWeeklyBossRush,
     getNinjaGhost, saveNinjaGhost, touchNinjaWeeklyBest, getNinjaWeeklyRank, touchNinjaDailyStreak, getNinjaDailyStreak, touchNinjaMastery,
+    grantNinjaCrossUnlock, touchNinjaSubjectLifetime, getNinjaSubjectLifetime, touchNinjaLifetimeStats, getNinjaAchievements, getNinjaLifetimeSummary,
+    touchNinjaDailyChallenge, getNinjaDailyChallengeRank,
     getBattlePass, claimBattlePassTier,
     getCollection,
     getCosmetics, unlockCosmetic, equipCosmetic, getEquippedCosmetic, getDailyDeal, getDailyDealStatus,
