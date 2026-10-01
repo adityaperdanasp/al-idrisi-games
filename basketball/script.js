@@ -35,7 +35,6 @@ function initBasketball() {
   // generic jittered numbers, and that's more machinery than this mini-
   // game's own question flow needs.
   const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
-  const DIFFICULTY = "medium";
 
   // Daily Challenge (round 1, item 26) -- `?daily=1` deep-link, same
   // convention as the hub's other `?ninja=1`-style query flags. Seeds a
@@ -105,6 +104,35 @@ function initBasketball() {
   const MOVING_HOOP_RANGE = 9;      // max %-of-court the hoop drifts from center
   const BUZZER_MULT = 2;            // item 16/20 -- the round's final shot doubles everything it earns
 
+  // ---- Round 2 scoring/gameplay additions -----------------------------
+  const HALF_COURT_DIST = 20;       // item 5 -- a tier ABOVE the existing trick-shot distance
+  const HALF_COURT_BONUS = 6;
+  const AIR_TIME_FRAMES_BONUS = 45; // item 4 -- flight lasting at least this many frames earns a bonus (rewards real arc, not a line-drive)
+  const AIR_TIME_BONUS = 2;
+  const MID_CLIMAX_AT = 5;          // item 5 (gameplay list) -- a second, smaller climax shot at the round's midpoint
+  const MID_CLIMAX_MULT = 1.5;
+  const CLUTCH_WINDOW = 3;          // item 12 -- makes tracked specifically in the final 3 shots
+  const HOT_HAND_STEP = 0.1;        // item 6 -- +10% per streak point, applied to the BASE shot value only (not the flat streak-tier bonus, which stays as-is)
+  const HOT_HAND_CAP = 2.0;
+  const HOT_ZONE_CHANCE = 0.7;      // item 7 -- rolled once per round; not every round has one
+  const HOT_ZONE_BONUS = 4;
+  const WIND_CHANCE = 0.2;          // item 11 -- always telegraphed (see .bh-wind) before the shot, never a blind surprise
+  const WIND_STRENGTH = 0.012;
+  const LUCKY_BALL_CHANCE = 0.08;   // item 9
+  const LUCKY_BALL_BONUS = 5;
+  const REBOUND_WINDOW_MS = 1300;   // item 1 -- only offered on a "rim out" miss, never an airball
+  const REBOUND_BONUS = 2;
+  const RIM_SAVE_BONUS = 1;         // item 20 -- a rim-out miss still earns a small consolation point
+  const MASCOT_EVERY_STREAK = 5;    // item 17 (reuses the SAME streak milestone math as streakBonusFor's top tier)
+  const MASCOT_BONUS_COINS = 3;
+  const ALLEY_OOP_BONUS = 4;        // item 18 -- 2 perfect-arc makes in a row
+  const BANK_SHOT_Y_BAND = [8, 11]; // item 2 -- a shallow descending clip near the backboard nudges vx toward center, cosmetic-only bank "flash" from round 1 made functional
+  const BANK_SHOT_NUDGE = 0.4;
+  const SHOT_CLOCK_PRESSURE_MS = 3500; // item 10
+  const PRESSURE_MULT = 1.3;
+  const MASCOT_EMOJIS = ["🦅", "🦁", "🐯", "🐻"];
+  const TUTORIAL_KEY = "aig_bh_tutorial_seen";
+
   const court = document.getElementById("bh-court");
   const ball = document.getElementById("bh-ball");
   const ballShadow = document.getElementById("bh-ball-shadow");
@@ -120,6 +148,12 @@ function initBasketball() {
   const pbBanner = document.getElementById("bh-pb-banner");
   const nextBar = document.getElementById("bh-next-bar");
   const countdownEl = document.getElementById("bh-countdown");
+  const crowdEl = document.getElementById("bh-crowd");
+  const crowdBack = document.getElementById("bh-crowd-back");
+  const hotzoneEl = document.getElementById("bh-hotzone");
+  const windEl = document.getElementById("bh-wind");
+  const reboundBtn = document.getElementById("bh-rebound-btn");
+  const mascotEl = document.getElementById("bh-mascot");
 
   const hudMade = document.getElementById("bh-hud-made");
   const hudTotal = document.getElementById("bh-hud-total");
@@ -129,6 +163,8 @@ function initBasketball() {
   const chipMade = document.getElementById("bh-chip-made");
   const chipStreak = document.getElementById("bh-chip-streak");
   const chipWallet = document.getElementById("bh-chip-wallet");
+  const chipCombo = document.getElementById("bh-chip-combo");
+  const chipGhost = document.getElementById("bh-chip-ghost");
   const sbMade = document.getElementById("bh-sb-made");
   const sbTotal = document.getElementById("bh-sb-total");
   const sbPoints = document.getElementById("bh-sb-points");
@@ -141,6 +177,8 @@ function initBasketball() {
   (function buildCrowd() {
     const crowd = document.getElementById("bh-crowd");
     crowd.innerHTML = Array.from({ length: 24 }, () => "<i></i>").join("");
+    // Parallax crowd depth (round 2, item 26) -- a second, further-back row.
+    crowdBack.innerHTML = Array.from({ length: 18 }, () => "<i></i>").join("");
   })();
 
   const state = {
@@ -166,7 +204,25 @@ function initBasketball() {
     hoopMoving: false,
     hoopX: HOOP_X,
     minDistToHoop: Infinity,
-    shotStartAt: 0
+    shotStartAt: 0,
+    // Round 2 additions
+    mode: "normal",            // "normal" | "pressure" | "team"
+    teamTurn: 1,
+    teamScores: { 1: 0, 2: 0 },
+    comboMult: 1,
+    lastWasPerfect: false,
+    hotZoneActive: false,
+    hotZoneRange: null,        // [min, max] distance-from-center band, rolled once per round
+    windActive: false,
+    windDelta: 0,
+    luckyBall: false,
+    shotLog: [],               // [{x, made}] per shot, for the Shot Chart
+    clutchMakes: 0,
+    mascotStreakSeenAt: 0,
+    reboundPending: false,
+    bestShotThisRound: null,   // {label, points} for the replay-reel recap
+    idleBobTimer: null,
+    ghostBaseline: 0
   };
 
   function rand(min, max) { return Math.floor(rng() * (max - min + 1)) + min; }
@@ -189,7 +245,7 @@ function initBasketball() {
   }
 
   // ---- Cosmetics (round 1, items 21-22) -------------------------------
-  function applyBallSkin(id) { ball.dataset.skin = id; }
+  function applyBallSkin(id) { ball.dataset.skin = id; ball.dataset.equippedSkin = id; }
   function applyCourtSkin(id) { court.dataset.courtSkin = id; }
   function renderSwatches(containerId, catalogKey, applyFn) {
     const wrap = document.getElementById(containerId);
@@ -262,12 +318,30 @@ function initBasketball() {
     popChip(chipStreak);
   }
 
-  function placeBall(xPct, yPct) {
+  // Ghost Challenge (round 2, item 14) -- a simplified live comparison
+  // against the current top made-count (today's Daily Challenge leader,
+  // or this week's leader in a normal round), not a true per-shot pace
+  // ghost like Ninja Runner's (that needs per-checkpoint data this mini-
+  // game doesn't store) -- just "ahead/behind the best so far" updated
+  // after every make.
+  function updateGhostHud() {
+    if (!state.ghostBaseline) { chipGhost.classList.add("hidden"); return; }
+    const delta = state.made - state.ghostBaseline;
+    chipGhost.classList.remove("hidden", "ahead", "behind");
+    if (delta > 0) { chipGhost.classList.add("ahead"); chipGhost.textContent = `👻 +${delta}`; }
+    else if (delta < 0) { chipGhost.classList.add("behind"); chipGhost.textContent = `👻 ${delta}`; }
+    else chipGhost.textContent = "👻 tied";
+  }
+
+  function placeBall(xPct, yPct, spinDivisor) {
     state.ballX = xPct;
     state.ballY = yPct;
     ball.style.left = xPct + "%";
     ball.style.top = yPct + "%";
-    ball.style.transform = `translate(-50%, -50%) rotate(${(performance.now() / 6) % 360}deg)`;
+    // Ball spin rate (round 2, item 24) -- a SMALLER divisor spins faster;
+    // callers pass one proportional to horizontal speed, everyone else
+    // (idle/drag) keeps the original flat divisor of 6.
+    ball.style.transform = `translate(-50%, -50%) rotate(${(performance.now() / (spinDivisor || 6)) % 360}deg)`;
     // Ball shadow (round 1, item 9) -- bigger/darker near the floor,
     // smaller/fainter at the peak of the arc, purely a CSS var driven by
     // how close ballY is to the floor vs its highest point this flight.
@@ -339,6 +413,31 @@ function initBasketball() {
     // shrunk, doubled-value shot with its own countdown ring urgency.
     rim.classList.toggle("buzzer", isLastShot);
     net.classList.toggle("buzzer", isLastShot);
+
+    // Wind hazard (round 2, item 11) -- ALWAYS telegraphed before launch
+    // (see the .bh-wind indicator), never on the Buzzer Beater.
+    state.windActive = !isLastShot && rng() < WIND_CHANCE;
+    state.windDelta = state.windActive ? (rand(0, 1) ? 1 : -1) * WIND_STRENGTH : 0;
+    windEl.classList.toggle("hidden", !state.windActive);
+
+    // Lucky Ball (round 2, item 9) -- a rare golden-ball variant, overrides
+    // whatever skin is equipped for just this one shot (visual only via
+    // the "lucky" data-skin, reverted next shot by applyBallSkin's own
+    // re-render -- see resetBallForNextShot being the only place .skin
+    // gets set besides the cosmetic picker).
+    state.luckyBall = !isLastShot && rng() < LUCKY_BALL_CHANCE;
+    if (state.luckyBall) ball.dataset.skin = "lucky";
+    else { const owned = ball.dataset.equippedSkin || "default"; ball.dataset.skin = owned; }
+
+    // Idle animation (round 2, item 32) -- bobs if a kid hesitates at the
+    // drag step without starting a pull. Cleared immediately on drag start
+    // (onDragStart) or a fresh shot (here).
+    if (state.idleBobTimer) clearTimeout(state.idleBobTimer);
+    ball.classList.remove("idle-bob");
+    state.idleBobTimer = setTimeout(() => { if (!state.flying && !state.dragging) ball.classList.add("idle-bob"); }, 2500);
+
+    state.reboundPending = false;
+    reboundBtn.classList.add("hidden");
   }
 
   function setHoopX(x, animated) {
@@ -392,15 +491,27 @@ function initBasketball() {
     };
   }
 
+  // Difficulty ramp (round 2, item 8) -- the back half of a round leans
+  // harder, same "gentle curve across the round" idea as Ninja Runner's
+  // wave ramp. `state.qIndex` here is the question about to be asked
+  // (0-indexed, not yet incremented for it), so shot #1 is qIndex 0.
+  function rampedDifficulty() {
+    if (state.qIndex < 4) return "easy";
+    if (state.qIndex < 7) return "medium";
+    return "hard";
+  }
   function rollQuestion() {
     const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
-    const raw = MATHVILLE_GENERATORS[key](DIFFICULTY);
+    const raw = MATHVILLE_GENERATORS[key](rampedDifficulty());
     return { key, ...buildMc(raw) };
   }
 
   function askNextQuestion() {
     if (state.ended) return;
     if (state.qIndex >= ROUND_SIZE) { finishRound(); return; }
+    // Team Score turn (round 2, item 13) -- alternates by question index,
+    // not a separate counter, so it always stays in sync with qIndex.
+    if (state.mode === "team") state.teamTurn = state.qIndex % 2 === 0 ? 1 : 2;
     const q = rollQuestion();
     state.currentQ = q;
     document.getElementById("bh-q-prompt").textContent = q.prompt;
@@ -446,6 +557,11 @@ function initBasketball() {
 
   function offerShot() {
     hint.classList.remove("hidden");
+    // Team Score turn banner (round 2, item 13) -- replaces the normal
+    // drag hint text for a beat so the "whose turn" context isn't missed;
+    // the normal hint still shows first via the Next bar pause, this just
+    // layers a toast on top right as the shot opens up.
+    if (state.mode === "team") showToast(`Player ${state.teamTurn}'s turn!`, false);
     enableDrag();
     state.shotStartAt = performance.now();
     timerRing.classList.remove("hidden");
@@ -460,7 +576,7 @@ function initBasketball() {
         hint.classList.add("hidden");
         launchShot(0, -3); // a weak forced shot, guaranteed to fall short
       }
-    }, SHOT_TIME_LIMIT_MS);
+    }, currentShotTimeLimit());
   }
 
   // Countdown ring (round 1, item 41) -- a conic-gradient ring around the
@@ -468,7 +584,7 @@ function initBasketball() {
   // hidden (flying, or a new question started).
   function tickTimerRing() {
     if (ball.classList.contains("hidden") || state.flying) return;
-    const pct = Math.max(0, 1 - (performance.now() - state.shotStartAt) / SHOT_TIME_LIMIT_MS);
+    const pct = Math.max(0, 1 - (performance.now() - state.shotStartAt) / currentShotTimeLimit());
     timerRing.style.setProperty("--bh-timer-pct", (pct * 100) + "%");
     requestAnimationFrame(tickTimerRing);
   }
@@ -488,6 +604,8 @@ function initBasketball() {
     e.preventDefault();
     state.dragging = true;
     ball.classList.add("dragging");
+    ball.classList.remove("idle-bob"); // round 2, item 32 -- no longer idle once a real drag starts
+    if (state.idleBobTimer) clearTimeout(state.idleBobTimer);
     // Best-effort -- keeps the drag tracking the pointer even if it slides
     // off the (small) ball element mid-gesture. Wrapped since some
     // synthetic/edge-case pointer sessions can reject capture entirely;
@@ -575,20 +693,49 @@ function initBasketball() {
     // 3-point line uses.
     const launchX = state.dragStartBallPct ? state.dragStartBallPct.x : state.ballX;
     const launchDistFromCenter = Math.abs(launchX - HOOP_X);
+    // Half-court tier (round 2, item 5 in gameplay list) -- a step ABOVE
+    // the existing trick-shot distance, same priority idea: the harder the
+    // throw, the bigger the one-time bonus, checked independently of the
+    // 2pt/3pt value itself.
     const shotValue = launchDistFromCenter >= THREE_PT_DIST ? 3 : 2;
-    const isTrickShot = launchDistFromCenter >= TRICK_SHOT_DIST;
+    const isTrickShot = launchDistFromCenter >= TRICK_SHOT_DIST && launchDistFromCenter < HALF_COURT_DIST;
+    const isHalfCourt = launchDistFromCenter >= HALF_COURT_DIST;
+    // Hot Zone (round 2, item 7) -- bonus if THIS launch position falls
+    // inside the round's rolled band (see startRound), on top of whatever
+    // 2pt/3pt/trick-shot tier it also qualifies for.
+    const inHotZone = state.hotZoneRange && launchDistFromCenter >= state.hotZoneRange[0] && launchDistFromCenter <= state.hotZoneRange[1];
     const isLastShot = state.qIndex === ROUND_SIZE;
+    const isMidClimax = state.qIndex === MID_CLIMAX_AT && !isLastShot;
     const hoopMoveStart = performance.now();
     const hoopMoveTarget = HOOP_X + (rand(0, 1) ? 1 : -1) * MOVING_HOOP_RANGE;
     let frames = 0;
+    let bankNudged = false; // item 2 -- a bank-shot nudge only ever applies ONCE per flight
     function step() {
       if (state.ended) return;
       frames++;
       state.vy += GRAVITY;
+      // Wind hazard (round 2, item 11) -- a small constant horizontal
+      // nudge per frame, ALREADY telegraphed before launch (see
+      // resetBallForNextShot), so this is never a surprise mid-flight.
+      if (state.windActive) state.vx += state.windDelta;
       const nx = state.ballX + state.vx;
-      const ny = state.ballY + state.vy;
-      placeBall(nx, ny);
+      let ny = state.ballY + state.vy;
+      // Ball spin rate (round 2, item 24) -- proportional to horizontal
+      // speed instead of a flat constant, reading as a believable roll.
+      placeBall(nx, ny, Math.max(1.5, 6 - Math.abs(state.vx) * 2));
       if (frames % 3 === 0) spawnTrailDot(nx, ny); // item 8 -- every 3rd frame keeps the trail readable, not a solid smear
+
+      // Bank shot (round 2, item 2) -- a shallow, ascending clip near the
+      // backboard's own band nudges vx toward center ONCE, a position-
+      // triggered collision response (not a drag-distance-derived power
+      // change, which is the specific coupling the original physics
+      // comments warn against) -- see BANK_SHOT_Y_BAND/BANK_SHOT_NUDGE.
+      if (!bankNudged && state.vy < 0 && ny > BANK_SHOT_Y_BAND[0] && ny < BANK_SHOT_Y_BAND[1] && Math.abs(nx - state.hoopX) < 14 && Math.abs(nx - state.hoopX) > 4) {
+        bankNudged = true;
+        state.vx += (state.hoopX - nx > 0 ? 1 : -1) * BANK_SHOT_NUDGE;
+        backboard.classList.add("flash");
+        setTimeout(() => backboard.classList.remove("flash"), 300);
+      }
 
       // Moving hoop (item 14) -- drifts smoothly across the flight window;
       // reads elapsed time against the full shot timer so a late release
@@ -605,18 +752,19 @@ function initBasketball() {
       const inHoopY = ny > HOOP_TOL_Y_MIN && ny < HOOP_TOL_Y_MAX;
       if (!state.scored && inHoopX && inHoopY) {
         state.scored = true;
-        handleMake(shotValue, isTrickShot, Math.abs(nx - state.hoopX), isLastShot);
+        handleMake({ shotValue, isTrickShot, isHalfCourt, inHotZone, isMidClimax, launchX, edgeDist: Math.abs(nx - state.hoopX), isLastShot, airFrames: frames });
         return;
       }
-      // Backboard flash (item 10) -- purely cosmetic, triggers once if the
-      // ball's path passes close behind where the backboard sits, never
-      // alters vx/vy/trajectory.
+      // Backboard flash (item 10, round 1) -- purely cosmetic (separate
+      // from the FUNCTIONAL bank nudge above, which has its own flash
+      // trigger), for a path passing close behind the backboard without
+      // qualifying for the bank-shot band.
       if (ny < 10 && Math.abs(nx - state.hoopX) < 16 && !backboard.classList.contains("flash")) {
         backboard.classList.add("flash");
         setTimeout(() => backboard.classList.remove("flash"), 300);
       }
       if (ny > 106 || ny < -15 || nx < -15 || nx > 115 || frames > 240) {
-        if (!state.scored) handleMiss(isLastShot);
+        if (!state.scored) handleMiss(isLastShot, launchX, frames);
         return;
       }
       state.rafId = requestAnimationFrame(step);
@@ -624,7 +772,8 @@ function initBasketball() {
     state.rafId = requestAnimationFrame(step);
   }
 
-  function handleMake(shotValue, isTrickShot, edgeDist, isLastShot) {
+  function handleMake(info) {
+    const { shotValue, isTrickShot, isHalfCourt, inHotZone, isMidClimax, launchX, edgeDist, isLastShot, airFrames } = info;
     state.flying = false;
     state.made++;
     state.streak++;
@@ -632,15 +781,54 @@ function initBasketball() {
 
     const streakBonus = streakBonusFor(state.streak);
     const isPerfect = edgeDist < PERFECT_ARC_TOL_X;
-    let gained = shotValue + streakBonus;
-    if (isTrickShot) gained += TRICK_SHOT_BONUS;
+    // Hot Hand multiplier (round 2, item 6) -- applied to the BASE shot
+    // value only (2pt/3pt), climbs with streak and caps out; the flat
+    // streak-tier bonus above is a SEPARATE reward, not replaced by this.
+    const hotHandMult = Math.min(HOT_HAND_CAP, 1 + state.streak * HOT_HAND_STEP);
+    state.comboMult = hotHandMult;
+
+    let gained = Math.round(shotValue * hotHandMult) + streakBonus;
+    if (isHalfCourt) gained += HALF_COURT_BONUS;
+    else if (isTrickShot) gained += TRICK_SHOT_BONUS;
     if (isPerfect) gained += PERFECT_ARC_BONUS;
     if (state.contested) gained += CONTESTED_BONUS;
+    if (inHotZone) gained += HOT_ZONE_BONUS;
+    if (airFrames >= AIR_TIME_FRAMES_BONUS) gained += AIR_TIME_BONUS;
+    if (state.luckyBall) gained += LUCKY_BALL_BONUS;
+    if (isMidClimax) gained = Math.round(gained * MID_CLIMAX_MULT);
     if (isLastShot) gained *= BUZZER_MULT;
+    if (state.mode === "pressure") gained = Math.round(gained * PRESSURE_MULT);
     state.points += gained;
+    if (state.mode === "team") state.teamScores[state.teamTurn] += gained;
+
+    // Clutch tracker (item 12) -- makes specifically in the final
+    // CLUTCH_WINDOW shots of the round.
+    if (state.qIndex > ROUND_SIZE - CLUTCH_WINDOW) state.clutchMakes++;
+
+    // Shot Chart log (item 42) + best-shot recap for the replay reel (item 39)
+    state.shotLog.push({ x: launchX, made: true });
+    if (!state.bestShotThisRound || gained > state.bestShotThisRound.points) {
+      state.bestShotThisRound = { points: gained, label: isLastShot ? "🚨 Buzzer Beater" : isMidClimax ? "⭐ Big shot" : isPerfect ? "💯 Nothing but net" : isHalfCourt ? "🚀 Half-court shot" : shotValue === 3 ? "3-pointer" : "Shot" };
+    }
 
     updateHud();
-    finishShot();
+    // Progressive combo HUD (round 2, items 19+35) -- a live multiplier
+    // readout, with glow intensity climbing alongside it rather than a
+    // single pop per tier.
+    chipCombo.textContent = `✨ ×${hotHandMult.toFixed(1)}`;
+    chipCombo.classList.toggle("hidden", state.streak < 2);
+    chipCombo.style.setProperty("--bh-combo-glow", String(Math.min(14, state.streak * 2)));
+    popChip(chipCombo);
+
+    // Ball dip into net (round 2, item 25) -- the ball visibly dips/fades
+    // INTO the net before finishShot's normal hide, instead of an instant
+    // disappear.
+    ballShadow.classList.add("hidden");
+    timerRing.classList.add("hidden");
+    ball.classList.remove("idle-bob");
+    ball.classList.add("net-dip");
+    setTimeout(() => { ball.classList.add("hidden"); ball.classList.remove("net-dip"); }, 300);
+
     net.classList.remove("swish", "perfect");
     void net.offsetWidth;
     net.classList.add(isPerfect ? "perfect" : "swish");
@@ -649,47 +837,117 @@ function initBasketball() {
     if (!isPerfect) { rim.classList.remove("wobble"); void rim.offsetWidth; rim.classList.add("wobble"); }
     // Screen shake / camera punch (item 6)
     court.classList.remove("punch"); void court.offsetWidth; court.classList.add("punch");
+    // Camera zoom for the Buzzer Beater (round 2, item 31)
+    if (isLastShot) { court.classList.remove("buzzer-zoom"); void court.offsetWidth; court.classList.add("buzzer-zoom"); }
     try { if (navigator.vibrate) navigator.vibrate(isLastShot ? [40, 30, 60] : 40); } catch (e) {} // item 43
 
-    const mainMsg = isLastShot ? `🚨 BUZZER BEATER! +${gained}` : isPerfect ? "💯 Nothing but net!" : state.streak >= 3 ? `🔥 SWISH! (${state.streak} in a row!)` : "🏀 SWISH!";
+    const mainMsg = isLastShot ? `🚨 BUZZER BEATER! +${gained}` : isMidClimax ? `⭐ Big shot! +${gained}` : isPerfect ? "💯 Nothing but net!" : state.streak >= 3 ? `🔥 SWISH! (${state.streak} in a row!)` : "🏀 SWISH!";
     showToast(mainMsg, false);
-    if (isTrickShot) showSubtoast(`🎯 Deep range! +${TRICK_SHOT_BONUS}`);
+    if (isHalfCourt) showSubtoast(`🚀 Half-court! +${HALF_COURT_BONUS}`);
+    else if (isTrickShot) showSubtoast(`🎯 Deep range! +${TRICK_SHOT_BONUS}`);
+    else if (inHotZone) showSubtoast(`🔆 Hot Zone! +${HOT_ZONE_BONUS}`);
     else if (state.contested) showSubtoast(`🛡️ Contested shot! +${CONTESTED_BONUS}`);
+    else if (state.luckyBall) showSubtoast(`🍀 Lucky Ball! +${LUCKY_BALL_BONUS}`);
     else if (shotValue === 3) showSubtoast("3-pointer!");
 
     // Confetti (item 5) -- only a genuine streak of 3+, not every make.
     if (state.streak >= 3) burstConfetti();
 
+    // Alley-oop (round 2, item 18) -- 2 perfect-arc makes in a row,
+    // simplified to a flourish+bonus rather than a real video replay.
+    if (isPerfect && state.lastWasPerfect) { state.points += ALLEY_OOP_BONUS; showSubtoast(`🤝 Alley-oop! +${ALLEY_OOP_BONUS}`); }
+    state.lastWasPerfect = isPerfect;
+
+    // Mascot cameo (round 2, item 17) -- every MASCOT_EVERY_STREAK makes
+    // in a row; mascotStreakSeenAt guards against refiring every make
+    // once the streak sits AT/above a milestone already announced, reset
+    // on any miss (see handleMiss) so climbing back to the same milestone
+    // later in the round fires again.
+    if (state.streak % MASCOT_EVERY_STREAK === 0 && state.streak !== state.mascotStreakSeenAt) {
+      state.mascotStreakSeenAt = state.streak;
+      mascotEl.textContent = MASCOT_EMOJIS[rand(0, MASCOT_EMOJIS.length - 1)];
+      mascotEl.classList.remove("show"); void mascotEl.offsetWidth; mascotEl.classList.add("show");
+      if (window.AIGLeaderboard && AIGLeaderboard.creditWallet) AIGLeaderboard.creditWallet({ coins: MASCOT_BONUS_COINS }).catch(() => {});
+    }
+
+    updateGhostHud(); // round 2, item 14
+
     defenderEl.classList.remove("show");
+    hotzoneEl.classList.toggle("hidden", !state.hotZoneRange); // stays visible all round once rolled, see startRound
     rim.classList.remove("buzzer"); net.classList.remove("buzzer");
     if (state.hoopMoving) setHoopX(HOOP_X, false);
     setTimeout(askNextQuestion, 1000);
   }
 
-  function handleMiss(isLastShot) {
+  function handleMiss(isLastShot, launchX) {
     state.flying = false;
     state.streak = 0;
+    state.comboMult = 1;
+    state.mascotStreakSeenAt = 0; // round 2 -- re-arms the mascot cameo milestone for the next climb
+    chipCombo.classList.add("hidden");
     updateHud();
     finishShot();
-    // Airball vs rim-out (item 18) -- distinguished by the CLOSEST the
-    // ball ever got to the hoop during its whole flight (minDistToHoop,
-    // a unitless ratio where < 1 roughly means "within the hoop's own
-    // tolerance box at some point"), not just where it ended up.
+    // Airball vs rim-out (item 18, round 1) -- distinguished by the
+    // CLOSEST the ball ever got to the hoop during its whole flight
+    // (minDistToHoop, a unitless ratio where < 1 roughly means "within
+    // the hoop's own tolerance box at some point"), not just where it
+    // ended up.
     const wasClose = state.minDistToHoop < 1.6;
-    showToast(wasClose ? "So close! Rim out." : "Airball!", true);
+    state.shotLog.push({ x: launchX, made: false }); // round 2, item 42
+    // Rim-save consolation (round 2, item 20) -- a rim-out still earns a
+    // small partial point, an airball earns nothing.
+    if (wasClose) { state.points += RIM_SAVE_BONUS; updateHud(); }
+    showToast(wasClose ? `So close! Rim out. (+${RIM_SAVE_BONUS})` : "Airball!", true);
     court.classList.remove("miss-vignette"); void court.offsetWidth; court.classList.add("miss-vignette"); // item 47
+    // Crowd reaction (round 2, item 34) -- extends the vignette above with
+    // a visible collective dip on BOTH crowd layers.
+    crowdEl.classList.remove("react"); void crowdEl.offsetWidth; crowdEl.classList.add("react");
+    crowdBack.classList.remove("react"); void crowdBack.offsetWidth; crowdBack.classList.add("react");
     try { if (navigator.vibrate) navigator.vibrate([20, 20, 20]); } catch (e) {} // item 43, distinct pattern from a make
     defenderEl.classList.remove("show");
     rim.classList.remove("buzzer"); net.classList.remove("buzzer");
     if (state.hoopMoving) setHoopX(HOOP_X, false);
-    runNextBar(900);
-    setTimeout(askNextQuestion, 900);
+
+    function proceedAfterMiss() {
+      runNextBar(900);
+      setTimeout(askNextQuestion, 900);
+    }
+
+    // Rebound (round 2, item 1) -- only offered on a genuine rim-out
+    // (never an airball), and never on the Buzzer Beater (keeps that
+    // shot's own feedback simple). A tap within the window grants a flat
+    // bonus -- it does NOT increment `made`/consume another question
+    // slot, it's a pure points recovery, not a full extra shot.
+    if (wasClose && !isLastShot) {
+      state.reboundPending = true;
+      reboundBtn.style.left = state.ballX + "%";
+      reboundBtn.style.top = "55%";
+      reboundBtn.classList.remove("hidden");
+      const reboundTimeout = setTimeout(() => {
+        if (state.reboundPending) { state.reboundPending = false; reboundBtn.classList.add("hidden"); proceedAfterMiss(); }
+      }, REBOUND_WINDOW_MS);
+      reboundBtn.onclick = () => {
+        if (!state.reboundPending) return;
+        state.reboundPending = false;
+        clearTimeout(reboundTimeout);
+        reboundBtn.classList.add("hidden");
+        state.points += REBOUND_BONUS;
+        updateHud();
+        showToast(`🏀 Putback! +${REBOUND_BONUS}`, false);
+        proceedAfterMiss();
+      };
+    } else {
+      proceedAfterMiss();
+    }
   }
 
   function finishRound() {
     state.ended = true;
     finishShot();
     hint.classList.add("hidden");
+    hotzoneEl.classList.add("hidden");
+    windEl.classList.add("hidden");
+    court.classList.remove("buzzer-zoom");
     const made = state.made;
     const emoji = made >= 9 ? "🏆" : made >= 6 ? "🥳" : made >= 3 ? "🙂" : "💪";
     const title = made >= 9 ? "All-Star shootaround!" : made >= 6 ? "Great shootaround!" : made >= 3 ? "Nice try!" : "Keep practicing!";
@@ -699,6 +957,43 @@ function initBasketball() {
     document.getElementById("bh-end-points").textContent = `⭐ ${state.points} points`;
     const bonusEl = document.getElementById("bh-end-bonus");
     bonusEl.textContent = "";
+
+    // Replay reel recap (round 2, item 39) -- simplified to a one-line
+    // best-moment recap instead of real video playback.
+    const replayEl = document.getElementById("bh-replay-reel");
+    if (state.bestShotThisRound) {
+      replayEl.textContent = `🎬 Best moment: ${state.bestShotThisRound.label} (+${state.bestShotThisRound.points})`;
+      replayEl.classList.remove("hidden");
+    } else replayEl.classList.add("hidden");
+
+    // Team Score result (round 2, item 13)
+    const teamEl = document.getElementById("bh-team-result");
+    if (state.mode === "team") {
+      const p1 = state.teamScores[1], p2 = state.teamScores[2];
+      teamEl.innerHTML = `<span class="${p1 >= p2 ? "bh-team-win" : ""}">P1: ${p1}</span><span class="${p2 > p1 ? "bh-team-win" : ""}">P2: ${p2}</span>`;
+      teamEl.classList.remove("hidden");
+    } else teamEl.classList.add("hidden");
+
+    // Clutch badge (round 2, item 12)
+    const clutchEl = document.getElementById("bh-clutch-badge");
+    if (state.clutchMakes >= CLUTCH_WINDOW) { clutchEl.textContent = "🧊 Clutch Performer -- perfect in the final stretch!"; clutchEl.classList.remove("hidden"); }
+    else if (state.clutchMakes > 0) { clutchEl.textContent = `🧊 Clutch makes: ${state.clutchMakes}/${CLUTCH_WINDOW}`; clutchEl.classList.remove("hidden"); }
+    else clutchEl.classList.add("hidden");
+
+    // Shot Chart (round 2, item 42) -- one dot per shot, positioned by its
+    // launch X (0-100%), colored by outcome.
+    const chartEl = document.getElementById("bh-shotchart");
+    chartEl.querySelectorAll(".bh-shot-dot").forEach(d => d.remove());
+    if (state.shotLog.length) {
+      state.shotLog.forEach((s, i) => {
+        const dot = document.createElement("div");
+        dot.className = "bh-shot-dot " + (s.made ? "made" : "missed");
+        dot.style.left = s.x + "%";
+        dot.style.top = (20 + (i % 3) * 22) + "%"; // stagger vertically so same-X shots don't fully overlap
+        chartEl.appendChild(dot);
+      });
+      chartEl.classList.remove("hidden");
+    } else chartEl.classList.add("hidden");
     if (window.AIGLeaderboard) {
       AIGLeaderboard.awardBasketballRoundBonus(made, ROUND_SIZE).then(result => {
         if (result && result.bonus) {
@@ -766,12 +1061,108 @@ function initBasketball() {
     state.bestStreakThisRound = 0;
     state.points = 0;
     state.ended = false;
+    state.comboMult = 1;
+    state.lastWasPerfect = false;
+    state.shotLog = [];
+    state.clutchMakes = 0;
+    state.mascotStreakSeenAt = 0;
+    state.reboundPending = false;
+    state.bestShotThisRound = null;
+    state.teamScores = { 1: 0, 2: 0 };
+    state.teamTurn = 1;
+    chipCombo.classList.add("hidden");
+    reboundBtn.classList.add("hidden");
     updateHud();
     rollLighting();
+
+    // Hot Zone (round 2, item 7) -- rolled ONCE per round (not per shot),
+    // not every round gets one. Positioned as a random band of distance-
+    // from-center, visualized as a ring roughly in that area of the court.
+    state.hotZoneRange = rng() < HOT_ZONE_CHANCE ? (rand(0, 1) ? [4, 11] : [13, 19]) : null;
+    if (state.hotZoneRange) {
+      const isNear = state.hotZoneRange[0] < 12;
+      hotzoneEl.style.left = isNear ? "50%" : (rand(0, 1) ? "22%" : "78%");
+      hotzoneEl.style.transform = "translateX(-50%)";
+      hotzoneEl.classList.remove("hidden");
+    } else {
+      hotzoneEl.classList.add("hidden");
+    }
+
+    // Ghost Challenge baseline (round 2, item 14) -- today's Daily
+    // Challenge leader for a Daily round, this week's leader otherwise.
+    state.ghostBaseline = 0;
+    chipGhost.classList.add("hidden");
+    if (window.AIGLeaderboard) {
+      const getRank = state.daily ? AIGLeaderboard.getBasketballDailyChallengeRank : AIGLeaderboard.getBasketballWeeklyRank;
+      if (getRank) {
+        getRank().then(r => {
+          if (r && r.top && r.top.length) { state.ghostBaseline = r.top[0].made || 0; updateGhostHud(); }
+        }).catch(() => {});
+      }
+    }
+
     document.getElementById("bh-end-overlay").classList.add("hidden");
     document.getElementById("bh-start-overlay").classList.add("hidden");
     playCountdown(askNextQuestion);
   }
+
+  // Mode toggles (round 2, items 10+13) -- Normal / Shot Clock Pressure /
+  // Team Score. Affects SHOT_TIME_LIMIT_MS's effective value (read via
+  // currentShotTimeLimit() instead of the constant directly) and the
+  // scoring multiplier applied in handleMake.
+  function currentShotTimeLimit() { return state.mode === "pressure" ? SHOT_CLOCK_PRESSURE_MS : SHOT_TIME_LIMIT_MS; }
+  document.querySelectorAll(".bh-mode-opt").forEach(btn => btn.addEventListener("click", () => {
+    document.querySelectorAll(".bh-mode-opt").forEach(b => b.classList.remove("sel"));
+    btn.classList.add("sel");
+    state.mode = btn.dataset.mode;
+  }));
+
+  // Team Score turn indicator (round 2, item 13) -- a same-device 2-
+  // player alternation; the hint area doubles as the "whose turn" banner
+  // right before each shot is offered (set in offerShot).
+
+  // Player badge (round 2, items 23+38) -- courtside name + a jersey-
+  // color dot hashed from the name (same "no pre-registration needed"
+  // convention as the hub's own avatar-color hash).
+  (function renderPlayerBadge() {
+    if (!player) return;
+    const badge = document.getElementById("bh-player-badge");
+    let hash = 0;
+    for (let i = 0; i < player.name.length; i++) hash = (hash * 31 + player.name.charCodeAt(i)) | 0;
+    const hue = Math.abs(hash) % 360;
+    badge.innerHTML = `<span class="bh-player-badge-dot" style="background:hsl(${hue},65%,55%)">${player.name.charAt(0).toUpperCase()}</span>${player.name}`;
+    badge.classList.remove("hidden");
+  })();
+
+  // Hoops Pass (round 2, item 15) -- surfaces the hub's EXISTING cross-
+  // game Season Pass progress (basketball's correct answers already feed
+  // it via recordTopicAttempt -> touchSeasonProgress), not a new parallel
+  // system.
+  if (window.AIGLeaderboard && AIGLeaderboard.getBattlePass) {
+    AIGLeaderboard.getBattlePass().then(bp => {
+      if (!bp) return;
+      const el = document.getElementById("bh-hoops-pass");
+      const next = bp.nextTier;
+      const curTierIdx = bp.tiers.findIndex(t => !t.reached);
+      const prevThreshold = curTierIdx > 0 ? bp.tiers[curTierIdx - 1].threshold : 0;
+      const pct = next ? Math.min(100, Math.round((bp.sp - prevThreshold) / (next.threshold - prevThreshold) * 100)) : 100;
+      el.innerHTML = `🎟️ Hoops Pass: Tier ${curTierIdx < 0 ? bp.tiers.length : curTierIdx + 1}${next ? ` (${next.threshold - bp.sp} SP to next)` : " (maxed!)"}<div class="bh-hp-bar"><i style="width:${pct}%"></i></div>`;
+      el.classList.remove("hidden");
+    }).catch(() => {});
+  }
+
+  // 3-point arc tutorial (round 2, item 41) -- shown automatically before
+  // a kid's very first-ever round, reachable again anytime via the start
+  // screen link.
+  function showTutorial() { document.getElementById("bh-tutorial-overlay").classList.remove("hidden"); }
+  document.getElementById("bh-tutorial-link").addEventListener("click", showTutorial);
+  document.getElementById("bh-tutorial-close-btn").addEventListener("click", () => {
+    try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch (e) {}
+    document.getElementById("bh-tutorial-overlay").classList.add("hidden");
+  });
+  let seenTutorial = false;
+  try { seenTutorial = localStorage.getItem(TUTORIAL_KEY) === "1"; } catch (e) {}
+  if (!seenTutorial) showTutorial();
 
   document.getElementById("bh-start-btn").addEventListener("click", () => { state.daily = false; startRound(); });
   document.getElementById("bh-daily-btn").addEventListener("click", () => { state.daily = true; startRound(); });
