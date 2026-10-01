@@ -34,7 +34,7 @@
 <script src="../leaderboard.js"></script>
 <script src="../skin.js"></script>
 
-<link rel="stylesheet" href="style.css?v=104" />
+<link rel="stylesheet" href="style.css?v=105" />
 </head>
 <body>
 
@@ -1136,12 +1136,23 @@
     </div>
 
     <div id="ninja-world" class="ninja-world">
+      <!-- Parallax background (round 17, item A3) -- 2 silhouette layers
+           scrolling at different speeds, purely decorative. -->
+      <div class="ninja-bg-far"></div>
+      <div class="ninja-bg-near"></div>
       <div class="ninja-ground"></div>
+      <!-- Boss-fight vignette (round 17, item B12) -- toggled via the
+           .boss-mode class on #ninja-world, see ninjaResolveEnemy/
+           defeatNinjaBoss/ninjaGameOver/ninjaFinishCommon. -->
+      <div class="ninja-vignette" id="ninja-vignette"></div>
 
       <div class="ninja-runner running" id="ninja-runner">
         <div class="ninja-leg l1"></div><div class="ninja-leg l2"></div>
+        <div class="ninja-arm a1"></div>
         <div class="ninja-torso"></div><div class="ninja-head"></div>
         <div class="ninja-band"></div><div class="ninja-mask"></div>
+        <div class="ninja-eyes"></div>
+        <div class="ninja-arm a2"></div>
         <div class="ninja-sword"></div>
       </div>
 
@@ -1243,6 +1254,6 @@
 <script src="bgm.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
 <script src="../vehicles.js?v=1"></script>
-<script src="script.js?v=146"></script>
+<script src="script.js?v=147"></script>
 </body>
 </html>

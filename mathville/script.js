@@ -7085,7 +7085,7 @@ function showNinjaToast(msg, kind) {
 // so Math/Language/Science feel a little distinct from each other beyond
 // just card color. Self-contained, no shared audio module touched.
 let ninjaAudioCtx = null;
-function ninjaTone(freqs, dur) {
+function ninjaTone(freqs, dur, vol) {
   try {
     const C = window.AudioContext || window.webkitAudioContext;
     if (!C) return;
@@ -7097,7 +7097,7 @@ function ninjaTone(freqs, dur) {
       o.type = "triangle";
       o.frequency.value = f;
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(0.15, t + 0.02);
+      g.gain.linearRampToValueAtTime(vol != null ? vol : 0.15, t + 0.02);
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       o.connect(g).connect(ninjaAudioCtx.destination);
       o.start(t);
@@ -7401,6 +7401,9 @@ function ninjaBeginRun(totalQ, relaxed) {
     lives: Math.min(NINJA_MAX_LIVES, NINJA_START_LIVES + (ownedUpgrades["ninja-extra-life-2"] ? 2 : ownedUpgrades["ninja-extra-life"] ? 1 : 0)), totalAnswered: 0, myCheckpoints: [], isNewHighScoreRun: false
   };
   $("ninja-world").dataset.scene = "dawn";
+  $("ninja-world").classList.remove("boss-mode"); // round 17 -- a fresh run never starts mid-vignette
+  $("ninja-runner").classList.remove("victory", "defeat"); // round 17 -- clear any pose held from a previous run
+  ninjaCameraPunch(); // round 17, item A4 -- a little kick as the round actually begins
   $("ninja-streak").classList.add("hidden");
   $("ninja-combo-bar").classList.add("hidden");
   $("ninja-boss-hp").classList.add("hidden");
@@ -7514,6 +7517,62 @@ function ninjaSpawnDust(runner) {
     setTimeout(() => puff.remove(), 500);
   });
 }
+
+// Camera punch (round 17, item A4) -- a quick scale pulse on #ninja-world
+// for big moments (boss spawns, round start). Force-reflow before re-
+// adding the class, same pattern as the existing .shake trick, so it
+// re-triggers even if called twice in quick succession.
+function ninjaCameraPunch() {
+  const world = $("ninja-world");
+  world.classList.remove("punch");
+  void world.offsetWidth;
+  world.classList.add("punch");
+}
+
+// Dodge afterimage (round 17, item B16) -- 2 fading clones of the runner's
+// CURRENT pose left behind on a successful dodge, for a "fast reflex"
+// feel. Clones the live innerHTML so costume/tier recolors carry over
+// automatically, no separate afterimage markup to keep in sync.
+function ninjaSpawnAfterimage() {
+  const runner = $("ninja-runner");
+  const parent = runner.parentElement;
+  if (!parent) return;
+  for (let i = 0; i < 2; i++) {
+    const clone = document.createElement("div");
+    clone.className = "ninja-afterimage";
+    clone.innerHTML = runner.innerHTML;
+    clone.style.animationDelay = (i * 60) + "ms";
+    parent.appendChild(clone);
+    setTimeout(() => clone.remove(), 500 + i * 60);
+  }
+}
+
+// Score pop-up (round 17, item B19) -- a floating "+N" near the score HUD
+// pill, separate from (and in addition to) the toast messages already
+// shown for bonuses, so a plain correct answer still gets SOME visual
+// payoff beyond the silent HUD number update.
+function ninjaSpawnScorePop(amount) {
+  const hud = $("ninja-score");
+  if (!hud) return;
+  const pop = document.createElement("div");
+  pop.className = "ninja-score-pop";
+  pop.textContent = "+" + amount;
+  const r = hud.getBoundingClientRect(), worldR = $("ninja-world").getBoundingClientRect();
+  pop.style.left = (r.left - worldR.left + r.width / 2 - 10) + "px";
+  pop.style.top = "-6px";
+  $("ninja-world").appendChild(pop);
+  setTimeout(() => pop.remove(), 700);
+}
+
+// Footstep tick (round 17, item B13) -- a tiny percussive tone synced to
+// the running bob animation's own loop (bound once via 'animationiteration'
+// rather than a separate setInterval, so it's automatically in lockstep
+// with however fast .running actually cycles). Very quiet by design --
+// it's a texture under the subject chimes/toasts, not a lead sound.
+function ninjaFootstepTick() { ninjaTone([110], 0.05, 0.035); }
+$("ninja-runner").addEventListener("animationiteration", e => {
+  if (e.animationName === "ninjaBob" && $("ninja-runner").classList.contains("running")) ninjaFootstepTick();
+});
 
 // Crouch dodge for the flying-enemy encounter's thrown shuriken -- same
 // one-shot-hop shape as ninjaDoJump but a crouch instead of a hop, and
@@ -7684,6 +7743,7 @@ function ninjaResolveFlying() {
     const runner = $("ninja-runner");
     runner.classList.add("ducking");
     setTimeout(() => runner.classList.remove("ducking"), 350);
+    ninjaSpawnAfterimage(); // round 17, item B16
   }
 
   ninjaResolveEnemy();
@@ -7726,6 +7786,7 @@ function ninjaResolveObstacle() {
         showNinjaToast(`✨ Perfect timing! +${NINJA_NEARMISS_BONUS}`);
       }
     }
+    if (dodged) ninjaSpawnAfterimage(); // round 17, item B16
   }
   // Pickup resolution (round 16, item A2) -- only collected on a genuine
   // dodge; bumping the obstacle loses the charm riding alongside it too.
@@ -7753,6 +7814,17 @@ function ninjaResolveObstacle() {
     enemy.className = "ninja-enemy ninja-boss-enemy" + (ninjaState.isFinaleBoss ? " ninja-finale-boss" : "");
     enemy.innerHTML = ninjaEnemyBodyHtml(bossType.emoji);
     $("ninja-hint").textContent = ninjaState.isFinaleBoss ? `⚔️ Final fight! ${bossType.name} blocks your way!` : `⚔️ ${bossType.name} is approaching!`;
+    // Entrance flourish (round 17, item B17/A4) -- camera punch + a dust
+    // puff timed to land right as the slam keyframe (ninjaBossSlam, .5s)
+    // settles, on top of the CSS entrance animation itself.
+    ninjaCameraPunch();
+    setTimeout(() => {
+      const dust = document.createElement("div");
+      dust.className = "ninja-boss-landing-dust";
+      dust.style.left = "0px";
+      $("ninja-run-lane").appendChild(dust);
+      setTimeout(() => dust.remove(), 400);
+    }, 420);
   } else {
     enemy.className = "ninja-enemy";
     const faceEmoji = NINJA_ENEMY_TYPES[rand(0, NINJA_ENEMY_TYPES.length - 1)];
@@ -7786,6 +7858,7 @@ function ninjaResolveEnemy() {
     // Music intensity (round 16, item B15) -- a small tempo/pitch bump for
     // the duration of the fight, reset in defeatNinjaBoss/ninjaFinishCommon.
     if (window.AIGBgm && AIGBgm.setPlaybackRate) AIGBgm.setPlaybackRate(1.15);
+    $("ninja-world").classList.add("boss-mode"); // round 17, item B12 -- cleared in defeatNinjaBoss/ninjaFinishCommon
     ninjaBossNextTurn();
     return;
   }
@@ -7900,9 +7973,11 @@ function defeatNinjaBoss() {
   ninjaState.rerollCharges = Math.min(NINJA_REROLL_MAX, ninjaState.rerollCharges + 1);
   updateNinjaRerollHud();
   $("ninja-boss-hp").classList.add("hidden");
+  $("ninja-world").classList.remove("boss-mode"); // round 17, item B12
   if (window.AIGBgm && AIGBgm.setPlaybackRate) AIGBgm.setPlaybackRate(1); // round 16 -- undo the boss-fight music bump
   try { if (navigator.vibrate) navigator.vibrate([40, 40, 80]); } catch (e) {}
   showNinjaToast(`💥 Boss defeated! +${bonus} bonus`);
+  ninjaCameraPunch(); // round 17 -- a little extra oomph on the win itself
   ninjaAdvance();
 }
 
@@ -8110,10 +8185,12 @@ function ninjaPickCard(subjectKey, difficulty, opts) {
         if (ninjaState.mysteryBonus) mult *= 2;
         let usedBoost = false;
         if (ninjaState.scoreBoostLeft > 0) { mult *= 2; ninjaState.scoreBoostLeft -= 1; usedBoost = true; }
-        ninjaState.score += NINJA_PTS[difficulty] * mult + bonus + (quick ? NINJA_QUICK_BONUS : 0);
+        const gained = NINJA_PTS[difficulty] * mult + bonus + (quick ? NINJA_QUICK_BONUS : 0);
+        ninjaState.score += gained;
         updateNinjaScore();
         updateNinjaStreakHud();
         ninjaPlaySubjectChime(subjectKey);
+        ninjaSpawnScorePop(gained); // round 17, item B19
         if (ninjaState.mysteryBonus) showNinjaToast("✨ Mystery bonus! ×2 points");
         if (usedBoost) showNinjaToast(`💎 2× charm active!${ninjaState.scoreBoostLeft > 0 ? ` (${ninjaState.scoreBoostLeft} left)` : ""}`);
         if (quick) showNinjaToast(`⚡ Quick answer! +${NINJA_QUICK_BONUS}`);
@@ -8237,7 +8314,13 @@ function ninjaFinishCommon() {
   ninjaState.ended = true;
   ninjaSetGuard(false);
   if (window.AIGBgm && AIGBgm.setPlaybackRate) AIGBgm.setPlaybackRate(1); // round 16 -- safety net if the round ended mid-boss-fight
+  $("ninja-world").classList.remove("boss-mode"); // round 17 -- safety net, same reasoning as the playback-rate reset above
   $("ninja-runner").classList.remove("running");
+  // Victory/defeat pose (round 17, item A10) -- a distinct held silhouette
+  // instead of freezing mid-run-cycle. ninjaShowFinish/ninjaGameOver flag
+  // which one via ninjaState.completed (set in ninjaShowFinish only).
+  $("ninja-runner").classList.remove("victory", "defeat");
+  $("ninja-runner").classList.add(ninjaState.completed ? "victory" : "defeat");
   $("ninja-gates").classList.add("hidden");
   $("ninja-reroll-btn").classList.add("hidden");
   $("ninja-qcard").classList.add("hidden");
@@ -8274,6 +8357,14 @@ function ninjaFinishCommon() {
     timeEl.classList.add("hidden");
   }
 
+  // Perfect-run confetti (round 17, item B11) -- distinct from the
+  // boss-defeat toast/camera-punch: a full canvas-confetti burst, only for
+  // a genuinely completed run with zero wrong answers AND zero life loss
+  // of any kind (a flawless run, not just "finished with lives to spare").
+  const flawless = ninjaState.completed && ninjaState.wrongLog.length === 0
+    && ninjaState.lifeLossLog.obstacle === 0 && ninjaState.lifeLossLog.shuriken === 0 && ninjaState.lifeLossLog.boss === 0;
+  if (flawless && typeof confetti === "function") confetti({ particleCount: 140, spread: 90, origin: { y: 0.4 } });
+
   $("ninja-finish-overlay").classList.remove("hidden");
   saveChapterProgress("ninja-runner", 3, NINJA_WIN_XP);
   // A new personal best replaces the ghost future runs race against --
@@ -8299,8 +8390,7 @@ function ninjaFinishCommon() {
     // thresholds chosen so Bronze is reachable fast (keeps it motivating)
     // and Gold takes real sustained play.
     if (AIGLeaderboard.touchNinjaMastery) {
-      const perfect = ninjaState.completed && ninjaState.wrongLog.length === 0 && ninjaState.lifeLossLog.obstacle === 0 && ninjaState.lifeLossLog.shuriken === 0 && ninjaState.lifeLossLog.boss === 0;
-      AIGLeaderboard.touchNinjaMastery(perfect).then(d => {
+      AIGLeaderboard.touchNinjaMastery(flawless).then(d => {
         if (!d) return;
         const tier = d.perfectRuns >= 5 ? "🥇 Gold" : d.runs >= 10 ? "🥈 Silver" : d.runs >= 3 ? "🥉 Bronze" : null;
         if (tier) { masteryEl.textContent = `🥷 Ninja Mastery: ${tier} (${d.runs} runs, ${d.perfectRuns} perfect)`; masteryEl.classList.remove("hidden"); }

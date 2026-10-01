@@ -1591,12 +1591,46 @@ button { font-family: inherit; }
   0% { transform: translate(0, 0) scale(.5); opacity: .9; }
   100% { transform: translate(var(--dust-dx), -6px) scale(1.7); opacity: 0; }
 }
+/* Running lean (round 17, item A8) -- a slight forward tilt while running,
+   layered onto the existing bob via a wrapping transform on the SAME
+   element (both apply together since they're one `animation` running
+   the character through both translateY and rotate each cycle). */
 .ninja-runner.running { animation: ninjaBob .3s ease-in-out infinite; }
-@keyframes ninjaBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-.ninja-torso { position: absolute; left: 16px; top: 18px; width: 24px; height: 32px; background: #2b3a55; border-radius: 8px; z-index: 2; }
-.ninja-head { position: absolute; left: 17px; top: -4px; width: 22px; height: 22px; background: #f0b98d; border-radius: 50%; z-index: 3; }
+@keyframes ninjaBob { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-5px) rotate(-3deg); } }
+/* Idle breathing (round 17, item B15) -- a gentle scale pulse whenever the
+   runner is neither running, jumping, ducking nor guarding (the setup/
+   intro screens, before a round's first obstacle starts it running). */
+.ninja-runner:not(.running):not(.jumping):not(.ducking):not(.guard) { animation: ninjaIdleBreathe 2.4s ease-in-out infinite; }
+@keyframes ninjaIdleBreathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.03); } }
+/* Torso/leg/arm share one recolor hook (round 17) -- `color` is inherited
+   from .ninja-runner down to these `background: currentColor` parts, so a
+   costume only needs to set ONE `color` on .ninja-runner[data-costume=...]
+   to recolor all three (band/mask/head stay separate, see below). The
+   arm element added in round 17 gets this for free without touching any
+   of the 9 existing per-costume rules (see the thin extra block further
+   down that still exists ONLY for costumes that need a distinct torso vs
+   leg color, which none currently do). */
+.ninja-runner { color: #2b3a55; }
+.ninja-torso { position: absolute; left: 16px; top: 18px; width: 24px; height: 32px; background: linear-gradient(155deg, currentColor 55%, rgba(255,255,255,.18)); border-radius: 8px 8px 7px 7px; z-index: 2; }
+.ninja-head { position: absolute; left: 17px; top: -4px; width: 22px; height: 22px; background: radial-gradient(circle at 35% 30%, #ffd1ab, #f0b98d 70%); border-radius: 50%; z-index: 3; }
 .ninja-band { position: absolute; left: 14px; top: 3px; width: 28px; height: 6px; background: #e4572e; z-index: 4; }
-.ninja-mask { position: absolute; left: 20px; top: 10px; width: 16px; height: 7px; background: #1c2740; z-index: 4; }
+.ninja-mask { position: absolute; left: 20px; top: 10px; width: 16px; height: 7px; background: #1c2740; border-radius: 1px 1px 3px 3px; z-index: 4; }
+/* Eyes peeking from the mask (round 17, item A1) -- 2 small highlights,
+   sits above the mask in paint order. */
+.ninja-eyes { position: absolute; left: 22px; top: 11px; width: 12px; height: 3px; z-index: 5; display: flex; justify-content: space-between; }
+.ninja-eyes::before, .ninja-eyes::after { content: ""; width: 3px; height: 3px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.25) inset; }
+/* Arms (round 17, item A1/A2) -- a1 renders BEHIND the torso (back arm),
+   a2 in FRONT (z-index above torso/head), the classic 2-arm running
+   silhouette trick. Swing is mirrored from the opposite-side leg's phase
+   (real running: left arm forward when right leg is forward). */
+.ninja-arm { position: absolute; top: 20px; width: 6px; height: 24px; background: currentColor; border-radius: 3px; transform-origin: top center; }
+.ninja-arm.a1 { left: 13px; z-index: 1; }
+.ninja-arm.a2 { left: 35px; z-index: 3; }
+.ninja-runner.running .a1 { animation: ninjaArmA .3s ease-in-out infinite; }
+.ninja-runner.running .a2 { animation: ninjaArmB .3s ease-in-out infinite; }
+@keyframes ninjaArmA { 0%, 100% { transform: rotate(-24deg); } 50% { transform: rotate(24deg); } }
+@keyframes ninjaArmB { 0%, 100% { transform: rotate(24deg); } 50% { transform: rotate(-24deg); } }
+.ninja-runner.guard .ninja-arm { transform: rotate(0deg) !important; animation: none !important; }
 .ninja-sword {
   position: absolute; left: 38px; top: 6px; width: 4px; height: 26px;
   background: linear-gradient(180deg, #d8dee6, #9aa5b3); border-radius: 2px;
@@ -1614,26 +1648,31 @@ button { font-family: inherit; }
    > Costumes) -- recolors the same CSS parts above via a data-costume
    attribute on #ninja-runner. "default" needs no rule (matches the base
    colors already set above). */
+.ninja-runner[data-costume="crimson"] { color: #a4222b; }
 .ninja-runner[data-costume="crimson"] .ninja-torso,
 .ninja-runner[data-costume="crimson"] .ninja-leg { background: #a4222b; }
 .ninja-runner[data-costume="crimson"] .ninja-band { background: #f7c548; }
 .ninja-runner[data-costume="crimson"] .ninja-mask { background: #5c1017; }
 
+.ninja-runner[data-costume="shadow"] { color: #0d0d12; }
 .ninja-runner[data-costume="shadow"] .ninja-torso,
 .ninja-runner[data-costume="shadow"] .ninja-leg,
 .ninja-runner[data-costume="shadow"] .ninja-mask { background: #0d0d12; }
 .ninja-runner[data-costume="shadow"] .ninja-band { background: #8e44ad; }
 
+.ninja-runner[data-costume="jade"] { color: #1f7a4d; }
 .ninja-runner[data-costume="jade"] .ninja-torso,
 .ninja-runner[data-costume="jade"] .ninja-leg { background: #1f7a4d; }
 .ninja-runner[data-costume="jade"] .ninja-band { background: #f4f4f4; }
 .ninja-runner[data-costume="jade"] .ninja-mask { background: #0d3d26; }
 
+.ninja-runner[data-costume="ocean"] { color: #1a6fa8; }
 .ninja-runner[data-costume="ocean"] .ninja-torso,
 .ninja-runner[data-costume="ocean"] .ninja-leg { background: #1a6fa8; }
 .ninja-runner[data-costume="ocean"] .ninja-band { background: #eaf6ff; }
 .ninja-runner[data-costume="ocean"] .ninja-mask { background: #0d3352; }
 
+.ninja-runner[data-costume="golden"] { color: #d4af37; }
 .ninja-runner[data-costume="golden"] .ninja-torso,
 .ninja-runner[data-costume="golden"] .ninja-leg { background: #d4af37; }
 .ninja-runner[data-costume="golden"] .ninja-band { background: #fff6d9; }
@@ -1678,9 +1717,20 @@ button { font-family: inherit; }
 .ninja-diff-badge.hard { background: #b53d18; }
 
 /* Jump hop -- placed AFTER .ninja-runner.running in source order so it wins
-   the cascade on the (brief) frames where JS has both classes applied. */
+   the cascade on the (brief) frames where JS has both classes applied.
+   Round 17 (items A5/A7): a proper eased arc with a push-off stretch at
+   takeoff and a squash on landing, instead of a blocky up/down snap --
+   same total 450ms duration (matches ninjaDoJump's setTimeout), so the
+   obstacle-dodge timing logic is untouched, only how it LOOKS changed. */
 .ninja-runner.jumping { animation: ninjaJumpHop .45s ease; }
-@keyframes ninjaJumpHop { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-34px); } 70% { transform: translateY(-34px); } }
+@keyframes ninjaJumpHop {
+  0% { transform: translateY(0) scale(1, 1) rotate(0deg); }
+  12% { transform: translateY(-8px) scale(.94, 1.08) rotate(-5deg); }
+  45% { transform: translateY(-34px) scale(1, 1) rotate(3deg); }
+  70% { transform: translateY(-34px) scale(1, 1) rotate(3deg); }
+  88% { transform: translateY(-4px) scale(1.1, .88) rotate(0deg); }
+  100% { transform: translateY(0) scale(1, 1) rotate(0deg); }
+}
 
 /* Duck crouch -- dodge for the flying-enemy encounter's shuriken (see
    ninjaDoDuck). Same cascade trick as .jumping above: placed after
@@ -1723,8 +1773,13 @@ button { font-family: inherit; }
   position: absolute; bottom: 40px; width: 54px; height: 90px;
   animation: ninjaEnemyRun 1.8s linear forwards;
 }
-@keyframes ninjaObstacleRun { from { left: 100%; } to { left: 140px; } }
-@keyframes ninjaEnemyRun { from { left: 100%; } to { left: 108px; } }
+/* Grows as it approaches (round 17, item A9) -- reads as actually getting
+   CLOSER rather than a constant-size sprite sliding across a flat lane.
+   Only `transform: scale` (visual), the `left` position driving the
+   dodge-timing collision check in ninjaResolveObstacle/ninjaResolveEnemy
+   is untouched. */
+@keyframes ninjaObstacleRun { from { left: 100%; transform: scale(.55); } to { left: 140px; transform: scale(1); } }
+@keyframes ninjaEnemyRun { from { left: 100%; transform: scale(.6); } to { left: 108px; transform: scale(1); } }
 
 .ninja-enemy-torso {
   position: absolute; left: 14px; top: 30px; width: 26px; height: 34px;
@@ -1989,17 +2044,21 @@ button { font-family: inherit; }
 .ninja-runner[data-costume="samurai"]::after { content: "🪖"; }
 .ninja-runner[data-costume="robot"]::after { content: "📡"; }
 .ninja-runner[data-costume="astronaut"]::after { content: "🛰️"; }
+.ninja-runner[data-costume="samurai"] { color: #b3202a; }
 .ninja-runner[data-costume="samurai"] .ninja-torso, .ninja-runner[data-costume="samurai"] .ninja-leg { background: #b3202a; }
 .ninja-runner[data-costume="samurai"] .ninja-band { background: #d4af37; }
 .ninja-runner[data-costume="samurai"] .ninja-mask { background: #3a0a0e; }
+.ninja-runner[data-costume="robot"] { color: #8d99a6; }
 .ninja-runner[data-costume="robot"] .ninja-torso, .ninja-runner[data-costume="robot"] .ninja-leg { background: #8d99a6; }
 .ninja-runner[data-costume="robot"] .ninja-head { background: #c9d3dc; border-radius: 6px; }
 .ninja-runner[data-costume="robot"] .ninja-band { background: #22d3ee; }
 .ninja-runner[data-costume="robot"] .ninja-mask { background: #0e7490; }
+.ninja-runner[data-costume="astronaut"] { color: #f4f6fa; }
 .ninja-runner[data-costume="astronaut"] .ninja-torso, .ninja-runner[data-costume="astronaut"] .ninja-leg { background: #f4f6fa; }
 .ninja-runner[data-costume="astronaut"] .ninja-head { background: #e8f1ff; box-shadow: 0 0 0 3px #b9c8e8; }
 .ninja-runner[data-costume="astronaut"] .ninja-band { background: #3b82f6; }
 .ninja-runner[data-costume="astronaut"] .ninja-mask { background: #f59e0b; }
+.ninja-runner[data-costume="chef"] { color: #f7f7f7; }
 .ninja-runner[data-costume="chef"] .ninja-torso, .ninja-runner[data-costume="chef"] .ninja-leg { background: #f7f7f7; box-shadow: inset 0 0 0 1px #d6d6d6; }
 .ninja-runner[data-costume="chef"] .ninja-band { background: #ef4444; }
 .ninja-runner[data-costume="chef"] .ninja-mask { background: #6b3f1d; }
@@ -2208,3 +2267,121 @@ button { font-family: inherit; }
 
 /* Review per-subject summary line */
 .ninja-review-subjects { font: 700 12px "Nunito", sans-serif; color: var(--ink-soft); margin: -6px 0 10px; }
+
+/* ---------- Ninja Runner round 17 (visual/feel/movement pass) ---------- */
+
+/* Parallax background (A3) -- 2 silhouette layers behind the ground,
+   scrolling at different speeds via the SAME repeating-gradient-scroll
+   trick as .ninja-ground, so the world reads as having depth instead of
+   a flat gradient box. Pure CSS, no JS, zero gameplay interaction. */
+.ninja-bg-far {
+  position: absolute; left: 0; right: 0; bottom: 36px; height: 60px; z-index: 0; opacity: .35;
+  background: repeating-linear-gradient(100deg, transparent 0 60px, #c9a876 60px 64px, transparent 64px 140px, #c9a876 140px 146px, transparent 146px 220px);
+  animation: ninjaBgFarScroll 9s linear infinite;
+}
+.ninja-bg-near {
+  position: absolute; left: 0; right: 0; bottom: 36px; height: 34px; z-index: 0; opacity: .5;
+  background: repeating-linear-gradient(100deg, transparent 0 40px, #a9865a 40px 48px, transparent 48px 100px, #a9865a 100px 110px, transparent 110px 170px);
+  animation: ninjaBgNearScroll 4.5s linear infinite;
+}
+@keyframes ninjaBgFarScroll { from { background-position-x: 0; } to { background-position-x: -220px; } }
+@keyframes ninjaBgNearScroll { from { background-position-x: 0; } to { background-position-x: -170px; } }
+
+/* Time-of-day tint on the parallax layers + a warm rim light on the ninja
+   itself at dusk (round 17, item A10/B20 follow-through -- extends the
+   existing dawn/day/dusk scene system from round 15 to the character). */
+.ninja-world[data-scene="day"] .ninja-bg-far, .ninja-world[data-scene="day"] .ninja-bg-near { filter: hue-rotate(60deg) saturate(.8); }
+.ninja-world[data-scene="dusk"] .ninja-bg-far, .ninja-world[data-scene="dusk"] .ninja-bg-near { filter: hue-rotate(-20deg) saturate(1.2) brightness(.85); }
+.ninja-world[data-scene="dusk"] .ninja-runner { filter: drop-shadow(2px 0 0 rgba(255,183,77,.55)); }
+
+/* Camera punch (A4) -- a quick scale pulse on #ninja-world for big
+   moments (boss spawns, round starts), triggered by JS adding/removing
+   this class (force-reflow pattern, same as the existing .shake trick). */
+.ninja-world.punch { animation: ninjaCameraPunch .3s ease; }
+@keyframes ninjaCameraPunch { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.035); } }
+
+/* Boss vignette (B12) -- darkened edges while a boss fight is active,
+   toggled via #ninja-world's .boss-mode class (set in ninjaResolveEnemy's
+   boss-activation branch, cleared in defeatNinjaBoss/ninjaGameOver/
+   ninjaFinishCommon). A plain overlay div, not a filter on #ninja-world
+   itself, so it never darkens the HUD/buttons sitting outside it. */
+.ninja-vignette {
+  position: absolute; inset: 0; z-index: 10; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(20,8,8,.55) 100%);
+  transition: opacity .4s ease;
+}
+.ninja-world.boss-mode .ninja-vignette { opacity: 1; }
+
+/* Running dust/wind trail (A6) -- a soft blurred streak behind the runner
+   while actually running (not during jump/duck/guard), on top of the
+   existing 2-puff landing dust. Pure CSS pulse on a ::before, no new JS
+   timer. */
+.ninja-runner.running::before {
+  content: ""; position: absolute; left: -10px; top: 50%; width: 22px; height: 8px;
+  transform: translateY(-50%); border-radius: 50%; z-index: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.35));
+  animation: ninjaRunTrail .3s ease-in-out infinite;
+}
+@keyframes ninjaRunTrail { 0%, 100% { opacity: .25; transform: translateY(-50%) scaleX(.8); } 50% { opacity: .55; transform: translateY(-50%) scaleX(1.15); } }
+
+/* Dodge afterimage (B16) -- 2 fading clones of the runner's CURRENT pose
+   left behind on a successful dodge. Deliberately rendered as a bright,
+   desaturated "ghost" silhouette (saturate(0) brightness boost) rather
+   than trying to carry over the exact costume color -- the clone is a
+   plain <div>, not a `.ninja-runner`, so none of the data-costume recolor
+   selectors apply to it anyway, and a monochrome ghost reads better for
+   a "fast reflex" afterimage than an uncolored copy would. */
+.ninja-afterimage { position: absolute; left: 24px; bottom: 44px; width: 54px; height: 90px; z-index: 2; pointer-events: none; opacity: .4; filter: blur(1px) brightness(2.2) saturate(0); animation: ninjaAfterimageFade .4s ease forwards; }
+@keyframes ninjaAfterimageFade { to { opacity: 0; transform: translateX(-10px); } }
+
+/* Score pop-up (B19) -- a floating "+N" at the point of impact, rising
+   and fading, instead of only the HUD number silently updating. */
+.ninja-score-pop {
+  position: absolute; z-index: 9; pointer-events: none; font: 800 15px "Baloo 2", sans-serif;
+  color: #c9821f; text-shadow: 0 1px 0 #fff; animation: ninjaScorePop .7s ease-out forwards;
+}
+@keyframes ninjaScorePop { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-36px); opacity: 0; } }
+
+/* Subject card "breathing" glow before pick (B18) -- a slow pulse on all
+   3(-4) gate cards while waiting to be tapped, on top of the existing
+   one-time .gate-in entrance pop. Done as an ::after overlay (::before is
+   already the card's white gradient sheen) with its OWN animation, so it
+   never touches the card's own `animation`/`box-shadow` -- .diff-hard's
+   static gold glow and .mystery's own glow+entrance animation list both
+   keep working untouched. */
+.ninja-card::after {
+  content: ""; position: absolute; inset: -3px; border-radius: 18px; pointer-events: none;
+  animation: ninjaCardBreathe 2.6s ease-in-out infinite;
+}
+@keyframes ninjaCardBreathe { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } 50% { box-shadow: 0 0 10px 2px rgba(255,255,255,.55); } }
+
+/* Card-flip reveal (B14) -- the entrance pop from round 15 (.gate-in) now
+   also rotates in on the Y axis for a 3D "flip" feel. Needs perspective
+   on the row so the rotation actually reads as 3D, not a flat squash. */
+.ninja-gate-row { perspective: 600px; }
+.ninja-card.gate-in { animation: ninjaGateIn .4s ease backwards; }
+@keyframes ninjaGateIn { 0% { opacity: 0; transform: translateY(18px) scale(.9) rotateY(70deg); } 100% { opacity: 1; transform: translateY(0) scale(1) rotateY(0deg); } }
+
+/* Boss entrance (B17) -- previously the boss enemy had NO entry animation
+   at all (.ninja-boss-enemy fully overrides `animation` with just the
+   infinite shake, see round 15), so it just silently appeared at rest
+   position. Now it slams down from above first, THEN the shake takes
+   over (2 animations, the shake delayed to start right as the slam
+   ends) -- a real entrance instead of a pop-in. */
+.ninja-boss-enemy { animation: ninjaBossSlam .5s cubic-bezier(.34,1.56,.64,1), ninjaBossShake .4s ease-in-out .5s infinite; }
+@keyframes ninjaBossSlam { 0% { transform: translateY(-120px) scale(.8); opacity: 0; } 70% { transform: translateY(6px) scale(1.05); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+.ninja-boss-landing-dust { position: absolute; bottom: 36px; width: 60px; height: 14px; border-radius: 50%; background: radial-gradient(ellipse, rgba(120,90,60,.5), transparent 70%); z-index: 2; pointer-events: none; animation: ninjaBossDustFade .4s ease forwards; }
+@keyframes ninjaBossDustFade { 0% { opacity: .8; transform: scale(.6); } 100% { opacity: 0; transform: scale(1.6); } }
+
+/* Victory / defeat pose (A10) -- a distinct static silhouette on the
+   finish screen instead of freezing mid-run-cycle. Sword raised high for
+   a win, slumped forward for a loss. Both suppress the run/idle
+   animations entirely (no bob/breathe) so the pose actually holds still. */
+.ninja-runner.victory, .ninja-runner.defeat { animation: none !important; }
+.ninja-runner.victory .ninja-sword { transform: rotate(-100deg) translateY(-6px); left: 30px; top: -10px; }
+.ninja-runner.victory .ninja-arm.a2 { transform: rotate(-120deg) !important; }
+.ninja-runner.victory .ninja-arm.a1 { transform: rotate(10deg) !important; }
+.ninja-runner.victory .ninja-leg { transform: rotate(0deg) !important; }
+.ninja-runner.defeat { transform: rotate(8deg) translateY(4px); }
+.ninja-runner.defeat .ninja-arm { transform: rotate(45deg) !important; }
+.ninja-runner.defeat .ninja-sword { transform: rotate(80deg) translateY(10px); opacity: .7; }
