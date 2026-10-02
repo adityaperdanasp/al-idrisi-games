@@ -3807,12 +3807,12 @@
     return d;
   }
   const BASKETBALL_ACHIEVEMENTS = [
-    { id: "first-hoop", name: "First Hoop", emoji: "🏀", need: d => d.totalMakes >= 1 },
-    { id: "sharpshooter", name: "Sharpshooter", emoji: "🎯", need: d => d.totalMakes >= 50 },
-    { id: "on-fire", name: "On Fire", emoji: "🔥", need: d => d.bestStreak >= 5 },
-    { id: "perfect-game", name: "Perfect Game", emoji: "💯", need: d => d.perfectRounds >= 1 },
-    { id: "allstar", name: "All-Star", emoji: "🏆", need: d => d.roundsPlayed >= 10 },
-    { id: "legend", name: "Hoops Legend", emoji: "🐐", need: d => d.totalMakes >= 200 }
+    { id: "first-hoop", name: "First Hoop", emoji: "🏀", metric: "totalMakes", target: 1 },
+    { id: "sharpshooter", name: "Sharpshooter", emoji: "🎯", metric: "totalMakes", target: 50 },
+    { id: "on-fire", name: "On Fire", emoji: "🔥", metric: "bestStreak", target: 5 },
+    { id: "perfect-game", name: "Perfect Game", emoji: "💯", metric: "perfectRounds", target: 1 },
+    { id: "allstar", name: "All-Star", emoji: "🏆", metric: "roundsPlayed", target: 10 },
+    { id: "legend", name: "Hoops Legend", emoji: "🐐", metric: "totalMakes", target: 200 }
   ];
   async function getBasketballLifetimeSummary() {
     const empty = { roundsPlayed: 0, totalMakes: 0, totalShots: 0, bestStreak: 0, perfectRounds: 0, bestRoundMade: 0 };
@@ -3823,7 +3823,12 @@
   }
   async function getBasketballAchievements() {
     const d = await getBasketballLifetimeSummary();
-    return BASKETBALL_ACHIEVEMENTS.map(a => ({ id: a.id, name: a.name, emoji: a.emoji, unlocked: a.need(d) }));
+    // `current`/`target` (round 4, item 29) -- lets the UI show a progress
+    // fraction for badges still locked, not just a flat locked/unlocked.
+    return BASKETBALL_ACHIEVEMENTS.map(a => {
+      const current = d[a.metric] || 0;
+      return { id: a.id, name: a.name, emoji: a.emoji, unlocked: current >= a.target, current, target: a.target };
+    });
   }
   async function touchBasketballWeeklyBest(made) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();

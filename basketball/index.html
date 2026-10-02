@@ -252,7 +252,7 @@
      pattern as Ninja Runner's costume swatches, reused here. */
   .bh-start-label { font-weight: 800; font-size: .85rem; color: #8a7a6a; margin: 10px 0 6px; text-align: left; }
   .bh-swatches { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 4px; }
-  .bh-swatch { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #f1ede6; background: #fdf6ea; font-size: 18px; display: grid; place-items: center; cursor: pointer; }
+  .bh-swatch { position: relative; width: 42px; height: 42px; border-radius: 50%; border: 2px solid #f1ede6; background: #fdf6ea; font-size: 18px; display: grid; place-items: center; cursor: pointer; }
   .bh-swatch.sel { border-color: #E4772E; box-shadow: 0 0 0 2px rgba(228,119,46,.3); }
   .bh-lifetime-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; font-weight: 700; font-size: .8rem; color: #8a7a6a; }
 
@@ -356,7 +356,8 @@
 
   /* Mode toggle row (round 2, items 10+13) -- same visual language as the
      cosmetic swatches/start labels above. */
-  .bh-mode-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .bh-mode-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .bh-mode-row .bh-mode-opt { min-width: 44%; }
   .bh-mode-opt { flex: 1; border: 2px solid #f1ede6; background: #fdf6ea; border-radius: 12px; padding: 8px 6px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .72rem; color: #3d2e22; cursor: pointer; line-height: 1.4; }
   .bh-mode-opt small { font-weight: 700; color: #8a7a6a; }
   .bh-mode-opt.sel { border-color: #E4772E; background: #fff3e8; }
@@ -497,6 +498,120 @@
 
   /* Score roll-up counter (round 3) -- no new element, just an animation
      hook on the existing #bh-end-points text (see script.js). */
+
+  /* =================================================================
+     ROUND 4 -- 30 more additions. See script.js for the JS half.
+     ================================================================= */
+
+  /* Momentum meter (round 4, item 4) -- fills from makes, fully empties
+     on a miss, distinct texture from Hot Hand's streak-based climb. */
+  .bh-momentum-bar { width: 60%; max-width: 220px; height: 6px; border-radius: 4px; background: #f1ede6; margin: 0 auto 6px; overflow: hidden; }
+  .bh-momentum-bar i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #3a6ea5, #8fe3a0); transition: width .3s ease; }
+  .bh-momentum-bar.full i { background: linear-gradient(90deg, #ffce6b, #E4772E); animation: bhMomentumPulse .6s ease-in-out infinite; }
+  @keyframes bhMomentumPulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+
+  /* Court boundary glow (round 4, item 13) -- a brief edge-glow when the
+     ball's path passes very close to the side boundary, cueing a
+     near-miss-to-the-side without needing to read the toast first. */
+  .bh-court.edge-glow-l::before { box-shadow: inset 12px 0 20px -8px rgba(228,119,46,.6); }
+  .bh-court.edge-glow-r::before { box-shadow: inset -12px 0 20px -8px rgba(228,119,46,.6); }
+
+  /* Zoom-out for Full Court Press (round 4, item 14) -- the opposite
+     gesture from the Buzzer Beater's zoom-IN, pulling back to read as "a
+     shot from way downtown" instead of a close-up. */
+  .bh-court.fullcourt-zoom { animation: bhFullcourtZoom 1.1s ease forwards; }
+  @keyframes bhFullcourtZoom { 0% { transform: scale(1); } 30% { transform: scale(.94); } 100% { transform: scale(1); } }
+
+  /* Weather particles (round 4, item 12) -- rain streaks or snow dots,
+     rolled once per round, independent of the Rooftop Sunset birds. */
+  .bh-weather { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+  .bh-weather i { position: absolute; top: -10%; }
+  .bh-weather.rain i { width: 2px; height: 14px; background: rgba(120,160,200,.4); animation: bhRainFall linear infinite; }
+  .bh-weather.snow i { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.7); animation: bhSnowFall linear infinite; }
+  @keyframes bhRainFall { to { transform: translateY(820px); } }
+  @keyframes bhSnowFall { to { transform: translateY(820px) translateX(20px); } }
+
+  /* Long-press cosmetic preview (round 4, item 16) -- a floating preview
+     bubble shown while holding a swatch, before committing to equip. */
+  .bh-cosmetic-preview { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #1c2740; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 8px; white-space: nowrap; margin-bottom: 6px; z-index: 5; }
+
+  /* First-shot-of-the-day greeting (round 4, item 18) */
+  .bh-day-greeting { position: absolute; top: 25%; left: 50%; transform: translateX(-50%) translateY(-10px); background: #fff; color: #A8531F; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; padding: 10px 18px; border-radius: 100px; box-shadow: 0 4px 12px rgba(0,0,0,.15); z-index: 11; opacity: 0; white-space: nowrap; }
+  .bh-day-greeting.show { animation: bhPbBanner 2.4s ease forwards; }
+
+  /* Colorblind-safe Shot Chart dots (round 4, item 19) -- shape, not just
+     color, distinguishes make/miss. */
+  .bh-shot-dot.made::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; background: #fff; opacity: .5; }
+  .bh-shot-dot.missed { border-radius: 2px; transform: translate(-50%, -50%) rotate(45deg); }
+
+  /* Progressive hoop glow approaching Perfect Round (round 4, item 20) --
+     intensifies via a data attribute script.js sets per shot. */
+  .bh-rim[data-perfect-tension="1"] { box-shadow: 0 0 6px 1px rgba(255,214,120,.4); }
+  .bh-rim[data-perfect-tension="2"] { box-shadow: 0 0 10px 3px rgba(255,214,120,.6); }
+  .bh-rim[data-perfect-tension="3"] { box-shadow: 0 0 16px 5px rgba(255,214,120,.85); }
+
+  /* Tablet/wide-screen scale (round 4, item 21) -- the page was mobile-
+     first only; a wider viewport now gets a slightly larger max-width
+     and bigger court instead of staying pinned to phone-card width. */
+  @media (min-width: 700px) {
+    .bh-page { max-width: 560px; }
+    .bh-card { max-width: 420px; }
+  }
+
+  /* Loading spinner (round 4, item 22) */
+  .bh-rank-spinner { font-size: 1.3rem; animation: bhSpin 1s linear infinite; margin-bottom: 8px; }
+  @keyframes bhSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  /* Auto-scaling score font (round 4, item 23) -- a very high point total
+     shrinks slightly rather than overflowing/wrapping awkwardly. */
+  .bh-end-points.long-number { font-size: .85em; }
+
+  /* End-screen background motion (round 4, item 24) -- a slow ambient
+     gradient drift behind the card, instead of a static background. */
+  #bh-end-overlay { background: linear-gradient(135deg, rgba(61,46,34,.55), rgba(90,62,42,.55)); background-size: 200% 200%; animation: bhEndBgDrift 8s ease-in-out infinite; }
+  @keyframes bhEndBgDrift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+  /* Jersey number on player badge (round 4, item 25) */
+  .bh-player-badge-number { font-size: 10px; opacity: .7; margin-left: 2px; }
+
+  /* Tournament stage label (round 4, item 26) -- a cosmetic reframing of
+     the EXISTING weekly rank into bracket-style stage names, not a real
+     bracket/pairing system. */
+  .bh-tournament-stage { font-weight: 800; color: #8a6d1d; background: linear-gradient(135deg, #ffe299, #ffce6b); display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: .75rem; margin-bottom: 6px; }
+
+  /* Bigger shake on losing a big streak (round 4, item 27) */
+  .bh-court.big-streak-loss { animation: bhBigStreakLoss .5s ease; }
+  @keyframes bhBigStreakLoss { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px) rotate(-1deg); } 40% { transform: translateX(8px) rotate(1deg); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+
+  /* Achievement progress bars (round 4, item 29) -- replaces the plain
+     locked/unlocked badge with a progress fraction for ones still in
+     reach. */
+  .bh-ach-progress-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; text-align: left; }
+  .bh-ach-progress-item { font-size: .75rem; font-weight: 700; color: #8a7a6a; }
+  .bh-ach-progress-item .bh-ach-progress-bar { height: 5px; border-radius: 3px; background: #f1ede6; overflow: hidden; margin-top: 2px; }
+  .bh-ach-progress-item .bh-ach-progress-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffce6b, #E4772E); }
+
+  /* Steal bonus flash (round 4, item 3) */
+  .bh-steal-flash { position: absolute; top: 35%; left: 50%; transform: translateX(-50%); font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; color: #3a6ea5; z-index: 10; opacity: 0; }
+  .bh-steal-flash.show { animation: bhToastPop .8s ease forwards; }
+
+  /* Toast queue (round 4, item 11) -- no new element, just sequencing
+     logic in script.js so a toast and subtoast firing close together
+     don't cut each other off. */
+
+  /* Defender block flash (round 4, item 2) */
+  .bh-defender.blocked { animation: bhBlockFlash .3s ease; }
+  @keyframes bhBlockFlash { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(2) drop-shadow(0 0 10px rgba(214,69,69,.8)); } }
+
+  /* Practice shot indicator (round 4, item 8) */
+  .bh-hint.practice-hint { background: #eaf7ee; color: #3F8F5F; }
+
+  /* Weekly Featured Challenge banner (round 4, item 9) */
+  .bh-featured-challenge { background: linear-gradient(135deg, #c1e1c1, #9ed49e); color: #2d5a2d; font-weight: 800; font-size: .78rem; padding: 6px 12px; border-radius: 100px; margin-bottom: 10px; display: inline-block; }
+
+  /* Perfect Round confetti cannon (round 4, item 15) -- no new CSS class,
+     reuses .bh-confetti-piece with a bigger burst count from 2 fixed
+     corner origins (see script.js). */
 </style>
 </head>
 <body>
@@ -521,10 +636,17 @@
          Runner's ghost-pace pill. -->
     <span class="bh-hud-chip bh-ghost-pill hidden" id="bh-chip-ghost">👻 +0</span>
   </div>
+  <!-- Momentum meter (round 4, item 4) -- fills from makes, fully resets
+       on a miss (unlike Hot Hand which only decays via the streak
+       counter) -- a distinct, faster-swinging resource. -->
+  <div class="bh-momentum-bar hidden" id="bh-momentum-bar"><i id="bh-momentum-fill"></i></div>
 
   <div class="bh-court" id="bh-court" data-lighting="day">
     <!-- Ambient dust motes (round 3) -- always-on, purely decorative. -->
     <div class="bh-dust"><i></i><i></i><i></i><i></i><i></i></div>
+    <!-- Weather particles (round 4, item 12) -- rolled once per round,
+         separate from the Rooftop Sunset court-skin birds (round 3). -->
+    <div class="bh-weather hidden" id="bh-weather"></div>
     <div class="bh-crowd" id="bh-crowd"></div>
     <div class="bh-crowd bh-crowd-back" id="bh-crowd-back"></div>
     <div class="bh-scoreboard" id="bh-scoreboard">
@@ -562,9 +684,23 @@
     <div class="bh-toast" id="bh-toast"></div>
     <div class="bh-ach-toast" id="bh-ach-toast"></div>
     <div class="bh-subtoast" id="bh-subtoast"></div>
+    <!-- Steal bonus flash (round 4, item 3) -->
+    <div class="bh-steal-flash" id="bh-steal-flash"></div>
     <div class="bh-pb-banner" id="bh-pb-banner"></div>
     <div class="bh-countdown hidden" id="bh-countdown"></div>
     <div class="bh-next-bar" id="bh-next-bar"></div>
+  </div>
+
+  <!-- Double-or-Nothing wager (round 4, item 5) -- offered right before
+       the Buzzer Beater shot. -->
+  <div class="bh-overlay hidden" id="bh-wager-overlay">
+    <div class="bh-card">
+      <div class="bh-start-emoji">🎲</div>
+      <div class="bh-start-title">Double or Nothing!</div>
+      <p class="bh-start-sub" id="bh-wager-sub"></p>
+      <button class="bh-btn bh-btn-primary" id="bh-wager-yes-btn">Wager it! (2x or half)</button>
+      <button class="bh-btn bh-btn-secondary" id="bh-wager-no-btn">Play it safe</button>
+    </div>
   </div>
 
   <!-- Start screen -->
@@ -581,17 +717,25 @@
            answers already feed it via recordTopicAttempt), not a new
            parallel system. -->
       <div class="bh-hoops-pass hidden" id="bh-hoops-pass"></div>
+      <!-- Weekly Featured Challenge (round 4, item 9) -- a date-hash
+           modifier that rotates weekly, same for every player that week. -->
+      <div class="bh-featured-challenge hidden" id="bh-featured-challenge"></div>
       <div class="bh-start-label">Ball</div>
       <div class="bh-swatches" id="bh-ball-swatches"></div>
       <div class="bh-start-label">Court</div>
       <div class="bh-swatches" id="bh-court-swatches"></div>
       <div class="bh-end-achievements" id="bh-start-achievements"></div>
+      <!-- Achievement progress bars (round 4, item 29) -- shows the
+           nearest-to-unlock badges with a numeric progress fraction,
+           instead of leaving everything else a flat locked/unlocked. -->
+      <div class="bh-ach-progress-row" id="bh-ach-progress-row"></div>
       <!-- Mode toggles (round 2, items 10+13) -->
       <div class="bh-start-label">Mode</div>
       <div class="bh-mode-row">
         <button type="button" class="bh-mode-opt sel" data-mode="normal">🥅 Normal</button>
         <button type="button" class="bh-mode-opt" data-mode="pressure">⏱️ Shot Clock<br><small>faster timer, 1.3× pts</small></button>
         <button type="button" class="bh-mode-opt" data-mode="team">🤝 Team Score<br><small>pass the device</small></button>
+        <button type="button" class="bh-mode-opt" data-mode="freethrow">🎯 Free Throw<br><small>same spot, no hazards</small></button>
       </div>
       <button type="button" class="bh-tutorial-link" id="bh-tutorial-link">❓ What's the 3-point arc?</button>
       <button class="bh-btn bh-btn-primary" id="bh-start-btn">Start Shootaround</button>
@@ -609,6 +753,19 @@
       <div class="bh-start-title">The 3-Point Arc</div>
       <p class="bh-start-sub">See the dashed line on the court? Shoot from <b>inside</b> it for 2 points. Shoot from <b>behind</b> it (further from the hoop) for 3 points -- worth more, but a longer throw!</p>
       <button class="bh-btn bh-btn-primary" id="bh-tutorial-close-btn">Got it!</button>
+    </div>
+  </div>
+
+  <!-- Second tutorial (round 4, item 28) -- explains the Hot Zone/Moving
+       Hoop/Wind twists, shown once the first time a kid actually
+       encounters one of them (not before the first round, the 3-point
+       tutorial already covers that beat). -->
+  <div class="bh-overlay hidden" id="bh-tutorial2-overlay">
+    <div class="bh-card">
+      <div class="bh-start-emoji" id="bh-tutorial2-emoji">🔥</div>
+      <div class="bh-start-title" id="bh-tutorial2-title">Hot Zone!</div>
+      <p class="bh-start-sub" id="bh-tutorial2-sub"></p>
+      <button class="bh-btn bh-btn-primary" id="bh-tutorial2-close-btn">Got it!</button>
     </div>
   </div>
 
@@ -645,6 +802,10 @@
       <!-- Clutch tracker badge (round 2, item 12) -->
       <div class="bh-clutch-badge hidden" id="bh-clutch-badge"></div>
       <div class="bh-end-bonus" id="bh-end-bonus"></div>
+      <!-- Loading spinner (round 4, item 22) -- shown while the weekly/
+           daily/streak rank fetches are in flight, hidden once they
+           resolve (or fail -- never blocks the rest of the screen). -->
+      <div class="bh-rank-spinner hidden" id="bh-rank-spinner">🏀</div>
       <div class="bh-end-rank" id="bh-end-rank"></div>
       <div class="bh-streak-rank hidden" id="bh-streak-rank"></div>
       <!-- Shot Chart (round 2, item 42) -- small court diagram, one dot per
