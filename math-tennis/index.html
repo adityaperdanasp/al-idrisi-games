@@ -271,6 +271,84 @@
     .mt-hud { gap: 6px; }
     .mt-hud-chip { font-size: .76rem; padding: 4px 9px; }
   }
+
+  /* ============== ROUND 3 (fun-first additions) ============== */
+  .mt-ball.real-mark { filter: drop-shadow(0 0 6px rgba(255,206,107,.95)) drop-shadow(0 3px 3px rgba(0,0,0,.25)); }
+  .mt-ball.fire { filter: drop-shadow(0 0 8px #ff7a1a) drop-shadow(0 0 14px rgba(255,80,0,.8)); }
+  .mt-ball.golden { filter: drop-shadow(0 0 8px #ffd23f) drop-shadow(0 0 16px rgba(255,210,63,.9)); }
+  .mt-ball-decoy { position: absolute; left: 50%; top: 10%; font-size: 1.7rem; transform: translate(-50%, -50%); z-index: 4; opacity: .7; filter: grayscale(.6); }
+  .mt-ball-decoy.hidden { display: none; }
+  .mt-mystery-q { position: absolute; transform: translate(-50%, -150%); font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.5); z-index: 6; pointer-events: none; }
+  .mt-mystery-q.hidden { display: none; }
+  .mt-powerup { position: absolute; bottom: 70px; font-size: 1.4rem; transform: translateX(-50%); z-index: 3; animation: mtPuBob 1s ease-in-out infinite; }
+  .mt-powerup.hidden { display: none; }
+  @keyframes mtPuBob { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-5px); } }
+  .mt-target { position: absolute; bottom: 62px; font-size: 1.5rem; transform: translateX(-50%); z-index: 3; }
+  .mt-target.hidden { display: none; }
+  .mt-target.pop { animation: mtTargetPop .4s ease forwards; }
+  @keyframes mtTargetPop { to { transform: translateX(-50%) scale(2); opacity: 0; } }
+  .mt-action-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
+  .mt-action-btn { border: none; border-radius: 100px; padding: 8px 16px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; cursor: pointer; background: #fff; color: #5a7a1f; box-shadow: 0 3px 0 rgba(0,0,0,.08); }
+  .mt-action-btn.hidden { display: none; }
+  .mt-action-btn.smash { background: #D64545; color: #fff; animation: mtPuBob2 .5s ease infinite; }
+  @keyframes mtPuBob2 { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+  .mt-boss-hp { width: 180px; height: 12px; border-radius: 100px; background: #fff; margin: 0 auto 8px; overflow: hidden; box-shadow: 0 2px 0 rgba(0,0,0,.05); position: relative; }
+  .mt-boss-hp.hidden { display: none; }
+  .mt-boss-hp i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #D64545, #ff8a5c); transition: width .3s ease; }
+  .mt-ghost-bar { width: 200px; margin: 0 auto 8px; font-size: .68rem; font-weight: 800; color: #5a7a1f; }
+  .mt-ghost-bar.hidden { display: none; }
+  .mt-ghost-bar .row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .mt-ghost-bar .track { flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,.7); overflow: hidden; }
+  .mt-ghost-bar .track i { display: block; height: 100%; width: 0%; background: #8FAE1F; transition: width .3s ease; }
+  .mt-ghost-bar .track.ghost i { background: #9aa5c8; }
+  .mt-bubble { position: absolute; background: #fff; color: #3d2e22; font-weight: 800; font-size: .72rem; padding: 4px 10px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.2); z-index: 8; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .2s ease; }
+  .mt-bubble.show { opacity: 1; }
+  #mt-robot-bubble { top: 6px; left: 50%; transform: translateX(-50%); }
+  #mt-bo-bubble { bottom: 6px; left: 8px; }
+  .mt-daynight { position: absolute; inset: 0; z-index: 1; pointer-events: none; transition: background 1.2s ease; }
+  .mt-daynight[data-time="dawn"] { background: rgba(255,180,120,.14); }
+  .mt-daynight[data-time="dusk"] { background: rgba(255,110,80,.16); }
+  .mt-daynight[data-time="night"] { background: rgba(20,30,80,.32); }
+  .mt-court[data-theme="clay"] { background: linear-gradient(180deg, #D9825B, #B85F3A); }
+  .mt-court[data-theme="night"] { background: linear-gradient(180deg, #2d4a7a, #1a2f55); box-shadow: inset 0 0 40px rgba(255,255,200,.15), inset 0 0 0 3px rgba(255,255,255,.2); }
+  .mt-court[data-theme="night"]::before, .mt-court[data-theme="night"]::after { content: "💡"; position: absolute; top: 4px; font-size: .9rem; z-index: 2; animation: mtFlood 2s ease-in-out infinite; }
+  .mt-court[data-theme="night"]::before { left: 8px; } .mt-court[data-theme="night"]::after { right: 8px; animation-delay: .6s; }
+  @keyframes mtFlood { 0%, 100% { opacity: .6; } 50% { opacity: 1; } }
+  .mt-vignette { position: absolute; inset: 0; z-index: 7; pointer-events: none; opacity: 0; background: radial-gradient(circle, transparent 40%, rgba(0,0,0,.45) 100%); }
+  .mt-vignette.show { animation: mtVigFlash .8s ease; }
+  @keyframes mtVigFlash { 0%, 100% { opacity: 0; } 25%, 70% { opacity: 1; } }
+  .mt-court.ace-cam { animation: mtAceCam .8s ease; }
+  @keyframes mtAceCam { 0%, 100% { transform: scale(1); filter: none; } 30%, 70% { transform: scale(1.05); filter: saturate(1.4) contrast(1.1); } }
+  .mt-court.rush { box-shadow: inset 0 0 0 3px rgba(255,140,0,.7), 0 0 14px rgba(255,140,0,.5); }
+  .mt-court.quake { animation: mtQuake .6s linear; }
+  @keyframes mtQuake { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-4px, 2px); } 40% { transform: translate(4px, -2px); } 60% { transform: translate(-3px, -2px); } 80% { transform: translate(3px, 2px); } }
+  .mt-rush-ticker { position: absolute; top: 18%; left: 50%; transform: translateX(-50%); font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; color: #fff; text-shadow: 0 2px 6px rgba(214,69,69,.9); z-index: 9; opacity: 0; white-space: nowrap; pointer-events: none; }
+  .mt-rush-ticker.show { opacity: 1; animation: mtCaptionPop .8s ease; }
+  .mt-snow, .mt-fog { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+  .mt-snow.hidden, .mt-fog.hidden { display: none; }
+  .mt-snow i { position: absolute; top: -8%; font-style: normal; font-size: .7rem; opacity: .85; animation: mtSnowFall linear infinite; }
+  @keyframes mtSnowFall { to { transform: translateY(125%) translateX(12px); } }
+  .mt-fog { background: radial-gradient(ellipse at 50% 30%, rgba(255,255,255,.55), rgba(255,255,255,.2)); }
+  .mt-mascot { position: absolute; bottom: 4px; left: -10%; font-size: 1.6rem; z-index: 5; pointer-events: none; animation: mtMascotRun 2.2s linear forwards; }
+  @keyframes mtMascotRun { to { left: 110%; } }
+  .mt-firework { position: absolute; font-size: 1.1rem; z-index: 10; pointer-events: none; animation: mtFirework .9s ease-out forwards; }
+  @keyframes mtFirework { to { transform: translate(var(--fx), var(--fy)) scale(.4); opacity: 0; } }
+  .mt-ballrain { position: absolute; top: -6%; font-size: 1.3rem; z-index: 10; cursor: pointer; animation: mtBallrainFall 2.4s linear forwards; }
+  @keyframes mtBallrainFall { to { top: 105%; } }
+  .mt-crowd.wave span { animation: mtCrowdCheer .5s ease; }
+  .mt-fan-sign { font-size: .6rem; font-weight: 800; background: #fff; color: #5a7a1f; border-radius: 4px; padding: 1px 4px; border: 1px solid #5a7a1f; }
+  .mt-trophy { font-size: 4rem; height: 0; overflow: visible; }
+  .mt-trophy.show { animation: mtTrophyRise 1.4s ease forwards; height: auto; margin-bottom: 8px; }
+  @keyframes mtTrophyRise { 0% { transform: translateY(40px) scale(.3); opacity: 0; } 60% { transform: translateY(-6px) scale(1.2); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+  .mt-wheel-wrap { position: relative; width: 150px; height: 150px; margin: 0 auto 14px; }
+  .mt-wheel { width: 150px; height: 150px; border-radius: 50%; background: conic-gradient(#ffce6b 0 60deg, #8FAE1F 60deg 120deg, #6aa9e0 120deg 180deg, #e07a7a 180deg 240deg, #b58ae0 240deg 300deg, #7ad4b4 300deg 360deg); border: 4px solid #5a7a1f; transition: transform 1.8s cubic-bezier(.15,.7,.2,1); }
+  .mt-wheel-pin { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 1.3rem; }
+  .mt-sticker-line { font-weight: 800; color: #8a6d1d; margin-bottom: 8px; min-height: 1.2em; }
+  .mt-album-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .mt-album-cell { aspect-ratio: 1; border-radius: 12px; background: #f1ede6; display: grid; place-items: center; font-size: 1.6rem; position: relative; }
+  .mt-album-cell.locked { filter: grayscale(1) brightness(1.8); opacity: .4; }
+  .mt-album-cell b { position: absolute; bottom: 1px; right: 4px; font-size: .62rem; color: #5a7a1f; }
+  .mt-mode-fire { }
 </style>
 </head>
 <body>
@@ -287,6 +365,8 @@
     <span class="mt-hud-chip hidden" id="mt-hud-streak">🔥 ×1.0</span>
     <span class="mt-hud-chip">🪙 <span id="mt-hud-coins">0</span> 💎 <span id="mt-hud-gems">0</span></span>
   </div>
+  <div class="mt-boss-hp hidden" id="mt-boss-hp"><i id="mt-boss-hp-fill"></i></div>
+  <div class="mt-ghost-bar hidden" id="mt-ghost-bar"><div class="row">🙂<div class="track"><i id="mt-ghost-you"></i></div></div><div class="row">👻<div class="track ghost"><i id="mt-ghost-rec"></i></div></div></div>
   <div class="mt-power-bar hidden" id="mt-power-bar"><i class="mt-power-fill" id="mt-power-fill"></i></div>
   <div class="mt-progress-dots" id="mt-progress-dots"></div>
   <div class="mt-team-result hidden" id="mt-team-result"></div>
@@ -301,6 +381,15 @@
     <div class="mt-lane-shape" style="left:75%">■</div>
     <div class="mt-lane-guide" style="left:25%"></div>
     <div class="mt-lane-guide" style="left:75%"></div>
+    <div class="mt-daynight" id="mt-daynight" data-time="day"></div>
+    <div class="mt-snow hidden" id="mt-snow"></div>
+    <div class="mt-fog hidden" id="mt-fog"></div>
+    <div class="mt-vignette" id="mt-vignette"></div>
+    <div class="mt-rush-ticker" id="mt-rush-ticker"></div>
+    <div class="mt-bubble" id="mt-robot-bubble"></div>
+    <div class="mt-bubble" id="mt-bo-bubble"></div>
+    <div class="mt-powerup hidden" id="mt-powerup"></div>
+    <div class="mt-target hidden" id="mt-target">🍎</div>
     <div class="mt-wind hidden" id="mt-wind">💨</div>
     <div class="mt-rain hidden" id="mt-rain"></div>
     <div class="mt-serve-badge hidden" id="mt-serve-badge"></div>
@@ -313,6 +402,8 @@
     </div>
     <div class="mt-sweet-zone" id="mt-sweet-zone"></div>
     <div class="mt-court-net" id="mt-court-net"></div>
+    <div class="mt-ball-decoy hidden" id="mt-ball-decoy">🎾</div>
+    <div class="mt-mystery-q hidden" id="mt-mystery-q">❓</div>
     <div class="mt-ball" id="mt-ball">🎾</div>
     <div class="mt-hit-caption" id="mt-hit-caption"></div>
     <div class="mt-racket mt-racket-bottom" id="mt-racket-bottom">
@@ -330,6 +421,11 @@
     <button type="button" class="mt-lane-btn hidden" data-lane="left" id="mt-lane-left">⬅️</button>
     <button type="button" class="mt-lane-btn hidden sel" data-lane="center" id="mt-lane-center">🎯</button>
     <button type="button" class="mt-lane-btn hidden" data-lane="right" id="mt-lane-right">➡️</button>
+  </div>
+
+  <div class="mt-action-row">
+    <button type="button" class="mt-action-btn hidden" id="mt-trick-btn">🎪 TRICK</button>
+    <button type="button" class="mt-action-btn smash hidden" id="mt-smash-btn">💥 SMASH!</button>
   </div>
 
   <div class="mt-swing-wrap">
@@ -354,6 +450,11 @@
       <div class="mt-swatches" id="mt-ball-swatches"></div>
       <div class="mt-start-label">Robot Opponent</div>
       <div class="mt-swatches" id="mt-robot-swatches"></div>
+      <div class="mt-start-label">Court</div>
+      <div class="mt-swatches" id="mt-court-swatches"></div>
+      <div class="mt-start-label">Ball Trail</div>
+      <div class="mt-swatches" id="mt-trail-swatches"></div>
+      <button type="button" class="mt-btn mt-btn-secondary" id="mt-album-btn">🗂️ Sticker Album</button>
       <div class="mt-start-label">Mode</div>
       <div class="mt-mode-row">
         <button type="button" class="mt-mode-opt sel" data-mode="normal">🥅 Normal</button>
@@ -400,19 +501,40 @@
 
   <div class="mt-overlay hidden" id="mt-end-overlay">
     <div class="mt-card">
+      <div class="mt-trophy" id="mt-trophy">🏆</div>
       <div class="mt-modal-emoji" id="mt-end-emoji">🏆</div>
       <div class="mt-modal-title" id="mt-end-title">Nice match!</div>
       <div class="mt-modal-sub" id="mt-end-sub"></div>
       <div class="mt-end-score" id="mt-end-score"></div>
       <div class="mt-team-result hidden" id="mt-end-team-result"></div>
       <div class="mt-clutch-badge hidden" id="mt-clutch-badge"></div>
+      <div class="mt-sticker-line" id="mt-sticker-line"></div>
       <div class="mt-modal-bonus" id="mt-end-bonus"></div>
       <div class="mt-end-rank" id="mt-end-rank"></div>
       <div class="mt-ach-row" id="mt-end-achievements"></div>
       <button class="mt-btn mt-btn-primary" id="mt-play-again-btn">Play Again</button>
+      <button type="button" class="mt-btn mt-btn-secondary" id="mt-spin-btn">🎡 Lucky Spin</button>
       <button type="button" class="mt-btn mt-btn-secondary" id="mt-review-btn">🔍 Review Match</button>
       <button type="button" class="mt-btn mt-btn-secondary" id="mt-recap-btn">📜 Recap Card</button>
       <a href="../" class="mt-btn mt-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <div class="mt-overlay hidden" id="mt-spin-overlay">
+    <div class="mt-card">
+      <div class="mt-modal-title">🎡 Lucky Spin</div>
+      <div class="mt-wheel-wrap"><div class="mt-wheel-pin">📍</div><div class="mt-wheel" id="mt-wheel"></div></div>
+      <div class="mt-modal-bonus" id="mt-spin-result">Good luck!</div>
+      <button class="mt-btn mt-btn-primary" id="mt-spin-go-btn">Spin!</button>
+      <button class="mt-btn mt-btn-secondary" id="mt-spin-close-btn">Close</button>
+    </div>
+  </div>
+
+  <div class="mt-overlay hidden" id="mt-album-overlay">
+    <div class="mt-card">
+      <div class="mt-modal-title">🗂️ Sticker Album <span id="mt-album-count"></span></div>
+      <div class="mt-album-grid" id="mt-album-grid"></div>
+      <button class="mt-btn mt-btn-primary" id="mt-album-close-btn">Close</button>
     </div>
   </div>
 

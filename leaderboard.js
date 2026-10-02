@@ -4864,6 +4864,17 @@
     { id: "lefty", name: "Lefty Bot", cost: { coins: 20 }, preview: "🦾" },
     { id: "rightie", name: "Rightie Bot", cost: { coins: 20 }, preview: "🦿" }
   ];
+  // Round 3 -- themed courts (clay/grass/night) and ball-trail styles.
+  const MATH_TENNIS_COURTS = [
+    { id: "default", name: "Grass Court", cost: null, preview: "🌿" },
+    { id: "clay", name: "Clay Court", cost: { coins: 25 }, preview: "🧱" },
+    { id: "night", name: "Night Court", cost: { gems: 2 }, preview: "🌙" }
+  ];
+  const MATH_TENNIS_TRAILS = [
+    { id: "default", name: "Classic Trail", cost: null, preview: "⚪" },
+    { id: "rainbow", name: "Rainbow Trail", cost: { coins: 20 }, preview: "🌈" },
+    { id: "stars", name: "Star Trail", cost: { gems: 2 }, preview: "⭐" }
+  ];
   const BOSSRUSH_FIGHTERS = [
     { id: "default", name: "Classic", cost: null, preview: "🥋" },
     { id: "boxer", name: "Boxer", cost: { coins: 15 }, preview: "🥊" },
@@ -4924,6 +4935,8 @@
     "mathtennis-racket": MATH_TENNIS_RACKETS,
     "mathtennis-ball": MATH_TENNIS_BALLS,
     "mathtennis-robot": MATH_TENNIS_ROBOTS,
+    "mathtennis-court": MATH_TENNIS_COURTS,
+    "mathtennis-trail": MATH_TENNIS_TRAILS,
     "bossrush-fighter": BOSSRUSH_FIGHTERS,
     "dino-skin": DINO_SKINS
   };
@@ -4991,6 +5004,8 @@
         "mathtennis-racket": equipped["mathtennis-racket"] || "default",
         "mathtennis-ball": equipped["mathtennis-ball"] || "default",
         "mathtennis-robot": equipped["mathtennis-robot"] || "classic",
+        "mathtennis-court": equipped["mathtennis-court"] || "default",
+        "mathtennis-trail": equipped["mathtennis-trail"] || "default",
         "bossrush-fighter": equipped["bossrush-fighter"] || "default",
         "dino-skin": equipped["dino-skin"] || "default",
         "bo-costume": equipped["bo-costume"] || "none"

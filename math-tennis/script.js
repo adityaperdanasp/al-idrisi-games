@@ -57,10 +57,14 @@ function initMathTennis() {
   // duration, windowWiden is added/subtracted from BOTH edges of the sweet
   // zone (positive = easier/wider, negative = harder/narrower).
   const SERVE_TYPES = {
-    normal: { durationMult: 1, windowWiden: 0, weight: 55, label: null },
-    fast: { durationMult: 0.72, windowWiden: 0, weight: 18, label: "⚡ Fast Serve!" },
-    lob: { durationMult: 1.35, windowWiden: 6, weight: 17, label: "🏐 Lob" },
-    slice: { durationMult: 1, windowWiden: -6, weight: 10, label: "🔪 Slice" }
+    normal: { durationMult: 1, windowWiden: 0, weight: 40, label: null },
+    fast: { durationMult: 0.72, windowWiden: 0, weight: 12, label: "⚡ Fast Serve!" },
+    lob: { durationMult: 1.35, windowWiden: 6, weight: 12, label: "🏐 Lob" },
+    slice: { durationMult: 1, windowWiden: -6, weight: 8, label: "🔪 Slice" },
+    // Round 3, item 7 -- sillier serves, each with its own ball emoji
+    banana: { durationMult: 1.05, windowWiden: 0, weight: 10, label: "🍌 Banana Serve", emoji: "🍌" },
+    rocket: { durationMult: 0.58, windowWiden: -3, weight: 8, label: "🚀 Rocket Serve!", emoji: "🚀", bonus: 20 },
+    balloon: { durationMult: 1.6, windowWiden: 8, weight: 10, label: "🎈 Balloon Serve", emoji: "🎈" }
   };
 
   // ============== ROUND 2 constants (animation/UI-UX/gameplay) ==========
@@ -87,6 +91,30 @@ function initMathTennis() {
   const HISTORY_KEY = "aig_mt_history", HISTORY_MAX = 5;      // item 14
   const REDUCED_MOTION_KEY = "aig_mt_reduced_motion";         // item 16
   const NEW_BADGE_KEY = "aig_mt_round2_seen";                 // item 25
+
+  // ============== ROUND 3 constants (fun-first) ==============
+  const TWIST_CHANCE = 0.28;                       // items 1/3/4/5 -- one twist per serve at most
+  const WEATHER_RAIN = 0.08, WEATHER_SNOW = 0.06, WEATHER_FOG = 0.06; // item 16
+  const SNOW_DURATION_MULT = 1.1;
+  const DROP_SLOW_UNTIL = 0.55, DROP_SLOW_PCT = 0.45; // item 5 -- first 55% of the time covers only 45% of the distance
+  const TRICK_BONUS = 25, TRICK_NARROW = 0.2;      // item 8
+  const SMASH_BONUS = 12, SMASH_WINDOW_MS = 900;   // item 6
+  const POWERUP_CHANCE = 0.2;                      // item 9
+  const FIRE_ACES_NEEDED = 3, FIRE_TURNS = 3;      // item 10
+  const TARGET_BONUS = 30;                         // item 11
+  const SURPRISE_CHANCE = 0.07;                    // item 15
+  const BOSS_EVERY = 4, BOSS_HP = 5, BOSS_BONUS = 60, BOSS_DURATION_MULT = 0.92; // item 2
+  const GOLDEN_CHANCE = 0.06, GOLDEN_BONUS = 25, GOLDEN_COINS = 5;               // item 27
+  const MATCH_COUNT_KEY = "aig_mt_matches", BEST_SCORE_KEY = "aig_mt_best_score";
+  const STICKERS_KEY = "aig_mt_stickers", START_SHIELD_KEY = "aig_mt_start_shield";
+  const STICKERS = ["🏆","🎾","🥇","🔥","⚡","🌈","🦄","🐉","🚀","👑","💎","🍀"];
+  const TAUNTS = ["Too slow! 😏", "Is that all? 🤖", "Math is hard, huh? 😜", "Zzz... 😴", "Easy point! 😎"];
+  const AWE = ["No way!! 😱", "How?! 🤯", "Lucky shot... 😤"];
+  const SPIN_PRIZES = [
+    { label: "🪙 5", coins: 5 }, { label: "🪙 15", coins: 15 }, { label: "💎 1", gems: 1 },
+    { label: "🪙 5", coins: 5 }, { label: "🛡️ Shield next match", shield: true }, { label: "🪙 30", coins: 30 }
+  ];
+  const SPIN_WEIGHTS = [25, 20, 10, 25, 12, 8];
 
   const hudPoints = document.getElementById("mt-hud-points");
   const hudScore = document.getElementById("mt-hud-score");
@@ -146,6 +174,12 @@ function initMathTennis() {
     teamCenterToggle: 1,
     robotSkin: "classic",
     clutchMakes: 0, bestMatchPoints: 0,
+    twist: null, kickFrom: null, decoyLane: null, weather: null,
+    powerup: null, shield: false, puSlow: false, puMagnet: false,
+    aceChain: 0, fireTurns: 0, goldenActive: false, targetBonus: false,
+    boss: false, bossHp: 0, bossDefeated: false, smashOpen: false,
+    lastBoAt: 0, boTipShown: false, spinUsed: false,
+    trailSkin: "default", ballSkinEmoji: "🎾", trailHue: 0,
     _lastTrailTick: -1
   };
 
@@ -238,7 +272,7 @@ function initMathTennis() {
   }
   let MT_RACKET_PREVIEWS = {};
   let MT_BALL_PREVIEWS = { default: "🎾" };
-  function applyBallSkin(id) { ball.textContent = MT_BALL_PREVIEWS[id] || "🎾"; }
+  function applyBallSkin(id) { state.ballSkinEmoji = MT_BALL_PREVIEWS[id] || "🎾"; ball.textContent = state.ballSkinEmoji; }
   function renderSwatches(containerId, catalogKey, applyFn, previewMap) {
     const wrap = document.getElementById(containerId);
     if (!window.AIGLeaderboard || !AIGLeaderboard.getCosmetics) { wrap.innerHTML = ""; return; }
@@ -276,9 +310,21 @@ function initMathTennis() {
   // lane bias (see ROBOT_LANE_WEIGHTS / rollLane).
   function applyRobotSkin(id) {
     state.robotSkin = ROBOT_LANE_WEIGHTS[id] ? id : "classic";
-    racketTopFace.textContent = ROBOT_FACES[state.robotSkin] || "🤖";
+    setRobotFace();
   }
   renderSwatches("mt-robot-swatches", "mathtennis-robot", applyRobotSkin, {});
+  // Themed court + ball trail (round 3, items 25/26)
+  function applyCourtSkin(id) { court.dataset.theme = id; }
+  function applyTrailSkin(id) { state.trailSkin = id; }
+  renderSwatches("mt-court-swatches", "mathtennis-court", applyCourtSkin, {});
+  renderSwatches("mt-trail-swatches", "mathtennis-trail", applyTrailSkin, {});
+  // Fan sign with the player's name in the crowd (item 24)
+  (function fanSign() {
+    const sign = document.createElement("span");
+    sign.className = "mt-fan-sign";
+    sign.textContent = String(player.name || "FAN").split(" ")[0].slice(0, 7).toUpperCase();
+    crowdTop.appendChild(sign);
+  })();
 
   // ---- Lifetime stats + achievements (item 23) -------------------------
   function renderAchievementBadges(containerId, list) {
@@ -428,7 +474,9 @@ function initMathTennis() {
     if (reducedMotion()) return;
     const dot = document.createElement("div");
     dot.className = "mt-ball-trail";
-    dot.textContent = ball.textContent;
+    if (state.trailSkin === "rainbow") { dot.textContent = "●"; dot.style.color = `hsl(${(state.trailHue = (state.trailHue + 40) % 360)},85%,55%)`; }
+    else if (state.trailSkin === "stars") dot.textContent = "⭐";
+    else dot.textContent = ball.textContent;
     dot.style.left = leftPct + "%";
     dot.style.top = topPct + "%";
     court.appendChild(dot);
@@ -673,12 +721,61 @@ function initMathTennis() {
     }
     windEl.classList.toggle("hidden", !state.windActive);
 
-    // Rain (item 31) -- independent roll from wind, can rarely overlap.
-    state.rainActive = !state.bonusRallyActive && !isLastShot && rng() < RAIN_CHANCE;
+    // Weather (items 31 + round 3 item 16) -- one of rain / snow / fog per serve.
+    const wr = rng();
+    const weatherOk = !state.bonusRallyActive && !isLastShot;
+    state.weather = !weatherOk ? null : wr < WEATHER_RAIN ? "rain" : wr < WEATHER_RAIN + WEATHER_SNOW ? "snow" : wr < WEATHER_RAIN + WEATHER_SNOW + WEATHER_FOG ? "fog" : null;
+    state.rainActive = state.weather === "rain";
     rainEl.classList.toggle("hidden", !state.rainActive);
     if (state.rainActive && !rainEl.children.length) {
       rainEl.innerHTML = Array.from({ length: 14 }, () => `<i style="left:${rand(0, 98)}%;animation-duration:${0.6 + Math.random() * 0.4}s;animation-delay:${Math.random()}s"></i>`).join("");
     }
+    snowEl.classList.toggle("hidden", state.weather !== "snow");
+    if (state.weather === "snow" && !snowEl.children.length) {
+      snowEl.innerHTML = Array.from({ length: 16 }, () => `<i style="left:${rand(0, 98)}%;animation-duration:${2 + Math.random() * 2}s;animation-delay:${Math.random() * 2}s">❄️</i>`).join("");
+    }
+    fogEl.classList.toggle("hidden", state.weather !== "fog");
+
+    // Twist (round 3 items 1/3/4/5) -- at most one per serve, never with wind
+    state.twist = null; state.kickFrom = null; state.decoyLane = null;
+    if (weatherOk && !state.windActive && rng() < TWIST_CHANCE) {
+      state.twist = ["kick", "mystery", "drop", "decoy"][rand(0, 3)];
+      const others = LANES.filter(l => l !== state.ballLane);
+      if (state.twist === "kick") state.kickFrom = others[rand(0, others.length - 1)];
+      if (state.twist === "decoy") state.decoyLane = others[rand(0, others.length - 1)];
+    }
+    decoyEl.classList.toggle("hidden", state.twist !== "decoy");
+    mysteryQ.classList.toggle("hidden", state.twist !== "mystery");
+    ball.classList.toggle("real-mark", state.twist === "decoy");
+
+    // Golden ball (item 27)
+    state.goldenActive = weatherOk && rng() < GOLDEN_CHANCE;
+    ball.classList.toggle("golden", state.goldenActive);
+    ball.classList.toggle("fire", state.fireTurns > 0);
+
+    // Power-up pickup on the court (item 9)
+    state.powerup = null;
+    powerupEl.classList.add("hidden");
+    if (weatherOk && rng() < POWERUP_CHANCE) {
+      const type = ["slow", "shield", "magnet"][rand(0, 2)];
+      state.powerup = { type, lane: LANES[rand(0, 2)] };
+      powerupEl.textContent = type === "slow" ? "⚡" : type === "shield" ? "🛡️" : "🧲";
+      powerupEl.style.left = LANE_PCT[state.powerup.lane] + "%";
+      powerupEl.classList.remove("hidden");
+    }
+
+    // Target practice bonus (item 11)
+    targetEl.classList.add("hidden"); targetEl.classList.remove("pop");
+    if (state.bonusRallyActive && state.targetBonus) {
+      targetEl.style.left = LANE_PCT[state.ballLane] + "%";
+      targetEl.classList.remove("hidden");
+    }
+
+    // Day/night cycle (item 17)
+    daynightEl.dataset.time = state.qIndex <= 2 ? "dawn" : state.qIndex <= 5 ? "day" : state.qIndex <= 8 ? "dusk" : "night";
+
+    // Surprise events (item 15)
+    if (weatherOk && !state.bonusRallyActive && rng() < SURPRISE_CHANCE) surpriseEvent();
 
     // Deuce (item 27) -- checked once, entering the penultimate serve.
     if (state.qIndex === DEUCE_AT + 1 && !state.deuceActive && !state.bonusRallyActive) {
@@ -695,9 +792,13 @@ function initMathTennis() {
       queueCaption(`Player ${state.teamTurn}, it's your lane!`, false);
     }
 
-    const typeLabel = SERVE_TYPES[state.serveType].label;
+    const TWIST_LABELS = { kick: "🌀 Kick Serve!", mystery: "❓ Mystery Serve", drop: "🪂 Drop Shot", decoy: "👯 Decoy Ball!" };
+    const typeLabel = [SERVE_TYPES[state.serveType].label, TWIST_LABELS[state.twist], state.weather === "snow" ? "❄️ Snow" : state.weather === "fog" ? "🌫️ Fog" : null].filter(Boolean).join(" · ");
     serveBadge.classList.toggle("hidden", !typeLabel || state.bonusRallyActive);
     if (typeLabel) serveBadge.textContent = typeLabel;
+    ball.textContent = SERVE_TYPES[state.serveType].emoji || state.ballSkinEmoji;
+    if (state.twist === "mystery") { robotSay("Guess where it goes! 😈"); }
+    if (state.boss && state.qIndex === 1) boSay("Boss fight! Tiap return ngurangin HP-nya 👹");
 
     if (isLastShot) {
       champBanner.classList.remove("show"); void champBanner.offsetWidth; champBanner.classList.add("show");
@@ -729,7 +830,11 @@ function initMathTennis() {
     let baseDuration = Math.max(MIN_DURATION_MS, BASE_DURATION_MS - state.pointsWon * DURATION_STEP_MS);
     baseDuration *= SERVE_TYPES[state.serveType].durationMult;
     if (state.mode === "ace" && !isLastShot) baseDuration *= ACE_MODE_DURATION_MULT;
+    if (state.boss && !state.bossDefeated) baseDuration *= BOSS_DURATION_MULT;
+    if (state.weather === "snow") baseDuration *= SNOW_DURATION_MULT;
+    if (state.puSlow) { baseDuration *= 1.3; state.puSlow = false; refreshPuChip(); }
     state.rallyDuration = Math.max(400, Math.round(baseDuration));
+    trickBtn.classList.remove("hidden");
 
     state.rallyRunning = true;
     state.rallyStart = performance.now();
@@ -741,14 +846,44 @@ function initMathTennis() {
     state.rafId = requestAnimationFrame(rallyTick);
   }
 
-  function ballLeftPctAt(pct) {
+  // Position progress vs. elapsed time (round 3, item 5) -- a Drop Shot
+  // crawls toward the net then plummets. Both the ball's drawn position AND
+  // the swing-window check use this, so the sweet-zone box always matches
+  // where the ball visually is.
+  function progressAt(t) {
+    if (state.twist !== "drop") return t;
+    if (t < DROP_SLOW_UNTIL) return DROP_SLOW_PCT * (t / DROP_SLOW_UNTIL);
+    return DROP_SLOW_PCT + (1 - DROP_SLOW_PCT) * ((t - DROP_SLOW_UNTIL) / (1 - DROP_SLOW_UNTIL));
+  }
+
+  function baseLeftPctAt(pct) {
     const finalPct = LANE_PCT[state.ballLane];
     if (state.windActive) {
       const prePct = LANE_PCT[state.windPreLane];
       if (pct < 0.5) return 50 + (prePct - 50) * (pct / 0.5);
       return prePct + (finalPct - prePct) * ((pct - 0.5) / 0.5);
     }
-    return 50 + (finalPct - 50) * pct;
+    // Kick serve (round 3, item 4) -- heads to one lane, then jinks to the real one
+    if (state.twist === "kick" && state.kickFrom) {
+      const pre = LANE_PCT[state.kickFrom];
+      if (pct < 0.62) return 50 + (pre - 50) * (pct / 0.62);
+      if (pct < 0.74) return pre + (finalPct - pre) * ((pct - 0.62) / 0.12);
+      return finalPct;
+    }
+    let x = 50 + (finalPct - 50) * pct;
+    // Banana serve (round 3, item 7) -- weaves side to side, settling by the end
+    if (state.serveType === "banana") x += Math.sin(pct * Math.PI * 3) * 14 * (1 - pct);
+    return x;
+  }
+
+  function ballLeftPctAt(pct) {
+    const base = baseLeftPctAt(pct);
+    // Mystery serve (round 3, item 3) -- the lane stays hidden until ~40%
+    if (state.twist === "mystery") {
+      if (pct < 0.4) return 50;
+      if (pct < 0.55) return 50 + (base - 50) * ((pct - 0.4) / 0.15);
+    }
+    return base;
   }
 
   function rallyTick(now) {
@@ -758,12 +893,16 @@ function initMathTennis() {
     // Math Hoops' animateScoreRollup, needed under a setTimeout-based rAF
     // polyfill which calls back with no arguments).
     const elapsed = (now || performance.now()) - state.rallyStart;
-    const pct = Math.min(1, elapsed / state.rallyDuration);
+    const tFrac = Math.min(1, elapsed / state.rallyDuration);
+    const pct = progressAt(tFrac);
     const topPct = 10 + 80 * pct;
     const leftPct = ballLeftPctAt(pct);
     ball.style.top = topPct + "%";
     ball.style.left = leftPct + "%";
     state.ballCurLeftPct = leftPct;
+    if (state.twist === "decoy") { decoyEl.style.top = topPct + "%"; decoyEl.style.left = (50 + (LANE_PCT[state.decoyLane] - 50) * pct) + "%"; }
+    if (state.twist === "mystery") { mysteryQ.style.top = topPct + "%"; mysteryQ.style.left = leftPct + "%"; mysteryQ.classList.toggle("hidden", pct >= 0.4); }
+    if (state.weather === "fog") ball.style.opacity = pct < 0.35 ? "0.25" : "1";
 
     const trailStep = Math.floor(elapsed / 90);
     if (trailStep !== state._lastTrailTick) { state._lastTrailTick = trailStep; spawnBallTrail(leftPct, topPct); }
@@ -771,22 +910,29 @@ function initMathTennis() {
     const [minW] = effectiveSweetWindow(state.qIndex === ROUND_SIZE);
     sweetZone.classList.toggle("approaching", pct * 100 > minW - 15 && pct < 1);
 
-    if (pct >= 1) { resolveRally(false, {}); return; }
+    if (tFrac >= 1) { resolveRally(false, {}); return; }
     state.rafId = requestAnimationFrame(rallyTick);
   }
 
-  function onSwing() {
+  function onSwing(isTrick) {
     if (!state.rallyRunning || state.resolved) return;
     const elapsed = performance.now() - state.rallyStart;
-    const pct = (elapsed / state.rallyDuration) * 100;
-    const [minW, maxW] = effectiveSweetWindow(state.qIndex === ROUND_SIZE);
+    const pct = progressAt(Math.min(1, elapsed / state.rallyDuration)) * 100;
+    let [minW, maxW] = effectiveSweetWindow(state.qIndex === ROUND_SIZE);
+    // Trick shot (round 3, item 8) -- a flashier swing with a narrower window
+    if (isTrick === true) { const w = maxW - minW; minW += w * TRICK_NARROW; maxW -= w * TRICK_NARROW; }
     const timingOk = pct >= minW && pct <= maxW;
-    const laneOk = Math.abs(state.ballCurLeftPct - LANE_PCT[state.racketLane]) <= LANE_HIT_TOLERANCE;
+    const tol = LANE_HIT_TOLERANCE + (state.puMagnet ? 12 : 0);
+    const laneOk = Math.abs(state.ballCurLeftPct - LANE_PCT[state.racketLane]) <= tol;
+    if (state.puMagnet) { state.puMagnet = false; refreshPuChip(); }
     const isAce = timingOk && laneOk && pct >= ACE_MIN_PCT && pct <= ACE_MAX_PCT;
     const isHit = timingOk && laneOk;
     swingRacket(racketBottom);
     spawnSwingArc();
-    resolveRally(isHit, { isAce, early: pct < minW, late: pct > maxW, wrongLane: timingOk && !laneOk });
+    // Timing readout (round 3, item 17) -- how many ms off the window's centre
+    const centre = (minW + maxW) / 2;
+    const msOff = Math.round(((pct - centre) / 100) * state.rallyDuration);
+    resolveRally(isHit, { isAce, isTrick: isTrick === true && isHit, msOff, early: pct < minW, late: pct > maxW, wrongLane: timingOk && !laneOk });
   }
 
   function animateBallAway(isHit) {
@@ -798,6 +944,180 @@ function initMathTennis() {
       ball.style.opacity = "0";
     }
   }
+
+  // ============== ROUND 3 helpers ==============
+  const decoyEl = document.getElementById("mt-ball-decoy");
+  const mysteryQ = document.getElementById("mt-mystery-q");
+  const snowEl = document.getElementById("mt-snow");
+  const fogEl = document.getElementById("mt-fog");
+  const targetEl = document.getElementById("mt-target");
+  const powerupEl = document.getElementById("mt-powerup");
+  const vignetteEl = document.getElementById("mt-vignette");
+  const rushTicker = document.getElementById("mt-rush-ticker");
+  const robotBubble = document.getElementById("mt-robot-bubble");
+  const boBubbleEl = document.getElementById("mt-bo-bubble");
+  const daynightEl = document.getElementById("mt-daynight");
+  const trickBtn = document.getElementById("mt-trick-btn");
+  const smashBtn = document.getElementById("mt-smash-btn");
+  const bossHpBar = document.getElementById("mt-boss-hp");
+  const bossHpFill = document.getElementById("mt-boss-hp-fill");
+  const ghostBar = document.getElementById("mt-ghost-bar");
+
+  function bubble(el, text, ms) {
+    el.textContent = text;
+    el.classList.add("show");
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove("show"), ms || 1400);
+  }
+  function robotSay(text) { bubble(robotBubble, text, 1300); }
+  // Coach Bo (round 3, item 22) -- chatty but rate-limited so he never spams
+  function boSay(text) {
+    const now = performance.now();
+    if (now - state.lastBoAt < 4500) return;
+    state.lastBoAt = now;
+    bubble(boBubbleEl, "🧠 " + text, 2600);
+  }
+  // Robot face escalates with the player's streak (item 21)
+  function setRobotFace() {
+    const base = ROBOT_FACES[state.robotSkin] || "🤖";
+    racketTopFace.textContent = state.boss && !state.bossDefeated ? "👹" : state.streak >= 7 ? "🤯" : state.streak >= 4 ? "😠" : base;
+  }
+  // Pickup chip showing what's armed (item 9)
+  const puChip = document.createElement("span");
+  puChip.className = "mt-hud-chip hidden";
+  document.querySelector(".mt-hud").appendChild(puChip);
+  function refreshPuChip() {
+    const bits = [state.shield ? "🛡️" : "", state.puSlow ? "⚡" : "", state.puMagnet ? "🧲" : ""].filter(Boolean).join(" ");
+    puChip.textContent = bits;
+    puChip.classList.toggle("hidden", !bits);
+  }
+  function maybeCollectPowerup() {
+    const pu = state.powerup;
+    powerupEl.classList.add("hidden");
+    state.powerup = null;
+    if (!pu || state.racketLane !== pu.lane) return;
+    if (pu.type === "slow") { state.puSlow = true; queueCaption("⚡ Slow-mo armed for the next serve!", false); }
+    else if (pu.type === "shield") { state.shield = true; queueCaption("🛡️ Shield: your next miss is forgiven!", false); }
+    else { state.puMagnet = true; queueCaption("🧲 Magnet: wider lane on your next swing!", false); }
+    refreshPuChip();
+    playAce();
+  }
+  function fireworks() {
+    if (reducedMotion()) return;
+    for (let b = 0; b < 3; b++) {
+      const cx = 20 + Math.random() * 60, cy = 15 + Math.random() * 40;
+      for (let i = 0; i < 8; i++) {
+        const f = document.createElement("div");
+        f.className = "mt-firework";
+        f.textContent = ["✨", "🎆", "⭐"][i % 3];
+        f.style.left = cx + "%"; f.style.top = cy + "%";
+        const ang = (i / 8) * Math.PI * 2;
+        f.style.setProperty("--fx", Math.cos(ang) * 38 + "px"); f.style.setProperty("--fy", Math.sin(ang) * 38 + "px");
+        f.style.animationDelay = b * 120 + "ms";
+        court.appendChild(f);
+        setTimeout(() => f.remove(), 1100 + b * 120);
+      }
+    }
+  }
+  function spawnMascot() {
+    if (reducedMotion()) return;
+    const m = document.createElement("div");
+    m.className = "mt-mascot";
+    m.textContent = ["🦖", "🐼", "🦊", "🐸"][rand(0, 3)];
+    court.appendChild(m);
+    setTimeout(() => m.remove(), 2300);
+  }
+  // Surprise events (item 15)
+  function surpriseEvent() {
+    const ev = ["wave", "ballrain", "quake"][rand(0, 2)];
+    if (ev === "wave") {
+      [crowdTop, crowdBottom].forEach(c => { c.classList.remove("wave"); void c.offsetWidth; c.classList.add("wave"); });
+      state.score += 5; hudScore.textContent = state.score; flipChip(hudScore);
+      queueCaption("🌊 Crowd wave! +5", false);
+    } else if (ev === "ballrain") {
+      queueCaption("🎾 Ball rain! Tap them! (+3 each)", false);
+      for (let i = 0; i < 5; i++) {
+        const b = document.createElement("div");
+        b.className = "mt-ballrain";
+        b.textContent = "🎾";
+        b.style.left = (8 + Math.random() * 84) + "%";
+        b.style.animationDelay = (i * 250) + "ms";
+        const grab = () => { state.score += 3; hudScore.textContent = state.score; flipChip(hudScore); b.remove(); };
+        b.addEventListener("pointerdown", grab);
+        court.appendChild(b);
+        setTimeout(() => b.remove(), 3200);
+      }
+    } else {
+      if (!reducedMotion()) { court.classList.remove("quake"); void court.offsetWidth; court.classList.add("quake"); }
+      queueCaption("🌋 Whoa, the court is rumbling!", false);
+    }
+  }
+  function playStreakStinger() { mtTone([523.25, 659.25, 783.99, 1046.5], 0.14, 0.12); }
+  function playVictoryFanfare() { mtTone([523.25, 523.25, 659.25, 783.99, 1046.5], 0.2, 0.14); }
+
+  // Boss (item 2)
+  function updateBossBar() {
+    bossHpBar.classList.toggle("hidden", !state.boss);
+    bossHpFill.style.width = Math.max(0, state.bossHp / BOSS_HP * 100) + "%";
+  }
+  // Ghost rival bar (item 30) -- your running score vs. your record paced evenly across the match
+  function updateGhostBar() {
+    let best = 0;
+    try { best = Number(localStorage.getItem(BEST_SCORE_KEY) || 0); } catch (e) {}
+    ghostBar.classList.toggle("hidden", !best);
+    if (!best) return;
+    document.getElementById("mt-ghost-you").style.width = Math.min(100, state.score / best * 100) + "%";
+    document.getElementById("mt-ghost-rec").style.width = Math.min(100, Math.min(state.qIndex, ROUND_SIZE) / ROUND_SIZE * 100) + "%";
+  }
+
+  // Sticker album (item 29)
+  function loadStickers() { try { return JSON.parse(localStorage.getItem(STICKERS_KEY) || "{}"); } catch (e) { return {}; } }
+  function dropSticker(points) {
+    const chance = points === ROUND_SIZE ? 1 : points >= 6 ? 0.6 : 0.4;
+    const line = document.getElementById("mt-sticker-line");
+    line.textContent = "";
+    if (Math.random() > chance) return;
+    const idx = rand(0, STICKERS.length - 1);
+    const all = loadStickers();
+    const had = all[idx] || 0;
+    all[idx] = had + 1;
+    try { localStorage.setItem(STICKERS_KEY, JSON.stringify(all)); } catch (e) {}
+    line.textContent = had ? `🎁 Duplicate sticker ${STICKERS[idx]} (x${had + 1})` : `🎁 NEW sticker ${STICKERS[idx]}!`;
+  }
+  function renderAlbum() {
+    const all = loadStickers();
+    const owned = Object.keys(all).length;
+    document.getElementById("mt-album-count").textContent = `(${owned}/${STICKERS.length})`;
+    document.getElementById("mt-album-grid").innerHTML = STICKERS.map((e, i) => `<div class="mt-album-cell ${all[i] ? "" : "locked"}">${e}${all[i] > 1 ? `<b>x${all[i]}</b>` : ""}</div>`).join("");
+  }
+  document.getElementById("mt-album-btn").addEventListener("click", () => { renderAlbum(); document.getElementById("mt-album-overlay").classList.remove("hidden"); });
+  document.getElementById("mt-album-close-btn").addEventListener("click", () => document.getElementById("mt-album-overlay").classList.add("hidden"));
+
+  // Lucky spin (item 28)
+  let spinAngle = 0;
+  document.getElementById("mt-spin-btn").addEventListener("click", () => {
+    document.getElementById("mt-spin-result").textContent = state.spinUsed ? "Already spun this match!" : "Good luck!";
+    document.getElementById("mt-spin-go-btn").disabled = state.spinUsed;
+    document.getElementById("mt-spin-overlay").classList.remove("hidden");
+  });
+  document.getElementById("mt-spin-close-btn").addEventListener("click", () => document.getElementById("mt-spin-overlay").classList.add("hidden"));
+  document.getElementById("mt-spin-go-btn").addEventListener("click", () => {
+    if (state.spinUsed) return;
+    state.spinUsed = true;
+    document.getElementById("mt-spin-go-btn").disabled = true;
+    const total = SPIN_WEIGHTS.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total, idx = 0;
+    for (; idx < SPIN_WEIGHTS.length - 1; idx++) { r -= SPIN_WEIGHTS[idx]; if (r <= 0) break; }
+    spinAngle += 360 * 5 + (360 - (idx * 60 + 30)) - (spinAngle % 360);
+    document.getElementById("mt-wheel").style.transform = `rotate(${spinAngle}deg)`;
+    const prize = SPIN_PRIZES[idx];
+    setTimeout(() => {
+      document.getElementById("mt-spin-result").textContent = `You won ${prize.label}!`;
+      if (prize.shield) { try { localStorage.setItem(START_SHIELD_KEY, "1"); } catch (e) {} }
+      else if (window.AIGLeaderboard && AIGLeaderboard.creditWallet) AIGLeaderboard.creditWallet({ coins: prize.coins || 0, gems: prize.gems || 0 }).catch(() => {});
+      playAce();
+    }, 1900);
+  });
 
   // Ghost pace (round 2, item 15) -- at fixed checkpoints, compare this
   // match's points won against the player's own best match, scaled to how
@@ -812,6 +1132,7 @@ function initMathTennis() {
   }
 
   function nextStep(delay) {
+    updateGhostBar();
     setTimeout(() => { if (state.qIndex >= ROUND_SIZE) finishMatch(); else askQuestion(); }, delay);
   }
 
@@ -827,16 +1148,28 @@ function initMathTennis() {
     serveBadge.classList.add("hidden");
     sweetZone.classList.remove("approaching");
     ballSetMode(isHit ? "impact" : "none");
+    decoyEl.classList.add("hidden"); mysteryQ.classList.add("hidden");
+    snowEl.classList.add("hidden"); fogEl.classList.add("hidden");
+    ball.classList.remove("fire", "golden", "real-mark");
+    ball.textContent = state.ballSkinEmoji; ball.style.opacity = ball.style.opacity || "1";
+    trickBtn.classList.add("hidden");
+    if (!state.bonusRallyActive) maybeCollectPowerup();
+    if (info.msOff !== undefined && !state.bonusRallyActive) {
+      const ms = Math.abs(info.msOff);
+      if (isHit && ms >= 8) queueCaption(info.msOff > 0 ? `⏱️ ${ms}ms late` : `⏱️ ${ms}ms early`, false);
+    }
 
     // Bonus rally short-circuit (item 15, Double Serve) -- a flat bonus,
     // no question gate, never affects pointsWon/qIndex/streak.
     if (state.bonusRallyActive) {
       state.bonusRallyActive = false;
+      const bonusAmt = state.targetBonus ? TARGET_BONUS : MULTIBALL_BONUS;
+      if (state.targetBonus) { targetEl.classList.add("pop"); }
       if (isHit) {
-        state.score += MULTIBALL_BONUS;
+        state.score += bonusAmt;
         hudScore.textContent = state.score;
         flipChip(hudScore);
-        showCaption(`🎾🎾 Double Serve bonus! +${MULTIBALL_BONUS}`, false);
+        showCaption(state.targetBonus ? `🍎 Bullseye! +${bonusAmt}` : `🎾🎾 Double Serve bonus! +${bonusAmt}`, false);
         playThwock();
         vib(35);
       } else {
@@ -844,6 +1177,8 @@ function initMathTennis() {
         whiffRacket();
         playNet();
       }
+      state.targetBonus = false;
+      setTimeout(() => targetEl.classList.add("hidden"), 450);
       animateBallAway(isHit);
       nextStep(900);
       return;
@@ -864,11 +1199,16 @@ function initMathTennis() {
         playThwock();
         vib(20);
         if (!reducedMotion()) { court.classList.remove("volley-pan"); void court.offsetWidth; court.classList.add("volley-pan"); }
+        // Rally Rush (round 3, item 14) -- the court glows and a ticker counts the exchanges
+        court.classList.add("rush");
+        rushTicker.textContent = `🔁 RALLY RUSH x${state.volleyCount + 1}`;
+        rushTicker.classList.remove("show"); void rushTicker.offsetWidth; rushTicker.classList.add("show");
         animateBallAway(true);
         setTimeout(() => startVolleyFlight(), 650);
         return;
       }
 
+      court.classList.remove("rush"); rushTicker.classList.remove("show");
       state.pointsWon++;
       hudPoints.textContent = state.pointsWon;
       flipChip(hudPoints);
@@ -883,8 +1223,14 @@ function initMathTennis() {
       if (info.isAce) { gained += ACE_BONUS; state.aces++; }
       const rallyBonus = RALLY_LENGTH_BONUS * state.volleyCount; // item 33
       gained += rallyBonus;
+      const serveBonus = SERVE_TYPES[state.serveType].bonus || 0; // rocket serve (round 3, item 7)
+      gained += serveBonus;
+      if (info.isTrick) gained += TRICK_BONUS;
+      if (state.goldenActive) { gained += GOLDEN_BONUS; if (window.AIGLeaderboard && AIGLeaderboard.creditWallet) AIGLeaderboard.creditWallet({ coins: GOLDEN_COINS }).catch(() => {}); }
       let usedPower = false;
       if (state.powerReady) { gained = Math.round(gained * POWER_MULT); state.powerReady = false; powerBar.classList.remove("full"); usedPower = true; }
+      const fireNow = state.fireTurns > 0;
+      if (fireNow) { gained *= 2; state.fireTurns--; }
       if (state.deuceActive) gained = Math.round(gained * DEUCE_MULT); // item 27
       if (isLastShot) gained = Math.round(gained * CHAMPIONSHIP_MULT);
       if (state.mode === "ace") gained = Math.round(gained * ACE_MODE_PTS_MULT);
@@ -901,11 +1247,43 @@ function initMathTennis() {
       markDot(state._dotIndex, info.isAce ? "ace" : "won");
       state.reviewLog[state._dotIndex] = { kind: info.isAce ? "ace" : "won", gained, lane: state.ballLane, volleys: state.volleyCount };
 
+      // On Fire (item 10): 3 aces in a row -> next 3 points score double
+      state.aceChain = info.isAce ? state.aceChain + 1 : 0;
+      if (state.aceChain >= FIRE_ACES_NEEDED) { state.fireTurns = FIRE_TURNS; state.aceChain = 0; queueCaption("🔥🔥 ON FIRE! Next 3 points x2!", false); }
+      // Boss HP (item 2)
+      if (state.boss && !state.bossDefeated) {
+        state.bossHp = Math.max(0, state.bossHp - 1);
+        updateBossBar();
+        if (state.bossHp === 0) {
+          state.bossDefeated = true;
+          state.score += BOSS_BONUS; hudScore.textContent = state.score;
+          if (window.AIGLeaderboard && AIGLeaderboard.creditWallet) AIGLeaderboard.creditWallet({ coins: 10 }).catch(() => {});
+          queueCaption(`👹 BOSS DEFEATED! +${BOSS_BONUS} & 🪙10`, false);
+          fireworks(); playVictoryFanfare();
+        }
+      }
+      setRobotFace();
+      // Fireworks + mascot + stinger at streak 4 / 8 (items 12, 23, 19)
+      if (state.streak > 0 && state.streak % 4 === 0) { fireworks(); spawnMascot(); playStreakStinger(); }
+      if (info.isAce) robotSay(AWE[rand(0, AWE.length - 1)]);
+      if (info.isAce) boSay("Wih ACE! Timing-nya mantap 🎯");
+      else if (state.streak === 3) boSay("3 beruntun! Terus jaga ritmenya 🔥");
+
       const mainMsg = isLastShot ? `🏆 CHAMPIONSHIP POINT! +${gained}` : info.isAce ? `💥 ACE! +${gained}` : state.streak >= 3 ? `🔥 Great return! (${state.streak} in a row!)` : "🎾 Great return!";
       showCaption(mainMsg, false);
       if (usedPower) queueCaption(`⚡ Power shot! ×${POWER_MULT}`, false);
       if (rallyBonus) queueCaption(`🔁 Long rally bonus! +${rallyBonus}`, false);
 
+      if (info.isTrick) queueCaption(`🎪 TRICK SHOT! +${TRICK_BONUS}`, false);
+      if (serveBonus) queueCaption(`🚀 Rocket bonus! +${serveBonus}`, false);
+      if (state.goldenActive) queueCaption(`🟡 GOLDEN BALL! +${GOLDEN_BONUS} & 🪙${GOLDEN_COINS}`, false);
+      if (info.isAce) {
+        // Ace cam (round 3, item 13) -- a brief freeze-frame vignette
+        if (!reducedMotion()) {
+          vignetteEl.classList.remove("show"); void vignetteEl.offsetWidth; vignetteEl.classList.add("show");
+          court.classList.remove("ace-cam"); void court.offsetWidth; court.classList.add("ace-cam");
+        }
+      }
       if (info.isAce) { playAce(); vib([40, 30, 60]); } else { playThwock(); vib(isLastShot ? [50, 30, 50, 30, 80] : 35); }
       if (isLastShot || info.isAce) { court.classList.remove("punch"); void court.offsetWidth; court.classList.add("punch"); }
       if (state.streak >= 3) { burstConfetti(false); playCrowdReact(); }
@@ -914,17 +1292,35 @@ function initMathTennis() {
       animateBallAway(true);
       checkPace();
 
+      // Smash window (round 3, item 6) -- a quick bonus tap after returning a Lob
+      const smashChance = state.serveType === "lob" && !isLastShot;
+      if (smashChance) {
+        state.smashOpen = true;
+        smashBtn.classList.remove("hidden");
+        setTimeout(() => { state.smashOpen = false; smashBtn.classList.add("hidden"); }, SMASH_WINDOW_MS);
+      }
       if (!isLastShot && !state.multiballUsed && state.qIndex > MULTIBALL_NOT_BEFORE && state.qIndex < ROUND_SIZE - MULTIBALL_NOT_BEFORE && rng() < MULTIBALL_CHANCE) {
         state.multiballUsed = true;
-        setTimeout(offerBonusRally, 900);
+        setTimeout(offerBonusRally, smashChance ? SMASH_WINDOW_MS + 100 : (info.isAce ? 1300 : 900));
       } else {
-        nextStep(1000);
+        nextStep(smashChance ? SMASH_WINDOW_MS + 200 : (info.isAce ? 1500 : 1000));
       }
     } else {
-      state.streak = 0;
-      state.comboMult = 1;
-      hudStreak.classList.add("hidden");
-      updatePowerMeter(false);
+      court.classList.remove("rush"); rushTicker.classList.remove("show");
+      state.aceChain = 0;
+      if (state.fireTurns > 0) state.fireTurns--;
+      // Shield power-up (item 9): the streak and power meter survive one miss
+      const shielded = state.shield;
+      if (shielded) { state.shield = false; refreshPuChip(); queueCaption("🛡️ Shield saved your streak!", false); }
+      else {
+        state.streak = 0;
+        state.comboMult = 1;
+        hudStreak.classList.add("hidden");
+        updatePowerMeter(false);
+      }
+      setRobotFace();
+      if (rng() < 0.6) robotSay(TAUNTS[rand(0, TAUNTS.length - 1)]);
+      if (info.wrongLane && !state.boTipShown) { state.boTipShown = true; boSay("Tip: geser racket ke lane bola SEBELUM swing ya!"); }
       markDot(state._dotIndex, "lost");
       const missMsg = info.early ? "⏱️ Swung too early!" : info.late ? "⏱️ Swung too late!" : info.wrongLane ? "↔️ Wrong side -- ball went past!" : "You missed the timing on that return.";
       state.reviewLog[state._dotIndex] = { kind: "lost", gained: 0, lane: state.ballLane, reason: info.early ? "early" : info.late ? "late" : info.wrongLane ? "wrong side" : "missed", volleys: state.volleyCount };
@@ -947,6 +1343,8 @@ function initMathTennis() {
     state.resolved = false;
     state.ballLane = rollLane();
     state.windActive = false;
+    state.twist = null; state.kickFrom = null; // twists only apply to the opening serve
+    trickBtn.classList.remove("hidden");
     state.rallyDuration = Math.max(400, Math.round(state.rallyDuration * 0.82));
     ball.style.transition = "none";
     ball.style.opacity = "1";
@@ -980,7 +1378,8 @@ function initMathTennis() {
   // question needed, flat bonus to SCORE only (never pointsWon/qIndex).
   function offerBonusRally() {
     if (state.ended) return;
-    showCaption("🎾🎾 Double Serve! One more for a bonus!", false);
+    state.targetBonus = rng() < 0.5;
+    showCaption(state.targetBonus ? "🍎 Target practice! Hit the apple lane!" : "🎾🎾 Double Serve! One more for a bonus!", false);
     state.bonusRallyActive = true;
     state.letUsedThisPoint = true; // no let on a bonus rally -- keep it snappy
     startRally(state._dotIndex);
@@ -1080,6 +1479,19 @@ function initMathTennis() {
     if (points >= 6) crowdCheer();
 
     saveHistory({ points, score: state.score, date: Date.now() });
+    // Boss tally, personal-best score, stickers, trophy, fanfare (round 3)
+    try {
+      localStorage.setItem(MATCH_COUNT_KEY, String(Number(localStorage.getItem(MATCH_COUNT_KEY) || 0) + 1));
+      if (state.score > Number(localStorage.getItem(BEST_SCORE_KEY) || 0)) localStorage.setItem(BEST_SCORE_KEY, String(state.score));
+    } catch (e) {}
+    [powerupEl, targetEl, smashBtn, trickBtn].forEach(el => el.classList.add("hidden"));
+    court.classList.remove("rush");
+    state.boss = false; setRobotFace();
+    dropSticker(points);
+    const trophy = document.getElementById("mt-trophy");
+    trophy.classList.remove("show");
+    if (points >= 9 && !reducedMotion()) { void trophy.offsetWidth; trophy.classList.add("show"); }
+    if (points >= 6) playVictoryFanfare();
     renderHistory();
 
     const bonusEl = document.getElementById("mt-end-bonus");
@@ -1136,6 +1548,24 @@ function initMathTennis() {
     state.letUsedThisPoint = false;
     state.rainActive = false; state.deuceActive = false;
     state.clutchMakes = 0;
+    state.aceChain = 0; state.fireTurns = 0; state.puSlow = false; state.puMagnet = false;
+    state.powerup = null; state.targetBonus = false; state.smashOpen = false; state.spinUsed = false;
+    state.boTipShown = false; state.lastBoAt = 0; state.twist = null; state.weather = null;
+    // Boss match (round 3, item 2) -- every 4th normal match
+    let played = 0;
+    try { played = Number(localStorage.getItem(MATCH_COUNT_KEY) || 0); } catch (e) {}
+    state.boss = !state.daily && state.mode === "normal" && (played + 1) % BOSS_EVERY === 0;
+    state.bossHp = state.boss ? BOSS_HP : 0; state.bossDefeated = false;
+    // A Lucky Spin shield prize from last match, spent now
+    let startShield = false;
+    try { startShield = localStorage.getItem(START_SHIELD_KEY) === "1"; if (startShield) localStorage.removeItem(START_SHIELD_KEY); } catch (e) {}
+    state.shield = startShield;
+    refreshPuChip();
+    updateBossBar(); setRobotFace(); updateGhostBar();
+    if (startShield) setTimeout(() => queueCaption("🛡️ Spin prize: you start with a Shield!", false), 400);
+    [powerupEl, targetEl, smashBtn, trickBtn, decoyEl, mysteryQ, snowEl, fogEl].forEach(el => el.classList.add("hidden"));
+    court.classList.remove("rush");
+    document.getElementById("mt-trophy").classList.remove("show");
     state.ended = false;
     state.dotLog = []; state.reviewLog = [];
     capQueue = []; capBusy = false;
@@ -1235,7 +1665,15 @@ function initMathTennis() {
   function rng() { return dailyRng ? dailyRng() : Math.random(); }
   const isDailyLink = new URLSearchParams(location.search).get("daily") === "1";
 
-  swingBtn.addEventListener("click", onSwing);
+  swingBtn.addEventListener("click", () => onSwing(false));
+  trickBtn.addEventListener("click", () => onSwing(true));
+  smashBtn.addEventListener("click", () => {
+    if (!state.smashOpen) return;
+    state.smashOpen = false; smashBtn.classList.add("hidden");
+    state.score += SMASH_BONUS; hudScore.textContent = state.score; flipChip(hudScore);
+    showCaption(`💥 SMASH! +${SMASH_BONUS}`, false);
+    playAce(); vib([30, 20, 50]);
+  });
   document.getElementById("mt-start-btn").addEventListener("click", () => { state.daily = false; dailyRng = null; startMatch(); });
   document.getElementById("mt-daily-btn").addEventListener("click", () => { state.daily = true; dailyRng = mulberry32(dailySeed()); startMatch(); });
   // Play Again keeps whichever mode the last match used (a daily rerun
@@ -1247,5 +1685,4 @@ function initMathTennis() {
   if (isDailyLink) document.getElementById("mt-daily-btn").click();
 
   // NEW badge (round 2, item 25) -- shown until a match is started once
-  try { if (localStorage.getItem(NEW_BADGE_KEY) !== "1") newBadge.classList.remove("hidden"); } catch (e) {}
-}
+  try { if (localStorage.getItem(NEW_BADGE_KEY) !== "1") newBadge.classList.remove("hidden"); } catch (e) {}}
