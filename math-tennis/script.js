@@ -63,6 +63,31 @@ function initMathTennis() {
     slice: { durationMult: 1, windowWiden: -6, weight: 10, label: "🔪 Slice" }
   };
 
+  // ============== ROUND 2 constants (animation/UI-UX/gameplay) ==========
+  const RAIN_CHANCE = 0.1, RAIN_WINDOW_SHRINK = 4;      // item 31 -- independent of wind, narrows the sweet window a touch
+  const CLUTCH_WINDOW = 3;                              // item 30 -- final N real serves of the match
+  // Deuce (item 27) -- there's no real "opponent score" in this solo format,
+  // so this is an explicit reframing: entering the penultimate serve, if the
+  // match has been a genuine coin-flip so far (points won close to half of
+  // serves played), call it a Deuce and raise the stakes on the final 2
+  // serves with a flat multiplier -- cosmetic tension, not real tennis rules.
+  const DEUCE_AT = ROUND_SIZE - 2;
+  const DEUCE_BAND = 0.15;                              // within +/-15% of a 50/50 split counts as "close"
+  const DEUCE_MULT = 1.4;
+  const VOLLEY_CHANCE_2 = 0.1;                          // item 33 -- a SECOND continuation, only after the first volley is already won
+  const RALLY_LENGTH_BONUS = 8;                         // item 33 -- per extra volley survived before the point is won
+  // Robot opponent "personality" (item 29) -- a cosmetic choice that also
+  // biases which lane the robot favors; `classic` stays a uniform roll.
+  const ROBOT_LANE_WEIGHTS = {
+    classic: { left: 1, center: 1, right: 1 },
+    lefty: { left: 2, center: 1, right: 1 },
+    rightie: { left: 1, center: 1, right: 2 }
+  };
+  const ROBOT_FACES = { classic: "🤖", lefty: "🦾", rightie: "🦿" };
+  const HISTORY_KEY = "aig_mt_history", HISTORY_MAX = 5;      // item 14
+  const REDUCED_MOTION_KEY = "aig_mt_reduced_motion";         // item 16
+  const NEW_BADGE_KEY = "aig_mt_round2_seen";                 // item 25
+
   const hudPoints = document.getElementById("mt-hud-points");
   const hudScore = document.getElementById("mt-hud-score");
   const hudStreak = document.getElementById("mt-hud-streak");
@@ -85,6 +110,15 @@ function initMathTennis() {
   const hitCaption = document.getElementById("mt-hit-caption");
   const court = document.getElementById("mt-court");
   const laneBtns = { left: document.getElementById("mt-lane-left"), center: document.getElementById("mt-lane-center"), right: document.getElementById("mt-lane-right") };
+  const courtNet = document.getElementById("mt-court-net");
+  const rainEl = document.getElementById("mt-rain");
+  const deuceBanner = document.getElementById("mt-deuce-banner");
+  const crowdTop = document.getElementById("mt-crowd-top");
+  const crowdBottom = document.getElementById("mt-crowd-bottom");
+  const racketTopFace = document.getElementById("mt-racket-top-face");
+  const clutchBadge = document.getElementById("mt-clutch-badge");
+  const newBadge = document.getElementById("mt-new-badge");
+  const historyRow = document.getElementById("mt-history-row");
 
   const SOUND_KEY = "aig_mt_sound";
   const HAPTICS_KEY = "aig_mt_haptics";
@@ -104,10 +138,14 @@ function initMathTennis() {
     serveType: "normal",
     rallyRunning: false, rallyStart: 0, rallyDuration: BASE_DURATION_MS, rafId: null, resolved: false,
     ballCurLeftPct: 50,
-    letUsedThisPoint: false, volleyUsed: false,
+    letUsedThisPoint: false, volleyUsed: false, volleyUsed2: false, volleyCount: 0,
     multiballUsed: false, bonusRallyActive: false,
-    dotLog: [],
-    ended: false,
+    dotLog: [], reviewLog: [],
+    ended: false, daily: false,
+    rainActive: false, deuceActive: false,
+    teamCenterToggle: 1,
+    robotSkin: "classic",
+    clutchMakes: 0, bestMatchPoints: 0,
     _lastTrailTick: -1
   };
 
@@ -234,6 +272,13 @@ function initMathTennis() {
   }
   renderSwatches("mt-racket-swatches", "mathtennis-racket", applyRacketSkin, MT_RACKET_PREVIEWS);
   renderSwatches("mt-ball-swatches", "mathtennis-ball", applyBallSkin, MT_BALL_PREVIEWS);
+  // Robot Opponent (round 2, item 29) -- picks the robot's face AND its
+  // lane bias (see ROBOT_LANE_WEIGHTS / rollLane).
+  function applyRobotSkin(id) {
+    state.robotSkin = ROBOT_LANE_WEIGHTS[id] ? id : "classic";
+    racketTopFace.textContent = ROBOT_FACES[state.robotSkin] || "🤖";
+  }
+  renderSwatches("mt-robot-swatches", "mathtennis-robot", applyRobotSkin, {});
 
   // ---- Lifetime stats + achievements (item 23) -------------------------
   function renderAchievementBadges(containerId, list) {
@@ -268,6 +313,7 @@ function initMathTennis() {
   if (window.AIGLeaderboard) {
     if (AIGLeaderboard.getMathTennisLifetimeSummary) {
       AIGLeaderboard.getMathTennisLifetimeSummary().then(d => {
+        state.bestMatchPoints = d.bestMatchPoints || 0; // used by the ghost pace check
         const row = document.getElementById("mt-lifetime-row");
         if (d.matchesPlayed > 0) {
           row.textContent = `🏅 Best match: ${d.bestMatchPoints}/${ROUND_SIZE} · Lifetime points won: ${d.totalPointsWon}`;
@@ -323,9 +369,48 @@ function initMathTennis() {
     resultBanner.classList.toggle("miss", !!isMiss);
   }
 
+  // Caption queue (round 2, item 23) -- secondary captions (power shot,
+  // achievement unlock, ghost pace, rally bonus) fired right alongside a
+  // main caption used to overwrite/restart each other's animation before
+  // being readable, same class of bug Math Hoops' subtoast queue fixed.
+  // Secondary messages now line up one at a time behind the main caption.
+  const CAPTION_MS = 800;
+  let capQueue = [], capBusy = false;
+  function queueCaption(text, isMiss) {
+    capQueue.push({ text, isMiss });
+    if (capBusy) return;
+    capBusy = true;
+    // Start one beat late so the first secondary message never clobbers
+    // the main caption that triggered it.
+    setTimeout(drainCaptionQueue, 450);
+  }
+  function drainCaptionQueue() {
+    const next = capQueue.shift();
+    if (!next) { capBusy = false; return; }
+    showCaption(next.text, next.isMiss);
+    setTimeout(drainCaptionQueue, CAPTION_MS);
+  }
+
+  // Reduced motion (round 2, item 16) -- a user toggle layered on top of
+  // the OS-level prefers-reduced-motion media query; both skip the
+  // non-essential juice (confetti, trail, whoosh, ghost racket, crowd).
+  function reducedMotion() {
+    try {
+      if (localStorage.getItem(REDUCED_MOTION_KEY) === "1") return true;
+      return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    } catch (e) { return false; }
+  }
+
+  // Crowd reaction (round 2, item 4) -- a quick hop on both crowd rows.
+  function crowdCheer() {
+    if (reducedMotion()) return;
+    [crowdTop, crowdBottom].forEach(c => { c.classList.remove("react"); void c.offsetWidth; c.classList.add("react"); });
+  }
+
   // ---- Confetti (item 20) ------------------------------------------------
   const CONFETTI_COLORS = ["#8FAE1F", "#ffce6b", "#3a6ea5", "#D64545", "#C2D94E"];
   function burstConfetti(big) {
+    if (reducedMotion()) return;
     const count = big ? 36 : 14;
     for (let i = 0; i < count; i++) {
       const piece = document.createElement("div");
@@ -340,6 +425,7 @@ function initMathTennis() {
 
   // ---- Ball trail (item 17) -----------------------------------------------
   function spawnBallTrail(leftPct, topPct) {
+    if (reducedMotion()) return;
     const dot = document.createElement("div");
     dot.className = "mt-ball-trail";
     dot.textContent = ball.textContent;
@@ -351,21 +437,74 @@ function initMathTennis() {
 
   // ---- Swing visuals (item 18) --------------------------------------------
   function swingRacket(el) {
-    el.classList.remove("swinging");
+    el.classList.remove("swinging", "whiff");
     void el.offsetWidth;
     el.classList.add("swinging");
+    // Motion-blur ghost (round 2, item 2) -- a fading copy of the racket
+    // head left behind on every swing, both the robot's and the player's.
+    if (!reducedMotion()) {
+      const ghost = document.createElement("div");
+      ghost.className = "mt-racket-ghost";
+      el.appendChild(ghost);
+      setTimeout(() => ghost.remove(), 320);
+    }
   }
   function spawnSwingArc() {
     swingArc.classList.remove("show");
     void swingArc.offsetWidth;
     swingArc.classList.add("show");
   }
+  // Racket whiff (round 2, item 10) -- shake that plays right AFTER the
+  // normal swing animation ends (see the .28s delay in CSS), miss only.
+  function whiffRacket() {
+    racketBottom.classList.remove("whiff");
+    void racketBottom.offsetWidth;
+    racketBottom.classList.add("whiff");
+  }
+  // Net ripple + expanding ring (round 2, items 3+13) -- a Let's visible
+  // payoff, instead of only a text banner.
+  function netRipple() {
+    if (reducedMotion()) return;
+    courtNet.classList.remove("ripple"); void courtNet.offsetWidth; courtNet.classList.add("ripple");
+    const ring = document.createElement("div");
+    ring.className = "mt-net-ripple-ring";
+    ring.style.left = (LANE_PCT[state.ballLane] || 50) + "%";
+    court.appendChild(ring);
+    setTimeout(() => ring.remove(), 650);
+  }
+  // Ball state classes (round 2, items 1/5/11) -- exactly one of
+  // idle-bob / flying is ever active; toss/impact are one-shot squashes.
+  function ballSetMode(mode) {
+    ball.classList.remove("idle-bob", "flying", "toss", "impact");
+    if (reducedMotion()) return;
+    if (mode === "idle") ball.classList.add("idle-bob");
+    else if (mode === "flying") ball.classList.add("flying");
+    else if (mode === "toss" || mode === "impact") { void ball.offsetWidth; ball.classList.add(mode); }
+  }
+  // Scoreboard flip (round 2, item 8)
+  function flipChip(el) {
+    const chip = el.closest ? el.closest(".mt-hud-chip") : null;
+    if (!chip || reducedMotion()) return;
+    chip.classList.remove("flip"); void chip.offsetWidth; chip.classList.add("flip");
+  }
 
   // ---- Lane control (item 1) ----------------------------------------------
   function setRacketLane(lane) {
+    const changed = state.racketLane !== lane;
     state.racketLane = lane;
     racketBottom.style.left = LANE_PCT[lane] + "%";
     LANES.forEach(l => laneBtns[l].classList.toggle("sel", l === lane));
+    // Whoosh particles (round 2, item 7) -- only on a real lane change
+    if (changed && !reducedMotion()) {
+      for (let i = 0; i < 4; i++) {
+        const p = document.createElement("div");
+        p.className = "mt-lane-whoosh";
+        p.style.left = (LANE_PCT[lane] + (Math.random() * 8 - 4)) + "%";
+        p.style.bottom = (30 + Math.random() * 20) + "px";
+        court.appendChild(p);
+        setTimeout(() => p.remove(), 320);
+      }
+    }
   }
   LANES.forEach(l => laneBtns[l].addEventListener("click", () => setRacketLane(l)));
 
@@ -405,8 +544,8 @@ function initMathTennis() {
 
   function askQuestion() {
     if (state.qIndex >= ROUND_SIZE) { finishMatch(); return; }
-    // Team Score / Doubles turn banner (item 13)
-    if (state.mode === "team") showCaption(`Player ${state.teamTurn}'s turn!`, false);
+    // Doubles (items 13/28) -- whose lane it is gets announced once the
+    // serve's lane is rolled (see startRally), not here at question time.
     const q = rollQuestion();
     document.getElementById("mt-q-prompt").textContent = q.prompt;
     const grid = document.getElementById("mt-q-grid");
@@ -440,8 +579,8 @@ function initMathTennis() {
         startRally(dotIndex);
       } else {
         markDot(dotIndex, "noserve");
+        state.reviewLog[dotIndex] = { kind: "noserve", gained: 0 };
         showCaption("❌ Missed the serve -- no return this time.", true);
-        if (state.mode === "team") state.teamTurn = state.teamTurn === 1 ? 2 : 1;
         setTimeout(() => { if (state.qIndex >= ROUND_SIZE) finishMatch(); else askQuestion(); }, 900);
       }
     }, 700);
@@ -450,14 +589,31 @@ function initMathTennis() {
   // ---- Serve type + lane roll ---------------------------------------------
   function pickServeType() {
     const totalWeight = Object.values(SERVE_TYPES).reduce((s, t) => s + t.weight, 0);
-    let r = Math.random() * totalWeight;
+    let r = rng() * totalWeight;
     for (const key of Object.keys(SERVE_TYPES)) {
       r -= SERVE_TYPES[key].weight;
       if (r <= 0) return key;
     }
     return "normal";
   }
-  function rollLane() { return LANES[rand(0, LANES.length - 1)]; }
+  // Weighted by the equipped Robot Opponent (round 2, item 29) -- a
+  // "Lefty Bot" genuinely serves left more often, not just a skin.
+  function rollLane() {
+    const weights = ROBOT_LANE_WEIGHTS[state.robotSkin] || ROBOT_LANE_WEIGHTS.classic;
+    const total = LANES.reduce((s, l) => s + weights[l], 0);
+    let r = rng() * total;
+    for (const l of LANES) { r -= weights[l]; if (r <= 0) return l; }
+    return "center";
+  }
+  // Doubles per-lane responsibility (round 2, item 28) -- left lane is
+  // always Player 1's, right is always Player 2's, and the shared center
+  // lane alternates between them so neither side gets it every time.
+  function teamPlayerForLane(lane) {
+    if (lane === "left") return 1;
+    if (lane === "right") return 2;
+    state.teamCenterToggle = state.teamCenterToggle === 1 ? 2 : 1;
+    return state.teamCenterToggle;
+  }
 
   // Dynamically-sized sweet zone (item 8 fatigue + item 3 serve variety +
   // item 11 Ace Mode), computed fresh each rally rather than a single
@@ -472,6 +628,10 @@ function initMathTennis() {
       const shrink = (state.qIndex / ROUND_SIZE) * FATIGUE_MAX_SHRINK * width;
       min += shrink / 2; max -= shrink / 2;
     }
+    // Rain hazard (round 2, item 31) -- a slick court narrows the window
+    // slightly, on top of everything above; never on the championship
+    // point or a bonus rally (same exclusions as wind).
+    if (state.rainActive && !isLastShot && !state.bonusRallyActive) { min += RAIN_WINDOW_SHRINK / 2; max -= RAIN_WINDOW_SHRINK / 2; }
     return [min, max];
   }
 
@@ -488,10 +648,11 @@ function initMathTennis() {
 
     // Let / net cord (item 7) -- rolled before the ball ever moves, caps at
     // ONE re-serve per point via letUsedThisPoint so a freak double-roll
-    // can't stall the match.
+    // can't stall the match. Round 2 adds a net wobble + ripple ring.
     if (!state.letUsedThisPoint && !state.bonusRallyActive && rng() < LET_CHANCE) {
       state.letUsedThisPoint = true;
       showCaption("🎾 Let! Net cord -- re-serve.", false);
+      netRipple();
       playLet();
       vib(15);
       setTimeout(() => startRally(dotIndex), 900);
@@ -499,6 +660,9 @@ function initMathTennis() {
     }
 
     state.resolved = false;
+    // A fresh point starts here (volley continuations never come back
+    // through startRally), so reset the per-point volley tracking.
+    state.volleyUsed = false; state.volleyUsed2 = false; state.volleyCount = 0;
     state.serveType = state.bonusRallyActive ? "normal" : pickServeType();
     state.ballLane = rollLane();
     const isLastShot = state.qIndex === ROUND_SIZE;
@@ -509,19 +673,48 @@ function initMathTennis() {
     }
     windEl.classList.toggle("hidden", !state.windActive);
 
+    // Rain (item 31) -- independent roll from wind, can rarely overlap.
+    state.rainActive = !state.bonusRallyActive && !isLastShot && rng() < RAIN_CHANCE;
+    rainEl.classList.toggle("hidden", !state.rainActive);
+    if (state.rainActive && !rainEl.children.length) {
+      rainEl.innerHTML = Array.from({ length: 14 }, () => `<i style="left:${rand(0, 98)}%;animation-duration:${0.6 + Math.random() * 0.4}s;animation-delay:${Math.random()}s"></i>`).join("");
+    }
+
+    // Deuce (item 27) -- checked once, entering the penultimate serve.
+    if (state.qIndex === DEUCE_AT + 1 && !state.deuceActive && !state.bonusRallyActive) {
+      const ratio = state.pointsWon / DEUCE_AT;
+      if (Math.abs(ratio - 0.5) <= DEUCE_BAND) {
+        state.deuceActive = true;
+        deuceBanner.classList.remove("show"); void deuceBanner.offsetWidth; deuceBanner.classList.add("show");
+      }
+    }
+
+    // Doubles per-lane responsibility (item 28)
+    if (state.mode === "team" && !state.bonusRallyActive) {
+      state.teamTurn = teamPlayerForLane(state.ballLane);
+      queueCaption(`Player ${state.teamTurn}, it's your lane!`, false);
+    }
+
     const typeLabel = SERVE_TYPES[state.serveType].label;
     serveBadge.classList.toggle("hidden", !typeLabel || state.bonusRallyActive);
     if (typeLabel) serveBadge.textContent = typeLabel;
 
     if (isLastShot) {
       champBanner.classList.remove("show"); void champBanner.offsetWidth; champBanner.classList.add("show");
+      // Camera zoom-in (item 6)
+      if (!reducedMotion()) { court.classList.remove("champ-zoom"); void court.offsetWidth; court.classList.add("champ-zoom"); }
       playChampionship();
     }
+
+    // Racket fatigue visual (item 32) -- a payoff for Shot Fatigue
+    racketBottom.classList.toggle("tired-1", state.qIndex >= 5 && state.qIndex < 8);
+    racketBottom.classList.toggle("tired-2", state.qIndex >= 8);
 
     const [minW, maxW] = effectiveSweetWindow(isLastShot);
     sweetZone.style.top = minW + "%";
     sweetZone.style.height = (maxW - minW) + "%";
-    sweetZone.classList.remove("approaching");
+    sweetZone.classList.remove("approaching", "grow-in");
+    if (!reducedMotion()) { void sweetZone.offsetWidth; sweetZone.classList.add("grow-in"); }
 
     ball.style.transition = "none";
     ball.style.opacity = "1";
@@ -542,6 +735,9 @@ function initMathTennis() {
     state.rallyStart = performance.now();
     state._lastTrailTick = -1;
     swingRacket(racketTop); // the robot serves
+    // Squash/stretch toss (item 1), then settle into the spinning flight (item 11)
+    ballSetMode("toss");
+    setTimeout(() => { if (state.rallyRunning) ballSetMode("flying"); }, 300);
     state.rafId = requestAnimationFrame(rallyTick);
   }
 
@@ -603,6 +799,22 @@ function initMathTennis() {
     }
   }
 
+  // Ghost pace (round 2, item 15) -- at fixed checkpoints, compare this
+  // match's points won against the player's own best match, scaled to how
+  // far along the match is (same idea as Math Hoops' rival pace check, but
+  // against a personal best instead of the weekly leader).
+  const PACE_CHECKS = [5, 8];
+  function checkPace() {
+    if (!PACE_CHECKS.includes(state.qIndex) || !state.bestMatchPoints) return;
+    const expected = (state.bestMatchPoints / ROUND_SIZE) * state.qIndex;
+    if (state.pointsWon > expected) queueCaption("👻 Ahead of your best pace!", false);
+    else if (state.pointsWon < expected) queueCaption("👻 Behind your best pace...", true);
+  }
+
+  function nextStep(delay) {
+    setTimeout(() => { if (state.qIndex >= ROUND_SIZE) finishMatch(); else askQuestion(); }, delay);
+  }
+
   function resolveRally(isHit, info) {
     if (state.resolved) return;
     state.resolved = true;
@@ -611,8 +823,10 @@ function initMathTennis() {
     swingBtn.classList.add("hidden");
     LANES.forEach(l => laneBtns[l].classList.add("hidden"));
     windEl.classList.add("hidden");
+    rainEl.classList.add("hidden");
     serveBadge.classList.add("hidden");
     sweetZone.classList.remove("approaching");
+    ballSetMode(isHit ? "impact" : "none");
 
     // Bonus rally short-circuit (item 15, Double Serve) -- a flat bonus,
     // no question gate, never affects pointsWon/qIndex/streak.
@@ -621,28 +835,35 @@ function initMathTennis() {
       if (isHit) {
         state.score += MULTIBALL_BONUS;
         hudScore.textContent = state.score;
+        flipChip(hudScore);
         showCaption(`🎾🎾 Double Serve bonus! +${MULTIBALL_BONUS}`, false);
         playThwock();
         vib(35);
       } else {
         showCaption("Missed the bonus -- no harm done!", true);
+        whiffRacket();
         playNet();
       }
       animateBallAway(isHit);
-      setTimeout(() => { if (state.qIndex >= ROUND_SIZE) finishMatch(); else askQuestion(); }, 900);
+      nextStep(900);
       return;
     }
 
     const isLastShot = state.qIndex === ROUND_SIZE;
 
     if (isHit) {
-      // Rally volley (item 5) -- ONE extra exchange, never on the
-      // championship point (keeps that climax simple).
-      if (!state.volleyUsed && !isLastShot && rng() < VOLLEY_CHANCE) {
-        state.volleyUsed = true;
-        showCaption("↩️ Robot returns it!", false);
+      // Rally volley (item 5, extended in round 2 item 33) -- up to TWO
+      // extra exchanges (a second one only after the first was already
+      // survived), never on the championship point.
+      const wantVolley1 = !state.volleyUsed && !isLastShot && rng() < VOLLEY_CHANCE;
+      const wantVolley2 = state.volleyUsed && !state.volleyUsed2 && !isLastShot && rng() < VOLLEY_CHANCE_2;
+      if (wantVolley1 || wantVolley2) {
+        if (wantVolley1) state.volleyUsed = true; else state.volleyUsed2 = true;
+        state.volleyCount++;
+        showCaption(state.volleyCount > 1 ? "↩️↩️ Another return -- long rally!" : "↩️ Robot returns it!", false);
         playThwock();
         vib(20);
+        if (!reducedMotion()) { court.classList.remove("volley-pan"); void court.offsetWidth; court.classList.add("volley-pan"); }
         animateBallAway(true);
         setTimeout(() => startVolleyFlight(), 650);
         return;
@@ -650,6 +871,7 @@ function initMathTennis() {
 
       state.pointsWon++;
       hudPoints.textContent = state.pointsWon;
+      flipChip(hudPoints);
       state.streak++;
       if (state.streak > state.bestStreakThisMatch) state.bestStreakThisMatch = state.streak;
       updatePowerMeter(true);
@@ -659,37 +881,44 @@ function initMathTennis() {
       let gained = Math.round(BASE_POINT_VALUE * hotRacketMult);
       gained += streakBonusFor(state.streak);
       if (info.isAce) { gained += ACE_BONUS; state.aces++; }
+      const rallyBonus = RALLY_LENGTH_BONUS * state.volleyCount; // item 33
+      gained += rallyBonus;
       let usedPower = false;
       if (state.powerReady) { gained = Math.round(gained * POWER_MULT); state.powerReady = false; powerBar.classList.remove("full"); usedPower = true; }
+      if (state.deuceActive) gained = Math.round(gained * DEUCE_MULT); // item 27
       if (isLastShot) gained = Math.round(gained * CHAMPIONSHIP_MULT);
       if (state.mode === "ace") gained = Math.round(gained * ACE_MODE_PTS_MULT);
       if (state.mode === "team") state.teamScores[state.teamTurn] += gained;
       state.score += gained;
       hudScore.textContent = state.score;
+      flipChip(hudScore);
+      if (state.qIndex > ROUND_SIZE - CLUTCH_WINDOW) state.clutchMakes++; // item 30
 
       hudStreak.classList.toggle("hidden", state.streak < 2);
       hudStreak.textContent = `🔥 ×${hotRacketMult.toFixed(1)}`;
       hudStreak.classList.remove("pop"); void hudStreak.offsetWidth; hudStreak.classList.add("pop");
 
       markDot(state._dotIndex, info.isAce ? "ace" : "won");
+      state.reviewLog[state._dotIndex] = { kind: info.isAce ? "ace" : "won", gained, lane: state.ballLane, volleys: state.volleyCount };
 
       const mainMsg = isLastShot ? `🏆 CHAMPIONSHIP POINT! +${gained}` : info.isAce ? `💥 ACE! +${gained}` : state.streak >= 3 ? `🔥 Great return! (${state.streak} in a row!)` : "🎾 Great return!";
       showCaption(mainMsg, false);
-      if (usedPower) setTimeout(() => showCaption(`⚡ Power shot! ×${POWER_MULT}`, false), 300);
+      if (usedPower) queueCaption(`⚡ Power shot! ×${POWER_MULT}`, false);
+      if (rallyBonus) queueCaption(`🔁 Long rally bonus! +${rallyBonus}`, false);
 
       if (info.isAce) { playAce(); vib([40, 30, 60]); } else { playThwock(); vib(isLastShot ? [50, 30, 50, 30, 80] : 35); }
-      if (isLastShot) { court.classList.remove("punch"); void court.offsetWidth; court.classList.add("punch"); }
-      else if (info.isAce) { court.classList.remove("punch"); void court.offsetWidth; court.classList.add("punch"); }
+      if (isLastShot || info.isAce) { court.classList.remove("punch"); void court.offsetWidth; court.classList.add("punch"); }
       if (state.streak >= 3) { burstConfetti(false); playCrowdReact(); }
+      if (state.streak >= 3 || info.isAce || isLastShot) crowdCheer();
 
       animateBallAway(true);
+      checkPace();
 
       if (!isLastShot && !state.multiballUsed && state.qIndex > MULTIBALL_NOT_BEFORE && state.qIndex < ROUND_SIZE - MULTIBALL_NOT_BEFORE && rng() < MULTIBALL_CHANCE) {
         state.multiballUsed = true;
         setTimeout(offerBonusRally, 900);
       } else {
-        if (state.mode === "team") state.teamTurn = state.teamTurn === 1 ? 2 : 1;
-        setTimeout(() => { if (state.qIndex >= ROUND_SIZE) finishMatch(); else askQuestion(); }, 1000);
+        nextStep(1000);
       }
     } else {
       state.streak = 0;
@@ -698,21 +927,21 @@ function initMathTennis() {
       updatePowerMeter(false);
       markDot(state._dotIndex, "lost");
       const missMsg = info.early ? "⏱️ Swung too early!" : info.late ? "⏱️ Swung too late!" : info.wrongLane ? "↔️ Wrong side -- ball went past!" : "You missed the timing on that return.";
+      state.reviewLog[state._dotIndex] = { kind: "lost", gained: 0, lane: state.ballLane, reason: info.early ? "early" : info.late ? "late" : info.wrongLane ? "wrong side" : "missed", volleys: state.volleyCount };
       showCaption(missMsg, true);
+      whiffRacket(); // item 10
       playNet();
       vib([20, 20, 20]);
       animateBallAway(false);
-      if (state.mode === "team") state.teamTurn = state.teamTurn === 1 ? 2 : 1;
-      setTimeout(() => { if (state.qIndex >= ROUND_SIZE) finishMatch(); else askQuestion(); }, 1000);
+      checkPace();
+      nextStep(1000);
     }
   }
 
   // Rally volley continuation (item 5) -- the robot "returns" the ball for
-  // one more exchange; reuses the SAME tick/resolve pipeline, just a
-  // little faster to feel like the point is escalating. A miss here is a
-  // genuine lost point (no further consolation), a hit proceeds to the
-  // normal scoring branch above (volleyUsed is already true so it can't
-  // re-trigger another volley).
+  // another exchange; reuses the SAME tick/resolve pipeline, a little
+  // faster each time so the point escalates. A miss here is a genuine lost
+  // point (no further consolation).
   function startVolleyFlight() {
     if (state.ended) return;
     state.resolved = false;
@@ -731,7 +960,15 @@ function initMathTennis() {
     const [minW, maxW] = effectiveSweetWindow(false);
     sweetZone.style.top = minW + "%";
     sweetZone.style.height = (maxW - minW) + "%";
+    sweetZone.classList.remove("grow-in");
+    if (!reducedMotion()) { void sweetZone.offsetWidth; sweetZone.classList.add("grow-in"); }
     swingRacket(racketTop);
+    ballSetMode("flying");
+    if (state.rainActive) rainEl.classList.remove("hidden");
+    if (state.mode === "team") {
+      state.teamTurn = teamPlayerForLane(state.ballLane);
+      queueCaption(`Player ${state.teamTurn}, your lane!`, false);
+    }
     state.rallyRunning = true;
     state.rallyStart = performance.now();
     state._lastTrailTick = -1;
@@ -749,13 +986,65 @@ function initMathTennis() {
     startRally(state._dotIndex);
   }
 
+  // Match history (round 2, item 14) -- last few results, localStorage only
+  function loadHistory() { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch (e) { return []; } }
+  function saveHistory(entry) {
+    const h = loadHistory();
+    h.push(entry);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(-HISTORY_MAX))); } catch (e) {}
+  }
+  function renderHistory() {
+    const h = loadHistory();
+    historyRow.innerHTML = h.map(m => {
+      const cls = m.points >= 7 ? "good" : m.points >= 4 ? "mid" : "low";
+      return `<div class="mt-history-item ${cls}" title="${m.points}/${ROUND_SIZE} - ${m.score} pts">${m.points}</div>`;
+    }).join("");
+  }
+  renderHistory();
+
+  // Review list (item 21) + recap card (item 19)
+  function renderReview() {
+    const icons = { ace: "💥", won: "✅", lost: "❌", noserve: "⚪" };
+    const labels = { ace: "Ace", won: "Won", lost: "Lost", noserve: "Missed serve (wrong answer)" };
+    const list = document.getElementById("mt-review-list");
+    list.innerHTML = Array.from({ length: ROUND_SIZE }, (_, i) => {
+      const r = state.reviewLog[i] || { kind: "noserve", gained: 0 };
+      const extra = r.kind === "lost" ? ` -- ${r.reason}` : r.gained ? ` +${r.gained}` : "";
+      const lane = r.lane ? ` · ${r.lane}` : "";
+      const vol = r.volleys ? ` · ${r.volleys} volley${r.volleys > 1 ? "s" : ""}` : "";
+      return `<div class="mt-review-item"><span class="mt-review-icon">${icons[r.kind]}</span><span>#${i + 1} ${labels[r.kind]}${extra}${lane}${vol}</span></div>`;
+    }).join("");
+  }
+  function renderRecap() {
+    const modeName = state.daily ? "Daily Challenge" : state.mode === "ace" ? "Ace Mode" : state.mode === "team" ? "Doubles" : "Normal";
+    document.getElementById("mt-recap-card").innerHTML =
+      `<div class="mt-recap-title">🎾 ${player.name}'s Match</div>` +
+      `<div>🏆 Points won: ${state.pointsWon}/${ROUND_SIZE}</div>` +
+      `<div>⭐ Score: ${state.score}</div>` +
+      `<div>💥 Aces: ${state.aces}</div>` +
+      `<div>🔥 Best streak: ${state.bestStreakThisMatch}</div>` +
+      `<div>🎮 Mode: ${modeName}</div>` +
+      `<div>📅 ${new Date().toLocaleDateString()}</div>`;
+  }
+  document.getElementById("mt-review-btn").addEventListener("click", () => { renderReview(); document.getElementById("mt-review-overlay").classList.remove("hidden"); });
+  document.getElementById("mt-review-close-btn").addEventListener("click", () => document.getElementById("mt-review-overlay").classList.add("hidden"));
+  document.getElementById("mt-recap-btn").addEventListener("click", () => { renderRecap(); document.getElementById("mt-recap-overlay").classList.remove("hidden"); });
+  document.getElementById("mt-recap-close-btn").addEventListener("click", () => document.getElementById("mt-recap-overlay").classList.add("hidden"));
+
   function finishMatch() {
     state.ended = true;
+    state.rallyRunning = false;
+    ballSetMode("none");
+    rainEl.classList.add("hidden");
     const points = state.pointsWon;
     const isPerfectMatch = points === ROUND_SIZE;
     const emoji = isPerfectMatch ? "👑" : points >= 9 ? "🏆" : points >= 6 ? "🥳" : points >= 3 ? "🙂" : "💪";
     const title = isPerfectMatch ? "PERFECT MATCH!" : points >= 9 ? "Championship form!" : points >= 6 ? "Great match!" : points >= 3 ? "Nice rallies!" : "Keep practicing!";
-    document.getElementById("mt-end-emoji").textContent = emoji;
+    const emojiEl = document.getElementById("mt-end-emoji");
+    emojiEl.textContent = emoji;
+    // Victory wiggle (round 2, item 9) -- good results only
+    emojiEl.classList.remove("victory");
+    if (points >= 6 && !reducedMotion()) { void emojiEl.offsetWidth; emojiEl.classList.add("victory"); }
     document.getElementById("mt-end-title").textContent = title;
     document.getElementById("mt-end-sub").textContent = `You won ${points}/${ROUND_SIZE} points${state.aces ? ` with ${state.aces} ace${state.aces === 1 ? "" : "s"}` : ""}.`;
     // Score roll-up (item 29)
@@ -779,7 +1068,19 @@ function initMathTennis() {
       teamResultEl.classList.add("hidden");
     }
 
+    // Clutch tracker (round 2, item 30) -- performance in the final stretch
+    if (state.clutchMakes >= 2) {
+      clutchBadge.textContent = state.clutchMakes === CLUTCH_WINDOW ? `🧊 Ice cold! ${state.clutchMakes}/${CLUTCH_WINDOW} clutch points` : `🧊 Clutch! ${state.clutchMakes}/${CLUTCH_WINDOW} in the final stretch`;
+      clutchBadge.classList.remove("hidden");
+    } else {
+      clutchBadge.classList.add("hidden");
+    }
+
     if (isPerfectMatch) { burstConfetti(true); setTimeout(() => burstConfetti(true), 300); }
+    if (points >= 6) crowdCheer();
+
+    saveHistory({ points, score: state.score, date: Date.now() });
+    renderHistory();
 
     const bonusEl = document.getElementById("mt-end-bonus");
     bonusEl.textContent = "";
@@ -800,7 +1101,13 @@ function initMathTennis() {
       }
       const rankEl = document.getElementById("mt-end-rank");
       rankEl.textContent = "";
-      if (AIGLeaderboard.touchMathTennisWeeklyBest) {
+      // Daily Challenge (round 2, item 26) ranks separately from the weekly best
+      if (state.daily && AIGLeaderboard.touchMathTennisDailyChallenge) {
+        AIGLeaderboard.touchMathTennisDailyChallenge(points)
+          .then(() => AIGLeaderboard.getMathTennisDailyChallengeRank())
+          .then(r => { if (r && r.rank) rankEl.textContent = `📅 Today's Daily Challenge: #${r.rank} of ${r.total}!`; })
+          .catch(() => {});
+      } else if (!state.daily && AIGLeaderboard.touchMathTennisWeeklyBest) {
         AIGLeaderboard.touchMathTennisWeeklyBest(points)
           .then(() => AIGLeaderboard.getMathTennisWeeklyRank())
           .then(r => { if (r && r.rank) rankEl.textContent = `🏅 #${r.rank} of ${r.total} this week among your classmates!`; })
@@ -822,12 +1129,16 @@ function initMathTennis() {
     state.powerReady = false;
     state.teamTurn = 1;
     state.teamScores = { 1: 0, 2: 0 };
+    state.teamCenterToggle = 1;
     state.multiballUsed = false;
     state.bonusRallyActive = false;
-    state.volleyUsed = false;
+    state.volleyUsed = false; state.volleyUsed2 = false; state.volleyCount = 0;
     state.letUsedThisPoint = false;
+    state.rainActive = false; state.deuceActive = false;
+    state.clutchMakes = 0;
     state.ended = false;
-    state.dotLog = [];
+    state.dotLog = []; state.reviewLog = [];
+    capQueue = []; capBusy = false;
     hudPoints.textContent = 0;
     hudScore.textContent = 0;
     hudStreak.classList.add("hidden");
@@ -836,8 +1147,16 @@ function initMathTennis() {
     teamResultChip.classList.add("hidden");
     resultBanner.textContent = "";
     resultBanner.classList.remove("miss");
+    racketBottom.classList.remove("tired-1", "tired-2", "whiff");
+    rainEl.classList.add("hidden");
     setRacketLane("center");
     renderProgressDots();
+    ballSetMode("idle");
+    ball.classList.remove("hidden");
+    ball.style.opacity = "1"; ball.style.top = "10%"; ball.style.left = "50%";
+    // Dismiss the round-2 NEW badge once a match has been started (item 25)
+    try { localStorage.setItem(NEW_BADGE_KEY, "1"); } catch (e) {}
+    newBadge.classList.add("hidden");
     document.getElementById("mt-end-overlay").classList.add("hidden");
     document.getElementById("mt-start-overlay").classList.add("hidden");
     askQuestion();
@@ -847,6 +1166,7 @@ function initMathTennis() {
   function paintSettingsToggles() {
     document.getElementById("mt-settings-sound").classList.toggle("on", soundOn());
     document.getElementById("mt-settings-haptics").classList.toggle("on", hapticsOn());
+    document.getElementById("mt-settings-motion").classList.toggle("on", reducedMotion());
   }
   document.getElementById("mt-settings-btn").addEventListener("click", () => {
     paintSettingsToggles();
@@ -861,6 +1181,14 @@ function initMathTennis() {
     try { localStorage.setItem(HAPTICS_KEY, hapticsOn() ? "0" : "1"); } catch (e) {}
     paintSettingsToggles();
   });
+
+  document.getElementById("mt-settings-motion").addEventListener("click", () => {
+    try { localStorage.setItem(REDUCED_MOTION_KEY, localStorage.getItem(REDUCED_MOTION_KEY) === "1" ? "0" : "1"); } catch (e) {}
+    paintSettingsToggles();
+  });
+  // Test buttons (round 2, item 18) -- feel/hear it before toggling
+  document.getElementById("mt-settings-sound-test").addEventListener("click", () => playThwock());
+  document.getElementById("mt-settings-haptics-test").addEventListener("click", () => vib([30, 20, 30]));
 
   // ---- Tutorial (item 25) -------------------------------------------------
   const TUTORIAL_KEY = "aig_mt_tutorial_seen";
@@ -888,12 +1216,36 @@ function initMathTennis() {
     state.mode = btn.dataset.mode;
   }));
 
-  // `rng()` -- no seeded daily mode in this round (no Daily Challenge was
-  // pitched for Math Tennis), so this is just Math.random directly, kept
-  // as its own function for a consistent call-site style with Math Hoops.
-  function rng() { return Math.random(); }
+  // Daily Challenge (round 2, item 26) -- same mulberry32 + date seed as
+  // Math Hoops. Only the RALLY randomness (lanes, serve types, hazards) is
+  // seeded; questions aren't, same as Math Hoops' daily.
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function dailySeed() {
+    const d = new Date();
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+  let dailyRng = null;
+  function rng() { return dailyRng ? dailyRng() : Math.random(); }
+  const isDailyLink = new URLSearchParams(location.search).get("daily") === "1";
 
   swingBtn.addEventListener("click", onSwing);
-  document.getElementById("mt-start-btn").addEventListener("click", startMatch);
-  document.getElementById("mt-play-again-btn").addEventListener("click", startMatch);
+  document.getElementById("mt-start-btn").addEventListener("click", () => { state.daily = false; dailyRng = null; startMatch(); });
+  document.getElementById("mt-daily-btn").addEventListener("click", () => { state.daily = true; dailyRng = mulberry32(dailySeed()); startMatch(); });
+  // Play Again keeps whichever mode the last match used (a daily rerun
+  // reseeds so it replays the SAME serve pattern, like Math Hoops').
+  document.getElementById("mt-play-again-btn").addEventListener("click", () => {
+    dailyRng = state.daily ? mulberry32(dailySeed()) : null;
+    startMatch();
+  });
+  if (isDailyLink) document.getElementById("mt-daily-btn").click();
+
+  // NEW badge (round 2, item 25) -- shown until a match is started once
+  try { if (localStorage.getItem(NEW_BADGE_KEY) !== "1") newBadge.classList.remove("hidden"); } catch (e) {}
 }

@@ -4855,6 +4855,15 @@
     { id: "disco", name: "Disco Ball", cost: { coins: 20 }, preview: "🪩" },
     { id: "comet", name: "Comet Ball", cost: { gems: 2 }, preview: "☄️" }
   ];
+  // Round 2 polish, item 29 -- the robot opponent's "personality" biases
+  // which lane it serves to more often (see ROBOT_LANE_BIAS in
+  // math-tennis/script.js), a gameplay effect tied to a cosmetic choice
+  // rather than a pure skin.
+  const MATH_TENNIS_ROBOTS = [
+    { id: "classic", name: "Classic Bot", cost: null, preview: "🤖" },
+    { id: "lefty", name: "Lefty Bot", cost: { coins: 20 }, preview: "🦾" },
+    { id: "rightie", name: "Rightie Bot", cost: { coins: 20 }, preview: "🦿" }
+  ];
   const BOSSRUSH_FIGHTERS = [
     { id: "default", name: "Classic", cost: null, preview: "🥋" },
     { id: "boxer", name: "Boxer", cost: { coins: 15 }, preview: "🥊" },
@@ -4914,6 +4923,7 @@
     "basketball-court": BASKETBALL_COURTS,
     "mathtennis-racket": MATH_TENNIS_RACKETS,
     "mathtennis-ball": MATH_TENNIS_BALLS,
+    "mathtennis-robot": MATH_TENNIS_ROBOTS,
     "bossrush-fighter": BOSSRUSH_FIGHTERS,
     "dino-skin": DINO_SKINS
   };
@@ -4980,6 +4990,7 @@
         "basketball-court": equipped["basketball-court"] || "default",
         "mathtennis-racket": equipped["mathtennis-racket"] || "default",
         "mathtennis-ball": equipped["mathtennis-ball"] || "default",
+        "mathtennis-robot": equipped["mathtennis-robot"] || "classic",
         "bossrush-fighter": equipped["bossrush-fighter"] || "default",
         "dino-skin": equipped["dino-skin"] || "default",
         "bo-costume": equipped["bo-costume"] || "none"
@@ -6310,6 +6321,32 @@
     return { rank: myIdx >= 0 ? myIdx + 1 : null, total: ranking.length, top: ranking.slice(0, 3) };
   }
 
+  // Math Tennis round 2 polish, item 26 -- a Daily Challenge, same
+  // shape as Basketball's (seeded client-side via the game's own
+  // mulberry32+dailySeed, this function only stores/ranks the result).
+  async function touchMathTennisDailyChallenge(points) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    const ref = aigDb.ref(`players/${player.id}/mathTennisDaily/${todayKey()}`);
+    const snap = await ref.get();
+    const cur = snap.exists() ? snap.val() : null;
+    if (!cur || points > cur.points) await ref.set({ points, name: player.name });
+  }
+  async function getMathTennisDailyChallengeRank() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const today = todayKey();
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return null;
+    const all = snap.val();
+    const ranking = Object.entries(all)
+      .map(([id, data]) => { const d = data.mathTennisDaily && data.mathTennisDaily[today]; return { id, name: (d && d.name) || id, points: (d && d.points) || 0 }; })
+      .filter(r => r.points > 0)
+      .sort((a, b) => b.points - a.points);
+    const myIdx = ranking.findIndex(r => r.id === player.id);
+    return { rank: myIdx >= 0 ? myIdx + 1 : null, total: ranking.length, top: ranking.slice(0, 3) };
+  }
+
   // =====================================================================
   // FORTRESS MATH (fortress-math/) — same one-time-per-round bonus
   // pattern as the other new mini-games, tiered on waves cleared PLUS a
@@ -6921,6 +6958,7 @@
     awardMathTennisBonus,
     touchMathTennisStats, getMathTennisLifetimeSummary, getMathTennisAchievements,
     touchMathTennisWeeklyBest, getMathTennisWeeklyRank,
+    touchMathTennisDailyChallenge, getMathTennisDailyChallengeRank,
     awardFortressMathBonus,
     getActiveSeasonalEvent, claimSeasonalEvent,
     sendDuelChallenge, getDuelInbox, getDuelSentResults, dismissDuelResult, resolveDuelChallenge,

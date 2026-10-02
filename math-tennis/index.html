@@ -149,6 +149,128 @@
   .mt-btn-primary { background: #8FAE1F; color: #fff; }
   .mt-btn-secondary { background: #f1ede6; color: #3d2e22; }
   .mt-tutorial-link { display: block; text-align: center; font-weight: 700; color: #5a7a1f; font-size: .8rem; margin-top: 4px; cursor: pointer; text-decoration: underline; background: none; border: none; }
+
+  /* ============== ROUND 2 (animation / UI-UX / gameplay) ============== */
+
+  /* Item 1 -- ball squash/stretch on toss & impact */
+  .mt-ball.toss { animation: mtBallToss .3s ease; }
+  @keyframes mtBallToss { 0% { transform: translate(-50%, -50%) scale(1, 1); } 40% { transform: translate(-50%, -50%) scale(.82, 1.22); } 100% { transform: translate(-50%, -50%) scale(1, 1); } }
+  .mt-ball.impact { animation: mtBallImpact .22s ease; }
+  @keyframes mtBallImpact { 0% { transform: translate(-50%, -50%) scale(1, 1); } 35% { transform: translate(-50%, -50%) scale(1.35, .7); } 100% { transform: translate(-50%, -50%) scale(1, 1); } }
+  /* Item 11 -- continuous spin while the ball is actually flying */
+  .mt-ball.flying { animation: mtBallSpin .5s linear infinite; }
+  @keyframes mtBallSpin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+  /* Item 5 -- idle bounce while the ball waits (not flying), gives the
+     court some life between rallies instead of a frozen ball. */
+  .mt-ball.idle-bob { animation: mtBallIdleBob 1.6s ease-in-out infinite; }
+  @keyframes mtBallIdleBob { 0%, 100% { transform: translate(-50%, -50%) translateY(0); } 50% { transform: translate(-50%, -50%) translateY(-5px); } }
+
+  /* Item 2 -- a fading ghost racket-head left behind on every swing, cheap
+     motion-blur read without a real blur filter (expensive on mobile). */
+  .mt-racket-ghost { position: absolute; top: 0; left: 50%; width: 30px; height: 40px; border-radius: 50%; border: 4px solid rgba(107,74,31,.5); transform: translate(-50%, 0) rotate(-20deg); pointer-events: none; opacity: .6; animation: mtGhostFade .3s ease forwards; }
+  @keyframes mtGhostFade { to { opacity: 0; transform: translate(-50%, 0) rotate(-45deg) scale(.8); } }
+
+  /* Item 3 -- net ripple/wobble on a Let (net cord) */
+  .mt-court-net.ripple { animation: mtNetRipple .5s ease; }
+  @keyframes mtNetRipple { 0%, 100% { transform: translateY(-50%) scaleY(1); } 25% { transform: translateY(-50%) scaleY(2.4); } 50% { transform: translateY(-50%) scaleY(1.6); } 75% { transform: translateY(-50%) scaleY(1.9); } }
+  /* Item 13 -- expanding ripple ring at the net contact point, alongside
+     the wobble above (two distinct reads of the same event). */
+  .mt-net-ripple-ring { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,.8); transform: translate(-50%, -50%); z-index: 3; pointer-events: none; animation: mtRippleRing .6s ease forwards; }
+  @keyframes mtRippleRing { 0% { width: 10px; height: 10px; opacity: 1; } 100% { width: 90px; height: 90px; opacity: 0; } }
+
+  /* Item 4 -- decorative crowd strip, top and bottom of the court, purely
+     ambient (never affects layout/collision). */
+  .mt-crowd { display: flex; justify-content: space-evenly; padding: 0 24px; margin: 0 20px; opacity: .55; font-size: 1rem; }
+  .mt-crowd span { display: inline-block; animation: mtCrowdSway 2.4s ease-in-out infinite; }
+  .mt-crowd span:nth-child(2n) { animation-delay: .3s; }
+  .mt-crowd span:nth-child(3n) { animation-delay: .6s; }
+  @keyframes mtCrowdSway { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-2px) rotate(-4deg); } }
+  .mt-crowd.react span { animation: mtCrowdCheer .5s ease; }
+  @keyframes mtCrowdCheer { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+  /* Item 6 -- camera zoom-in for the Championship Point */
+  .mt-court.champ-zoom { animation: mtChampZoom 1s ease; }
+  @keyframes mtChampZoom { 0%, 100% { transform: scale(1); } 30% { transform: scale(1.06); } 60% { transform: scale(1.03); } }
+  /* Item 12 -- a subtle camera pan when a volley continuation kicks in,
+     reads as "the point keeps going" rather than a static reset. */
+  .mt-court.volley-pan { animation: mtVolleyPan .5s ease; }
+  @keyframes mtVolleyPan { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-6px); } }
+
+  /* Item 7 -- whoosh particle burst when the racket switches lanes */
+  .mt-lane-whoosh { position: absolute; bottom: 36px; width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.8); pointer-events: none; z-index: 4; animation: mtWhooshFade .3s ease forwards; }
+  @keyframes mtWhooshFade { to { opacity: 0; transform: scale(2); } }
+
+  /* Item 8 -- scoreboard "flip" readout instead of a plain text swap */
+  .mt-hud-chip.flip { animation: mtChipFlip .4s ease; }
+  @keyframes mtChipFlip { 0% { transform: rotateX(0deg); } 50% { transform: rotateX(90deg); } 51% { transform: rotateX(-90deg); } 100% { transform: rotateX(0deg); } }
+
+  /* Item 9 -- a little victory wiggle on the end-screen emoji for a good result */
+  .mt-modal-emoji.victory { animation: mtVictoryWiggle 1.1s ease; }
+  @keyframes mtVictoryWiggle { 0%, 100% { transform: rotate(0deg) scale(1); } 15% { transform: rotate(-12deg) scale(1.1); } 30% { transform: rotate(10deg) scale(1.15); } 45% { transform: rotate(-8deg) scale(1.1); } 60% { transform: rotate(6deg) scale(1.05); } 80% { transform: rotate(0deg) scale(1); } }
+
+  /* Item 10 -- racket "whiff" shake on a miss, distinct from the normal
+     swing animation that plays on every attempt regardless of outcome. */
+  .mt-racket.whiff { animation: mtWhiffShake .3s ease .28s; }
+  @keyframes mtWhiffShake { 0%, 100% { transform: translateX(-50%) rotate(0deg); } 25% { transform: translateX(-50%) rotate(8deg); } 75% { transform: translateX(-50%) rotate(-8deg); } }
+
+  /* Item 22 -- the sweet zone grows in instead of just appearing, a small
+     anticipation beat at the start of every rally. */
+  .mt-sweet-zone.grow-in { animation: mtSweetGrow .25s ease; }
+  @keyframes mtSweetGrow { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+
+  /* Item 31 -- rain hazard particles, same convention as Math Hoops' weather */
+  .mt-rain { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+  .mt-rain i { position: absolute; top: -10%; width: 2px; height: 14px; background: rgba(255,255,255,.55); border-radius: 2px; animation: mtRainFall linear infinite; }
+  @keyframes mtRainFall { to { transform: translateY(130%); } }
+
+  /* Item 32 -- the racket visibly "tires" (droops) as the match wears on,
+     a visual payoff for round 1's existing Shot Fatigue mechanic. */
+  .mt-racket-bottom.tired-1 .mt-racket-head { transform: rotate(4deg); }
+  .mt-racket-bottom.tired-2 .mt-racket-head { transform: rotate(9deg); opacity: .85; }
+
+  /* Item 20 -- small distinct shapes atop each lane guide, so lanes read
+     as different beyond color/position alone (colorblind-friendly). */
+  .mt-lane-shape { position: absolute; top: 4px; font-size: .85rem; transform: translateX(-50%); z-index: 2; opacity: .8; }
+
+  /* Item 25 -- a small "NEW" callout pointing at this round's additions */
+  .mt-new-badge { display: inline-block; background: #D64545; color: #fff; font-size: .62rem; font-weight: 800; padding: 2px 7px; border-radius: 100px; margin-left: 6px; vertical-align: middle; }
+
+  /* Item 27 -- Deuce banner, same shape as the Championship banner */
+  .mt-deuce-banner { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #c1d4f6, #9ec3f0); color: #2d4a6b; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; padding: 8px 16px; border-radius: 100px; z-index: 10; box-shadow: 0 4px 14px rgba(0,0,0,.25); white-space: nowrap; opacity: 0; }
+  .mt-deuce-banner.show { animation: mtChampPop 1.4s ease forwards; }
+
+  /* Item 30 -- Clutch tracker badge, end screen */
+  .mt-clutch-badge { background: linear-gradient(135deg, #ffe299, #ffce6b); color: #8a6d1d; font-weight: 800; font-size: .8rem; padding: 6px 14px; border-radius: 100px; display: inline-block; margin-bottom: 10px; }
+  .mt-clutch-badge.hidden { display: none; }
+
+  /* Items 14/19/21 -- match history, recap card, review list */
+  .mt-history-row { display: flex; justify-content: center; gap: 5px; margin-bottom: 8px; }
+  .mt-history-item { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: .7rem; font-weight: 800; color: #fff; background: #c9bfae; }
+  .mt-history-item.good { background: #3F8F5F; }
+  .mt-history-item.mid { background: #e4b73a; }
+  .mt-history-item.low { background: #D64545; }
+  .mt-recap-card { background: linear-gradient(160deg, #eef7d8, #d9eba0); border-radius: 18px; padding: 16px; margin-bottom: 14px; text-align: left; }
+  .mt-recap-card div { font-size: .85rem; font-weight: 700; color: #3d2e22; margin-bottom: 4px; }
+  .mt-recap-card .mt-recap-title { font-family: "Baloo 2", sans-serif; font-size: 1rem; color: #5a7a1f; margin-bottom: 8px; }
+  .mt-review-list { text-align: left; max-height: 260px; overflow-y: auto; margin-bottom: 14px; }
+  .mt-review-item { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid #f1ede6; font-size: .82rem; font-weight: 700; }
+  .mt-review-item .mt-review-icon { font-size: 1rem; width: 22px; text-align: center; flex: none; }
+
+  /* Item 17 -- a small inline lane diagram for the tutorial, instead of
+     text-only instructions. */
+  .mt-tutorial-diagram { display: flex; justify-content: center; gap: 8px; margin-bottom: 14px; }
+  .mt-tutorial-diagram div { width: 50px; height: 70px; border-radius: 10px; background: #eef7d8; border: 2px solid #d9eba0; display: grid; place-items: center; font-size: 1.3rem; position: relative; }
+  .mt-tutorial-diagram div.active { border-color: #8FAE1F; background: #d9eba0; animation: mtDiagramPulse 1.2s ease infinite; }
+  @keyframes mtDiagramPulse { 0%, 100% { box-shadow: 0 0 0 rgba(143,174,31,0); } 50% { box-shadow: 0 0 0 6px rgba(143,174,31,.2); } }
+
+  /* Item 18 -- settings preview/test buttons */
+  .mt-settings-test-btn { border: none; background: #f1ede6; color: #3d2e22; font-weight: 800; font-size: .72rem; padding: 6px 10px; border-radius: 100px; cursor: pointer; margin-left: 8px; }
+
+  /* Item 24 -- keep the HUD from wrapping awkwardly on narrow phones */
+  @media (max-width: 360px) {
+    .mt-hud { gap: 6px; }
+    .mt-hud-chip { font-size: .76rem; padding: 4px 9px; }
+  }
 </style>
 </head>
 <body>
@@ -169,19 +291,28 @@
   <div class="mt-progress-dots" id="mt-progress-dots"></div>
   <div class="mt-team-result hidden" id="mt-team-result"></div>
 
+  <!-- Item 4 -- decorative crowd, purely ambient -->
+  <div class="mt-crowd" id="mt-crowd-top"><span>🧑</span><span>🧑‍🦱</span><span>👧</span><span>🧑‍🦳</span><span>👦</span></div>
+
   <div class="mt-court" id="mt-court">
+    <!-- Item 20 -- distinct shapes atop each lane (colorblind-friendly) -->
+    <div class="mt-lane-shape" style="left:25%">▲</div>
+    <div class="mt-lane-shape" style="left:50%">●</div>
+    <div class="mt-lane-shape" style="left:75%">■</div>
     <div class="mt-lane-guide" style="left:25%"></div>
     <div class="mt-lane-guide" style="left:75%"></div>
     <div class="mt-wind hidden" id="mt-wind">💨</div>
+    <div class="mt-rain hidden" id="mt-rain"></div>
     <div class="mt-serve-badge hidden" id="mt-serve-badge"></div>
     <div class="mt-championship-banner" id="mt-championship-banner">🏆 CHAMPIONSHIP POINT!</div>
+    <div class="mt-deuce-banner" id="mt-deuce-banner">⚖️ DEUCE! Next points count extra.</div>
     <div class="mt-racket mt-racket-top" id="mt-racket-top">
-      <span class="mt-racket-face">🤖</span>
+      <span class="mt-racket-face" id="mt-racket-top-face">🤖</span>
       <div class="mt-racket-handle"></div>
       <div class="mt-racket-head"></div>
     </div>
     <div class="mt-sweet-zone" id="mt-sweet-zone"></div>
-    <div class="mt-court-net"></div>
+    <div class="mt-court-net" id="mt-court-net"></div>
     <div class="mt-ball" id="mt-ball">🎾</div>
     <div class="mt-hit-caption" id="mt-hit-caption"></div>
     <div class="mt-racket mt-racket-bottom" id="mt-racket-bottom">
@@ -191,6 +322,9 @@
       <span class="mt-racket-face">🙂</span>
     </div>
   </div>
+
+  <!-- Item 4 -- decorative crowd, bottom row -->
+  <div class="mt-crowd" id="mt-crowd-bottom"><span>👩</span><span>🧑‍🦰</span><span>👨</span><span>👧</span><span>🧑</span></div>
 
   <div class="mt-lane-row">
     <button type="button" class="mt-lane-btn hidden" data-lane="left" id="mt-lane-left">⬅️</button>
@@ -207,15 +341,19 @@
   <div class="mt-overlay" id="mt-start-overlay">
     <div class="mt-card">
       <div class="mt-modal-emoji">🎾</div>
-      <div class="mt-modal-title">Math Tennis</div>
+      <div class="mt-modal-title">Math Tennis<span class="mt-new-badge hidden" id="mt-new-badge">NEW</span></div>
       <p class="mt-modal-sub">Answer right to make the robot serve! Watch which side the ball is heading, move your racket there with ⬅️/🎯/➡️, then tap SWING! at the exact right moment as it reaches your side.</p>
       <div class="mt-lifetime-row hidden" id="mt-lifetime-row"></div>
+      <!-- Item 14 -- last few matches at a glance -->
+      <div class="mt-history-row" id="mt-history-row"></div>
       <div class="mt-ach-row" id="mt-start-achievements"></div>
       <div class="mt-ach-progress-row" id="mt-ach-progress-row"></div>
       <div class="mt-start-label">Racket</div>
       <div class="mt-swatches" id="mt-racket-swatches"></div>
       <div class="mt-start-label">Ball</div>
       <div class="mt-swatches" id="mt-ball-swatches"></div>
+      <div class="mt-start-label">Robot Opponent</div>
+      <div class="mt-swatches" id="mt-robot-swatches"></div>
       <div class="mt-start-label">Mode</div>
       <div class="mt-mode-row">
         <button type="button" class="mt-mode-opt sel" data-mode="normal">🥅 Normal</button>
@@ -223,6 +361,7 @@
         <button type="button" class="mt-mode-opt" data-mode="team">🤝 Doubles<br><small>pass the device</small></button>
       </div>
       <button class="mt-btn mt-btn-primary" id="mt-start-btn">Start Match</button>
+      <button class="mt-btn mt-btn-secondary" id="mt-daily-btn">📅 Daily Challenge</button>
       <button type="button" class="mt-tutorial-link" id="mt-tutorial-link">How to play?</button>
     </div>
   </div>
@@ -231,6 +370,12 @@
     <div class="mt-card">
       <div class="mt-modal-emoji">🎾</div>
       <div class="mt-modal-title">How to Play</div>
+      <!-- Item 17 -- small visual diagram instead of text-only -->
+      <div class="mt-tutorial-diagram">
+        <div>⬅️</div>
+        <div class="active">🎾</div>
+        <div>➡️</div>
+      </div>
       <p class="mt-modal-sub">Answer the question right to earn a serve. The ball drops down toward one of 3 lanes -- <b>left, center, or right</b>. Move your racket there with ⬅️/🎯/➡️ BEFORE it arrives, then tap <b>SWING!</b> right as it crosses into your zone (watch the glowing dashed box). Too early, too late, or the wrong side and you miss the return!</p>
       <button class="mt-btn mt-btn-primary" id="mt-tutorial-close-btn">Got it!</button>
     </div>
@@ -239,8 +384,9 @@
   <div class="mt-overlay hidden" id="mt-settings-overlay">
     <div class="mt-card">
       <div class="mt-modal-title">⚙️ Settings</div>
-      <div class="mt-settings-row"><span>🔊 Sound effects</span><button type="button" class="mt-settings-toggle" id="mt-settings-sound"></button></div>
-      <div class="mt-settings-row"><span>📳 Haptics (vibration)</span><button type="button" class="mt-settings-toggle" id="mt-settings-haptics"></button></div>
+      <div class="mt-settings-row"><span>🔊 Sound effects</span><span><button type="button" class="mt-settings-test-btn" id="mt-settings-sound-test">Test</button><button type="button" class="mt-settings-toggle" id="mt-settings-sound"></button></span></div>
+      <div class="mt-settings-row"><span>📳 Haptics (vibration)</span><span><button type="button" class="mt-settings-test-btn" id="mt-settings-haptics-test">Test</button><button type="button" class="mt-settings-toggle" id="mt-settings-haptics"></button></span></div>
+      <div class="mt-settings-row"><span>🎬 Reduced motion</span><button type="button" class="mt-settings-toggle" id="mt-settings-motion"></button></div>
       <button class="mt-btn mt-btn-primary" id="mt-settings-close-btn" style="margin-top:16px;">Close</button>
     </div>
   </div>
@@ -259,11 +405,32 @@
       <div class="mt-modal-sub" id="mt-end-sub"></div>
       <div class="mt-end-score" id="mt-end-score"></div>
       <div class="mt-team-result hidden" id="mt-end-team-result"></div>
+      <div class="mt-clutch-badge hidden" id="mt-clutch-badge"></div>
       <div class="mt-modal-bonus" id="mt-end-bonus"></div>
       <div class="mt-end-rank" id="mt-end-rank"></div>
       <div class="mt-ach-row" id="mt-end-achievements"></div>
       <button class="mt-btn mt-btn-primary" id="mt-play-again-btn">Play Again</button>
+      <button type="button" class="mt-btn mt-btn-secondary" id="mt-review-btn">🔍 Review Match</button>
+      <button type="button" class="mt-btn mt-btn-secondary" id="mt-recap-btn">📜 Recap Card</button>
       <a href="../" class="mt-btn mt-btn-secondary">Back to Hub</a>
+    </div>
+  </div>
+
+  <!-- Item 21 -- per-serve review list -->
+  <div class="mt-overlay hidden" id="mt-review-overlay">
+    <div class="mt-card">
+      <div class="mt-modal-title">🔍 Match Review</div>
+      <div class="mt-review-list" id="mt-review-list"></div>
+      <button class="mt-btn mt-btn-primary" id="mt-review-close-btn">Close</button>
+    </div>
+  </div>
+
+  <!-- Item 19 -- screenshot-friendly recap card -->
+  <div class="mt-overlay hidden" id="mt-recap-overlay">
+    <div class="mt-card">
+      <div class="mt-modal-title">📜 Match Recap</div>
+      <div class="mt-recap-card" id="mt-recap-card"></div>
+      <button class="mt-btn mt-btn-primary" id="mt-recap-close-btn">Close</button>
     </div>
   </div>
 
