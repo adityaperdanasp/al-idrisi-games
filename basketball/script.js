@@ -133,6 +133,23 @@ function initBasketball() {
   const MASCOT_EMOJIS = ["🦅", "🦁", "🐯", "🐻"];
   const TUTORIAL_KEY = "aig_bh_tutorial_seen";
 
+  // ---- Round 3 additions -----------------------------------------------
+  const STREAK_SHIELD_AT = 5;        // item 2 -- same threshold Ninja Runner's own Streak Shield uses
+  const FULL_COURT_DIST = 32;        // item 4 -- an even rarer tier above Half-court
+  const FULL_COURT_BONUS = 10;
+  const WIDE_SPAWN_CHANCE = 0.15;    // item 4 fix -- see resetBallForNextShot: without this, HALF_COURT_DIST/FULL_COURT_DIST (round 2+3) were UNREACHABLE, the normal rand(32,68) spawn never gets more than 18% from center
+  const PERFECT_ROUND_BONUS = 25;    // item 7 -- all 10 shots made
+  const LIGHTNING_ROUND_CHANCE = 0.25; // item 18 -- rolled once, right after shot 3, never twice in one round
+  const LIGHTNING_ROUND_AT = 3;
+  const LIGHTNING_ROUND_MS = 3000;
+  const LIGHTNING_ROUND_BONUS = 4;
+  const BUZZER_BONUS_POINTS = 5; // item 15 -- always offered after a successful Buzzer Beater (no question gate, no chance roll)
+  const RIVAL_CHECK_AT = [3, 6, 9];  // item 12 -- pace comparison toasts at these qIndex checkpoints
+  const SOUND_KEY = "aig_bh_sound";
+  const HAPTICS_KEY = "aig_bh_haptics";
+  function soundOn() { try { return localStorage.getItem(SOUND_KEY) !== "0"; } catch (e) { return true; } }
+  function hapticsOn() { try { return localStorage.getItem(HAPTICS_KEY) !== "0"; } catch (e) { return true; } }
+
   const court = document.getElementById("bh-court");
   const ball = document.getElementById("bh-ball");
   const ballShadow = document.getElementById("bh-ball-shadow");
@@ -154,6 +171,9 @@ function initBasketball() {
   const windEl = document.getElementById("bh-wind");
   const reboundBtn = document.getElementById("bh-rebound-btn");
   const mascotEl = document.getElementById("bh-mascot");
+  const aimGuide = document.getElementById("bh-aim-guide");
+  const achToastEl = document.getElementById("bh-ach-toast");
+  const hudEl = document.getElementById("bh-hud");
 
   const hudMade = document.getElementById("bh-hud-made");
   const hudTotal = document.getElementById("bh-hud-total");
@@ -222,7 +242,14 @@ function initBasketball() {
     reboundPending: false,
     bestShotThisRound: null,   // {label, points} for the replay-reel recap
     idleBobTimer: null,
-    ghostBaseline: 0
+    ghostBaseline: 0,
+    // Round 3 additions
+    streakShieldCharges: 0,
+    streakShieldGranted: false,
+    buzzerBonusUsed: false,
+    bonusShotActive: false,
+    lastGenKey: null,
+    lightningRoundDone: false
   };
 
   function rand(min, max) { return Math.floor(rng() * (max - min + 1)) + min; }
@@ -235,6 +262,65 @@ function initBasketball() {
   // HUD chip pop (round 1, item 31) -- force-reflow restart, same pattern
   // used throughout the hub for re-triggerable CSS animations.
   function popChip(el) { el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+
+  // ---- Synthesized sound effects (round 3, items 1+26) -----------------
+  // Same Web Audio approach as Ninja Runner's ninjaTone() -- no audio
+  // files/licensing, a self-contained AudioContext separate from
+  // game-music.js's background-music one (that module keeps its own
+  // context private). Gated behind soundOn() throughout.
+  let bhAudioCtx = null;
+  function bhTone(freqs, dur, vol, type) {
+    if (!soundOn()) return;
+    try {
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return;
+      bhAudioCtx = bhAudioCtx || new C();
+      if (bhAudioCtx.state === "suspended") bhAudioCtx.resume();
+      let t = bhAudioCtx.currentTime;
+      freqs.forEach(f => {
+        const o = bhAudioCtx.createOscillator(), g = bhAudioCtx.createGain();
+        o.type = type || "triangle";
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(vol != null ? vol : 0.15, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g).connect(bhAudioCtx.destination);
+        o.start(t);
+        o.stop(t + dur + 0.05);
+        t += dur * 0.55;
+      });
+    } catch (e) { /* silent -- never blocks the game */ }
+  }
+  // A short burst of filtered noise for the bounce/rim-clank sounds --
+  // tones alone read too "musical" for a physical thud.
+  function bhNoiseBurst(dur, vol, freq) {
+    if (!soundOn()) return;
+    try {
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return;
+      bhAudioCtx = bhAudioCtx || new C();
+      if (bhAudioCtx.state === "suspended") bhAudioCtx.resume();
+      const bufferSize = bhAudioCtx.sampleRate * dur;
+      const buffer = bhAudioCtx.createBuffer(1, bufferSize, bhAudioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+      const src = bhAudioCtx.createBufferSource();
+      src.buffer = buffer;
+      const filt = bhAudioCtx.createBiquadFilter();
+      filt.type = "lowpass";
+      filt.frequency.value = freq || 800;
+      const g = bhAudioCtx.createGain();
+      g.gain.value = vol != null ? vol : 0.2;
+      src.connect(filt).connect(g).connect(bhAudioCtx.destination);
+      src.start();
+    } catch (e) {}
+  }
+  function playSwish() { bhTone([880, 1174.66], 0.18, 0.12); }
+  function playRimClank() { bhNoiseBurst(0.08, 0.18, 1200); }
+  function playAirball() { bhNoiseBurst(0.12, 0.1, 400); }
+  function playBuzzer() { bhTone([220, 220], 0.5, 0.18, "sawtooth"); }
+  function playCrowdCheer() { bhNoiseBurst(0.6, 0.06, 2000); bhTone([523.25, 659.25, 783.99], 0.4, 0.08); }
+  function playCountdownBeep() { bhTone([660], 0.1, 0.1); }
 
   if (window.AIGLeaderboard) {
     AIGLeaderboard.watchWallet(wallet => {
@@ -274,6 +360,39 @@ function initBasketball() {
     const el = document.getElementById(containerId);
     if (!list || !list.length) { el.innerHTML = ""; return; }
     el.innerHTML = list.map(a => `<span class="bh-ach-badge ${a.unlocked ? "unlocked" : ""}" title="${a.name}${a.unlocked ? "" : " (locked)"}">${a.emoji}</span>`).join("");
+  }
+
+  // Achievement-unlock toast (round 3) -- compares the freshly-fetched
+  // unlock list against a locally-remembered "already seen unlocked" set,
+  // so a badge that was ALREADY unlocked before this round doesn't
+  // re-announce itself every single time the end screen renders.
+  const ACH_SEEN_KEY = "aig_bh_achievements_seen";
+  function announceNewAchievements(list) {
+    let seen = [];
+    try { seen = JSON.parse(localStorage.getItem(ACH_SEEN_KEY) || "[]"); } catch (e) {}
+    const newlyUnlocked = list.filter(a => a.unlocked && !seen.includes(a.id));
+    if (newlyUnlocked.length) {
+      const a = newlyUnlocked[0];
+      achToastEl.textContent = `${a.emoji} Achievement unlocked: ${a.name}!`;
+      achToastEl.classList.remove("show"); void achToastEl.offsetWidth; achToastEl.classList.add("show");
+    }
+    try { localStorage.setItem(ACH_SEEN_KEY, JSON.stringify(list.filter(a => a.unlocked).map(a => a.id))); } catch (e) {}
+  }
+
+  // Score roll-up (round 3) -- same fixed-duration ease-out count-up
+  // pattern as Ninja Runner's own finish-screen score roll-up.
+  const ROLLUP_MS = 700;
+  function animateScoreRollup(el, target, suffix, prefix) {
+    const start = performance.now();
+    function tick(now) {
+      // `now` defaults to performance.now() -- real requestAnimationFrame
+      // always passes a timestamp, this is just a safety net.
+      const t = Math.min(1, ((now || performance.now()) - start) / ROLLUP_MS);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = `${prefix || ""}${Math.round(target * eased)}${suffix || ""}`;
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
   }
   if (window.AIGLeaderboard) {
     if (AIGLeaderboard.getBasketballLifetimeSummary) {
@@ -361,6 +480,17 @@ function initBasketball() {
     setTimeout(() => dot.remove(), 420);
   }
 
+  // Chalk puff on release (round 3) -- a small dust puff at the launch
+  // spot the instant a shot is released.
+  function spawnChalkPuff(xPct, yPct) {
+    const puff = document.createElement("div");
+    puff.className = "bh-chalk-puff";
+    puff.style.left = xPct + "%";
+    puff.style.top = yPct + "%";
+    court.appendChild(puff);
+    setTimeout(() => puff.remove(), 420);
+  }
+
   // Confetti (round 1, item 5) -- lightweight DOM particles, no new
   // library/asset. Only for a genuine 3+ streak make, not every swish.
   const CONFETTI_COLORS = ["#E4772E", "#3F8F5F", "#ffce6b", "#3a6ea5", "#D64545"];
@@ -383,7 +513,11 @@ function initBasketball() {
     state.vx = 0;
     state.vy = 0;
     state.minDistToHoop = Infinity;
-    placeBall(rand(32, 68), BALL_SPAWN_Y);
+    // Wide spawn (round 3 fix) -- occasionally spawns from much further
+    // out so Half-court/Full Court Press (round 2/3) are actually
+    // reachable; most shots still spawn in the comfortable 32-68 band.
+    const spawnX = rng() < WIDE_SPAWN_CHANCE ? rand(8, 92) : rand(32, 68);
+    placeBall(spawnX, BALL_SPAWN_Y);
     ball.classList.remove("hidden");
     ballShadow.classList.remove("hidden");
 
@@ -413,6 +547,7 @@ function initBasketball() {
     // shrunk, doubled-value shot with its own countdown ring urgency.
     rim.classList.toggle("buzzer", isLastShot);
     net.classList.toggle("buzzer", isLastShot);
+    if (isLastShot && !state.bonusShotActive) playBuzzer(); // round 3, item 1 -- never on the bonus epilogue shot itself
 
     // Wind hazard (round 2, item 11) -- ALWAYS telegraphed before launch
     // (see the .bh-wind indicator), never on the Buzzer Beater.
@@ -500,15 +635,69 @@ function initBasketball() {
     if (state.qIndex < 7) return "medium";
     return "hard";
   }
+  // No-repeat question variety (round 3, item 8 of gameplay list) -- avoids
+  // rolling the SAME generator key twice in a row; re-rolls once if it
+  // collides (a single retry is enough with 6 keys, never worth a loop).
   function rollQuestion() {
-    const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
+    let key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
+    if (key === state.lastGenKey) key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
+    state.lastGenKey = key;
     const raw = MATHVILLE_GENERATORS[key](rampedDifficulty());
     return { key, ...buildMc(raw) };
+  }
+
+  // Lightning Round (round 3, item 18) -- a rare true/false bonus question
+  // slotted in right after shot LIGHTNING_ROUND_AT, on its own short timer,
+  // worth a flat bonus if answered correctly -- ONE per round at most.
+  // Restricted to the 4 GEN_KEYS whose prompts reliably end in "= ?"
+  // (addition/subtraction/multiplication/division) -- "measurement"
+  // ("Convert: X g = ? kg") and "rounding" ("Round X to the nearest Y.")
+  // don't end that way, which read awkwardly once True/or/False's own
+  // "= shownAnswer?" is appended after stripping the original ending.
+  const LIGHTNING_GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division"];
+  function maybeOfferLightningRound(onDone) {
+    if (state.lightningRoundDone || state.qIndex !== LIGHTNING_ROUND_AT || rng() >= LIGHTNING_ROUND_CHANCE) { onDone(); return; }
+    state.lightningRoundDone = true;
+    const genKey = LIGHTNING_GEN_KEYS[rand(0, LIGHTNING_GEN_KEYS.length - 1)];
+    const raw = MATHVILLE_GENERATORS[genKey](rampedDifficulty());
+    const mc = buildMc(raw);
+    const isTrue = rng() < 0.5;
+    const shownAnswer = isTrue ? mc.correctLabel : mc.options.find(o => o !== mc.correctLabel) || mc.correctLabel;
+    // Strips a trailing "= ?" (not just the "?") so the shown-answer
+    // equals sign isn't duplicated -- most generator prompts end exactly
+    // that way (e.g. "54 + 40 = ?"), but a plain `.replace("?", "")` only
+    // removed the question mark, leaving the original "=" AND the new one.
+    document.getElementById("bh-q-prompt").textContent = `⚡ LIGHTNING ROUND! True or False: ${mc.prompt.replace(/=?\s*\?\s*$/, "").trim()} = ${shownAnswer}?`;
+    const grid = document.getElementById("bh-q-grid");
+    grid.innerHTML = "";
+    let answered = false;
+    const timeoutId = setTimeout(() => { if (!answered) { answered = true; document.getElementById("bh-question-overlay").classList.add("hidden"); onDone(); } }, LIGHTNING_ROUND_MS);
+    ["True", "False"].forEach(label => {
+      const btn = document.createElement("button");
+      btn.className = "bh-q-btn";
+      btn.type = "button";
+      btn.textContent = label;
+      btn.addEventListener("click", () => {
+        if (answered) return;
+        answered = true;
+        clearTimeout(timeoutId);
+        const correct = (label === "True") === isTrue;
+        if (correct) { state.points += LIGHTNING_ROUND_BONUS; updateHud(); showToast(`⚡ +${LIGHTNING_ROUND_BONUS}!`, false); }
+        else showToast("⚡ Missed it!", true);
+        setTimeout(() => { document.getElementById("bh-question-overlay").classList.add("hidden"); onDone(); }, 500);
+      });
+      grid.appendChild(btn);
+    });
+    document.getElementById("bh-question-overlay").classList.remove("hidden");
   }
 
   function askNextQuestion() {
     if (state.ended) return;
     if (state.qIndex >= ROUND_SIZE) { finishRound(); return; }
+    maybeOfferLightningRound(askNextQuestionReal);
+  }
+  function askNextQuestionReal() {
+    if (state.ended) return;
     // Team Score turn (round 2, item 13) -- alternates by question index,
     // not a separate counter, so it always stays in sync with qIndex.
     if (state.mode === "team") state.teamTurn = state.qIndex % 2 === 0 ? 1 : 2;
@@ -546,7 +735,20 @@ function initBasketball() {
         resetBallForNextShot();
         offerShot();
       } else {
-        state.streak = 0;
+        // Streak Shield (round 3, item 2) -- a wrong ANSWER breaks the
+        // streak just like a missed shot does, so it must be covered by
+        // the shield too, not just handleMiss's own consumption.
+        if (state.streakShieldCharges > 0) {
+          state.streakShieldCharges -= 1;
+          state.streakShieldGranted = false;
+          showSubtoast("🛡️ Streak Shield used!");
+        } else {
+          state.streak = 0;
+          state.streakShieldGranted = false;
+        }
+        state.comboMult = 1;
+        state.mascotStreakSeenAt = 0;
+        chipCombo.classList.add("hidden");
         updateHud();
         showToast("❌ No shot this time", true);
         runNextBar(900);
@@ -644,6 +846,21 @@ function initBasketball() {
     const reasonablyAimed = -dyPct >= MIN_UPWARD_DRAG_PCT && Math.abs(dxPct) < 40;
     aimLine.classList.toggle("aim-good", reasonablyAimed);
     aimLine.classList.toggle("aim-bad", !reasonablyAimed);
+
+    // Aim dotted-guide line to the hoop (round 3) -- a SEPARATE, always-
+    // faint line from the ball's SNAP-BACK launch position to the hoop,
+    // independent of pull direction -- helps a kid who struggles to judge
+    // "which way is the hoop" on top of the color-feedback pull-line above.
+    const launchXPct = state.dragStartBallPct.x, launchYPct = state.dragStartBallPct.y;
+    const dxGuide = (state.hoopX - launchXPct) / 100 * rect.width;
+    const dyGuide = (12 - launchYPct) / 100 * rect.height;
+    const guideLen = Math.hypot(dxGuide, dyGuide);
+    const guideAngle = Math.atan2(dyGuide, dxGuide) * (180 / Math.PI);
+    aimGuide.style.left = launchXPct + "%";
+    aimGuide.style.top = launchYPct + "%";
+    aimGuide.style.width = guideLen + "px";
+    aimGuide.style.transform = `rotate(${guideAngle}deg)`;
+    aimGuide.classList.remove("hidden");
   }
 
   function onDragEnd(e) {
@@ -651,6 +868,8 @@ function initBasketball() {
     state.dragging = false;
     ball.classList.remove("dragging");
     aimLine.classList.add("hidden");
+    aimGuide.classList.add("hidden"); // round 3
+    spawnChalkPuff(state.dragStartBallPct.x, state.dragStartBallPct.y); // round 3
     document.removeEventListener("pointermove", onDragMove);
     document.removeEventListener("pointerup", onDragEnd);
     const rect = courtRect();
@@ -699,7 +918,8 @@ function initBasketball() {
     // 2pt/3pt value itself.
     const shotValue = launchDistFromCenter >= THREE_PT_DIST ? 3 : 2;
     const isTrickShot = launchDistFromCenter >= TRICK_SHOT_DIST && launchDistFromCenter < HALF_COURT_DIST;
-    const isHalfCourt = launchDistFromCenter >= HALF_COURT_DIST;
+    const isHalfCourt = launchDistFromCenter >= HALF_COURT_DIST && launchDistFromCenter < FULL_COURT_DIST;
+    const isFullCourt = launchDistFromCenter >= FULL_COURT_DIST; // round 3, item 4
     // Hot Zone (round 2, item 7) -- bonus if THIS launch position falls
     // inside the round's rolled band (see startRound), on top of whatever
     // 2pt/3pt/trick-shot tier it also qualifies for.
@@ -752,7 +972,7 @@ function initBasketball() {
       const inHoopY = ny > HOOP_TOL_Y_MIN && ny < HOOP_TOL_Y_MAX;
       if (!state.scored && inHoopX && inHoopY) {
         state.scored = true;
-        handleMake({ shotValue, isTrickShot, isHalfCourt, inHotZone, isMidClimax, launchX, edgeDist: Math.abs(nx - state.hoopX), isLastShot, airFrames: frames });
+        handleMake({ shotValue, isTrickShot, isHalfCourt, isFullCourt, inHotZone, isMidClimax, launchX, edgeDist: Math.abs(nx - state.hoopX), isLastShot, airFrames: frames });
         return;
       }
       // Backboard flash (item 10, round 1) -- purely cosmetic (separate
@@ -773,11 +993,39 @@ function initBasketball() {
   }
 
   function handleMake(info) {
-    const { shotValue, isTrickShot, isHalfCourt, inHotZone, isMidClimax, launchX, edgeDist, isLastShot, airFrames } = info;
+    // Buzzer bonus shot (round 3, item 15) -- a short-circuit BEFORE any
+    // of the normal scoring/streak/combo logic below, since qIndex is
+    // still ROUND_SIZE here (isLastShot would read true again and
+    // re-trigger the FULL buzzer-multiplier stack a second time if this
+    // fell through to the normal path). Flat bonus only, straight to
+    // finishRound -- this shot is a standalone epilogue beat, not a real
+    // extra question/round-state entry.
+    if (state.bonusShotActive) {
+      state.bonusShotActive = false;
+      state.points += BUZZER_BONUS_POINTS;
+      finishShot();
+      net.classList.remove("swish"); void net.offsetWidth; net.classList.add("swish");
+      playSwish();
+      showToast(`🎁 Bonus make! +${BUZZER_BONUS_POINTS}`, false);
+      updateHud();
+      setTimeout(finishRound, 1000);
+      return;
+    }
+    const { shotValue, isTrickShot, isHalfCourt, isFullCourt, inHotZone, isMidClimax, launchX, edgeDist, isLastShot, airFrames } = info;
     state.flying = false;
     state.made++;
     state.streak++;
     if (state.streak > state.bestStreakThisRound) state.bestStreakThisRound = state.streak;
+
+    // Streak Shield (round 3, item 2) -- earned once per climb to
+    // STREAK_SHIELD_AT, forgives the NEXT miss's streak reset (the shot
+    // itself still misses/no points from it, only the streak counter is
+    // protected) -- see handleMiss.
+    if (state.streak >= STREAK_SHIELD_AT && !state.streakShieldGranted) {
+      state.streakShieldGranted = true;
+      state.streakShieldCharges = (state.streakShieldCharges || 0) + 1;
+      showSubtoast("🛡️ Streak Shield earned!");
+    }
 
     const streakBonus = streakBonusFor(state.streak);
     const isPerfect = edgeDist < PERFECT_ARC_TOL_X;
@@ -788,7 +1036,8 @@ function initBasketball() {
     state.comboMult = hotHandMult;
 
     let gained = Math.round(shotValue * hotHandMult) + streakBonus;
-    if (isHalfCourt) gained += HALF_COURT_BONUS;
+    if (isFullCourt) gained += FULL_COURT_BONUS;
+    else if (isHalfCourt) gained += HALF_COURT_BONUS;
     else if (isTrickShot) gained += TRICK_SHOT_BONUS;
     if (isPerfect) gained += PERFECT_ARC_BONUS;
     if (state.contested) gained += CONTESTED_BONUS;
@@ -808,8 +1057,11 @@ function initBasketball() {
     // Shot Chart log (item 42) + best-shot recap for the replay reel (item 39)
     state.shotLog.push({ x: launchX, made: true });
     if (!state.bestShotThisRound || gained > state.bestShotThisRound.points) {
-      state.bestShotThisRound = { points: gained, label: isLastShot ? "🚨 Buzzer Beater" : isMidClimax ? "⭐ Big shot" : isPerfect ? "💯 Nothing but net" : isHalfCourt ? "🚀 Half-court shot" : shotValue === 3 ? "3-pointer" : "Shot" };
+      state.bestShotThisRound = { points: gained, label: isLastShot ? "🚨 Buzzer Beater" : isMidClimax ? "⭐ Big shot" : isPerfect ? "💯 Nothing but net" : isFullCourt ? "🌠 Full Court Press" : isHalfCourt ? "🚀 Half-court shot" : shotValue === 3 ? "3-pointer" : "Shot" };
     }
+
+    playSwish(); // round 3, item 1
+    if (state.streak >= 3) playCrowdCheer();
 
     updateHud();
     // Progressive combo HUD (round 2, items 19+35) -- a live multiplier
@@ -839,11 +1091,12 @@ function initBasketball() {
     court.classList.remove("punch"); void court.offsetWidth; court.classList.add("punch");
     // Camera zoom for the Buzzer Beater (round 2, item 31)
     if (isLastShot) { court.classList.remove("buzzer-zoom"); void court.offsetWidth; court.classList.add("buzzer-zoom"); }
-    try { if (navigator.vibrate) navigator.vibrate(isLastShot ? [40, 30, 60] : 40); } catch (e) {} // item 43
+    try { if (hapticsOn() && navigator.vibrate) navigator.vibrate(isLastShot ? [40, 30, 60] : 40); } catch (e) {} // item 43
 
     const mainMsg = isLastShot ? `🚨 BUZZER BEATER! +${gained}` : isMidClimax ? `⭐ Big shot! +${gained}` : isPerfect ? "💯 Nothing but net!" : state.streak >= 3 ? `🔥 SWISH! (${state.streak} in a row!)` : "🏀 SWISH!";
     showToast(mainMsg, false);
-    if (isHalfCourt) showSubtoast(`🚀 Half-court! +${HALF_COURT_BONUS}`);
+    if (isFullCourt) showSubtoast(`🌠 FULL COURT! +${FULL_COURT_BONUS}`);
+    else if (isHalfCourt) showSubtoast(`🚀 Half-court! +${HALF_COURT_BONUS}`);
     else if (isTrickShot) showSubtoast(`🎯 Deep range! +${TRICK_SHOT_BONUS}`);
     else if (inHotZone) showSubtoast(`🔆 Hot Zone! +${HOT_ZONE_BONUS}`);
     else if (state.contested) showSubtoast(`🛡️ Contested shot! +${CONTESTED_BONUS}`);
@@ -872,16 +1125,80 @@ function initBasketball() {
 
     updateGhostHud(); // round 2, item 14
 
+    // Rival pace check (round 3, item 12) -- a simplified "rival ghost":
+    // compares current made-count against the ghost baseline at fixed
+    // checkpoints instead of a real animated AI shooter (judged too much
+    // extra state/visual machinery for this pass), reusing the SAME
+    // baseline Ghost Challenge already fetches.
+    if (RIVAL_CHECK_AT.includes(state.qIndex) && state.ghostBaseline) {
+      const pace = Math.round((state.ghostBaseline / ROUND_SIZE) * state.qIndex);
+      if (state.made > pace) showToast(`🏃 You're ahead of the rival pace!`, false);
+      else if (state.made < pace) showToast(`😤 Rival's pulling ahead...`, true);
+    }
+
+    // "Showtime" flourish (round 3, item 20) -- a rare combo (perfect-arc
+    // Buzzer Beater), purely cosmetic on top of the existing punch/zoom.
+    if (isLastShot && isPerfect) {
+      court.classList.remove("showtime"); void court.offsetWidth; court.classList.add("showtime");
+      showSubtoast("✨ SHOWTIME! ✨");
+    }
+
     defenderEl.classList.remove("show");
     hotzoneEl.classList.toggle("hidden", !state.hotZoneRange); // stays visible all round once rolled, see startRound
     rim.classList.remove("buzzer"); net.classList.remove("buzzer");
     if (state.hoopMoving) setHoopX(HOOP_X, false);
-    setTimeout(askNextQuestion, 1000);
+
+    // Buzzer bonus shot (round 3, item 15) -- after a MADE Buzzer Beater,
+    // one extra no-question-gate shot before the round truly ends.
+    if (isLastShot && !state.buzzerBonusUsed) {
+      state.buzzerBonusUsed = true;
+      setTimeout(offerBuzzerBonusShot, 1200);
+    } else {
+      setTimeout(askNextQuestion, 1000);
+    }
+  }
+
+  // Buzzer bonus shot (round 3, item 15) -- reuses the normal shot flow
+  // (drag/launch/handleMake/handleMiss) but with qIndex already at
+  // ROUND_SIZE, so handleMake's own isLastShot check would read true
+  // again -- guarded via state.buzzerBonusUsed instead so this can only
+  // ever fire once, and scored as a flat bonus added directly rather than
+  // re-running the whole last-shot multiplier stack a second time.
+  function offerBuzzerBonusShot() {
+    if (state.ended) return;
+    showToast("🎁 Bonus shot! Any make is worth extra.", false);
+    // Set BEFORE resetBallForNextShot -- that function reads
+    // state.bonusShotActive to skip re-playing the buzzer sound/re-
+    // applying buzzer styling cues for this already-past-the-buzzer shot.
+    state.bonusShotActive = true;
+    resetBallForNextShot();
+    offerShot();
   }
 
   function handleMiss(isLastShot, launchX) {
+    // Buzzer bonus shot (round 3, item 15) -- short-circuit, mirrors
+    // handleMake's own guard. A missed bonus shot costs nothing (it was
+    // already free upside), just ends the round.
+    if (state.bonusShotActive) {
+      state.bonusShotActive = false;
+      finishShot();
+      showToast("Bonus shot missed -- no harm done!", true);
+      setTimeout(finishRound, 900);
+      return;
+    }
     state.flying = false;
-    state.streak = 0;
+    // Streak Shield (round 3, item 2) -- consumes 1 charge to forgive
+    // THIS miss's streak reset (no points from the miss change because of
+    // it, only the streak counter is protected). Re-arms once the streak
+    // climbs back to STREAK_SHIELD_AT.
+    if (state.streakShieldCharges > 0) {
+      state.streakShieldCharges -= 1;
+      state.streakShieldGranted = false;
+      showSubtoast("🛡️ Streak Shield used!");
+    } else {
+      state.streak = 0;
+      state.streakShieldGranted = false;
+    }
     state.comboMult = 1;
     state.mascotStreakSeenAt = 0; // round 2 -- re-arms the mascot cameo milestone for the next climb
     chipCombo.classList.add("hidden");
@@ -898,12 +1215,14 @@ function initBasketball() {
     // small partial point, an airball earns nothing.
     if (wasClose) { state.points += RIM_SAVE_BONUS; updateHud(); }
     showToast(wasClose ? `So close! Rim out. (+${RIM_SAVE_BONUS})` : "Airball!", true);
+    if (wasClose) { playRimClank(); rim.classList.remove("near-miss-glow"); void rim.offsetWidth; rim.classList.add("near-miss-glow"); } // round 3, item 1 + near-miss glow
+    else playAirball();
     court.classList.remove("miss-vignette"); void court.offsetWidth; court.classList.add("miss-vignette"); // item 47
     // Crowd reaction (round 2, item 34) -- extends the vignette above with
     // a visible collective dip on BOTH crowd layers.
     crowdEl.classList.remove("react"); void crowdEl.offsetWidth; crowdEl.classList.add("react");
     crowdBack.classList.remove("react"); void crowdBack.offsetWidth; crowdBack.classList.add("react");
-    try { if (navigator.vibrate) navigator.vibrate([20, 20, 20]); } catch (e) {} // item 43, distinct pattern from a make
+    try { if (hapticsOn() && navigator.vibrate) navigator.vibrate([20, 20, 20]); } catch (e) {} // item 43, distinct pattern from a make
     defenderEl.classList.remove("show");
     rim.classList.remove("buzzer"); net.classList.remove("buzzer");
     if (state.hoopMoving) setHoopX(HOOP_X, false);
@@ -949,12 +1268,17 @@ function initBasketball() {
     windEl.classList.add("hidden");
     court.classList.remove("buzzer-zoom");
     const made = state.made;
-    const emoji = made >= 9 ? "🏆" : made >= 6 ? "🥳" : made >= 3 ? "🙂" : "💪";
-    const title = made >= 9 ? "All-Star shootaround!" : made >= 6 ? "Great shootaround!" : made >= 3 ? "Nice try!" : "Keep practicing!";
+    // Perfect Round bonus (round 3, item 7) -- all 10 shots made.
+    const isPerfectRound = made === ROUND_SIZE;
+    if (isPerfectRound) state.points += PERFECT_ROUND_BONUS;
+    const emoji = isPerfectRound ? "👑" : made >= 9 ? "🏆" : made >= 6 ? "🥳" : made >= 3 ? "🙂" : "💪";
+    const title = isPerfectRound ? "PERFECT ROUND!" : made >= 9 ? "All-Star shootaround!" : made >= 6 ? "Great shootaround!" : made >= 3 ? "Nice try!" : "Keep practicing!";
     document.getElementById("bh-end-emoji").textContent = emoji;
     document.getElementById("bh-end-title").textContent = title;
-    document.getElementById("bh-end-sub").textContent = `You made ${made}/${ROUND_SIZE} shots.`;
-    document.getElementById("bh-end-points").textContent = `⭐ ${state.points} points`;
+    document.getElementById("bh-end-sub").textContent = isPerfectRound ? `You made all ${ROUND_SIZE}/${ROUND_SIZE} shots! +${PERFECT_ROUND_BONUS} bonus.` : `You made ${made}/${ROUND_SIZE} shots.`;
+    // Score roll-up counter (round 3) -- counts up from 0 instead of the
+    // number just appearing already-set.
+    animateScoreRollup(document.getElementById("bh-end-points"), state.points, " points", "⭐ ");
     const bonusEl = document.getElementById("bh-end-bonus");
     bonusEl.textContent = "";
 
@@ -1012,7 +1336,19 @@ function initBasketball() {
         AIGLeaderboard.touchBasketballStats({ made, total: ROUND_SIZE, bestStreakThisRound: state.bestStreakThisRound }).catch(() => {});
       }
       if (AIGLeaderboard.getBasketballAchievements) {
-        AIGLeaderboard.getBasketballAchievements().then(list => renderAchievementBadges("bh-end-achievements", list)).catch(() => {});
+        AIGLeaderboard.getBasketballAchievements().then(list => {
+          renderAchievementBadges("bh-end-achievements", list);
+          announceNewAchievements(list); // round 3
+        }).catch(() => {});
+      }
+      // Swish-streak all-time leaderboard (round 3, item 17) -- a
+      // separate ranking from made/weekly, shown alongside it.
+      const streakRankEl = document.getElementById("bh-streak-rank");
+      streakRankEl.classList.add("hidden");
+      if (AIGLeaderboard.getBasketballStreakLeaderboard) {
+        AIGLeaderboard.getBasketballStreakLeaderboard().then(r => {
+          if (r && r.rank) { streakRankEl.textContent = `🔥 Swish-streak rank: #${r.rank} of ${r.total} all-time!`; streakRankEl.classList.remove("hidden"); }
+        }).catch(() => {});
       }
 
       const rankEl = document.getElementById("bh-end-rank");
@@ -1041,6 +1377,7 @@ function initBasketball() {
     function next() {
       if (i >= steps.length) { countdownEl.classList.add("hidden"); onDone(); return; }
       countdownEl.innerHTML = `<span>${steps[i]}</span>`;
+      if (i < steps.length - 1) playCountdownBeep(); else bhTone([880], 0.18, 0.14); // round 3, item 1 -- a higher "go!" chime on the last step
       i++;
       setTimeout(next, i === steps.length ? 500 : 550);
     }
@@ -1070,10 +1407,48 @@ function initBasketball() {
     state.bestShotThisRound = null;
     state.teamScores = { 1: 0, 2: 0 };
     state.teamTurn = 1;
+    // Round 3 resets
+    state.streakShieldCharges = 0;
+    state.streakShieldGranted = false;
+    state.buzzerBonusUsed = false;
+    state.bonusShotActive = false;
+    state.lastGenKey = null;
+    state.lightningRoundDone = false;
     chipCombo.classList.add("hidden");
     reboundBtn.classList.add("hidden");
     updateHud();
     rollLighting();
+
+    // HUD pop-in stagger (round 3) -- force-reflow restart, same pattern
+    // used throughout for re-triggerable CSS animations.
+    hudEl.classList.remove("popin"); void hudEl.offsetWidth; hudEl.classList.add("popin");
+
+    // Seasonal hoop skin (round 3, item 14) -- cosmetic-only reskin while
+    // a matching hub-wide season is active, same convention as Ninja
+    // Runner's seasonal boss reskins.
+    if (window.AIGLeaderboard && AIGLeaderboard.getSeason) {
+      const season = AIGLeaderboard.getSeason();
+      if (season && season.id) court.dataset.season = season.id; else delete court.dataset.season;
+    }
+
+    // Loadout trinket (round 3, item 24) -- consumes whatever the hub's
+    // pre-round Loadout economy has armed (same consumeArmedLoadout()
+    // Ninja Runner/Plane Mode already use); basketball just didn't tap
+    // into it before. "life"/"shield" both map to a one-time forgiveness
+    // of the FIRST miss this round (basketball has no separate "lives"
+    // concept to add to), "boost" is the existing global coin-boost timer
+    // with nothing basketball-specific to do beyond consuming it.
+    if (window.AIGLeaderboard && AIGLeaderboard.consumeArmedLoadout) {
+      AIGLeaderboard.consumeArmedLoadout().then(id => {
+        if (id === "life" || id === "shield") {
+          state.streakShieldCharges = (state.streakShieldCharges || 0) + 1;
+          state.streakShieldGranted = true; // armed immediately, not gated behind reaching STREAK_SHIELD_AT first
+          showToast("🛡️ Loadout charm ready -- your first miss is forgiven!", false);
+        } else if (id === "boost") {
+          showToast("🪙 Coin Boost active!", false);
+        }
+      }).catch(() => {});
+    }
 
     // Hot Zone (round 2, item 7) -- rolled ONCE per round (not per shot),
     // not every round gets one. Positioned as a random band of distance-
@@ -1163,6 +1538,25 @@ function initBasketball() {
   let seenTutorial = false;
   try { seenTutorial = localStorage.getItem(TUTORIAL_KEY) === "1"; } catch (e) {}
   if (!seenTutorial) showTutorial();
+
+  // Settings panel (round 3) -- sound/haptics toggles.
+  function paintSettingsToggles() {
+    document.getElementById("bh-settings-sound").classList.toggle("on", soundOn());
+    document.getElementById("bh-settings-haptics").classList.toggle("on", hapticsOn());
+  }
+  document.getElementById("bh-settings-btn").addEventListener("click", () => {
+    paintSettingsToggles();
+    document.getElementById("bh-settings-overlay").classList.remove("hidden");
+  });
+  document.getElementById("bh-settings-close-btn").addEventListener("click", () => document.getElementById("bh-settings-overlay").classList.add("hidden"));
+  document.getElementById("bh-settings-sound").addEventListener("click", () => {
+    try { localStorage.setItem(SOUND_KEY, soundOn() ? "0" : "1"); } catch (e) {}
+    paintSettingsToggles();
+  });
+  document.getElementById("bh-settings-haptics").addEventListener("click", () => {
+    try { localStorage.setItem(HAPTICS_KEY, hapticsOn() ? "0" : "1"); } catch (e) {}
+    paintSettingsToggles();
+  });
 
   document.getElementById("bh-start-btn").addEventListener("click", () => { state.daily = false; startRound(); });
   document.getElementById("bh-daily-btn").addEventListener("click", () => { state.daily = true; startRound(); });

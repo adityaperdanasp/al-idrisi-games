@@ -401,6 +401,102 @@
   .bh-shot-dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%); }
   .bh-shot-dot.made { background: #3F8F5F; }
   .bh-shot-dot.missed { background: #D64545; opacity: .6; }
+
+  /* =================================================================
+     ROUND 3 -- 50 more additions (25 gameplay, 25 UI/UX). See script.js
+     for the JS half; comments here only note what's new/why.
+     ================================================================= */
+
+  /* HUD pop-in stagger at round start (round 3, item 33 of UI/UX list) --
+     same idea as Ninja Runner's own HUD stagger: the pills fade/scale in
+     one after another instead of all at once. */
+  #bh-hud.popin .bh-hud-chip { animation: bhHudPopin .3s ease backwards; }
+  #bh-hud.popin .bh-hud-chip:nth-child(1) { animation-delay: 0ms; }
+  #bh-hud.popin .bh-hud-chip:nth-child(2) { animation-delay: 60ms; }
+  #bh-hud.popin .bh-hud-chip:nth-child(3) { animation-delay: 120ms; }
+  #bh-hud.popin .bh-hud-chip:nth-child(4) { animation-delay: 180ms; }
+  #bh-hud.popin .bh-hud-chip:nth-child(5) { animation-delay: 240ms; }
+  @keyframes bhHudPopin { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }
+
+  /* "Showtime" flourish (round 3, item 20) -- a rare combo celebration,
+     layered on top of the existing punch/zoom rather than replacing them. */
+  .bh-court.showtime { animation: bhShowtime .6s ease; }
+  @keyframes bhShowtime { 0%, 100% { filter: brightness(1) saturate(1); } 40% { filter: brightness(1.3) saturate(1.4); } }
+
+  /* Near-miss glow ring (round 3, item 46 of original brainstorm) -- a
+     brief glow on the rim itself for a borderline-close miss, distinct
+     from the rim-wobble (round 1) which is make-only. */
+  .bh-rim.near-miss-glow { animation: bhNearMissGlow .5s ease; }
+  @keyframes bhNearMissGlow { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 12px 4px rgba(214,69,69,.6); } }
+
+  /* Chalk puff on release (round 3) -- a small dust puff spawned at the
+     drag-start point right when a shot launches. */
+  .bh-chalk-puff { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.7), transparent 70%); transform: translate(-50%, -50%); z-index: 6; pointer-events: none; animation: bhChalkPuff .4s ease-out forwards; }
+  @keyframes bhChalkPuff { to { transform: translate(-50%, -50%) scale(2.4); opacity: 0; } }
+
+  /* Ambient dust motes (round 3) -- a few slow-drifting specks, always-on,
+     same decorative-only convention as Ninja Runner's own ambient layer. */
+  .bh-dust { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .bh-dust i { position: absolute; bottom: -6px; width: 2px; height: 2px; border-radius: 50%; background: rgba(120,90,60,.35); animation: bhDustDrift linear infinite; }
+  .bh-dust i:nth-child(1) { left: 15%; animation-duration: 10s; animation-delay: 0s; }
+  .bh-dust i:nth-child(2) { left: 35%; animation-duration: 13s; animation-delay: 2s; }
+  .bh-dust i:nth-child(3) { left: 55%; animation-duration: 11s; animation-delay: 4s; }
+  .bh-dust i:nth-child(4) { left: 75%; animation-duration: 14s; animation-delay: 1s; }
+  .bh-dust i:nth-child(5) { left: 90%; animation-duration: 12s; animation-delay: 3s; }
+  @keyframes bhDustDrift { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: .5; } 85% { opacity: .5; } 100% { transform: translateY(-420px); opacity: 0; } }
+
+  /* Aim dotted-guide line to the hoop (round 3) -- a SEPARATE, always-
+     faint line from ball to hoop shown while dragging, in ADDITION to the
+     color-feedback pull-line from round 2 (helps a kid who struggles to
+     gauge "which way is the hoop" independent of their pull direction). */
+  .bh-aim-guide { position: absolute; height: 1px; border-top: 2px dotted rgba(184,87,26,.3); transform-origin: 0 50%; pointer-events: none; z-index: 3; }
+  .bh-aim-guide.hidden { display: none; }
+
+  /* Net/rim color tied to court skin (round 3) -- the generic tan net/
+     orange rim now shift tone per equipped court, instead of always
+     looking the same regardless of skin. */
+  .bh-court[data-court-skin="street"] .bh-rim { border-color: #3a6ea5; border-top-color: #6a9bd1; }
+  .bh-court[data-court-skin="street"] .bh-net i { background: rgba(58,110,165,.35) !important; }
+  .bh-court[data-court-skin="sunset"] .bh-rim { border-color: #c2410c; border-top-color: #fb923c; }
+  .bh-court[data-court-skin="sunset"] .bh-net i { background: rgba(194,65,12,.35) !important; }
+
+  /* Seasonal hoop skins (round 3, item 14) -- cosmetic-only reskin of the
+     rim/net/backboard while a matching hub-wide season is active (see
+     getSeason() in leaderboard.js), same convention as Ninja Runner's
+     seasonal boss reskins. */
+  .bh-court[data-season="halloween"] .bh-rim { border-color: #ff7518; border-top-color: #2b2b2b; }
+  .bh-court[data-season="christmas"] .bh-rim { border-color: #c0392b; border-top-color: #2e7d32; }
+  .bh-court[data-season="independence"] .bh-rim { border-color: #c0392b; border-top-color: #fff; }
+
+  /* Achievement-unlock toast (round 3) -- a distinct celebratory banner
+     the MOMENT a badge newly unlocks, separate from the end-screen's
+     already-unlocked display. */
+  .bh-ach-toast { position: absolute; top: 15%; left: 50%; transform: translateX(-50%) translateY(-10px); background: linear-gradient(135deg, #ffe299, #ffce6b); color: #8a6d1d; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; padding: 8px 16px; border-radius: 100px; z-index: 11; opacity: 0; white-space: nowrap; }
+  .bh-ach-toast.show { animation: bhPbBanner 2.2s ease forwards; }
+
+  /* Settings panel (round 3) -- sound/haptics toggles, consolidated in
+     one place on the start screen rather than scattered controls. */
+  .bh-settings-btn { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border-radius: 50%; background: #fff; border: none; font-size: 1rem; box-shadow: 0 3px 8px rgba(0,0,0,.1); cursor: pointer; z-index: 2; }
+  .bh-settings-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-weight: 700; font-size: .9rem; border-bottom: 1px solid #f1ede6; }
+  .bh-settings-toggle { width: 44px; height: 24px; border-radius: 100px; background: #f1ede6; border: none; position: relative; cursor: pointer; flex: none; }
+  .bh-settings-toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .2s ease; }
+  .bh-settings-toggle.on { background: #E4772E; }
+  .bh-settings-toggle.on::after { transform: translateX(20px); }
+
+  /* Mobile touch-target sizing (round 3) -- the smallest tappable
+     elements (rebound button, cosmetic swatches) get a larger minimum hit
+     area on narrow/touch viewports. */
+  @media (max-width: 380px) {
+    .bh-swatch { width: 48px; height: 48px; }
+    .bh-rebound-btn { padding: 10px 18px; font-size: .9rem; }
+  }
+
+  /* Swish-streak leaderboard line (round 3, item 17) -- shown on the end
+     screen alongside the existing weekly/daily rank line. */
+  .bh-streak-rank { font-weight: 700; color: #A8531F; margin-bottom: 6px; font-size: .85rem; }
+
+  /* Score roll-up counter (round 3) -- no new element, just an animation
+     hook on the existing #bh-end-points text (see script.js). */
 </style>
 </head>
 <body>
@@ -412,7 +508,7 @@
     <!-- Player avatar/jersey (round 2, items 23+38) -- courtside identity badge. -->
     <div class="bh-player-badge hidden" id="bh-player-badge"></div>
   </div>
-  <div class="bh-hud">
+  <div class="bh-hud" id="bh-hud">
     <span class="bh-hud-chip" id="bh-chip-made">🏀 <span id="bh-hud-made">0</span>/<span id="bh-hud-total">10</span></span>
     <span class="bh-hud-chip" id="bh-chip-streak">🔥 <span id="bh-hud-streak">0</span></span>
     <!-- Progressive combo multiplier readout (round 2, item 19) -- distinct
@@ -427,6 +523,8 @@
   </div>
 
   <div class="bh-court" id="bh-court" data-lighting="day">
+    <!-- Ambient dust motes (round 3) -- always-on, purely decorative. -->
+    <div class="bh-dust"><i></i><i></i><i></i><i></i><i></i></div>
     <div class="bh-crowd" id="bh-crowd"></div>
     <div class="bh-crowd bh-crowd-back" id="bh-crowd-back"></div>
     <div class="bh-scoreboard" id="bh-scoreboard">
@@ -451,6 +549,9 @@
     <div class="bh-rim" id="bh-rim"></div>
     <div class="bh-ball-shadow hidden" id="bh-ball-shadow"></div>
     <div class="bh-aim-line hidden" id="bh-aim-line"></div>
+    <!-- Aim dotted-guide line to the hoop (round 3) -- separate from the
+         drag color-feedback line above. -->
+    <div class="bh-aim-guide hidden" id="bh-aim-guide"></div>
     <div class="bh-timer-ring hidden" id="bh-timer-ring"></div>
     <div class="bh-ball hidden" id="bh-ball"></div>
     <!-- Rebound prompt (round 2, item 1) -- a brief tap-to-grab window after
@@ -459,6 +560,7 @@
     <div class="bh-mascot hidden" id="bh-mascot">🦅</div>
     <div class="bh-hint hidden" id="bh-hint">👆 Drag the ball up to shoot!</div>
     <div class="bh-toast" id="bh-toast"></div>
+    <div class="bh-ach-toast" id="bh-ach-toast"></div>
     <div class="bh-subtoast" id="bh-subtoast"></div>
     <div class="bh-pb-banner" id="bh-pb-banner"></div>
     <div class="bh-countdown hidden" id="bh-countdown"></div>
@@ -467,7 +569,9 @@
 
   <!-- Start screen -->
   <div class="bh-overlay" id="bh-start-overlay">
-    <div class="bh-card">
+    <div class="bh-card" style="position:relative;">
+      <!-- Settings panel trigger (round 3) -- sound/haptics toggles. -->
+      <button type="button" class="bh-settings-btn" id="bh-settings-btn">⚙️</button>
       <div class="bh-start-emoji">🏀</div>
       <div class="bh-start-title">Math Hoops</div>
       <p class="bh-start-sub">Answer the question right to earn a shot, then drag the ball up toward the hoop and let go to shoot. Shoot from behind the arc for 3 points! 10 questions per game.</p>
@@ -508,6 +612,16 @@
     </div>
   </div>
 
+  <!-- Settings (round 3) -- sound/haptics toggles, consolidated here. -->
+  <div class="bh-overlay hidden" id="bh-settings-overlay">
+    <div class="bh-card">
+      <div class="bh-start-title">⚙️ Settings</div>
+      <div class="bh-settings-row"><span>🔊 Sound effects</span><button type="button" class="bh-settings-toggle" id="bh-settings-sound"></button></div>
+      <div class="bh-settings-row"><span>📳 Haptics (vibration)</span><button type="button" class="bh-settings-toggle" id="bh-settings-haptics"></button></div>
+      <button class="bh-btn bh-btn-primary" id="bh-settings-close-btn" style="margin-top:16px;">Done</button>
+    </div>
+  </div>
+
   <!-- Question card -->
   <div class="bh-overlay hidden" id="bh-question-overlay">
     <div class="bh-card">
@@ -532,6 +646,7 @@
       <div class="bh-clutch-badge hidden" id="bh-clutch-badge"></div>
       <div class="bh-end-bonus" id="bh-end-bonus"></div>
       <div class="bh-end-rank" id="bh-end-rank"></div>
+      <div class="bh-streak-rank hidden" id="bh-streak-rank"></div>
       <!-- Shot Chart (round 2, item 42) -- small court diagram, one dot per
            shot positioned by its launch X, colored by make/miss. -->
       <div class="bh-shotchart hidden" id="bh-shotchart"><div class="bh-shotchart-hoop"></div></div>

@@ -3847,6 +3847,28 @@
     const myIdx = ranking.findIndex(r => r.id === player.id);
     return { rank: myIdx >= 0 ? myIdx + 1 : null, total: ranking.length, top: ranking.slice(0, 3) };
   }
+  // All-time swish-streak leaderboard (basketball round 3) -- ranks by
+  // the SAME `bestStreak` lifetime counter touchBasketballStats already
+  // maintains, a distinct metric from made-count (made ranks accuracy/
+  // volume, this ranks the longest hot streak ever), no new write path
+  // needed, just a new ranking READ over the existing field.
+  async function getBasketballStreakLeaderboard() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return null;
+    const all = snap.val();
+    // No stored `name` field alongside bestStreak (touchBasketballStats only
+    // ever wrote numbers) -- falls back to the player id itself, same
+    // convention as every other ranking function here when a name isn't
+    // available.
+    const ranking = Object.entries(all)
+      .map(([id, data]) => ({ id, name: id, streak: (data.basketballStats && data.basketballStats.bestStreak) || 0 }))
+      .filter(r => r.streak > 0)
+      .sort((a, b) => b.streak - a.streak);
+    const myIdx = ranking.findIndex(r => r.id === player.id);
+    return { rank: myIdx >= 0 ? myIdx + 1 : null, total: ranking.length, top: ranking.slice(0, 3) };
+  }
   async function touchBasketballDailyChallenge(made) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return;
@@ -6804,6 +6826,7 @@
     awardBasketballRoundBonus,
     touchBasketballStats, getBasketballLifetimeSummary, getBasketballAchievements,
     touchBasketballWeeklyBest, getBasketballWeeklyRank, touchBasketballDailyChallenge, getBasketballDailyChallengeRank,
+    getBasketballStreakLeaderboard,
     awardMemoryMatchBonus,
     awardTreasureDigLoot, awardTreasureDigRoundBonus,
     awardNumberLineJumpBonus,
