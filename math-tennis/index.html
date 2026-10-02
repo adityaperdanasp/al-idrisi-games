@@ -17,26 +17,81 @@
   .mt-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
   .mt-back { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #5a7a1f; font-size: 1.05rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); text-decoration: none; flex: none; }
   .mt-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #5a7a1f; }
-  .mt-hud { display: flex; justify-content: center; gap: 10px; padding: 0 14px 16px; }
-  .mt-hud-chip { background: #fff; border-radius: 100px; padding: 5px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; box-shadow: 0 2px 0 rgba(0,0,0,.05); }
+  .mt-settings-btn { width: 34px; height: 34px; border-radius: 50%; background: #fff; border: none; color: #5a7a1f; font-size: 1rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); cursor: pointer; flex: none; margin-right: -34px; }
 
-  .mt-court { margin: 0 20px 16px; height: min(56vh, 460px); border-radius: 20px; background: linear-gradient(180deg, #B9D452, #96B838); position: relative; overflow: hidden; box-shadow: inset 0 0 0 3px rgba(90,122,31,.25); }
-  .mt-court-net { position: absolute; top: 50%; left: 0; right: 0; height: 4px; background: repeating-linear-gradient(90deg, #fff, #fff 4px, transparent 4px, transparent 8px); transform: translateY(-50%); }
-  .mt-sweet-zone { position: absolute; left: 8px; right: 8px; background: rgba(255,255,255,.5); border-radius: 10px; border: 2px dashed rgba(90,122,31,.6); }
+  .mt-hud { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 0 14px 10px; }
+  .mt-hud-chip { background: #fff; border-radius: 100px; padding: 5px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; box-shadow: 0 2px 0 rgba(0,0,0,.05); transition: transform .15s ease; }
+  .mt-hud-chip.hidden { display: none; }
+  .mt-hud-chip.pop { animation: mtChipPop .35s ease; }
+  @keyframes mtChipPop { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+  .mt-power-bar { width: 140px; height: 8px; border-radius: 100px; background: #fff; margin: 0 auto 8px; overflow: hidden; box-shadow: 0 2px 0 rgba(0,0,0,.05); }
+  .mt-power-bar.hidden { display: none; }
+  .mt-power-fill { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #ffce6b, #E4772E); transition: width .25s ease; }
+  .mt-power-bar.full .mt-power-fill { background: linear-gradient(90deg, #8b5cf6, #5a7a1f); animation: mtPowerPulse .6s ease infinite; }
+  @keyframes mtPowerPulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.4); } }
+
+  .mt-progress-dots { display: flex; justify-content: center; gap: 5px; padding: 0 14px 10px; flex-wrap: wrap; }
+  .mt-progress-dot { width: 9px; height: 9px; border-radius: 50%; background: #e5ddc8; flex: none; }
+  .mt-progress-dot.won { background: #3F8F5F; }
+  .mt-progress-dot.lost { background: #D64545; }
+  .mt-progress-dot.ace { background: #ffce6b; box-shadow: 0 0 4px rgba(255,206,107,.9); }
+  .mt-progress-dot.noserve { background: #c9bfae; }
+
+  .mt-court { margin: 0 20px 10px; height: min(54vh, 440px); border-radius: 20px; background: linear-gradient(180deg, #B9D452, #96B838); position: relative; overflow: hidden; box-shadow: inset 0 0 0 3px rgba(90,122,31,.25); }
+  .mt-court.punch { animation: mtPunch .3s ease; }
+  @keyframes mtPunch { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.015); } }
+  .mt-court-net { position: absolute; top: 50%; left: 0; right: 0; height: 4px; background: repeating-linear-gradient(90deg, #fff, #fff 4px, transparent 4px, transparent 8px); transform: translateY(-50%); z-index: 2; }
+  .mt-lane-guide { position: absolute; top: 4%; bottom: 4%; width: 2px; background: repeating-linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,.35) 6px, transparent 6px, transparent 12px); z-index: 1; }
+  .mt-sweet-zone { position: absolute; left: 8px; right: 8px; background: rgba(255,255,255,.5); border-radius: 10px; border: 2px dashed rgba(90,122,31,.6); transition: top .2s ease, height .2s ease; }
+  .mt-sweet-zone.approaching { animation: mtSweetPulse .5s ease infinite; }
+  @keyframes mtSweetPulse { 0%, 100% { background: rgba(255,255,255,.5); box-shadow: none; } 50% { background: rgba(255,255,255,.85); box-shadow: 0 0 14px rgba(255,255,255,.8); } }
   .mt-ball { position: absolute; left: 50%; font-size: 1.7rem; transform: translate(-50%, -50%); top: 10%; z-index: 5; filter: drop-shadow(0 3px 3px rgba(0,0,0,.25)); }
+  .mt-ball-trail { position: absolute; font-size: 1.1rem; transform: translate(-50%, -50%); z-index: 3; opacity: .5; pointer-events: none; animation: mtTrailFade .4s ease forwards; }
+  @keyframes mtTrailFade { to { opacity: 0; transform: translate(-50%, -50%) scale(.5); } }
 
-  .mt-racket { position: absolute; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 4; }
+  .mt-racket { position: absolute; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 4; transition: left .18s ease; }
   .mt-racket.swinging { animation: mtSwing .28s ease; }
   @keyframes mtSwing { 0% { transform: translateX(-50%) rotate(0deg); } 45% { transform: translateX(-50%) rotate(-32deg); } 100% { transform: translateX(-50%) rotate(0deg); } }
   .mt-racket-top { top: 36px; }
   .mt-racket-bottom { bottom: 36px; }
   .mt-racket-head { width: 30px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.3); border: 4px solid #6b4a1f; }
+  .mt-racket-head[data-skin="fire"] { border-color: #D64545; box-shadow: 0 0 8px rgba(214,69,69,.6); }
+  .mt-racket-head[data-skin="ice"] { border-color: #3a9ed4; box-shadow: 0 0 8px rgba(58,158,212,.6); }
+  .mt-racket-head[data-skin="gold"] { border-color: #e4b73a; box-shadow: 0 0 8px rgba(228,183,58,.7); }
   .mt-racket-handle { width: 6px; height: 18px; background: #6b4a1f; border-radius: 3px; }
   .mt-racket-face { position: absolute; font-size: 1.1rem; top: -26px; }
   .mt-racket-top .mt-racket-face { top: -22px; }
   .mt-racket-bottom .mt-racket-face { bottom: -22px; top: auto; }
+  .mt-swing-arc { position: absolute; width: 70px; height: 70px; border-radius: 50%; border: 3px solid rgba(255,255,255,.7); border-left-color: transparent; border-bottom-color: transparent; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); pointer-events: none; z-index: 6; opacity: 0; }
+  .mt-swing-arc.show { animation: mtArcSwish .32s ease forwards; }
+  @keyframes mtArcSwish { 0% { opacity: .9; transform: translate(-50%, -50%) rotate(-70deg) scale(.6); } 100% { opacity: 0; transform: translate(-50%, -50%) rotate(40deg) scale(1.1); } }
 
-  .mt-swing-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+  .mt-wind { position: absolute; top: 8px; right: 10px; font-size: 1.1rem; z-index: 6; animation: mtWindBob 1s ease-in-out infinite; }
+  .mt-wind.hidden { display: none; }
+  @keyframes mtWindBob { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+
+  .mt-serve-badge { position: absolute; top: 8px; left: 10px; background: rgba(61,46,34,.75); color: #fff; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .72rem; padding: 4px 10px; border-radius: 100px; z-index: 6; }
+  .mt-serve-badge.hidden { display: none; }
+
+  .mt-championship-banner { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #ffe299, #ffce6b); color: #8a6d1d; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; padding: 8px 16px; border-radius: 100px; z-index: 10; box-shadow: 0 4px 14px rgba(0,0,0,.25); white-space: nowrap; opacity: 0; }
+  .mt-championship-banner.show { animation: mtChampPop 1.4s ease forwards; }
+  @keyframes mtChampPop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.6); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); } 30% { transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+  .mt-hit-caption { position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; color: #5a7a1f; z-index: 9; opacity: 0; white-space: nowrap; pointer-events: none; }
+  .mt-hit-caption.miss { color: #D64545; }
+  .mt-hit-caption.show { animation: mtCaptionPop .9s ease forwards; }
+  @keyframes mtCaptionPop { 0% { opacity: 0; transform: translate(-50%, -40%) scale(.7); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); } 40% { transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -60%) scale(1); } }
+
+  .mt-confetti-piece { position: absolute; top: 40%; width: 8px; height: 8px; z-index: 11; animation: mtConfettiFall 1.3s ease forwards; }
+  @keyframes mtConfettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(220px) rotate(380deg); opacity: 0; } }
+
+  .mt-lane-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
+  .mt-lane-btn { width: 56px; height: 44px; border-radius: 14px; border: 2px solid #f1ede6; background: #fff; font-size: 1.1rem; cursor: pointer; box-shadow: 0 3px 0 rgba(0,0,0,.08); }
+  .mt-lane-btn.sel { border-color: #8FAE1F; background: #eef7d8; }
+  .mt-lane-btn.hidden { visibility: hidden; }
+
+  .mt-swing-wrap { display: flex; justify-content: center; margin-bottom: 14px; }
   .mt-swing-btn { width: 140px; height: 140px; border-radius: 50%; border: none; background: linear-gradient(160deg, #C2D94E, #8FAE1F); color: #fff; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; box-shadow: 0 6px 0 #5a7a1f; cursor: pointer; }
   .mt-swing-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #5a7a1f; }
   .mt-swing-btn.hidden { visibility: hidden; }
@@ -44,9 +99,39 @@
   .mt-result-banner { text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; margin: 0 14px 10px; min-height: 1.4em; color: #5a7a1f; }
   .mt-result-banner.miss { color: #D64545; }
 
+  .mt-mode-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .mt-mode-opt { min-width: 30%; flex: 1; border: 2px solid #f1ede6; background: #fdf6ea; border-radius: 12px; padding: 8px 6px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .72rem; color: #3d2e22; cursor: pointer; line-height: 1.4; }
+  .mt-mode-opt small { font-weight: 700; color: #8a7a6a; }
+  .mt-mode-opt.sel { border-color: #8FAE1F; background: #eef7d8; }
+
+  .mt-team-result { font-weight: 800; margin-bottom: 10px; text-align: center; }
+  .mt-team-result.hidden { display: none; }
+
+  .mt-start-label { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; margin: 10px 0 6px; text-align: left; color: #5a7a1f; }
+  .mt-swatches { display: flex; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+  .mt-swatch { position: relative; width: 42px; height: 42px; border-radius: 50%; border: 2px solid #f1ede6; background: #fdf6ea; font-size: 18px; display: grid; place-items: center; cursor: pointer; }
+  .mt-swatch.sel { border-color: #8FAE1F; box-shadow: 0 0 0 2px rgba(143,174,31,.3); }
+  .mt-cosmetic-preview { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #1c2740; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 8px; white-space: nowrap; margin-bottom: 6px; z-index: 5; }
+
+  .mt-lifetime-row { font-size: .78rem; font-weight: 700; color: #5a7a1f; margin-bottom: 8px; text-align: center; }
+  .mt-lifetime-row.hidden { display: none; }
+  .mt-ach-row { display: flex; gap: 6px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .mt-ach-badge { font-size: 1.3rem; opacity: .3; filter: grayscale(1); }
+  .mt-ach-badge.unlocked { opacity: 1; filter: none; }
+  .mt-ach-progress-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; text-align: left; }
+  .mt-ach-progress-item { font-size: .75rem; font-weight: 700; color: #8a7a6a; }
+  .mt-ach-progress-item .mt-ach-progress-bar { height: 5px; border-radius: 3px; background: #f1ede6; overflow: hidden; margin-top: 2px; }
+  .mt-ach-progress-item .mt-ach-progress-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffce6b, #8FAE1F); }
+
+  .mt-settings-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-weight: 700; font-size: .9rem; border-bottom: 1px solid #f1ede6; }
+  .mt-settings-toggle { width: 44px; height: 24px; border-radius: 100px; background: #f1ede6; border: none; position: relative; cursor: pointer; flex: none; }
+  .mt-settings-toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .2s ease; }
+  .mt-settings-toggle.on { background: #8FAE1F; }
+  .mt-settings-toggle.on::after { transform: translateX(20px); }
+
   .mt-overlay { position: fixed; inset: 0; background: rgba(61,46,34,.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
   .mt-overlay.hidden { display: none; }
-  .mt-card { background: #fff; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
+  .mt-card { background: #fff; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; max-height: 86vh; overflow-y: auto; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
   .mt-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 16px; color: #3d2e22; }
   .mt-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .mt-q-btn { border: 2px solid #f1ede6; background: #fdf6ea; border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; color: #3d2e22; cursor: pointer; }
@@ -58,9 +143,12 @@
   .mt-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
   .mt-modal-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
   .mt-modal-bonus { font-weight: 800; color: #5a7a1f; margin-bottom: 16px; min-height: 1.2em; }
+  .mt-end-score { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.4rem; color: #5a7a1f; margin-bottom: 8px; }
+  .mt-end-rank { font-weight: 700; color: #5a7a1f; margin-bottom: 10px; min-height: 1.2em; }
   .mt-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
   .mt-btn-primary { background: #8FAE1F; color: #fff; }
   .mt-btn-secondary { background: #f1ede6; color: #3d2e22; }
+  .mt-tutorial-link { display: block; text-align: center; font-weight: 700; color: #5a7a1f; font-size: .8rem; margin-top: 4px; cursor: pointer; text-decoration: underline; background: none; border: none; }
 </style>
 </head>
 <body>
@@ -69,13 +157,24 @@
   <div class="mt-topbar">
     <a href="../" class="mt-back">←</a>
     <div class="mt-title">🎾 Math Tennis</div>
+    <button type="button" class="mt-settings-btn" id="mt-settings-btn">⚙️</button>
   </div>
   <div class="mt-hud">
     <span class="mt-hud-chip">🏆 <span id="mt-hud-points">0</span>/10</span>
+    <span class="mt-hud-chip">⭐ <span id="mt-hud-score">0</span></span>
+    <span class="mt-hud-chip hidden" id="mt-hud-streak">🔥 ×1.0</span>
     <span class="mt-hud-chip">🪙 <span id="mt-hud-coins">0</span> 💎 <span id="mt-hud-gems">0</span></span>
   </div>
+  <div class="mt-power-bar hidden" id="mt-power-bar"><i class="mt-power-fill" id="mt-power-fill"></i></div>
+  <div class="mt-progress-dots" id="mt-progress-dots"></div>
+  <div class="mt-team-result hidden" id="mt-team-result"></div>
 
   <div class="mt-court" id="mt-court">
+    <div class="mt-lane-guide" style="left:25%"></div>
+    <div class="mt-lane-guide" style="left:75%"></div>
+    <div class="mt-wind hidden" id="mt-wind">💨</div>
+    <div class="mt-serve-badge hidden" id="mt-serve-badge"></div>
+    <div class="mt-championship-banner" id="mt-championship-banner">🏆 CHAMPIONSHIP POINT!</div>
     <div class="mt-racket mt-racket-top" id="mt-racket-top">
       <span class="mt-racket-face">🤖</span>
       <div class="mt-racket-handle"></div>
@@ -84,11 +183,19 @@
     <div class="mt-sweet-zone" id="mt-sweet-zone"></div>
     <div class="mt-court-net"></div>
     <div class="mt-ball" id="mt-ball">🎾</div>
+    <div class="mt-hit-caption" id="mt-hit-caption"></div>
     <div class="mt-racket mt-racket-bottom" id="mt-racket-bottom">
+      <div class="mt-swing-arc" id="mt-swing-arc"></div>
       <div class="mt-racket-head"></div>
       <div class="mt-racket-handle"></div>
       <span class="mt-racket-face">🙂</span>
     </div>
+  </div>
+
+  <div class="mt-lane-row">
+    <button type="button" class="mt-lane-btn hidden" data-lane="left" id="mt-lane-left">⬅️</button>
+    <button type="button" class="mt-lane-btn hidden sel" data-lane="center" id="mt-lane-center">🎯</button>
+    <button type="button" class="mt-lane-btn hidden" data-lane="right" id="mt-lane-right">➡️</button>
   </div>
 
   <div class="mt-swing-wrap">
@@ -101,8 +208,40 @@
     <div class="mt-card">
       <div class="mt-modal-emoji">🎾</div>
       <div class="mt-modal-title">Math Tennis</div>
-      <p class="mt-modal-sub">Answer right to make the robot serve! The ball drops down the court -- tap SWING! at the exact right moment as it reaches your side. Too early or too late and you miss the return!</p>
+      <p class="mt-modal-sub">Answer right to make the robot serve! Watch which side the ball is heading, move your racket there with ⬅️/🎯/➡️, then tap SWING! at the exact right moment as it reaches your side.</p>
+      <div class="mt-lifetime-row hidden" id="mt-lifetime-row"></div>
+      <div class="mt-ach-row" id="mt-start-achievements"></div>
+      <div class="mt-ach-progress-row" id="mt-ach-progress-row"></div>
+      <div class="mt-start-label">Racket</div>
+      <div class="mt-swatches" id="mt-racket-swatches"></div>
+      <div class="mt-start-label">Ball</div>
+      <div class="mt-swatches" id="mt-ball-swatches"></div>
+      <div class="mt-start-label">Mode</div>
+      <div class="mt-mode-row">
+        <button type="button" class="mt-mode-opt sel" data-mode="normal">🥅 Normal</button>
+        <button type="button" class="mt-mode-opt" data-mode="ace">⚡ Ace Mode<br><small>faster, narrower, 1.3× pts</small></button>
+        <button type="button" class="mt-mode-opt" data-mode="team">🤝 Doubles<br><small>pass the device</small></button>
+      </div>
       <button class="mt-btn mt-btn-primary" id="mt-start-btn">Start Match</button>
+      <button type="button" class="mt-tutorial-link" id="mt-tutorial-link">How to play?</button>
+    </div>
+  </div>
+
+  <div class="mt-overlay hidden" id="mt-tutorial-overlay">
+    <div class="mt-card">
+      <div class="mt-modal-emoji">🎾</div>
+      <div class="mt-modal-title">How to Play</div>
+      <p class="mt-modal-sub">Answer the question right to earn a serve. The ball drops down toward one of 3 lanes -- <b>left, center, or right</b>. Move your racket there with ⬅️/🎯/➡️ BEFORE it arrives, then tap <b>SWING!</b> right as it crosses into your zone (watch the glowing dashed box). Too early, too late, or the wrong side and you miss the return!</p>
+      <button class="mt-btn mt-btn-primary" id="mt-tutorial-close-btn">Got it!</button>
+    </div>
+  </div>
+
+  <div class="mt-overlay hidden" id="mt-settings-overlay">
+    <div class="mt-card">
+      <div class="mt-modal-title">⚙️ Settings</div>
+      <div class="mt-settings-row"><span>🔊 Sound effects</span><button type="button" class="mt-settings-toggle" id="mt-settings-sound"></button></div>
+      <div class="mt-settings-row"><span>📳 Haptics (vibration)</span><button type="button" class="mt-settings-toggle" id="mt-settings-haptics"></button></div>
+      <button class="mt-btn mt-btn-primary" id="mt-settings-close-btn" style="margin-top:16px;">Close</button>
     </div>
   </div>
 
@@ -118,7 +257,11 @@
       <div class="mt-modal-emoji" id="mt-end-emoji">🏆</div>
       <div class="mt-modal-title" id="mt-end-title">Nice match!</div>
       <div class="mt-modal-sub" id="mt-end-sub"></div>
+      <div class="mt-end-score" id="mt-end-score"></div>
+      <div class="mt-team-result hidden" id="mt-end-team-result"></div>
       <div class="mt-modal-bonus" id="mt-end-bonus"></div>
+      <div class="mt-end-rank" id="mt-end-rank"></div>
+      <div class="mt-ach-row" id="mt-end-achievements"></div>
       <button class="mt-btn mt-btn-primary" id="mt-play-again-btn">Play Again</button>
       <a href="../" class="mt-btn mt-btn-secondary">Back to Hub</a>
     </div>

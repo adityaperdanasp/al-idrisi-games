@@ -4842,6 +4842,19 @@
     { id: "street", name: "Streetball", cost: { coins: 25 }, preview: "🏙️" },
     { id: "sunset", name: "Rooftop Sunset", cost: { gems: 2 }, preview: "🌇" }
   ];
+  // Math Tennis round 1 polish, item 30 -- same generic cosmetic pattern as
+  // basketball's ball/court, just a racket + ball pair instead.
+  const MATH_TENNIS_RACKETS = [
+    { id: "default", name: "Classic", cost: null, preview: "🎾" },
+    { id: "fire", name: "Fire Racket", cost: { coins: 25 }, preview: "🔥" },
+    { id: "ice", name: "Ice Racket", cost: { coins: 25 }, preview: "❄️" },
+    { id: "gold", name: "Golden Racket", cost: { gems: 3 }, preview: "✨" }
+  ];
+  const MATH_TENNIS_BALLS = [
+    { id: "default", name: "Classic Ball", cost: null, preview: "🎾" },
+    { id: "disco", name: "Disco Ball", cost: { coins: 20 }, preview: "🪩" },
+    { id: "comet", name: "Comet Ball", cost: { gems: 2 }, preview: "☄️" }
+  ];
   const BOSSRUSH_FIGHTERS = [
     { id: "default", name: "Classic", cost: null, preview: "🥋" },
     { id: "boxer", name: "Boxer", cost: { coins: 15 }, preview: "🥊" },
@@ -4899,6 +4912,8 @@
     "ninja-backdrop": NINJA_BACKDROPS,
     "basketball-ball": BASKETBALL_BALLS,
     "basketball-court": BASKETBALL_COURTS,
+    "mathtennis-racket": MATH_TENNIS_RACKETS,
+    "mathtennis-ball": MATH_TENNIS_BALLS,
     "bossrush-fighter": BOSSRUSH_FIGHTERS,
     "dino-skin": DINO_SKINS
   };
@@ -4963,6 +4978,8 @@
         "ninja-backdrop": equipped["ninja-backdrop"] || "default",
         "basketball-ball": equipped["basketball-ball"] || "default",
         "basketball-court": equipped["basketball-court"] || "default",
+        "mathtennis-racket": equipped["mathtennis-racket"] || "default",
+        "mathtennis-ball": equipped["mathtennis-ball"] || "default",
         "bossrush-fighter": equipped["bossrush-fighter"] || "default",
         "dino-skin": equipped["dino-skin"] || "default",
         "bo-costume": equipped["bo-costume"] || "none"
@@ -6227,6 +6244,72 @@
     return { ok: true, bonus };
   }
 
+  // Math Tennis round 1 polish -- lifetime stats, achievements, and a
+  // weekly leaderboard, same shape as basketball's own equivalents
+  // (including the current/target fields on achievements from day one,
+  // skipping the bug basketball's first pass had with a boolean-only
+  // `need` predicate that couldn't show progress).
+  async function touchMathTennisStats(opts) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const ref = aigDb.ref(`players/${player.id}/mathTennisStats`);
+    const snap = await ref.get();
+    const d = snap.exists() ? snap.val() : { matchesPlayed: 0, totalPointsWon: 0, totalServes: 0, bestStreak: 0, perfectMatches: 0, bestMatchPoints: 0, totalAces: 0 };
+    d.matchesPlayed = (d.matchesPlayed || 0) + 1;
+    d.totalPointsWon = (d.totalPointsWon || 0) + (opts.points || 0);
+    d.totalServes = (d.totalServes || 0) + (opts.total || 0);
+    d.totalAces = (d.totalAces || 0) + (opts.aces || 0);
+    if ((opts.bestStreakThisMatch || 0) > (d.bestStreak || 0)) d.bestStreak = opts.bestStreakThisMatch;
+    if (opts.points === opts.total) d.perfectMatches = (d.perfectMatches || 0) + 1;
+    if ((opts.points || 0) > (d.bestMatchPoints || 0)) d.bestMatchPoints = opts.points;
+    await ref.set(d);
+    return d;
+  }
+  async function getMathTennisLifetimeSummary() {
+    const empty = { matchesPlayed: 0, totalPointsWon: 0, totalServes: 0, bestStreak: 0, perfectMatches: 0, bestMatchPoints: 0, totalAces: 0 };
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return empty;
+    const snap = await aigDb.ref(`players/${player.id}/mathTennisStats`).get();
+    return snap.exists() ? snap.val() : empty;
+  }
+  const MATH_TENNIS_ACHIEVEMENTS = [
+    { id: "first-point", name: "First Point", emoji: "🎾", metric: "totalPointsWon", target: 1 },
+    { id: "ace-machine", name: "Ace Machine", emoji: "💥", metric: "totalAces", target: 10 },
+    { id: "on-fire", name: "On Fire", emoji: "🔥", metric: "bestStreak", target: 5 },
+    { id: "perfect-match", name: "Perfect Match", emoji: "💯", metric: "perfectMatches", target: 1 },
+    { id: "veteran", name: "Tennis Veteran", emoji: "🏆", metric: "matchesPlayed", target: 10 },
+    { id: "legend", name: "Tennis Legend", emoji: "🐐", metric: "totalPointsWon", target: 200 }
+  ];
+  async function getMathTennisAchievements() {
+    const d = await getMathTennisLifetimeSummary();
+    return MATH_TENNIS_ACHIEVEMENTS.map(a => {
+      const current = d[a.metric] || 0;
+      return { id: a.id, name: a.name, emoji: a.emoji, unlocked: current >= a.target, current, target: a.target };
+    });
+  }
+  async function touchMathTennisWeeklyBest(points) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    const ref = aigDb.ref(`players/${player.id}/mathTennisWeekly/${weekKey()}`);
+    const snap = await ref.get();
+    const cur = snap.exists() ? snap.val() : null;
+    if (!cur || points > cur.points) await ref.set({ points, name: player.name });
+  }
+  async function getMathTennisWeeklyRank() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const wk = weekKey();
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return null;
+    const all = snap.val();
+    const ranking = Object.entries(all)
+      .map(([id, data]) => { const w = data.mathTennisWeekly && data.mathTennisWeekly[wk]; return { id, name: (w && w.name) || id, points: (w && w.points) || 0 }; })
+      .filter(r => r.points > 0)
+      .sort((a, b) => b.points - a.points);
+    const myIdx = ranking.findIndex(r => r.id === player.id);
+    return { rank: myIdx >= 0 ? myIdx + 1 : null, total: ranking.length, top: ranking.slice(0, 3) };
+  }
+
   // =====================================================================
   // FORTRESS MATH (fortress-math/) — same one-time-per-round bonus
   // pattern as the other new mini-games, tiered on waves cleared PLUS a
@@ -6836,6 +6919,8 @@
     awardTreasureDigLoot, awardTreasureDigRoundBonus,
     awardNumberLineJumpBonus,
     awardMathTennisBonus,
+    touchMathTennisStats, getMathTennisLifetimeSummary, getMathTennisAchievements,
+    touchMathTennisWeeklyBest, getMathTennisWeeklyRank,
     awardFortressMathBonus,
     getActiveSeasonalEvent, claimSeasonalEvent,
     sendDuelChallenge, getDuelInbox, getDuelSentResults, dismissDuelResult, resolveDuelChallenge,
