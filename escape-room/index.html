@@ -12,49 +12,148 @@
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); font-family: "Nunito", sans-serif; color: #e8e4f0; }
-  .er-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+  .er-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; position: relative; }
+  .er-page.urgent::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 15; box-shadow: inset 0 0 60px rgba(255,60,60,.55); animation: erUrgent .8s ease-in-out infinite; }
+  @keyframes erUrgent { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+  html.er-reduced *, html.er-reduced *::before, html.er-reduced *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
 
-  .er-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
-  .er-back { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.1); color: #e8e4f0; font-size: 1.05rem; display: grid; place-items: center; text-decoration: none; flex: none; }
-  .er-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #F7C548; }
-  .er-hud { display: flex; justify-content: center; gap: 10px; padding: 0 14px 12px; }
+  .er-topbar { display: flex; align-items: center; gap: 8px; padding: 14px 14px 8px; }
+  .er-back, .er-iconbtn { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.1); color: #e8e4f0; font-size: 1rem; display: grid; place-items: center; text-decoration: none; flex: none; border: none; cursor: pointer; }
+  .er-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; color: #F7C548; }
+  .er-hud { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 0 14px 10px; }
   .er-hud-chip { background: rgba(255,255,255,.08); border-radius: 100px; padding: 5px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; }
+  .er-hud-chip.hidden { display: none; }
   .er-hud-chip.timer { color: #F7C548; }
   .er-hud-chip.timer.urgent { color: #ff6b6b; animation: erPulse .6s ease-in-out infinite; }
   @keyframes erPulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+  .er-float { position: fixed; z-index: 40; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; pointer-events: none; animation: erFloat 1s ease forwards; }
+  .er-float.good { color: #7ef0a3; } .er-float.bad { color: #ff7a7a; }
+  @keyframes erFloat { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40px); } }
 
-  .er-room-track { display: flex; justify-content: center; gap: 6px; padding: 0 14px 16px; flex-wrap: wrap; }
+  .er-alarm { width: 150px; height: 8px; border-radius: 100px; background: rgba(255,255,255,.1); margin: 0 auto 10px; overflow: hidden; }
+  .er-alarm i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #ffce6b, #ff4d4d); transition: width .3s ease; }
+  .er-alarm.hot { animation: erPulse .5s ease-in-out infinite; }
+
+  .er-room-track { display: flex; justify-content: center; gap: 6px; padding: 0 14px 12px; flex-wrap: wrap; }
   .er-room-dot { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; font-size: .9rem; }
   .er-room-dot.done { background: #3F8F5F; }
   .er-room-dot.current { background: #F7C548; color: #1a1a2e; }
 
-  .er-vault { margin: 0 20px 16px; padding: 30px 20px; border-radius: 20px; background: radial-gradient(circle at 50% 30%, #2a2a4a, #1a1a2e); text-align: center; box-shadow: inset 0 0 0 3px rgba(247,197,72,.25); }
-  .er-vault-emoji { font-size: 3.4rem; margin-bottom: 10px; }
-  .er-vault-flavor { font-weight: 700; font-size: .85rem; color: #b8b0d0; line-height: 1.5; margin-bottom: 4px; }
-  .er-combo-dots { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+  .er-vault { position: relative; overflow: hidden; margin: 0 20px 12px; padding: 22px 20px; border-radius: 20px; background: radial-gradient(circle at 50% 30%, #2a2a4a, #1a1a2e); text-align: center; box-shadow: inset 0 0 0 3px rgba(247,197,72,.25); }
+  .er-vault::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, transparent 20%, rgba(0,0,0,.85) 100%); opacity: calc(var(--dark, 0) * .1); transition: opacity 1s ease; pointer-events: none; }
+  .er-vault.lit::after { opacity: 0 !important; }
+  .er-vault[data-theme="pyramid"] { background: radial-gradient(circle at 50% 30%, #6b5a2a, #3a2f14); }
+  .er-vault[data-theme="bank"] { background: radial-gradient(circle at 50% 30%, #3a4a5a, #1c2733); }
+  .er-vault[data-theme="space"] { background: radial-gradient(circle at 50% 30%, #2b2f6b, #0c0e2a); }
+  .er-room-name { font-family: "Baloo 2", sans-serif; font-weight: 800; color: #F7C548; font-size: .85rem; margin-bottom: 8px; position: relative; z-index: 1; }
+  .er-door { position: relative; z-index: 1; width: 120px; height: 120px; margin: 0 auto 10px; border-radius: 14px 14px 0 0; background: #151528; overflow: hidden; box-shadow: 0 0 0 4px #3a3a5c; display: grid; place-items: center; }
+  .er-door .panel { position: absolute; top: 0; bottom: 0; width: 50%; background: linear-gradient(180deg, #4a4a6e, #2f2f4e); border: 2px solid #5a5a82; transition: transform .8s cubic-bezier(.6,0,.2,1); }
+  .er-door .panel.l { left: 0; border-right-width: 1px; } .er-door .panel.r { right: 0; border-left-width: 1px; }
+  .er-door.open .panel.l { transform: translateX(-102%); } .er-door.open .panel.r { transform: translateX(102%); }
+  .er-door .light { position: absolute; inset: 0; background: radial-gradient(circle, #fff6c2, #f7c548 60%, transparent); opacity: 0; transition: opacity .8s ease; }
+  .er-door.open .light { opacity: 1; }
+  .er-lock { position: relative; z-index: 2; font-size: 2.6rem; }
+  .er-lock.spin { animation: erLockSpin .6s ease; }
+  @keyframes erLockSpin { from { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.25); } to { transform: rotate(360deg) scale(1); } }
+  .er-door.shake { animation: erShake .45s ease; }
+  @keyframes erShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }
+  .er-spark { position: absolute; z-index: 3; font-size: 1rem; pointer-events: none; animation: erSpark .6s ease-out forwards; }
+  @keyframes erSpark { to { transform: translate(var(--sx), var(--sy)) scale(.4); opacity: 0; } }
+  .er-lock-label { position: relative; z-index: 1; font-weight: 800; font-size: .72rem; color: #b8b0d0; margin-bottom: 4px; }
+  .er-vault-flavor { position: relative; z-index: 1; font-weight: 700; font-size: .82rem; color: #b8b0d0; line-height: 1.5; margin-bottom: 4px; }
+  .er-combo-dots { position: relative; z-index: 1; display: flex; justify-content: center; gap: 8px; margin-top: 10px; min-height: 14px; }
   .er-combo-dot { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.15); }
   .er-combo-dot.lit { background: #F7C548; box-shadow: 0 0 10px 2px rgba(247,197,72,.6); }
+  .er-combo-dot.big { width: auto; height: auto; background: none; box-shadow: none; font-size: 1.15rem; opacity: .3; }
+  .er-combo-dot.big.lit { opacity: 1; filter: drop-shadow(0 0 6px rgba(247,197,72,.8)); }
+  .er-bo { position: absolute; z-index: 2; bottom: 6px; left: 8px; background: #fff; color: #1a1a2e; font-weight: 800; font-size: .7rem; padding: 4px 10px; border-radius: 12px; opacity: 0; transition: opacity .25s ease; max-width: 70%; text-align: left; }
+  .er-bo.show { opacity: 1; }
 
-  .er-hint-btn { display: block; width: calc(100% - 40px); margin: 0 20px 16px; border: 2px dashed rgba(255,255,255,.25); background: none; color: #b8b0d0; border-radius: 14px; padding: 10px; font-family: "Baloo 2", sans-serif; font-weight: 700; font-size: .85rem; cursor: pointer; }
-  .er-hint-btn:disabled { opacity: .35; cursor: default; }
+  .er-open-row { display: flex; justify-content: center; gap: 8px; margin: 0 20px 12px; }
+  .er-chip-btn { border: 2px dashed rgba(255,255,255,.25); background: none; color: #b8b0d0; border-radius: 14px; padding: 8px 12px; font-family: "Baloo 2", sans-serif; font-weight: 700; font-size: .78rem; cursor: pointer; }
 
-  .er-overlay { position: fixed; inset: 0; background: rgba(10,10,20,.75); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .er-overlay { position: fixed; inset: 0; background: rgba(10,10,20,.78); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
   .er-overlay.hidden { display: none; }
-  .er-card { background: #232342; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.4); color: #e8e4f0; }
-  .er-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 16px; }
+  .er-overlay.top { z-index: 30; background: #0d0d1c; }
+  .er-card { background: #232342; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.4); color: #e8e4f0; max-height: 90vh; overflow-y: auto; }
+  .er-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 14px; }
   .er-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .er-q-btn { border: 2px solid rgba(255,255,255,.15); background: rgba(255,255,255,.06); border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; color: #e8e4f0; cursor: pointer; }
+  .er-q-grid.blackout .er-q-btn { filter: blur(6px); }
+  .er-q-btn { border: 2px solid rgba(255,255,255,.15); background: rgba(255,255,255,.06); border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; color: #e8e4f0; cursor: pointer; transition: filter .3s ease; }
   .er-q-btn:disabled { cursor: default; }
   .er-q-btn.correct { border-color: #3F8F5F; background: rgba(63,143,95,.25); }
   .er-q-btn.wrong { border-color: #D64545; background: rgba(214,69,69,.25); }
+  .er-q-btn.peek { box-shadow: 0 0 12px 3px rgba(247,197,72,.7); }
+  .er-q-btn.gone { visibility: hidden; }
+  .er-qtimer { height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); margin-bottom: 12px; overflow: hidden; }
+  .er-qtimer.hidden { display: none; }
+  .er-qtimer i { display: block; height: 100%; width: 100%; background: #F7C548; }
+  .er-trap { font-weight: 800; font-size: .78rem; color: #ff9a6b; margin-bottom: 8px; min-height: 1em; }
+  .er-turn.hidden { display: none; }
+  .er-turn { font-weight: 800; font-size: .78rem; color: #7ec8ff; margin-bottom: 6px; }
+  .er-inv { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 14px; }
+  .er-inv button { border: none; background: rgba(255,255,255,.1); color: #e8e4f0; border-radius: 100px; padding: 6px 10px; font-weight: 800; font-size: .75rem; cursor: pointer; }
+  .er-inv button:disabled { opacity: .3; cursor: default; }
 
   .er-modal-emoji { font-size: 3.4rem; margin-bottom: 8px; }
   .er-modal-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; color: #F7C548; }
-  .er-modal-sub { font-weight: 700; color: #b8b0d0; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
-  .er-modal-bonus { font-weight: 800; color: #F7C548; margin-bottom: 16px; min-height: 1.2em; }
+  .er-modal-sub { font-weight: 700; color: #b8b0d0; margin-bottom: 16px; font-size: .88rem; line-height: 1.5; }
+  .er-modal-bonus { font-weight: 800; color: #F7C548; margin-bottom: 12px; min-height: 1.2em; }
   .er-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
   .er-btn-primary { background: #F7C548; color: #1a1a2e; }
   .er-btn-secondary { background: rgba(255,255,255,.1); color: #e8e4f0; }
+  .er-btn-red { background: #D64545; color: #fff; } .er-btn-blue { background: #3a7bd5; color: #fff; }
+  .er-label { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .82rem; margin: 10px 0 6px; text-align: left; color: #F7C548; }
+  .er-opt-row { display: flex; gap: 8px; margin-bottom: 6px; }
+  .er-opt { flex: 1; border: 2px solid rgba(255,255,255,.15); background: rgba(255,255,255,.05); color: #e8e4f0; border-radius: 12px; padding: 8px 4px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .72rem; cursor: pointer; line-height: 1.35; }
+  .er-opt small { font-weight: 700; color: #9a93b8; }
+  .er-opt.sel { border-color: #F7C548; background: rgba(247,197,72,.15); }
+  .er-swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  .er-swatch { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); font-size: 17px; display: grid; place-items: center; cursor: pointer; color: #fff; }
+  .er-swatch.sel { border-color: #F7C548; box-shadow: 0 0 0 2px rgba(247,197,72,.35); }
+  .er-lifetime { font-size: .76rem; font-weight: 700; color: #b8b0d0; margin-bottom: 6px; }
+  .er-lifetime.hidden { display: none; }
+  .er-history { display: flex; gap: 5px; justify-content: center; margin-bottom: 8px; }
+  .er-history i { font-style: normal; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: .7rem; font-weight: 800; background: #555; color: #fff; }
+  .er-history i.win { background: #3F8F5F; } .er-history i.lose { background: #D64545; }
+  .er-ach-row { display: flex; gap: 6px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .er-ach { font-size: 1.25rem; opacity: .3; filter: grayscale(1); } .er-ach.on { opacity: 1; filter: none; }
+  .er-ach-prog { text-align: left; margin-bottom: 8px; }
+  .er-ach-prog div { font-size: .72rem; font-weight: 700; color: #9a93b8; margin-bottom: 4px; }
+  .er-ach-prog b { display: block; height: 5px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; margin-top: 2px; }
+  .er-ach-prog b i { display: block; height: 100%; background: linear-gradient(90deg, #ffce6b, #7ef0a3); }
+  .er-set-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-weight: 700; font-size: .88rem; border-bottom: 1px solid rgba(255,255,255,.1); }
+  .er-toggle { width: 44px; height: 24px; border-radius: 100px; background: rgba(255,255,255,.15); border: none; position: relative; cursor: pointer; flex: none; }
+  .er-toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s ease; }
+  .er-toggle.on { background: #F7C548; } .er-toggle.on::after { transform: translateX(20px); }
+  .er-breakdown { text-align: left; font-size: .8rem; font-weight: 700; margin-bottom: 12px; }
+  .er-breakdown div { display: flex; justify-content: space-between; padding: 2px 0; }
+  .er-breakdown .total { border-top: 1px solid rgba(255,255,255,.2); margin-top: 4px; padding-top: 6px; color: #F7C548; font-size: .95rem; }
+  .er-list { text-align: left; max-height: 280px; overflow-y: auto; margin-bottom: 12px; }
+  .er-list .item { padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,.1); font-size: .8rem; font-weight: 700; }
+  .er-list .item .wrong { color: #ff8a8a; } .er-list .item .right { color: #7ef0a3; }
+  .er-album { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .er-album div { aspect-ratio: 1; border-radius: 12px; background: rgba(255,255,255,.08); display: grid; place-items: center; font-size: 1.6rem; }
+  .er-album div.locked { filter: grayscale(1) brightness(.5); opacity: .5; }
+  .er-puz-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .er-puz-btn { border: 2px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: #fff; border-radius: 12px; padding: 14px 0; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; cursor: pointer; }
+  .er-puz-btn.done { background: rgba(63,143,95,.35); border-color: #3F8F5F; } .er-puz-btn.bad { background: rgba(214,69,69,.35); border-color: #D64545; }
+  .er-pad { height: 64px; border-radius: 14px; border: none; opacity: .45; cursor: pointer; }
+  .er-pad.flash { opacity: 1; box-shadow: 0 0 18px 4px rgba(255,255,255,.7); }
+  .er-sunrise { position: fixed; inset: 0; z-index: 35; display: grid; place-items: center; background: linear-gradient(180deg, #1a1a2e, #ff9a5c 70%, #ffe29a); animation: erSunrise 2.4s ease forwards; pointer-events: none; }
+  .er-sunrise.hidden { display: none; }
+  .er-sunrise span { font-size: 4rem; animation: erHeli 2.2s ease forwards; }
+  @keyframes erSunrise { 0% { opacity: 0; } 20%, 80% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes erHeli { from { transform: translate(-120px, 40px) scale(.6); } to { transform: translate(120px, -60px) scale(1.3); } }
+  .er-confetti { position: fixed; top: -10px; width: 8px; height: 8px; z-index: 36; pointer-events: none; animation: erConf 1.6s ease-in forwards; }
+  @keyframes erConf { to { transform: translateY(110vh) rotate(500deg); opacity: .8; } }
+  .er-end-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .er-end-emoji.lights-out { animation: erLightsOut 1.2s ease; }
+  @keyframes erLightsOut { 0%, 100% { filter: none; } 30%, 60% { filter: brightness(.2); } }
+  .er-end-emoji.victory { animation: erVictory 1.1s ease; }
+  @keyframes erVictory { 0%, 100% { transform: scale(1) rotate(0); } 30% { transform: scale(1.25) rotate(-10deg); } 60% { transform: scale(1.15) rotate(8deg); } }
+  .er-new { display: inline-block; background: #D64545; color: #fff; font-size: .6rem; font-weight: 800; padding: 2px 7px; border-radius: 100px; margin-left: 6px; vertical-align: middle; }
+  .er-new.hidden { display: none; }
 </style>
 </head>
 <body>
@@ -63,47 +162,157 @@
   <div class="er-topbar">
     <a href="../" class="er-back">←</a>
     <div class="er-title">🔐 Escape the Vault</div>
+    <button type="button" class="er-iconbtn" id="er-pause-btn">⏸</button>
+    <button type="button" class="er-iconbtn" id="er-settings-btn">⚙️</button>
   </div>
   <div class="er-hud">
     <span class="er-hud-chip timer" id="er-hud-timer">5:00</span>
-    <span class="er-hud-chip">🚪 <span id="er-hud-room">0</span>/6</span>
+    <span class="er-hud-chip">🚪 <span id="er-hud-room">0</span>/<span id="er-hud-total">6</span></span>
+    <span class="er-hud-chip">⭐ <span id="er-hud-score">0</span></span>
+    <span class="er-hud-chip hidden" id="er-hud-turn">👤 P1</span>
   </div>
+  <div class="er-alarm" id="er-alarm" title="Alarm"><i id="er-alarm-fill"></i></div>
   <div class="er-room-track" id="er-room-track"></div>
 
-  <div class="er-vault">
-    <div class="er-vault-emoji" id="er-vault-emoji">🔒</div>
-    <div class="er-vault-flavor" id="er-vault-flavor">A heavy door blocks your path. Answer 2 in a row to unlock it...</div>
+  <div class="er-vault" id="er-vault" data-theme="default" style="--dark:0">
+    <div class="er-room-name" id="er-room-name">🔒 The Vault</div>
+    <div class="er-door" id="er-door">
+      <div class="light"></div>
+      <div class="panel l"></div><div class="panel r"></div>
+      <div class="er-lock" id="er-lock">🔒</div>
+    </div>
+    <div class="er-lock-label" id="er-lock-label"></div>
+    <div class="er-vault-flavor" id="er-vault-flavor">A heavy door blocks your path.</div>
     <div class="er-combo-dots" id="er-combo-dots"></div>
+    <div class="er-bo" id="er-bo"></div>
   </div>
 
-  <button class="er-hint-btn" id="er-hint-btn" type="button">💡 Use Hint (1 left) -- skip this door</button>
+  <div class="er-open-row">
+    <button type="button" class="er-chip-btn" id="er-album-open">🏺 Artifacts</button>
+  </div>
 
   <div class="er-overlay" id="er-start-overlay">
     <div class="er-card">
       <div class="er-modal-emoji">🔐</div>
-      <div class="er-modal-title">Escape the Vault</div>
-      <p class="er-modal-sub">You're locked in! Answer 2 questions in a row to break each door's combo lock. Get through all 6 doors before the 5-minute timer runs out. One wrong answer resets that door's combo -- and you only get 1 hint.</p>
-      <button class="er-btn er-btn-primary" id="er-start-btn">Start Escaping</button>
+      <div class="er-modal-title">Escape the Vault<span class="er-new hidden" id="er-new-badge">NEW</span></div>
+      <p class="er-modal-sub">Break each door's lock before time runs out. Every door has its own kind of lock!</p>
+      <div class="er-lifetime hidden" id="er-lifetime"></div>
+      <div class="er-history" id="er-history"></div>
+      <div class="er-ach-row" id="er-ach-row"></div>
+      <div class="er-ach-prog" id="er-ach-prog"></div>
+      <div class="er-label">Mode</div>
+      <div class="er-opt-row" id="er-mode-row">
+        <button type="button" class="er-opt sel" data-mode="classic">🚪 Classic<br><small>6 doors + boss</small></button>
+        <button type="button" class="er-opt" data-mode="endless">♾️ Endless<br><small>how deep?</small></button>
+        <button type="button" class="er-opt" data-mode="coop">🤝 Co-op<br><small>pass device</small></button>
+      </div>
+      <div class="er-label">Difficulty</div>
+      <div class="er-opt-row" id="er-diff-row">
+        <button type="button" class="er-opt" data-diff="easy">🌱 Easy<br><small>7:00</small></button>
+        <button type="button" class="er-opt sel" data-diff="normal">⚔️ Normal<br><small>5:00</small></button>
+        <button type="button" class="er-opt" data-diff="hard">💀 Hard<br><small>3:30</small></button>
+      </div>
+      <div class="er-label">Vault Theme</div>
+      <div class="er-swatches" id="er-theme-swatches"></div>
+      <div class="er-label">Lock Skin</div>
+      <div class="er-swatches" id="er-lock-swatches"></div>
+      <button class="er-btn er-btn-primary" id="er-start-btn" style="margin-top:12px;">Start Escaping</button>
+      <button class="er-btn er-btn-secondary" id="er-tutorial-link">How to play?</button>
+    </div>
+  </div>
+
+  <div class="er-overlay hidden" id="er-tutorial-overlay">
+    <div class="er-card">
+      <div class="er-modal-emoji">🗝️</div>
+      <div class="er-modal-title">How to Escape</div>
+      <p class="er-modal-sub">🔒 <b>Combo</b>: 2 right in a row. ⚡ <b>Rapid</b>: 3 right out of 4 quick questions. 🎰 <b>Dial</b>: 3 right, mistakes cost time. 🚫 <b>No-mistake</b>: 3 in a row. 👹 <b>Boss</b>: 3 bolts, 10s each.<br><br>Right answers add time, wrong ones cost time and raise the 🚨 alarm. Use items in the question box. Hit max alarm and the guards fine you 30 seconds!</p>
+      <button class="er-btn er-btn-primary" id="er-tutorial-close">Got it!</button>
+    </div>
+  </div>
+
+  <div class="er-overlay hidden" id="er-settings-overlay">
+    <div class="er-card">
+      <div class="er-modal-title">⚙️ Settings</div>
+      <div class="er-set-row"><span>🔊 Sound effects</span><button type="button" class="er-toggle" id="er-set-sound"></button></div>
+      <div class="er-set-row"><span>📳 Haptics</span><button type="button" class="er-toggle" id="er-set-haptics"></button></div>
+      <div class="er-set-row"><span>🎬 Reduced motion</span><button type="button" class="er-toggle" id="er-set-motion"></button></div>
+      <button class="er-btn er-btn-primary" id="er-settings-close" style="margin-top:14px;">Close</button>
+    </div>
+  </div>
+
+  <div class="er-overlay top hidden" id="er-pause-overlay">
+    <div class="er-card">
+      <div class="er-modal-emoji">⏸</div>
+      <div class="er-modal-title">Paused</div>
+      <p class="er-modal-sub">The clock is stopped.</p>
+      <button class="er-btn er-btn-primary" id="er-resume-btn">Resume</button>
     </div>
   </div>
 
   <div class="er-overlay hidden" id="er-question-overlay">
     <div class="er-card">
+      <div class="er-qtimer hidden" id="er-qtimer"><i id="er-qtimer-fill"></i></div>
+      <div class="er-turn hidden" id="er-turn"></div>
+      <div class="er-trap" id="er-trap"></div>
       <div class="er-q-prompt" id="er-q-prompt"></div>
       <div class="er-q-grid" id="er-q-grid"></div>
+      <div class="er-inv" id="er-inv"></div>
+    </div>
+  </div>
+
+  <div class="er-overlay hidden" id="er-path-overlay">
+    <div class="er-card">
+      <div class="er-modal-emoji">🚪</div>
+      <div class="er-modal-title">Choose your door</div>
+      <p class="er-modal-sub">Two doors ahead. The red one is harder but pays off.</p>
+      <button class="er-btn er-btn-red" id="er-path-red">🔴 Red door -- harder, +10s on open, ×1.5 score</button>
+      <button class="er-btn er-btn-blue" id="er-path-blue">🔵 Blue door -- normal</button>
+    </div>
+  </div>
+
+  <div class="er-overlay hidden" id="er-puzzle-overlay">
+    <div class="er-card">
+      <div class="er-modal-title" id="er-puz-title">Puzzle</div>
+      <p class="er-modal-sub" id="er-puz-sub"></p>
+      <div id="er-puz-body"></div>
+      <button class="er-btn er-btn-secondary" id="er-puz-skip">Skip</button>
     </div>
   </div>
 
   <div class="er-overlay hidden" id="er-end-overlay">
     <div class="er-card">
-      <div class="er-modal-emoji" id="er-end-emoji">🏆</div>
+      <div class="er-end-emoji" id="er-end-emoji">🏆</div>
       <div class="er-modal-title" id="er-end-title">You escaped!</div>
       <div class="er-modal-sub" id="er-end-sub"></div>
+      <div class="er-breakdown" id="er-breakdown"></div>
       <div class="er-modal-bonus" id="er-end-bonus"></div>
+      <div class="er-modal-sub" id="er-end-rank" style="margin-bottom:8px;"></div>
+      <div class="er-modal-sub" id="er-end-artifact" style="margin-bottom:8px;"></div>
+      <div class="er-ach-row" id="er-end-ach"></div>
       <button class="er-btn er-btn-primary" id="er-play-again-btn">Try Again</button>
+      <button class="er-btn er-btn-secondary" id="er-same-seed-btn">🔁 Same seed (replay this vault)</button>
+      <button class="er-btn er-btn-secondary" id="er-review-btn">🔍 Review mistakes</button>
       <a href="../" class="er-btn er-btn-secondary">Back to Hub</a>
     </div>
   </div>
+
+  <div class="er-overlay hidden" id="er-review-overlay">
+    <div class="er-card">
+      <div class="er-modal-title">🔍 Review</div>
+      <div class="er-list" id="er-review-list"></div>
+      <button class="er-btn er-btn-primary" id="er-review-close">Close</button>
+    </div>
+  </div>
+
+  <div class="er-overlay hidden" id="er-album-overlay">
+    <div class="er-card">
+      <div class="er-modal-title">🏺 Artifacts <span id="er-album-count"></span></div>
+      <div class="er-album" id="er-album-grid"></div>
+      <button class="er-btn er-btn-primary" id="er-album-close">Close</button>
+    </div>
+  </div>
+
+  <div class="er-sunrise hidden" id="er-sunrise"><span>🚁</span></div>
 
   <div class="er-overlay hidden" id="er-signedout-overlay">
     <div class="er-card">

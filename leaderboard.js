@@ -4875,6 +4875,18 @@
     { id: "rainbow", name: "Rainbow Trail", cost: { coins: 20 }, preview: "🌈" },
     { id: "stars", name: "Star Trail", cost: { gems: 2 }, preview: "⭐" }
   ];
+  // Escape the Vault round 1 -- vault themes and lock skins.
+  const ESCAPE_THEMES = [
+    { id: "default", name: "Classic Vault", cost: null, preview: "🔐" },
+    { id: "pyramid", name: "Pyramid Tomb", cost: { coins: 25 }, preview: "🔺" },
+    { id: "bank", name: "Bank Heist", cost: { coins: 25 }, preview: "🏦" },
+    { id: "space", name: "Space Station", cost: { gems: 2 }, preview: "🚀" }
+  ];
+  const ESCAPE_LOCKS = [
+    { id: "default", name: "Padlock", cost: null, preview: "🔒" },
+    { id: "gem", name: "Crystal Lock", cost: { coins: 20 }, preview: "💠" },
+    { id: "eye", name: "Evil Eye Lock", cost: { gems: 2 }, preview: "🧿" }
+  ];
   const BOSSRUSH_FIGHTERS = [
     { id: "default", name: "Classic", cost: null, preview: "🥋" },
     { id: "boxer", name: "Boxer", cost: { coins: 15 }, preview: "🥊" },
@@ -4937,6 +4949,8 @@
     "mathtennis-robot": MATH_TENNIS_ROBOTS,
     "mathtennis-court": MATH_TENNIS_COURTS,
     "mathtennis-trail": MATH_TENNIS_TRAILS,
+    "escapevault-theme": ESCAPE_THEMES,
+    "escapevault-lock": ESCAPE_LOCKS,
     "bossrush-fighter": BOSSRUSH_FIGHTERS,
     "dino-skin": DINO_SKINS
   };
@@ -5006,6 +5020,8 @@
         "mathtennis-robot": equipped["mathtennis-robot"] || "classic",
         "mathtennis-court": equipped["mathtennis-court"] || "default",
         "mathtennis-trail": equipped["mathtennis-trail"] || "default",
+        "escapevault-theme": equipped["escapevault-theme"] || "default",
+        "escapevault-lock": equipped["escapevault-lock"] || "default",
         "bossrush-fighter": equipped["bossrush-fighter"] || "default",
         "dino-skin": equipped["dino-skin"] || "default",
         "bo-costume": equipped["bo-costume"] || "none"
@@ -6575,6 +6591,73 @@
     return { ok: true, bonus };
   }
 
+  // Escape the Vault round 1 polish -- lifetime stats, achievements and a
+  // weekly "fastest escape" ranking (lower seconds-used is better).
+  async function touchEscapeRoomStats(opts) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const ref = aigDb.ref(`players/${player.id}/escapeRoomStats`);
+    const snap = await ref.get();
+    const d = snap.exists() ? snap.val() : { runs: 0, totalEscapes: 0, totalDoors: 0, flawlessEscapes: 0, noHintEscapes: 0, bossesBeaten: 0, endlessBestDepth: 0, fastestEscapeSec: 0 };
+    d.runs = (d.runs || 0) + 1;
+    d.totalDoors = (d.totalDoors || 0) + (opts.doors || 0);
+    if (opts.escaped) {
+      d.totalEscapes = (d.totalEscapes || 0) + 1;
+      if (opts.flawless) d.flawlessEscapes = (d.flawlessEscapes || 0) + 1;
+      if (opts.noHints) d.noHintEscapes = (d.noHintEscapes || 0) + 1;
+      if (opts.bossBeaten) d.bossesBeaten = (d.bossesBeaten || 0) + 1;
+      if (opts.secondsUsed && opts.rankable && (!d.fastestEscapeSec || opts.secondsUsed < d.fastestEscapeSec)) d.fastestEscapeSec = opts.secondsUsed;
+    }
+    if ((opts.endlessDepth || 0) > (d.endlessBestDepth || 0)) d.endlessBestDepth = opts.endlessDepth;
+    await ref.set(d);
+    return d;
+  }
+  async function getEscapeRoomLifetimeSummary() {
+    const empty = { runs: 0, totalEscapes: 0, totalDoors: 0, flawlessEscapes: 0, noHintEscapes: 0, bossesBeaten: 0, endlessBestDepth: 0, fastestEscapeSec: 0 };
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return empty;
+    const snap = await aigDb.ref(`players/${player.id}/escapeRoomStats`).get();
+    return snap.exists() ? snap.val() : empty;
+  }
+  const ESCAPE_ROOM_ACHIEVEMENTS = [
+    { id: "first-escape", name: "First Escape", emoji: "🔓", metric: "totalEscapes", target: 1 },
+    { id: "speedrunner", name: "Speedrunner (under 2:00)", emoji: "⚡", metric: "speedPts", target: 180 },
+    { id: "flawless", name: "Flawless Escape", emoji: "💎", metric: "flawlessEscapes", target: 1 },
+    { id: "no-hints", name: "No Hints Needed", emoji: "🧠", metric: "noHintEscapes", target: 1 },
+    { id: "boss-slayer", name: "Vault Boss Slayer", emoji: "👹", metric: "bossesBeaten", target: 1 },
+    { id: "deep-diver", name: "Deep Diver (10 doors endless)", emoji: "🕳️", metric: "endlessBestDepth", target: 10 },
+    { id: "door-master", name: "Door Master (100 doors)", emoji: "🚪", metric: "totalDoors", target: 100 }
+  ];
+  async function getEscapeRoomAchievements() {
+    const d = await getEscapeRoomLifetimeSummary();
+    d.speedPts = d.fastestEscapeSec ? Math.max(0, 300 - d.fastestEscapeSec) : 0;
+    return ESCAPE_ROOM_ACHIEVEMENTS.map(a => {
+      const current = d[a.metric] || 0;
+      return { id: a.id, name: a.name, emoji: a.emoji, unlocked: current >= a.target, current, target: a.target };
+    });
+  }
+  async function touchEscapeRoomWeeklyBest(secondsUsed) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    const ref = aigDb.ref(`players/${player.id}/escapeRoomWeekly/${weekKey()}`);
+    const snap = await ref.get();
+    const cur = snap.exists() ? snap.val() : null;
+    if (!cur || secondsUsed < cur.sec) await ref.set({ sec: secondsUsed, name: player.name });
+  }
+  async function getEscapeRoomWeeklyRank() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return null;
+    const wk = weekKey();
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return null;
+    const ranking = Object.entries(snap.val())
+      .map(([id, data]) => { const w = data.escapeRoomWeekly && data.escapeRoomWeekly[wk]; return { id, name: (w && w.name) || id, sec: (w && w.sec) || 0 }; })
+      .filter(r => r.sec > 0)
+      .sort((a, b) => a.sec - b.sec);
+    const myIdx = ranking.findIndex(r => r.id === player.id);
+    return { rank: myIdx >= 0 ? myIdx + 1 : null, total: ranking.length, top: ranking.slice(0, 3) };
+  }
+
   // =====================================================================
   // QUIZ SHOW LIVE (quiz-show/) — same one-time-per-round bonus pattern,
   // scaled from the in-game "prize" reached (a dramatic $10-$500 ladder,
@@ -6978,6 +7061,8 @@
     getActiveSeasonalEvent, claimSeasonalEvent,
     sendDuelChallenge, getDuelInbox, getDuelSentResults, dismissDuelResult, resolveDuelChallenge,
     awardEscapeRoomBonus,
+    touchEscapeRoomStats, getEscapeRoomLifetimeSummary, getEscapeRoomAchievements,
+    touchEscapeRoomWeeklyBest, getEscapeRoomWeeklyRank,
     awardQuizShowBonus,
     awardMonsterBattleBonus,
     getCityBuilder, awardCityBuilderBricks, placeCityBuilding, awardCityBuilderBonus,
