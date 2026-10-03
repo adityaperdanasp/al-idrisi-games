@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Vault Quest — BrainBox</title>
+<meta name="theme-color" content="#2b2118">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: #2b2118; font-family: "Nunito", sans-serif; color: #f3ead8; overflow-x: hidden; }
+  body { background: repeating-linear-gradient(0deg, #2b2118 0 28px, #30261b 28px 56px); }
+  .px { font-family: "Press Start 2P", monospace; letter-spacing: 0; }
+  .vq-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; position: relative; }
+  html.vq-reduced *, html.vq-reduced *::before, html.vq-reduced *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
+  .hidden { display: none !important; }
+
+  /* ---- pixel buttons / panels ---- */
+  .vq-btn { display: block; width: 100%; border: 3px solid #1b1b1b; border-top-color: #d6d6d6; border-left-color: #d6d6d6; border-right-color: #555; border-bottom-color: #555; background: #8b8b8b; color: #fff; font-family: "Press Start 2P", monospace; font-size: .62rem; line-height: 1.5; padding: 12px 8px; cursor: pointer; text-shadow: 2px 2px 0 #3f3f3f; text-align: center; text-decoration: none; margin-bottom: 8px; }
+  .vq-btn:active { transform: translateY(2px); border-top-color: #555; border-left-color: #555; border-right-color: #d6d6d6; border-bottom-color: #d6d6d6; }
+  .vq-btn.green { background: #5b8c3a; } .vq-btn.red { background: #b53a3a; } .vq-btn.gold { background: #c79a1a; } .vq-btn.dark { background: #4a4a4a; }
+  .vq-btn:disabled { opacity: .45; cursor: default; }
+  .vq-panel { background: #3d3d3d; border: 4px solid #1b1b1b; box-shadow: inset 0 0 0 3px #6b6b6b; padding: 16px 14px; }
+  .vq-h { font-family: "Press Start 2P", monospace; color: #fcdb05; font-size: .78rem; text-shadow: 2px 2px 0 #3a2f00; line-height: 1.6; margin: 0 0 10px; text-align: center; }
+  .vq-sub { font-size: .85rem; font-weight: 800; color: #d7cdb6; line-height: 1.5; margin-bottom: 12px; text-align: center; }
+
+  /* ---- home ---- */
+  .vq-topbar { display: flex; align-items: center; gap: 8px; padding: 12px 12px 6px; }
+  .vq-back { width: 36px; height: 36px; display: grid; place-items: center; background: #8b8b8b; border: 3px solid #1b1b1b; border-top-color: #d6d6d6; border-left-color: #d6d6d6; color: #fff; text-decoration: none; flex: none; }
+  .vq-title { flex: 1; text-align: center; font-size: .72rem; color: #9be564; text-shadow: 2px 2px 0 #1d3a0e; line-height: 1.5; }
+  .vq-chips { display: flex; justify-content: center; gap: 8px; padding: 0 12px 8px; flex-wrap: wrap; }
+  .vq-chip { background: #1b1b1b; border: 2px solid #6b6b6b; padding: 5px 10px; font-size: .6rem; color: #fff; }
+  .vq-worlds { display: flex; gap: 6px; padding: 4px 12px 8px; overflow-x: auto; }
+  .vq-world-tab { flex: none; width: 56px; height: 56px; display: grid; place-items: center; font-size: 1.5rem; background: #5a4a35; border: 3px solid #1b1b1b; border-top-color: #8a7455; border-left-color: #8a7455; cursor: pointer; position: relative; }
+  .vq-world-tab.sel { background: #7a9a3a; border-color: #1b1b1b; border-top-color: #b9dd6b; border-left-color: #b9dd6b; }
+  .vq-world-tab.locked { filter: grayscale(1) brightness(.6); }
+  .vq-world-banner { margin: 0 12px 10px; padding: 12px; text-align: center; border: 4px solid #1b1b1b; }
+  .vq-world-banner .px { font-size: .66rem; line-height: 1.6; color: #fff; text-shadow: 2px 2px 0 #000; }
+  .vq-world-banner small { display: block; margin-top: 6px; font-family: "Nunito", sans-serif; font-weight: 800; font-size: .76rem; color: #f3ead8; }
+  .vq-levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 0 12px 12px; }
+  .vq-level { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #6f6f6f; border: 3px solid #1b1b1b; border-top-color: #b5b5b5; border-left-color: #b5b5b5; cursor: pointer; font-size: .7rem; color: #fff; }
+  .vq-level.boss { background: #8c2f2f; border-top-color: #d36a6a; border-left-color: #d36a6a; }
+  .vq-level.done { background: #5b8c3a; border-top-color: #9fd36a; border-left-color: #9fd36a; }
+  .vq-level.locked { background: #3a3a3a; border-color: #1b1b1b; cursor: default; filter: grayscale(1); }
+  .vq-level .st { font-size: .55rem; margin-top: 3px; letter-spacing: -1px; }
+  .vq-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 0 12px 12px; }
+  .vq-nav .vq-btn { margin: 0; font-size: .52rem; padding: 10px 4px; }
+  .vq-streak { margin: 0 12px 10px; padding: 8px; background: #1b1b1b; border: 2px solid #6b6b6b; font-size: .58rem; text-align: center; color: #ffb347; line-height: 1.7; }
+  .vq-toast { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 90; background: #1b1b1b; border: 3px solid #fcdb05; padding: 8px 12px; font-size: .58rem; color: #fcdb05; max-width: 90%; text-align: center; line-height: 1.6; animation: vqToast 2.2s ease forwards; pointer-events: none; }
+  @keyframes vqToast { 0% { opacity: 0; transform: translate(-50%, -10px); } 12%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+
+  /* ---- game screen ---- */
+  .vq-hud { display: flex; align-items: center; gap: 6px; padding: 8px 10px 4px; }
+  .vq-hearts { font-size: 1.05rem; letter-spacing: 1px; flex: 1; }
+  .vq-hud .vq-chip { font-size: .55rem; padding: 4px 7px; }
+  .vq-iconbtn { width: 34px; height: 34px; background: #8b8b8b; border: 3px solid #1b1b1b; border-top-color: #d6d6d6; border-left-color: #d6d6d6; color: #fff; font-size: .9rem; cursor: pointer; flex: none; }
+  .vq-progress { margin: 0 10px 6px; height: 12px; background: #1b1b1b; border: 2px solid #6b6b6b; position: relative; }
+  .vq-progress i { position: absolute; left: 0; top: 0; bottom: 0; background: #5bd33a; width: 0%; transition: width .3s ease; }
+  .vq-progress b { position: absolute; top: -3px; font-size: .75rem; transform: translateX(-50%); transition: left .3s linear; }
+  .vq-sign { margin: 0 10px 6px; padding: 10px 8px; background: #7a5a2f; border: 4px solid #3a2a12; box-shadow: inset 0 0 0 2px #a8834a; text-align: center; font-family: "Press Start 2P", monospace; font-size: .62rem; line-height: 1.7; color: #fff; text-shadow: 2px 2px 0 #3a2a12; min-height: 52px; display: grid; place-items: center; }
+  .vq-field { position: relative; z-index: 0; margin: 0 10px; height: min(52vh, 430px); overflow: hidden; border: 4px solid #1b1b1b; background: linear-gradient(180deg, #0e0e18, #1d1d33 60%); touch-action: none; user-select: none; }
+  .vq-field.w1 { background: linear-gradient(180deg, #1f160e, #3a2a1a 60%); } .vq-field.w2 { background: linear-gradient(180deg, #16181c, #34383f 60%); }
+  .vq-field.w3 { background: linear-gradient(180deg, #1c0b0b, #4a1a1a 60%); } .vq-field.w4 { background: linear-gradient(180deg, #240808, #5a1a10 60%); } .vq-field.w5 { background: linear-gradient(180deg, #120a22, #2e1a52 60%); }
+  .vq-floor { position: absolute; left: 0; right: 0; top: 4%; bottom: 0; clip-path: polygon(35% 0, 65% 0, 100% 100%, 0 100%); background: repeating-linear-gradient(0deg, var(--f1, #5b8c3a) 0 28px, var(--f2, #4f7d31) 28px 56px); animation: vqFloor calc(1s / var(--spd, 1)) linear infinite; }
+  .vq-field.w1 .vq-floor { --f1: #8a6540; --f2: #7a5836; } .vq-field.w2 .vq-floor { --f1: #8f8f8f; --f2: #7d7d7d; }
+  .vq-field.w3 .vq-floor { --f1: #9a3a3a; --f2: #862f2f; } .vq-field.w4 .vq-floor { --f1: #6a2a2a; --f2: #5a2020; } .vq-field.w5 .vq-floor { --f1: #d9d99a; --f2: #c9c984; }
+  @keyframes vqFloor { to { background-position: 0 56px; } }
+  .vq-lane-line { position: absolute; top: 4%; bottom: 0; width: 3px; background: rgba(255,255,255,.18); transform-origin: top center; }
+  .vq-ent { position: absolute; pointer-events: none; will-change: left, top, transform; }
+  .vq-gate { width: 80px; padding: 8px 3px; text-align: center; font-family: "Press Start 2P", monospace; font-size: .56rem; color: #fff; text-shadow: 2px 2px 0 #000; background: repeating-linear-gradient(45deg, #6b6b6b 0 6px, #777 6px 12px); border: 4px solid #1b1b1b; box-shadow: inset 0 0 0 2px #a5a5a5; word-break: normal; overflow-wrap: anywhere; line-height: 1.3; }
+  .vq-gate.hint { box-shadow: inset 0 0 0 2px #a5a5a5, 0 0 14px 4px #7ef0a3; }
+  .vq-gate.good { background: #5bd33a; box-shadow: inset 0 0 0 2px #b9f58a, 0 0 18px 6px #7ef0a3; animation: vqPop .35s ease; }
+  .vq-gate.bad { background: #d33a3a; animation: vqShake .35s ease; }
+  .vq-gate.gone, .vq-coin.gone, .vq-block.gone { opacity: 0; transform: scale(.2); transition: all .3s ease; }
+  .vq-gate.tf { font-size: 1.4rem; padding: 12px 2px; }
+  @keyframes vqPop { 50% { transform: scale(1.25); } }
+  @keyframes vqShake { 25% { margin-left: -6px; } 75% { margin-left: 6px; } }
+  .vq-block { width: 54px; height: 54px; border: 4px solid #1b1b1b; display: grid; place-items: center; font-size: 1.5rem; }
+  .vq-block.lava { background: repeating-linear-gradient(45deg, #ff7a1a 0 8px, #e04a0a 8px 16px); }
+  .vq-block.tnt { background: repeating-linear-gradient(0deg, #d33 0 12px, #fff 12px 18px); font-size: .7rem; font-family: "Press Start 2P", monospace; color: #000; }
+  .vq-block.wall { background: repeating-linear-gradient(90deg, #666 0 12px, #555 12px 24px); }
+  .vq-block.fire { background: radial-gradient(circle, #ffe14a, #ff6a1a); border-radius: 50%; }
+  .vq-coin { width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3a0, #fcdb05 55%, #b88a00); border: 3px solid #5a4300; animation: vqSpinCoin 1s linear infinite; }
+  .vq-coin.gem { background: radial-gradient(circle at 35% 30%, #c8fff3, #3ad6c4 55%, #0f7f73); border-radius: 4px; transform: rotate(45deg); animation: none; }
+  @keyframes vqSpinCoin { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(.25); } }
+  .vq-boss { position: absolute; left: 50%; top: 1%; transform: translateX(-50%); z-index: 2; text-align: center; }
+  .vq-boss .em { font-size: 3.2rem; display: block; animation: vqBossIdle 1.4s ease-in-out infinite; }
+  @keyframes vqBossIdle { 50% { transform: translateY(5px) scale(1.06); } }
+  .vq-boss.hurt .em { animation: vqBossHurt .35s ease; }
+  @keyframes vqBossHurt { 40% { transform: scale(.85) rotate(-10deg); filter: brightness(2.4); } }
+  .vq-boss-hp { width: 120px; height: 10px; background: #1b1b1b; border: 2px solid #6b6b6b; margin: 0 auto 2px; }
+  .vq-boss-hp i { display: block; height: 100%; width: 100%; background: #d33a3a; transition: width .3s ease; }
+
+  /* blocky characters (pure CSS, Minecraft-ish) */
+  .mc { position: relative; width: 24px; height: 46px; --skin: #c68642; --shirt: #3aa6b9; --pants: #3b3bb9; --hair: #3a2a1a; }
+  .mc i { position: absolute; display: block; }
+  .mc .h { left: 1px; top: 0; width: 22px; height: 20px; background: var(--skin); border: 2px solid #00000040; box-shadow: inset 0 6px 0 var(--hair); }
+  .mc .h::after { content: ""; position: absolute; left: 4px; top: 10px; width: 4px; height: 3px; background: #1a1a2a; box-shadow: 10px 0 0 #1a1a2a; }
+  .mc .b { left: 3px; top: 20px; width: 18px; height: 14px; background: var(--shirt); border: 2px solid #00000040; }
+  .mc .a1, .mc .a2 { top: 20px; width: 5px; height: 13px; background: var(--skin); }
+  .mc .a1 { left: -3px; transform-origin: top; } .mc .a2 { left: 22px; transform-origin: top; }
+  .mc .l1, .mc .l2 { top: 34px; width: 8px; height: 12px; background: var(--pants); transform-origin: top; border: 1px solid #00000040; }
+  .mc .l1 { left: 4px; } .mc .l2 { left: 12px; }
+  .mc.run .l1, .mc.run .a2 { animation: vqSwingA .3s ease-in-out infinite; } .mc.run .l2, .mc.run .a1 { animation: vqSwingB .3s ease-in-out infinite; }
+  @keyframes vqSwingA { 0%, 100% { transform: rotate(-32deg); } 50% { transform: rotate(32deg); } } @keyframes vqSwingB { 0%, 100% { transform: rotate(32deg); } 50% { transform: rotate(-32deg); } }
+  .mc[data-skin="ninja"] { --shirt: #222; --pants: #222; --hair: #b11; } .mc[data-skin="knight"] { --shirt: #aab; --pants: #889; --hair: #667; }
+  .mc[data-skin="wizard"] { --shirt: #6b3fa8; --pants: #4a2a7a; --hair: #6b3fa8; } .mc[data-skin="hacker"] { --shirt: #1a8f3a; --pants: #222; --hair: #111; }
+  .mc.zombie { --skin: #5da34a; --shirt: #2d8fa8; --pants: #32327a; --hair: #3f7a33; }
+  .vq-hero .mc { transform: scale(1.3); transform-origin: bottom center; }
+  .vq-hero { position: absolute; z-index: 4; transform: translate(-50%, -100%); transition: left .12s ease-out; }
+  .vq-hero.hit { animation: vqHit .4s ease; } @keyframes vqHit { 25% { filter: brightness(3) saturate(0); transform: translate(-50%, -100%) rotate(14deg); } 60% { transform: translate(-50%, -100%) rotate(-8deg); } }
+  .vq-hero.cheer { animation: vqCheer .45s ease; } @keyframes vqCheer { 40% { transform: translate(-50%, -100%) translateY(-18px); } }
+  .vq-pet { position: absolute; z-index: 4; font-size: 1.3rem; transform: translate(-50%, -100%); transition: left .22s ease-out; animation: vqPetBob .35s ease-in-out infinite; }
+  @keyframes vqPetBob { 50% { margin-top: -4px; } }
+  .vq-zombie { position: absolute; z-index: 3; transform: translate(-50%, -100%); transition: top .5s ease, left .3s ease; filter: drop-shadow(0 0 8px rgba(255,60,60,.6)); }
+  .vq-flash { position: absolute; inset: 0; z-index: 8; background: #f33; opacity: 0; pointer-events: none; } .vq-flash.go { animation: vqFlash .5s ease; } @keyframes vqFlash { 0% { opacity: .5; } 100% { opacity: 0; } }
+  .vq-field.shake { animation: vqShakeF .4s ease; } @keyframes vqShakeF { 20% { transform: translateX(-7px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+  .vq-popup { position: absolute; z-index: 9; font-family: "Press Start 2P", monospace; font-size: .6rem; color: #fcdb05; text-shadow: 2px 2px 0 #000; pointer-events: none; animation: vqUp 1s ease forwards; transform: translateX(-50%); }
+  @keyframes vqUp { to { transform: translate(-50%, -34px); opacity: 0; } }
+  .vq-ctrl { display: flex; gap: 8px; padding: 10px 10px 4px; }
+  .vq-ctrl .vq-btn { margin: 0; font-size: 1rem; padding: 14px 0; }
+  .vq-ability { display: block; margin: 4px 10px 0; width: calc(100% - 20px); }
+
+  /* ---- overlays ---- */
+  .vq-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(10,8,5,.8); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .vq-overlay .vq-panel { width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
+  .vq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px; }
+  .vq-card { background: #2a2a2a; border: 3px solid #1b1b1b; padding: 10px 6px; text-align: center; font-size: .7rem; font-weight: 800; position: relative; }
+  .vq-card.sel { border-color: #fcdb05; background: #3c3820; } .vq-card.locked { opacity: .55; }
+  .vq-card .big { font-size: 1.8rem; display: block; margin-bottom: 4px; } .vq-card small { display: block; color: #bdb299; font-weight: 700; line-height: 1.35; margin: 3px 0 6px; font-size: .68rem; }
+  .vq-card .vq-btn { font-size: .5rem; padding: 8px 4px; margin: 0; }
+  .vq-stars { font-size: 2rem; letter-spacing: 6px; text-align: center; margin: 6px 0 10px; }
+  .vq-stars span { display: inline-block; opacity: .25; filter: grayscale(1); } .vq-stars span.on { opacity: 1; filter: none; animation: vqStarPop .5s ease backwards; }
+  @keyframes vqStarPop { from { transform: scale(0) rotate(-90deg); } to { transform: scale(1) rotate(0); } }
+  .vq-rows div { display: flex; justify-content: space-between; font-weight: 800; font-size: .85rem; padding: 3px 0; }
+  .vq-chest { font-size: 4.5rem; text-align: center; margin: 6px 0; }
+  .vq-chest.shake { animation: vqChestShake .9s ease; } @keyframes vqChestShake { 10% { transform: rotate(-12deg); } 30% { transform: rotate(12deg); } 50% { transform: rotate(-10deg); } 70% { transform: rotate(10deg); } 90% { transform: scale(1.2); } }
+  .vq-loot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 10px 0; min-height: 40px; }
+  .vq-loot span { background: #1b1b1b; border: 2px solid #fcdb05; padding: 6px 10px; font-size: .62rem; font-family: "Press Start 2P", monospace; line-height: 1.5; animation: vqLoot .5s ease backwards; }
+  @keyframes vqLoot { from { transform: translateY(20px) scale(.4); opacity: 0; } }
+  .vq-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #555; font-weight: 800; font-size: .85rem; gap: 8px; }
+  .vq-bar { height: 10px; background: #1b1b1b; border: 2px solid #6b6b6b; margin: 4px 0; } .vq-bar i { display: block; height: 100%; background: #5bd33a; }
+  .vq-toggle { width: 46px; height: 24px; background: #555; border: 3px solid #1b1b1b; position: relative; cursor: pointer; flex: none; }
+  .vq-toggle::after { content: ""; position: absolute; top: 1px; left: 1px; width: 16px; height: 16px; background: #ddd; transition: transform .15s; } .vq-toggle.on { background: #5b8c3a; } .vq-toggle.on::after { transform: translateX(22px); }
+  .vq-countdown { position: absolute; inset: 0; z-index: 12; display: grid; place-items: center; font-family: "Press Start 2P", monospace; font-size: 3rem; color: #fcdb05; text-shadow: 4px 4px 0 #000; pointer-events: none; }
+  .vq-countdown span { animation: vqCount .8s ease; } @keyframes vqCount { from { transform: scale(2.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="vq-page" id="vq-page">
+
+  <!-- ===================== HOME ===================== -->
+  <div id="vq-home">
+    <div class="vq-topbar"><a href="../" class="vq-back px">&lt;</a><div class="vq-title px">⛏️ VAULT QUEST</div><button type="button" class="vq-iconbtn" id="vq-settings-btn">⚙️</button></div>
+    <div class="vq-chips px"><span class="vq-chip">🪙 <span id="vq-coins">0</span></span><span class="vq-chip">💎 <span id="vq-gems">0</span></span><span class="vq-chip">⭐ <span id="vq-total-stars">0</span></span></div>
+    <div class="vq-streak px" id="vq-streak"></div>
+    <div class="vq-worlds" id="vq-worlds"></div>
+    <div class="vq-world-banner" id="vq-world-banner"></div>
+    <div class="vq-levels" id="vq-levels"></div>
+    <div class="vq-nav">
+      <button type="button" class="vq-btn dark" id="vq-crew-btn">👥 CREW</button>
+      <button type="button" class="vq-btn dark" id="vq-gadget-btn">🎒 GADGETS</button>
+      <button type="button" class="vq-btn dark" id="vq-pet-btn">🐾 PET</button>
+      <button type="button" class="vq-btn gold" id="vq-mission-btn">📋 MISSIONS</button>
+      <button type="button" class="vq-btn gold" id="vq-daily-btn">🎁 DAILY</button>
+      <a href="../" class="vq-btn dark">🏠 HUB</a>
+    </div>
+  </div>
+
+  <!-- ===================== GAME ===================== -->
+  <div id="vq-game" class="hidden">
+    <div class="vq-hud">
+      <div class="vq-hearts" id="vq-hearts"></div>
+      <span class="vq-chip px">🪙 <span id="vq-run-coins">0</span></span>
+      <span class="vq-chip px" id="vq-combo">x0</span>
+      <button type="button" class="vq-iconbtn" id="vq-pause-btn">⏸</button>
+    </div>
+    <div class="vq-progress" id="vq-progress"><i id="vq-prog-fill"></i><b id="vq-ghost" class="hidden">👻</b></div>
+    <div class="vq-sign" id="vq-sign">Get ready!</div>
+    <div class="vq-field w1" id="vq-field">
+      <div class="vq-floor" id="vq-floor"></div>
+      <div class="vq-boss hidden" id="vq-boss"><div class="vq-boss-hp"><i id="vq-boss-fill"></i></div><span class="em" id="vq-boss-em">🧟</span></div>
+      <div id="vq-ents"></div>
+      <div class="vq-zombie" id="vq-zombie"><div class="mc zombie run"><i class="h"></i><i class="b"></i><i class="a1"></i><i class="a2"></i><i class="l1"></i><i class="l2"></i></div></div>
+      <div class="vq-pet" id="vq-pet">🐺</div>
+      <div class="vq-hero" id="vq-hero"><div class="mc run" id="vq-hero-mc" data-skin="miner"><i class="h"></i><i class="b"></i><i class="a1"></i><i class="a2"></i><i class="l1"></i><i class="l2"></i></div></div>
+      <div class="vq-flash" id="vq-flash"></div>
+      <div class="vq-countdown hidden" id="vq-countdown"></div>
+    </div>
+    <div class="vq-ctrl"><button type="button" class="vq-btn" id="vq-left">◀</button><button type="button" class="vq-btn" id="vq-right">▶</button></div>
+    <button type="button" class="vq-btn green vq-ability hidden" id="vq-ability">ABILITY</button>
+  </div>
+
+  <!-- ===================== OVERLAYS ===================== -->
+  <div class="vq-overlay hidden" id="vq-intro"><div class="vq-panel"><div class="vq-h" id="vq-intro-title"></div><div class="vq-sub" id="vq-intro-story"></div><div class="vq-sub" id="vq-intro-loadout"></div><button class="vq-btn green" id="vq-intro-go">▶ START</button><button class="vq-btn dark" id="vq-intro-back">BACK</button></div></div>
+
+  <div class="vq-overlay hidden" id="vq-win"><div class="vq-panel"><div class="vq-h" id="vq-win-title">LEVEL CLEAR!</div><div class="vq-stars" id="vq-win-stars"></div><div class="vq-rows" id="vq-win-rows"></div><div class="vq-sub" id="vq-win-class"></div><button class="vq-btn gold" id="vq-win-chest">🧰 OPEN CHEST</button><button class="vq-btn green hidden" id="vq-win-next">NEXT LEVEL ▶</button><button class="vq-btn dark" id="vq-win-home">MAP</button></div></div>
+
+  <div class="vq-overlay hidden" id="vq-fail"><div class="vq-panel"><div class="vq-h">OUCH! THE ZOMBIE GOT YOU</div><div class="vq-sub" id="vq-fail-sub"></div><button class="vq-btn green" id="vq-fail-retry">↻ TRY AGAIN</button><button class="vq-btn dark" id="vq-fail-home">MAP</button></div></div>
+
+  <div class="vq-overlay hidden" id="vq-chest"><div class="vq-panel"><div class="vq-h" id="vq-chest-title">CHEST!</div><div class="vq-chest" id="vq-chest-em">🧰</div><div class="vq-loot" id="vq-chest-loot"></div><button class="vq-btn gold" id="vq-chest-open">TAP TO OPEN</button><button class="vq-btn green hidden" id="vq-chest-done">AWESOME!</button></div></div>
+
+  <div class="vq-overlay hidden" id="vq-crew"><div class="vq-panel"><div class="vq-h">YOUR CREW</div><div class="vq-grid" id="vq-crew-grid"></div><button class="vq-btn dark vq-close">CLOSE</button></div></div>
+  <div class="vq-overlay hidden" id="vq-gadgets"><div class="vq-panel"><div class="vq-h">GADGETS</div><div class="vq-sub">Equip one. Duplicates from chests upgrade it (max Lv.5).</div><div class="vq-grid" id="vq-gadget-grid"></div><button class="vq-btn dark vq-close">CLOSE</button></div></div>
+  <div class="vq-overlay hidden" id="vq-pets"><div class="vq-panel"><div class="vq-h">YOUR PET</div><div class="vq-chest" id="vq-pet-big">🐺</div><div class="vq-sub" id="vq-pet-info"></div><div class="vq-bar"><i id="vq-pet-bar" style="width:0%"></i></div><div class="vq-grid" id="vq-pet-grid"></div><button class="vq-btn dark vq-close">CLOSE</button></div></div>
+  <div class="vq-overlay hidden" id="vq-missions"><div class="vq-panel"><div class="vq-h">DAILY MISSIONS</div><div id="vq-mission-list"></div><button class="vq-btn dark vq-close">CLOSE</button></div></div>
+
+  <div class="vq-overlay hidden" id="vq-tutorial"><div class="vq-panel"><div class="vq-h">HOW TO PLAY</div><div class="vq-sub">🏃 You run automatically.<br>◀ ▶ (or swipe) to switch lanes.<br><br>🧱 Run THROUGH the gate with the <b>right answer</b>.<br>🔥 Dodge lava and TNT.<br>🪙 Grab coins.<br>❤️ Each mistake lets the zombie get closer!<br><br>Beat levels for ⭐, open chests, unlock heroes and train your pet!</div><button class="vq-btn green" id="vq-tutorial-close">LET'S GO!</button></div></div>
+  <div class="vq-overlay hidden" id="vq-settings"><div class="vq-panel"><div class="vq-h">SETTINGS</div>
+    <div class="vq-row"><span>🔊 Sound</span><button type="button" class="vq-toggle" id="vq-set-sound"></button></div>
+    <div class="vq-row"><span>📳 Haptics</span><button type="button" class="vq-toggle" id="vq-set-haptics"></button></div>
+    <div class="vq-row"><span>🎬 Reduced motion</span><button type="button" class="vq-toggle" id="vq-set-motion"></button></div>
+    <button class="vq-btn dark vq-close" style="margin-top:12px;">CLOSE</button></div></div>
+  <div class="vq-overlay hidden" id="vq-pause"><div class="vq-panel"><div class="vq-h">PAUSED</div><button class="vq-btn green" id="vq-resume">▶ RESUME</button><button class="vq-btn red" id="vq-quit">QUIT LEVEL</button></div></div>
+
+  <div class="vq-overlay hidden" id="vq-signedout"><div class="vq-panel"><div class="vq-h">PLEASE SIGN IN</div><div class="vq-sub">Sign in from the hub first.</div><a href="../" class="vq-btn green">BACK TO HUB</a></div></div>
+</div>
+
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js"></script>
+<script src="../skin.js"></script>
+<script src="../mathville/generators.js"></script>
+<script src="../question-pools.js?v=2"></script>
+<script src="script.js"></script>
+</body>
+</html>

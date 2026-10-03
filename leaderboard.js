@@ -4887,6 +4887,19 @@
     { id: "gem", name: "Crystal Lock", cost: { coins: 20 }, preview: "💠" },
     { id: "eye", name: "Evil Eye Lock", cost: { gems: 2 }, preview: "🧿" }
   ];
+  // Vault Quest crew and pets (unlocked with the shared wallet).
+  const VAULT_HEROES = [
+    { id: "miner", name: "Miner -- coins x1.25", cost: null, preview: "⛏️" },
+    { id: "ninja", name: "Ninja -- slows the gates (ability)", cost: { coins: 40 }, preview: "🥷" },
+    { id: "knight", name: "Knight -- survives 1 mistake per level", cost: { coins: 80 }, preview: "🛡️" },
+    { id: "wizard", name: "Wizard -- crumbles a wrong gate (ability)", cost: { coins: 120 }, preview: "🧙" },
+    { id: "hacker", name: "Hacker -- highlights the answer (ability)", cost: { coins: 150 }, preview: "💻" }
+  ];
+  const VAULT_PETS = [
+    { id: "wolf", name: "Wolf pup", cost: null, preview: "🐺" },
+    { id: "cat", name: "Cat", cost: { coins: 30 }, preview: "🐱" },
+    { id: "parrot", name: "Parrot", cost: { coins: 50 }, preview: "🦜" }
+  ];
   const BOSSRUSH_FIGHTERS = [
     { id: "default", name: "Classic", cost: null, preview: "🥋" },
     { id: "boxer", name: "Boxer", cost: { coins: 15 }, preview: "🥊" },
@@ -4951,6 +4964,8 @@
     "mathtennis-trail": MATH_TENNIS_TRAILS,
     "escapevault-theme": ESCAPE_THEMES,
     "escapevault-lock": ESCAPE_LOCKS,
+    "vaultquest-hero": VAULT_HEROES,
+    "vaultquest-pet": VAULT_PETS,
     "bossrush-fighter": BOSSRUSH_FIGHTERS,
     "dino-skin": DINO_SKINS
   };
@@ -5022,6 +5037,8 @@
         "mathtennis-trail": equipped["mathtennis-trail"] || "default",
         "escapevault-theme": equipped["escapevault-theme"] || "default",
         "escapevault-lock": equipped["escapevault-lock"] || "default",
+        "vaultquest-hero": equipped["vaultquest-hero"] || "miner",
+        "vaultquest-pet": equipped["vaultquest-pet"] || "wolf",
         "bossrush-fighter": equipped["bossrush-fighter"] || "default",
         "dino-skin": equipped["dino-skin"] || "default",
         "bo-costume": equipped["bo-costume"] || "none"
@@ -6658,6 +6675,34 @@
     return { rank: myIdx >= 0 ? myIdx + 1 : null, total: ranking.length, top: ranking.slice(0, 3) };
   }
 
+  // Vault Quest (vault-quest/) -- one progress document per player: stars and
+  // best times per level, gadget levels, pet XP, daily missions and streak.
+  const VAULT_QUEST_DEFAULT = { stars: {}, best: {}, loot: {}, gadget: "", petXp: 0, streak: 0, lastDay: "", missions: { day: "", list: [] }, chests: 0 };
+  async function getVaultQuest() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return JSON.parse(JSON.stringify(VAULT_QUEST_DEFAULT));
+    const snap = await aigDb.ref(`players/${player.id}/vaultQuest`).get();
+    const d = snap.exists() ? snap.val() : {};
+    return Object.assign(JSON.parse(JSON.stringify(VAULT_QUEST_DEFAULT)), d);
+  }
+  async function saveVaultQuest(data) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    await aigDb.ref(`players/${player.id}/vaultQuest`).set(data);
+  }
+  // Fastest clear of a level among everyone (one read of players/, same
+  // pattern as the weekly ranks) -- powers the "beat your classmates" line.
+  async function getVaultQuestClassBest(levelId) {
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return null;
+    let best = null;
+    Object.entries(snap.val()).forEach(([id, data]) => {
+      const t = data.vaultQuest && data.vaultQuest.best && data.vaultQuest.best[levelId];
+      if (t && (!best || t < best.ms)) best = { ms: t, id };
+    });
+    return best;
+  }
+
   // =====================================================================
   // QUIZ SHOW LIVE (quiz-show/) — same one-time-per-round bonus pattern,
   // scaled from the in-game "prize" reached (a dramatic $10-$500 ladder,
@@ -7061,6 +7106,7 @@
     getActiveSeasonalEvent, claimSeasonalEvent,
     sendDuelChallenge, getDuelInbox, getDuelSentResults, dismissDuelResult, resolveDuelChallenge,
     awardEscapeRoomBonus,
+    getVaultQuest, saveVaultQuest, getVaultQuestClassBest,
     touchEscapeRoomStats, getEscapeRoomLifetimeSummary, getEscapeRoomAchievements,
     touchEscapeRoomWeeklyBest, getEscapeRoomWeeklyRank,
     awardQuizShowBonus,
