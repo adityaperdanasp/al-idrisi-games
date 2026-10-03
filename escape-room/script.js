@@ -59,6 +59,7 @@ function initEscapeRoom() {
   const hudTimer = $("er-hud-timer"), hudRoom = $("er-hud-room"), hudTotal = $("er-hud-total"), hudScore = $("er-hud-score"), hudTurn = $("er-hud-turn");
   const alarmFill = $("er-alarm-fill"), alarmEl = $("er-alarm"), roomTrack = $("er-room-track"), comboDotsEl = $("er-combo-dots");
   const boEl = $("er-bo");
+  const heroEl = $("er-hero"), guardEl = $("er-guard"), bossEl = $("er-boss"), gasEl = $("er-gas"), flashEl = $("er-flash"), lockPanel = $("er-lockpanel");
 
   // ---- settings ------------------------------------------------------------
   function flag(key, def) { try { const v = localStorage.getItem(key); return v === null ? def : v === "1"; } catch (e) { return def; } }
@@ -123,7 +124,7 @@ function initEscapeRoom() {
     score: 0, scoreAnswers: 0, scoreDoors: 0, scoreExtra: 0, streak: 0, alarm: 0,
     inv: {}, hintsUsed: 0, nextTrap: null, keyArmed: false, cleanDoors: 0, anyWrongRun: false, secretUsed: false, bossBeaten: false,
     turn: 1, coopCorrect: { 1: 0, 2: 0 }, reviewLog: [], artifactsFound: [],
-    currentQ: null, qShownAt: 0, qTimerId: null, answered: false, lastBoAt: 0, lockEmoji: "🔒", puzTimers: []
+    currentQ: null, qShownAt: 0, qTimerId: null, answered: false, lastBoAt: 0, lockEmoji: "🔒", puzTimers: [], heroLeft: 12, durTotal: 300, creepTick: 0
   };
   function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
   function shuffle(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rand(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; }
@@ -217,7 +218,7 @@ function initEscapeRoom() {
     for (let i = 0; i < 10; i++) {
       const s = document.createElement("div");
       s.className = "er-spark"; s.textContent = ["✨", "⭐", "💫"][i % 3];
-      s.style.left = "calc(50% - 6px)"; s.style.top = "95px";
+      s.style.left = "78%"; s.style.top = "55%";
       const a = (i / 10) * Math.PI * 2;
       s.style.setProperty("--sx", Math.cos(a) * 60 + "px"); s.style.setProperty("--sy", Math.sin(a) * 50 + "px");
       vault.appendChild(s); setTimeout(() => s.remove(), 650);
@@ -297,6 +298,12 @@ function initEscapeRoom() {
     page.classList.toggle("urgent", urgent);
     alarmFill.style.width = Math.min(100, state.alarm / ALARM_MAX * 100) + "%";
     alarmEl.classList.toggle("hot", state.alarm >= ALARM_MAX - 1);
+    // Chase + rising gas (live scene): the guard closes in as the alarm climbs,
+    // the gas creeps up as the clock runs down.
+    const gx = state.heroLeft - 4 - (1 - Math.min(1, state.alarm / ALARM_MAX)) * (state.heroLeft + 14);
+    vault.style.setProperty("--gx", gx + "%");
+    gasEl.style.height = Math.max(0, Math.min(75, (1 - state.secondsLeft / state.durTotal) * 70)) + "%";
+    gasEl.classList.toggle("danger", state.secondsLeft <= 30);
     hudTurn.classList.toggle("hidden", state.mode !== "coop");
     hudTurn.textContent = `👤 P${state.turn}`;
     renderRoomTrack();
@@ -312,19 +319,44 @@ function initEscapeRoom() {
       roomTrack.appendChild(dot);
     }
   }
+  // The lock is drawn IN the scene: pins rise, lasers switch off, dial rings
+  // light up, boss bolts break -- progress you can see, not just dots.
   function renderDots() {
-    comboDotsEl.innerHTML = "";
-    const type = state.lockType, need = needFor(type);
+    const type = state.lockType, need = needFor(type), L = LOCKS[type];
     const filled = type === "classic" || type === "nomistake" ? state.combo : state.correctInDoor;
+    const kind = type === "rapid" ? "lasers" : type === "dial" ? "rings" : type === "boss" ? "bolts" : "pins";
+    lockPanel.dataset.kind = kind; lockPanel.innerHTML = "";
     for (let i = 0; i < need; i++) {
-      const d = document.createElement("div");
-      d.className = "er-combo-dot" + (i < filled ? " lit" : "");
-      if (type === "boss") { d.classList.add("big"); d.textContent = "🔩"; }
-      else if (type === "dial") { d.classList.add("big"); d.textContent = i < filled ? String((i * 3 + 4) % 10) : "🎰"; }
-      comboDotsEl.appendChild(d);
+      let el;
+      if (kind === "pins") { el = document.createElement("i"); el.className = "er-pin" + (i < filled ? " lit" : ""); }
+      else if (kind === "rings") { el = document.createElement("div"); el.className = "er-ring" + (i < filled ? " on" : ""); el.textContent = i < filled ? String((i * 3 + 4) % 10) : "?"; }
+      else if (kind === "bolts") { el = document.createElement("span"); el.className = "er-bolt" + (i >= filled ? " on" : ""); el.textContent = "🔩"; }
+      else { el = document.createElement("div"); el.className = "er-laser" + (i < filled ? " off" : ""); el.style.top = (14 + i * 30) + "%"; }
+      lockPanel.appendChild(el);
     }
-    const L = LOCKS[type];
+    bossEl.classList.toggle("hidden", type !== "boss");
+    $("er-boss-hp-fill").style.width = Math.max(0, (need - filled) / need * 100) + "%";
     $("er-lock-label").textContent = L.label + (L.total ? ` (${state.asked}/${L.total})` : "");
+  }
+  function heroReact(cls, ms) {
+    heroEl.classList.remove("idle", "cheer", "hit", "run"); void heroEl.offsetWidth; heroEl.classList.add(cls);
+    setTimeout(() => { if (!heroEl.classList.contains("run")) { heroEl.classList.remove(cls); heroEl.classList.add("idle"); } }, ms);
+  }
+  function flashScene(white) { flashEl.classList.toggle("white", !!white); flashEl.classList.remove("go"); void flashEl.offsetWidth; flashEl.classList.add("go"); }
+  function zapLasers() { lockPanel.querySelectorAll(".er-laser:not(.off)").forEach(l => { l.classList.add("zap"); setTimeout(() => l.classList.remove("zap"), 350); }); }
+  function bossReact(kind) { bossEl.classList.remove("hurt", "attack"); void bossEl.offsetWidth; bossEl.classList.add(kind); setTimeout(() => bossEl.classList.remove(kind), 450); }
+  // The guard catches you: it lunges at the hero, red flash, time fine.
+  function caughtByGuard() {
+    state.alarm = 2; sfx.alarm(); vib([80, 40, 80]);
+    vault.style.setProperty("--gx", (state.heroLeft - 1) + "%");
+    guardEl.classList.add("grab"); heroReact("hit", 600); flashScene(false); shakeDoor();
+    setTimeout(() => { guardEl.classList.remove("grab"); updateHud(); }, 750);
+    adjustTime(-ALARM_FINE_SEC, `🚨 -${ALARM_FINE_SEC}s caught!`);
+    boSay("The guard caught you! Stay calm...");
+  }
+  function addAlarm(delta) {
+    state.alarm = Math.min(ALARM_MAX, state.alarm + delta);
+    if (state.alarm >= ALARM_MAX && !state.ended) caughtByGuard(); else updateHud();
   }
   function adjustTime(delta, label) {
     state.secondsLeft = Math.max(0, state.secondsLeft + delta);
@@ -340,6 +372,7 @@ function initEscapeRoom() {
     state.timerId = setInterval(() => {
       if (state.paused || state.ended) return;
       state.secondsLeft--; state.elapsed++;
+      if (++state.creepTick % 10 === 0) addAlarm(0.34); // the guard keeps creeping closer
       if (state.secondsLeft === 30) { sfx.alarm(); boSay("30 seconds left! Hurry!"); }
       else if (state.secondsLeft < 30 && state.secondsLeft > 0) { sfx.tick(); if (state.secondsLeft <= 10) sfx.heart(); }
       updateHud();
@@ -357,7 +390,9 @@ function initEscapeRoom() {
     const type = lockTypeFor(state.room), theme = themeFor(state.room);
     state.lockType = type;
     state.combo = 0; state.asked = 0; state.correctInDoor = 0; state.wrongInDoor = 0; state.path = "blue";
-    doorEl.classList.remove("open", "shake");
+    doorEl.classList.remove("open");
+    state.heroLeft = 12; heroEl.style.transition = "none"; heroEl.style.left = "12%"; void heroEl.offsetWidth; heroEl.style.transition = "";
+    heroEl.classList.remove("run", "cheer", "hit"); heroEl.classList.add("idle"); vault.classList.remove("running");
     lockEl.textContent = type === "boss" ? "👹" : state.lockEmoji;
     $("er-room-name").textContent = `${theme.emoji} ${theme.name}${type === "boss" ? " -- BOSS" : ""}`;
     $("er-vault-flavor").textContent = theme.flavor;
@@ -365,7 +400,7 @@ function initEscapeRoom() {
     renderDots(); updateHud();
   }
   function spinLock() { if (motionReduced()) return; lockEl.classList.remove("spin"); void lockEl.offsetWidth; lockEl.classList.add("spin"); }
-  function shakeDoor() { if (motionReduced()) return; doorEl.classList.remove("shake"); void doorEl.offsetWidth; doorEl.classList.add("shake"); }
+  function shakeDoor() { if (motionReduced()) return; vault.classList.remove("shake"); void vault.offsetWidth; vault.classList.add("shake"); }
 
   // ---- inventory -----------------------------------------------------------------------------------------------------
   function renderInventory() {
@@ -472,20 +507,19 @@ function initEscapeRoom() {
       adjustTime(TIME_CORRECT, `+${TIME_CORRECT}s`);
       if (quick) { adjustTime(FAST_BONUS, `⚡ +${FAST_BONUS}s fast!`); }
       spinLock(); sfx.click(); vib(25);
+      state.alarm = Math.max(0, state.alarm - 0.5);
+      heroReact("cheer", 600);
+      if (state.lockType === "boss") bossReact("hurt");
     } else {
       state.streak = 0; state.anyWrongRun = true; state.wrongInDoor++;
       state.reviewLog.push({ door: state.room + 1, prompt: q.prompt, yours: opt === null ? "(time ran out)" : opt, correct: q.correctLabel });
-      sfx.wrong(); vib([30, 30, 30]); shakeDoor();
+      sfx.wrong(); vib([30, 30, 30]); shakeDoor(); heroReact("hit", 500); zapLasers();
+      if (state.lockType === "boss") bossReact("attack");
       if (state.keyArmed) { state.keyArmed = false; keySaved = true; floatText("🔑 saved!", true); }
       else {
         adjustTime(-(D.timeWrong + (L.wrongExtra || 0)), `-${D.timeWrong + (L.wrongExtra || 0)}s`);
-        state.alarm += 1 + (L.alarmExtra || 0);
         if (rng() < TRAP_CHANCE) { state.nextTrap = rng() < 0.5 ? "blackout" : "shuffle"; }
-        if (state.alarm >= ALARM_MAX) {
-          state.alarm = 2; sfx.alarm(); vib([80, 40, 80]);
-          adjustTime(-ALARM_FINE_SEC, `🚨 -${ALARM_FINE_SEC}s guards!`);
-          boSay("The guards caught you! Stay calm...");
-        }
+        addAlarm(1 + (L.alarmExtra || 0));
       }
     }
     if (state.ended) return;
@@ -506,6 +540,8 @@ function initEscapeRoom() {
     setTimeout(() => {
       $("er-question-overlay").classList.add("hidden");
       if (state.ended) return;
+      const proceed = () => { if (outcome === "open") openDoor(false); else askQuestion(); };
+      if (state.lockType === "dial" && isCorrect && outcome !== "jam") { showCrank(proceed); return; }
       if (outcome === "open") openDoor(false);
       else if (outcome === "jam") {
         state.asked = 0; state.correctInDoor = 0; renderDots();
@@ -522,6 +558,10 @@ function initEscapeRoom() {
     state.room++;
     doorEl.classList.add("open"); lockEl.textContent = "🔓";
     sfx.clunk(); setTimeout(() => sfx.unlock(), 250); sparks(); vib([40, 30, 60]);
+    flashScene(true); bossEl.classList.add("hidden");
+    // the hero sprints to the open door
+    state.heroLeft = 66; heroEl.style.left = "66%"; heroEl.classList.remove("idle", "cheer", "hit"); heroEl.classList.add("run"); vault.classList.add("running");
+    setTimeout(() => { heroEl.classList.remove("run"); heroEl.classList.add("idle"); vault.classList.remove("running"); updateHud(); }, 1000);
     if (!skipped) {
       const pts = Math.round(50 * (red ? 1.5 : 1));
       addScore(pts); state.scoreDoors += pts;
@@ -552,10 +592,45 @@ function initEscapeRoom() {
   }
   function nextDoor() {
     if (state.ended) return;
-    setupDoor();
-    const pathEligible = state.lockType !== "boss" && (state.mode === "endless" ? state.room > 0 && state.room % 2 === 1 : state.room >= 1 && state.room <= 4);
-    if (pathEligible) { $("er-path-overlay").classList.remove("hidden"); return; }
-    setTimeout(askQuestion, 700);
+    // Walk into the next room: quick fade, hero back at the start, new door.
+    vault.classList.add("wipe");
+    setTimeout(() => {
+      if (state.ended) return;
+      setupDoor(); vault.classList.remove("wipe");
+      const pathEligible = state.lockType !== "boss" && (state.mode === "endless" ? state.room > 0 && state.room % 2 === 1 : state.room >= 1 && state.room <= 4);
+      if (pathEligible) { $("er-path-overlay").classList.remove("hidden"); return; }
+      setTimeout(askQuestion, 500);
+    }, 380);
+  }
+
+  // ---- dial crank (physical lock interaction): drag the knob to the green dot ----
+  function showCrank(done) {
+    const dial = $("er-crank-dial"), knob = $("er-crank-knob"), target = $("er-crank-target"), msg = $("er-crank-msg"), auto = $("er-crank-auto");
+    const targetDeg = 50 + Math.floor(Math.random() * 260);
+    target.style.transform = `rotate(${targetDeg}deg)`; knob.style.transform = "rotate(0deg)"; msg.textContent = "";
+    auto.style.display = "none";
+    $("er-crank-overlay").classList.remove("hidden");
+    let angle = 0, dragging = false, startPtr = 0, startAngle = 0, lastTick = 0, finished = false;
+    const ptrAngle = e => { const r = dial.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI + 90; };
+    const finish = bonus => {
+      if (finished) return; finished = true; clearTimeout(autoT);
+      msg.textContent = bonus ? "🔓 Click!" : "🔓 Auto-cracked"; sfx.unlock(); sparks(); vib(30);
+      if (bonus) { addScore(5); state.scoreExtra += 5; }
+      setTimeout(() => { $("er-crank-overlay").classList.add("hidden"); if (!state.ended) done(); }, 500);
+    };
+    dial.onpointerdown = e => { if (finished) return; dragging = true; startPtr = ptrAngle(e); startAngle = angle; try { dial.setPointerCapture(e.pointerId); } catch (err) {} };
+    dial.onpointermove = e => {
+      if (!dragging || finished) return;
+      angle = startAngle + (ptrAngle(e) - startPtr); knob.style.transform = `rotate(${angle}deg)`;
+      const t = Math.floor(angle / 15); if (t !== lastTick) { lastTick = t; sfx.tick(); vib(4); }
+    };
+    dial.onpointerup = () => {
+      if (!dragging || finished) return; dragging = false;
+      const diff = Math.abs((((angle - targetDeg) % 360) + 540) % 360 - 180);
+      if (diff <= 30) finish(true); else { msg.textContent = "Almost! Try again..."; sfx.wrong(); }
+    };
+    auto.onclick = () => finish(false);
+    const autoT = setTimeout(() => { if (!finished) auto.style.display = ""; }, 7000);
   }
   function choosePath(color) {
     state.path = color; $("er-path-overlay").classList.add("hidden");
@@ -638,7 +713,7 @@ function initEscapeRoom() {
     if (state.ended) return;
     state.ended = true; state.running = false;
     clearInterval(state.timerId); stopQTimer(); clearPuzTimers();
-    ["er-question-overlay", "er-path-overlay", "er-puzzle-overlay", "er-pause-overlay"].forEach(id => $(id).classList.add("hidden"));
+    ["er-question-overlay", "er-path-overlay", "er-puzzle-overlay", "er-pause-overlay", "er-crank-overlay"].forEach(id => $(id).classList.add("hidden"));
     page.classList.remove("urgent"); hudTimer.classList.remove("urgent");
     const timeBonus = escaped ? Math.min(state.secondsLeft, 300) * 2 : 0;
     const flawless = escaped && !state.anyWrongRun, noHints = escaped && state.hintsUsed === 0;
@@ -693,12 +768,12 @@ function initEscapeRoom() {
     state.rng = mulberry32(state.seed); state.locks = []; state._pool = null;
     Object.assign(state, { room: 0, combo: 0, asked: 0, correctInDoor: 0, wrongInDoor: 0, path: "blue", secondsLeft: DIFFS[state.diff].dur, elapsed: 0, paused: false, ended: false, running: true,
       score: 0, scoreAnswers: 0, scoreDoors: 0, scoreExtra: 0, streak: 0, alarm: 0, hintsUsed: 0, nextTrap: null, keyArmed: false, cleanDoors: 0, anyWrongRun: false, secretUsed: false, bossBeaten: false,
-      turn: 1, coopCorrect: { 1: 0, 2: 0 }, reviewLog: [], artifactsFound: [], answered: false, lastBoAt: 0 });
+      turn: 1, coopCorrect: { 1: 0, 2: 0 }, reviewLog: [], artifactsFound: [], answered: false, lastBoAt: 0, creepTick: 0, durTotal: DIFFS[state.diff].dur, heroLeft: 12 });
     state.inv = { fifty: 1, clock: 1, skip: 1 };
     if (DIFFS[state.diff].extraItem) state.inv[DIFFS[state.diff].extraItem] = 1;
     try { localStorage.setItem(KEYS.isNew, "1"); } catch (e) {}
     $("er-new-badge").classList.add("hidden");
-    ["er-end-overlay", "er-start-overlay", "er-question-overlay", "er-path-overlay", "er-puzzle-overlay", "er-pause-overlay"].forEach(id => $(id).classList.add("hidden"));
+    ["er-end-overlay", "er-start-overlay", "er-question-overlay", "er-path-overlay", "er-puzzle-overlay", "er-pause-overlay", "er-crank-overlay"].forEach(id => $(id).classList.add("hidden"));
     $("er-sunrise").classList.add("hidden");
     setupDoor(); startTimer(); updateHud();
     boSay(state.mode === "endless" ? "How deep can you go?" : "Let's get out of here!");

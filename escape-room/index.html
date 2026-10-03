@@ -39,35 +39,98 @@
   .er-room-dot.done { background: #3F8F5F; }
   .er-room-dot.current { background: #F7C548; color: #1a1a2e; }
 
-  .er-vault { position: relative; overflow: hidden; margin: 0 20px 12px; padding: 22px 20px; border-radius: 20px; background: radial-gradient(circle at 50% 30%, #2a2a4a, #1a1a2e); text-align: center; box-shadow: inset 0 0 0 3px rgba(247,197,72,.25); }
-  .er-vault::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, transparent 20%, rgba(0,0,0,.85) 100%); opacity: calc(var(--dark, 0) * .1); transition: opacity 1s ease; pointer-events: none; }
-  .er-vault.lit::after { opacity: 0 !important; }
-  .er-vault[data-theme="pyramid"] { background: radial-gradient(circle at 50% 30%, #6b5a2a, #3a2f14); }
-  .er-vault[data-theme="bank"] { background: radial-gradient(circle at 50% 30%, #3a4a5a, #1c2733); }
-  .er-vault[data-theme="space"] { background: radial-gradient(circle at 50% 30%, #2b2f6b, #0c0e2a); }
-  .er-room-name { font-family: "Baloo 2", sans-serif; font-weight: 800; color: #F7C548; font-size: .85rem; margin-bottom: 8px; position: relative; z-index: 1; }
-  .er-door { position: relative; z-index: 1; width: 120px; height: 120px; margin: 0 auto 10px; border-radius: 14px 14px 0 0; background: #151528; overflow: hidden; box-shadow: 0 0 0 4px #3a3a5c; display: grid; place-items: center; }
+  /* ===== Live scene (replaces the static door card) ===== */
+  .er-scene { position: relative; overflow: hidden; margin: 0 12px 6px; height: min(36vh, 300px); min-height: 230px; border-radius: 18px; background: linear-gradient(180deg, #23233f, #14142a); box-shadow: inset 0 0 0 3px rgba(247,197,72,.25); transition: opacity .35s ease; --gx: -14%; }
+  .er-scene.wipe { opacity: 0; }
+  .er-scene[data-theme="pyramid"] { background: linear-gradient(180deg, #6b5a2a, #3a2f14); }
+  .er-scene[data-theme="bank"] { background: linear-gradient(180deg, #3a4a5a, #1c2733); }
+  .er-scene[data-theme="space"] { background: linear-gradient(180deg, #2b2f6b, #0c0e2a); }
+  .er-bg { position: absolute; inset: 0 0 18% 0; background: repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 2px, transparent 2px 48px), repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 2px, transparent 2px 36px); }
+  .er-scene.running .er-bg { animation: erBgScroll .5s linear infinite; }
+  @keyframes erBgScroll { to { background-position: -48px 0, -48px 0; } }
+  .er-spot { position: absolute; top: -20%; width: 90px; height: 140%; background: linear-gradient(180deg, rgba(255,246,194,.35), rgba(255,246,194,0)); transform-origin: top center; animation: erSweep 5s ease-in-out infinite; pointer-events: none; clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%); }
+  @keyframes erSweep { 0%, 100% { left: 5%; transform: rotate(-14deg); } 50% { left: 65%; transform: rotate(14deg); } }
+  .er-beam { position: absolute; left: 0; right: 0; height: 2px; background: rgba(255,60,60,.55); box-shadow: 0 0 8px rgba(255,0,0,.7); animation: erBeam 3.2s ease-in-out infinite; pointer-events: none; }
+  .er-beam.b2 { animation-delay: -1.6s; animation-duration: 4.1s; }
+  @keyframes erBeam { 0%, 100% { top: 22%; } 50% { top: 62%; } }
+  .er-torch { position: absolute; top: 14%; font-size: 1.3rem; animation: erFlicker .9s ease-in-out infinite; }
+  .er-torch.l { left: 5%; } .er-torch.r { right: 5%; animation-delay: -.4s; }
+  @keyframes erFlicker { 0%, 100% { transform: scale(1); opacity: .9; } 30% { transform: scale(1.18, 1.3); opacity: 1; } 60% { transform: scale(.92); opacity: .75; } }
+  .er-dust i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,.35); animation: erDust 7s linear infinite; }
+  .er-dust i:nth-child(1) { left: 12%; top: 70%; } .er-dust i:nth-child(2) { left: 28%; top: 40%; animation-delay: -2s; } .er-dust i:nth-child(3) { left: 46%; top: 80%; animation-delay: -4s; }
+  .er-dust i:nth-child(4) { left: 63%; top: 55%; animation-delay: -1s; } .er-dust i:nth-child(5) { left: 78%; top: 75%; animation-delay: -5s; } .er-dust i:nth-child(6) { left: 90%; top: 35%; animation-delay: -3s; }
+  @keyframes erDust { from { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(-110px); opacity: 0; } }
+  .er-scene::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, transparent 20%, rgba(0,0,0,.88) 100%); opacity: calc(var(--dark, 0) * .1); transition: opacity 1s ease; pointer-events: none; z-index: 6; }
+  .er-scene.lit::after { opacity: 0 !important; }
+  .er-room-name { position: absolute; top: 8px; left: 0; right: 0; text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; color: #F7C548; font-size: .8rem; z-index: 5; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+  .er-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 18%; background: linear-gradient(180deg, #3a3452, #25213a); border-top: 2px solid rgba(255,255,255,.12); }
+  .er-door { position: absolute; right: 9%; bottom: 17%; width: 92px; height: 128px; border-radius: 12px 12px 0 0; background: #151528; overflow: hidden; box-shadow: 0 0 0 4px #3a3a5c; display: grid; place-items: center; z-index: 2; }
   .er-door .panel { position: absolute; top: 0; bottom: 0; width: 50%; background: linear-gradient(180deg, #4a4a6e, #2f2f4e); border: 2px solid #5a5a82; transition: transform .8s cubic-bezier(.6,0,.2,1); }
-  .er-door .panel.l { left: 0; border-right-width: 1px; } .er-door .panel.r { right: 0; border-left-width: 1px; }
+  .er-door .panel.l { left: 0; } .er-door .panel.r { right: 0; }
   .er-door.open .panel.l { transform: translateX(-102%); } .er-door.open .panel.r { transform: translateX(102%); }
   .er-door .light { position: absolute; inset: 0; background: radial-gradient(circle, #fff6c2, #f7c548 60%, transparent); opacity: 0; transition: opacity .8s ease; }
   .er-door.open .light { opacity: 1; }
-  .er-lock { position: relative; z-index: 2; font-size: 2.6rem; }
+  .er-lock { position: relative; z-index: 2; font-size: 2.2rem; }
   .er-lock.spin { animation: erLockSpin .6s ease; }
   @keyframes erLockSpin { from { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.25); } to { transform: rotate(360deg) scale(1); } }
-  .er-door.shake { animation: erShake .45s ease; }
+  .er-scene.shake { animation: erShake .45s ease; }
   @keyframes erShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }
-  .er-spark { position: absolute; z-index: 3; font-size: 1rem; pointer-events: none; animation: erSpark .6s ease-out forwards; }
+  .er-hero { position: absolute; left: 12%; bottom: 15%; font-size: 2.3rem; z-index: 4; transform: scaleX(-1); transition: left 1s cubic-bezier(.4,0,.2,1); }
+  .er-hero.run { animation: erRun .22s linear infinite; }
+  @keyframes erRun { 0%, 100% { transform: scaleX(-1) translateY(0) rotate(0deg); } 50% { transform: scaleX(-1) translateY(-6px) rotate(-6deg); } }
+  .er-hero.cheer { animation: erCheer .6s ease; }
+  @keyframes erCheer { 0%, 100% { transform: scaleX(-1) translateY(0); } 40% { transform: scaleX(-1) translateY(-22px) scale(1.15); } }
+  .er-hero.hit { animation: erHit .5s ease; filter: drop-shadow(0 0 8px #f00); }
+  @keyframes erHit { 0%, 100% { transform: scaleX(-1) translateX(0); } 25% { transform: scaleX(-1) translateX(10px) rotate(14deg); } 60% { transform: scaleX(-1) translateX(-6px) rotate(-10deg); } }
+  .er-hero.idle { animation: erIdle 1.4s ease-in-out infinite; }
+  @keyframes erIdle { 0%, 100% { transform: scaleX(-1) translateY(0); } 50% { transform: scaleX(-1) translateY(-3px); } }
+  .er-guard { position: absolute; left: var(--gx); bottom: 15%; font-size: 2.3rem; z-index: 3; transition: left .7s ease; animation: erGuardBob .5s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(255,60,60,.7)); }
+  @keyframes erGuardBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  .er-guard.grab { animation: none; transform: scale(1.25); }
+  .er-boss { position: absolute; right: 36%; bottom: 17%; z-index: 3; text-align: center; transition: transform .25s ease; }
+  .er-boss.hidden { display: none; }
+  .er-boss span { font-size: 3.4rem; display: block; animation: erBossBreath 1.6s ease-in-out infinite; }
+  @keyframes erBossBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+  .er-boss.hurt span { animation: erBossHurt .35s ease; }
+  @keyframes erBossHurt { 0%, 100% { transform: scale(1); filter: none; } 40% { transform: scale(.88) rotate(-8deg); filter: brightness(2.2); } }
+  .er-boss.attack { transform: translateX(-60px); }
+  .er-boss-hp { width: 64px; height: 7px; border-radius: 4px; background: rgba(255,255,255,.15); margin: 0 auto 2px; overflow: hidden; }
+  .er-boss-hp i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ff4d4d, #ff9a5c); transition: width .3s ease; }
+  .er-gas { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: linear-gradient(180deg, rgba(120,255,140,0), rgba(120,255,140,.28)); z-index: 5; pointer-events: none; transition: height 1s ease, background .5s ease; }
+  .er-gas.danger { background: linear-gradient(180deg, rgba(255,90,90,0), rgba(255,90,90,.4)); }
+  .er-flash { position: absolute; inset: 0; z-index: 7; pointer-events: none; opacity: 0; background: #ff2d2d; }
+  .er-flash.go { animation: erFlash .6s ease; }
+  @keyframes erFlash { 0% { opacity: .55; } 100% { opacity: 0; } }
+  .er-flash.white { background: #fff; }
+  .er-lockpanel { position: absolute; z-index: 3; }
+  .er-lockpanel[data-kind="pins"], .er-lockpanel[data-kind="rings"], .er-lockpanel[data-kind="bolts"] { right: 6%; top: 28px; display: flex; gap: 6px; align-items: flex-end; width: 108px; justify-content: center; }
+  .er-lockpanel[data-kind="lasers"] { left: 0; right: 0; top: 22%; height: 46%; }
+  .er-pin { width: 14px; height: 30px; border-radius: 4px; background: #44425e; transition: transform .25s ease, background .25s ease, box-shadow .25s ease; }
+  .er-pin.lit { background: #F7C548; transform: translateY(-9px); box-shadow: 0 0 10px rgba(247,197,72,.8); }
+  .er-ring { width: 28px; height: 28px; border-radius: 50%; border: 3px solid #5a5a82; display: grid; place-items: center; font-size: .8rem; font-weight: 800; color: #5a5a82; }
+  .er-ring.on { border-color: #F7C548; color: #F7C548; box-shadow: 0 0 10px rgba(247,197,72,.7); animation: erLockSpin .6s ease; }
+  .er-bolt { font-size: 1.2rem; opacity: .35; transition: all .3s ease; }
+  .er-bolt.on { opacity: 1; filter: drop-shadow(0 0 6px rgba(247,197,72,.9)); }
+  .er-laser { position: absolute; left: 4%; right: 4%; height: 3px; border-radius: 2px; background: #ff3b3b; box-shadow: 0 0 10px #f00; animation: erLaserPulse .5s ease-in-out infinite; transition: opacity .3s ease, height .3s ease; }
+  .er-laser.off { opacity: 0; height: 0; animation: none; }
+  .er-laser.zap { background: #fff; box-shadow: 0 0 18px #ff0; }
+  @keyframes erLaserPulse { 0%, 100% { opacity: .75; } 50% { opacity: 1; } }
+  .er-spark { position: absolute; z-index: 8; font-size: 1rem; pointer-events: none; animation: erSpark .6s ease-out forwards; }
   @keyframes erSpark { to { transform: translate(var(--sx), var(--sy)) scale(.4); opacity: 0; } }
-  .er-lock-label { position: relative; z-index: 1; font-weight: 800; font-size: .72rem; color: #b8b0d0; margin-bottom: 4px; }
-  .er-vault-flavor { position: relative; z-index: 1; font-weight: 700; font-size: .82rem; color: #b8b0d0; line-height: 1.5; margin-bottom: 4px; }
-  .er-combo-dots { position: relative; z-index: 1; display: flex; justify-content: center; gap: 8px; margin-top: 10px; min-height: 14px; }
-  .er-combo-dot { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.15); }
-  .er-combo-dot.lit { background: #F7C548; box-shadow: 0 0 10px 2px rgba(247,197,72,.6); }
-  .er-combo-dot.big { width: auto; height: auto; background: none; box-shadow: none; font-size: 1.15rem; opacity: .3; }
-  .er-combo-dot.big.lit { opacity: 1; filter: drop-shadow(0 0 6px rgba(247,197,72,.8)); }
-  .er-bo { position: absolute; z-index: 2; bottom: 6px; left: 8px; background: #fff; color: #1a1a2e; font-weight: 800; font-size: .7rem; padding: 4px 10px; border-radius: 12px; opacity: 0; transition: opacity .25s ease; max-width: 70%; text-align: left; }
+  .er-lock-label { text-align: center; font-weight: 800; font-size: .74rem; color: #b8b0d0; margin: 2px 12px 2px; }
+  .er-vault-flavor { text-align: center; font-weight: 700; font-size: .76rem; color: #8f88ac; margin: 0 12px 8px; }
+  .er-combo-dots { display: none; }
+  .er-bo { position: absolute; z-index: 8; top: 28px; left: 8px; background: #fff; color: #1a1a2e; font-weight: 800; font-size: .68rem; padding: 4px 10px; border-radius: 12px; opacity: 0; transition: opacity .25s ease; max-width: 62%; text-align: left; }
   .er-bo.show { opacity: 1; }
+  /* Question panel docks at the bottom so the scene stays visible */
+  .er-overlay.sheet { align-items: flex-end; background: transparent; padding: 0; pointer-events: none; }
+  .er-overlay.sheet .er-card { pointer-events: auto; max-width: 480px; border-radius: 22px 22px 0 0; max-height: 46vh; padding: 14px 16px 16px; box-shadow: 0 -8px 26px rgba(0,0,0,.5); animation: erSheetUp .3s ease; }
+  @keyframes erSheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .er-overlay.sheet .er-q-prompt { font-size: .98rem; margin-bottom: 10px; }
+  .er-overlay.sheet .er-q-btn { padding: 11px 6px; font-size: .9rem; }
+  .er-crank-dial { position: relative; width: 150px; height: 150px; margin: 6px auto 10px; border-radius: 50%; background: radial-gradient(circle, #3a3a5c, #1c1c36); border: 4px solid #5a5a82; touch-action: none; cursor: grab; }
+  .er-crank-knob { position: absolute; left: 50%; top: 6px; width: 14px; height: 38px; margin-left: -7px; border-radius: 7px; background: #F7C548; transform-origin: 50% 69px; box-shadow: 0 0 10px rgba(247,197,72,.7); pointer-events: none; }
+  .er-crank-target { position: absolute; left: 50%; top: -2px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #7ef0a3; box-shadow: 0 0 12px #7ef0a3; transform-origin: 50% 77px; pointer-events: none; }
 
   .er-open-row { display: flex; justify-content: center; gap: 8px; margin: 0 20px 12px; }
   .er-chip-btn { border: 2px dashed rgba(255,255,255,.25); background: none; color: #b8b0d0; border-radius: 14px; padding: 8px 12px; font-family: "Baloo 2", sans-serif; font-weight: 700; font-size: .78rem; cursor: pointer; }
@@ -174,18 +237,30 @@
   <div class="er-alarm" id="er-alarm" title="Alarm"><i id="er-alarm-fill"></i></div>
   <div class="er-room-track" id="er-room-track"></div>
 
-  <div class="er-vault" id="er-vault" data-theme="default" style="--dark:0">
+  <div class="er-scene" id="er-vault" data-theme="default" style="--dark:0">
+    <div class="er-bg" id="er-bg"></div>
+    <div class="er-spot"></div>
+    <div class="er-beam"></div><div class="er-beam b2"></div>
+    <div class="er-torch l">🔥</div><div class="er-torch r">🔥</div>
+    <div class="er-dust"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="er-room-name" id="er-room-name">🔒 The Vault</div>
+    <div class="er-boss hidden" id="er-boss"><div class="er-boss-hp"><i id="er-boss-hp-fill"></i></div><span>👹</span></div>
     <div class="er-door" id="er-door">
       <div class="light"></div>
       <div class="panel l"></div><div class="panel r"></div>
       <div class="er-lock" id="er-lock">🔒</div>
     </div>
-    <div class="er-lock-label" id="er-lock-label"></div>
-    <div class="er-vault-flavor" id="er-vault-flavor">A heavy door blocks your path.</div>
-    <div class="er-combo-dots" id="er-combo-dots"></div>
+    <div class="er-lockpanel" id="er-lockpanel" data-kind="pins"></div>
+    <div class="er-floor"></div>
+    <div class="er-guard" id="er-guard">🤖</div>
+    <div class="er-hero idle" id="er-hero">🏃</div>
+    <div class="er-gas" id="er-gas"></div>
     <div class="er-bo" id="er-bo"></div>
+    <div class="er-flash" id="er-flash"></div>
   </div>
+  <div class="er-lock-label" id="er-lock-label"></div>
+  <div class="er-vault-flavor" id="er-vault-flavor">A heavy door blocks your path.</div>
+  <div class="er-combo-dots" id="er-combo-dots"></div>
 
   <div class="er-open-row">
     <button type="button" class="er-chip-btn" id="er-album-open">🏺 Artifacts</button>
@@ -249,7 +324,7 @@
     </div>
   </div>
 
-  <div class="er-overlay hidden" id="er-question-overlay">
+  <div class="er-overlay sheet hidden" id="er-question-overlay">
     <div class="er-card">
       <div class="er-qtimer hidden" id="er-qtimer"><i id="er-qtimer-fill"></i></div>
       <div class="er-turn hidden" id="er-turn"></div>
@@ -257,6 +332,16 @@
       <div class="er-q-prompt" id="er-q-prompt"></div>
       <div class="er-q-grid" id="er-q-grid"></div>
       <div class="er-inv" id="er-inv"></div>
+    </div>
+  </div>
+
+  <div class="er-overlay sheet hidden" id="er-crank-overlay">
+    <div class="er-card">
+      <div class="er-modal-title" style="font-size:1rem;">🎰 Crack the dial!</div>
+      <div class="er-modal-sub" style="margin-bottom:4px;">Drag around the dial until the gold bar points at the green dot, then let go.</div>
+      <div class="er-crank-dial" id="er-crank-dial"><div class="er-crank-target" id="er-crank-target"></div><div class="er-crank-knob" id="er-crank-knob"></div></div>
+      <div class="er-modal-sub" id="er-crank-msg" style="margin-bottom:6px;min-height:1.2em;"></div>
+      <button class="er-btn er-btn-secondary" id="er-crank-auto" style="display:none;">Auto-crack</button>
     </div>
   </div>
 
