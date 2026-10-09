@@ -409,7 +409,7 @@
   .lane.p1 .lane-tag{ color: var(--lane1-tag); }
   .lane.p2 .lane-tag{ color: var(--lane2-tag); }
   .lane.p3 .lane-tag{ color: var(--lane3-tag); }
-  .track-wrap.lanes-3 .lane{ height: 108px; }
+  .track-wrap.lanes-3 .lane{ height: 124px; }
   .track-wrap.lanes-1 .lane{ height: 240px; }
   .lane .ground-line{
     position:absolute;
@@ -582,7 +582,7 @@
     .lane{ height: 140px; }
     .dino{ font-size: 37px; }
     .obstacle{ font-size: 19.2px; }
-    .track-wrap.lanes-3 .lane{ height: 96px; }
+    .track-wrap.lanes-3 .lane{ height: 112px; }
     .track-wrap.lanes-1 .lane{ height: 220px; }
   }
 </style>
@@ -793,9 +793,9 @@
   const GAMES_ROOT = "dinorace_games";
   const LANE_W_PADDING = 40; // px reserved for dino sprite width approx
   const GROUND_BOTTOM = 4;
-  const JUMP_HEIGHT = 78;
+  const JUMP_HEIGHT = 94; // +20% dari 78
   const JUMP_DURATION = 520; // ms total up+down
-  const JUMP_FORWARD_PX = 54; // fixed px horizontal drift selama lompat, independen dari lebar lane
+  const JUMP_FORWARD_PX = 59; // (+10% dari 54) fixed px horizontal drift selama lompat, independen dari lebar lane
   const MOVE_STEP = 8; // % of lane width per press
   const DINO_MIN_LEFT = 2;
   const DINO_MAX_LEFT = 70; // dino stays in left portion of lane, obstacles run at it
@@ -804,8 +804,8 @@
     { type: "bird", emoji: "🐦", w: 16, flying: true },
     { type: "batu", emoji: "🪨", w: 18 }
   ];
-  const BASE_SPAWN_MS = 1350;
-  const MIN_SPAWN_MS = 480;
+  const BASE_SPAWN_MS = 1550; // +15% biar jarak antar obstacle lebih longgar
+  const MIN_SPAWN_MS = 550;
   const SPAWN_RAMP_MS = 55000; // time to reach min spawn interval
   const BASE_SPEED = 0.026; // % of lane width per ms
   const MAX_SPEED = 0.052;
