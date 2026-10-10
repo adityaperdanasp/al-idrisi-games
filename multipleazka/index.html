@@ -54,6 +54,7 @@
       </div>
 
       <button id="btn-view-stickers-role" class="ghost-btn">🎒 My Stickers</button>
+      <button id="btn-garage-role" class="ghost-btn">🔧 Garage &amp; Missions</button>
     </div>
   </section>
 
@@ -119,6 +120,32 @@
             <button class="seg-btn" data-mode="type">Type in</button>
           </div>
         </div>
+
+        <!-- Race Plus: what kind of questions, who you race (solo), and cup mode -->
+        <div class="setting-row">
+          <span class="setting-label">🧮 Questions</span>
+          <div class="seg seg-compact" id="topic-seg">
+            <button class="seg-btn active" data-topic="times">✖️ Times</button>
+            <button class="seg-btn" data-topic="mix">🎲 Mix</button>
+            <button class="seg-btn" data-topic="addsub">➕ Add/Sub</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">🤖 Solo rival</span>
+          <div class="seg seg-compact" id="rival-seg">
+            <button class="seg-btn" data-rival="slow">🐢</button>
+            <button class="seg-btn active" data-rival="bot">🤖</button>
+            <button class="seg-btn" data-rival="fast">🚀</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">🏆 Cup (3 races)</span>
+          <div class="seg seg-compact" id="cup-seg">
+            <button class="seg-btn active" data-cup="0">Off</button>
+            <button class="seg-btn" data-cup="1">On</button>
+          </div>
+        </div>
+        <button id="btn-garage-pair" class="ghost-btn">🔧 Garage &amp; Missions</button>
 
       </div>
 
@@ -287,6 +314,13 @@
       </div>
     </div>
 
+    <!-- Race Plus overlays: weather, track info, ammo, pit stop, photo finish -->
+    <div class="mr-weather" id="mr-weather"></div>
+    <div class="mr-trackinfo" id="mr-trackinfo"></div>
+    <button class="mr-ammo hidden" id="mr-ammo" type="button">🛢 Oil</button>
+    <div class="mr-pit hidden" id="mr-pit"><div class="mr-pit-card"><div class="mr-pit-e">🔧</div><div class="mr-pit-t">PIT STOP!</div><p>Answer 3 in a row for fresh tires (+8% speed for the rest of the race).</p><button id="mr-pit-go" class="primary-btn">🔧 Pit stop!</button><button id="mr-pit-skip" class="ghost-btn">Skip</button></div></div>
+    <div class="mr-photo hidden" id="mr-photo"><span>📸 PHOTO FINISH!</span></div>
+
     <!-- Simple Bo, same as the hub landing page. Tap opens a real chat
          with Bo (api/bo-chat.js). -->
     <div class="game-bo" id="game-bo" role="button" tabindex="0">
@@ -405,9 +439,17 @@
   }
 </script>
 
+<div class="mr-overlay hidden" id="mr-garage"><div class="mr-card">
+  <h2>🔧 Garage &amp; Missions</h2>
+  <div class="seg seg-compact" id="mr-garage-tabs"><button class="seg-btn active" data-t="up">⚙️ Upgrades</button><button class="seg-btn" data-t="look">🎨 Style</button><button class="seg-btn" data-t="mis">📋 Missions</button><button class="seg-btn" data-t="cup">🏆 Trophies</button></div>
+  <div id="mr-garage-body"></div>
+  <button id="mr-garage-close" class="primary-btn">Close</button>
+</div></div>
+
 <!-- Background music -->
 <script src="bgm.js"></script>
 <script src="badges.js"></script>
 
 <!-- Game logic -->
 <script src="script.js"></script>
+<script src="race-plus.js?v=1"></script>

@@ -4922,6 +4922,30 @@
     { id: "cat", name: "Cat", cost: { coins: 30 }, preview: "🐱" },
     { id: "parrot", name: "Parrot", cost: { coins: 50 }, preview: "🦜" }
   ];
+  // Math Race cosmetics: paint (colour filter), sticker (badge on the car) and trail.
+  const MR_PAINTS = [
+    { id: "default", name: "Factory", cost: null, preview: "⚪" },
+    { id: "red", name: "Racing Red", cost: { coins: 15 }, preview: "🔴", filter: "hue-rotate(-40deg) saturate(1.6)" },
+    { id: "blue", name: "Ocean Blue", cost: { coins: 15 }, preview: "🔵", filter: "hue-rotate(150deg) saturate(1.3)" },
+    { id: "gold", name: "Gold", cost: { coins: 30 }, preview: "🟡", filter: "sepia(1) saturate(3) hue-rotate(5deg)" },
+    { id: "dark", name: "Night", cost: { coins: 25 }, preview: "⚫", filter: "brightness(.5) contrast(1.4)" },
+    { id: "rainbow", name: "Rainbow", cost: { gems: 2 }, preview: "🌈", filter: "rainbow" }
+  ];
+  const MR_STICKERS = [
+    { id: "none", name: "No sticker", cost: null, preview: "🚫" },
+    { id: "flame", name: "Flame", cost: { coins: 15 }, preview: "🔥" },
+    { id: "star", name: "Star", cost: { coins: 15 }, preview: "⭐" },
+    { id: "bolt", name: "Bolt", cost: { coins: 20 }, preview: "⚡" },
+    { id: "heart", name: "Heart", cost: { coins: 15 }, preview: "💖" },
+    { id: "crown", name: "Crown", cost: { gems: 2 }, preview: "👑" }
+  ];
+  const MR_TRAILS = [
+    { id: "default", name: "Smoke", cost: null, preview: "💨" },
+    { id: "sparkle", name: "Sparkle", cost: { coins: 20 }, preview: "✨" },
+    { id: "fire", name: "Fire", cost: { coins: 25 }, preview: "🔥" },
+    { id: "stars", name: "Stars", cost: { coins: 30 }, preview: "⭐" },
+    { id: "rainbow", name: "Rainbow", cost: { gems: 2 }, preview: "🌈" }
+  ];
   const BOSSRUSH_FIGHTERS = [
     { id: "default", name: "Classic", cost: null, preview: "🥋" },
     { id: "boxer", name: "Boxer", cost: { coins: 15 }, preview: "🥊" },
@@ -4991,6 +5015,9 @@
     "treasuredig-buddy": TD_BUDDIES,
     "vaultquest-hero": VAULT_HEROES,
     "vaultquest-pet": VAULT_PETS,
+    "mathrace-paint": MR_PAINTS,
+    "mathrace-sticker": MR_STICKERS,
+    "mathrace-trail": MR_TRAILS,
     "bossrush-fighter": BOSSRUSH_FIGHTERS,
     "dino-skin": DINO_SKINS
   };
@@ -5067,6 +5094,9 @@
         "treasuredig-buddy": equipped["treasuredig-buddy"] || "none",
         "vaultquest-hero": equipped["vaultquest-hero"] || "miner",
         "vaultquest-pet": equipped["vaultquest-pet"] || "wolf",
+        "mathrace-paint": equipped["mathrace-paint"] || "default",
+        "mathrace-sticker": equipped["mathrace-sticker"] || "none",
+        "mathrace-trail": equipped["mathrace-trail"] || "default",
         "bossrush-fighter": equipped["bossrush-fighter"] || "default",
         "dino-skin": equipped["dino-skin"] || "default",
         "bo-costume": equipped["bo-costume"] || "none"
@@ -6337,6 +6367,26 @@
     return out.sort((a, b) => b.depth - a.depth).slice(0, 3);
   }
 
+
+  // ---- Math Race meta: garage upgrades, per-track trophies, daily missions.
+  // One document under players/{id}/mathRaceMeta (no new top-level path).
+  const MR_META_DEFAULT = { garage: { engine: 0, tires: 0, nitro: 0 }, tracks: {}, wins: 0, races: 0, cups: 0, missions: { day: "", list: [] }, streak: 0, lastDay: "" };
+  async function getMathRaceMeta() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    const base = JSON.parse(JSON.stringify(MR_META_DEFAULT));
+    if (!player || player.role === "parent") return base;
+    const snap = await aigDb.ref(`players/${player.id}/mathRaceMeta`).get();
+    const d = snap.exists() ? snap.val() : {};
+    const out = Object.assign(base, d); out.garage = Object.assign({ engine: 0, tires: 0, nitro: 0 }, d.garage || {}); out.tracks = d.tracks || {};
+    return out;
+  }
+  async function saveMathRaceMeta(data) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    await aigDb.ref(`players/${player.id}/mathRaceMeta`).set(data);
+  }
+  async function spendMathRaceCoins(n) { return spendWallet({ coins: n }); }
+
   // =====================================================================
   // NUMBER LINE LONG JUMP (number-line-jump/) — same one-time-per-round
   // bonus pattern as the other new mini-games, tiered on exact landings
@@ -7232,7 +7282,7 @@
     setQuestionBounty, claimQuestionBounty, BOUNTY_MIN, BOUNTY_MAX,
     getClassFund, donateClassFund, claimClassFundTier, getClassBoss, claimClassBoss, getTeamBattle, claimTeamReward,
     getZoneLevel, recordZoneResult, claimArcadeReward,
-    getMathRaceGhost, saveMathRaceGhost, getStoryRead, markStoryRead, getCalendarMonth, STORY_READ_REWARD,
+    getMathRaceGhost, saveMathRaceGhost, getMathRaceMeta, saveMathRaceMeta, spendMathRaceCoins, getStoryRead, markStoryRead, getCalendarMonth, STORY_READ_REWARD,
     STREAK_FREEZE_COST, STREAK_FREEZE_MAX, PIGGY_CAP, PET_ADVENTURE_COST, WHEEL_EXTRA_COST, BOOSTER_COST,
     getSkinPrefs, awardMiniGame,
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
