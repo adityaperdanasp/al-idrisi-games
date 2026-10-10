@@ -6268,7 +6268,7 @@
   // daily missions + streak, weekly best depth. One document per player under
   // players/{id}/treasureDig (no new top-level path, rules stay untouched).
   const TD_DEFAULT = { bestDepth: 0, runs: 0, bosses: 0, relics: {}, pick: 0, achv: {}, maps: 0, supplies: { fifty: 0, skip: 0, potion: 0 },
-    week: { key: "", depth: 0 }, streak: 0, lastDay: "", missions: { day: "", list: [] }, dailyDay: "" };
+    week: { key: "", depth: 0 }, day: { key: "", depth: 0 }, pace: 0, classClaim: "", streak: 0, lastDay: "", missions: { day: "", list: [] }, dailyDay: "" };
   const TD_PICK_COSTS = [40, 100, 200];
   async function getTreasureDig() {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
@@ -6293,6 +6293,22 @@
     return { ok: true };
   }
   function treasureDigWeekKey() { return weekKey(); }
+  // Weekly top 3, today's top 3 and the class-wide depth total for the weekly
+  // "Lava Dragon" goal -- all from one read of players/.
+  async function getTreasureDigTops() {
+    const snap = await aigDb.ref("players").get();
+    const out = { week: [], day: [], classTotal: 0 };
+    if (!snap.exists()) return out;
+    const wk = weekKey(), t = new Date(), today = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+    Object.entries(snap.val()).forEach(([id, d]) => {
+      const td = d.treasureDig; if (!td) return;
+      if (td.week && td.week.key === wk && td.week.depth > 0) { out.week.push({ id, depth: td.week.depth }); out.classTotal += td.week.depth; }
+      if (td.day && td.day.key === today && td.day.depth > 0) out.day.push({ id, depth: td.day.depth });
+    });
+    out.week.sort((a, b) => b.depth - a.depth); out.day.sort((a, b) => b.depth - a.depth);
+    out.week = out.week.slice(0, 3); out.day = out.day.slice(0, 3);
+    return out;
+  }
   async function getTreasureDigWeeklyTop() {
     const snap = await aigDb.ref("players").get();
     if (!snap.exists()) return [];
@@ -7121,7 +7137,7 @@
     getBasketballStreakLeaderboard,
     awardMemoryMatchBonus,
     awardTreasureDigLoot, awardTreasureDigRoundBonus,
-    getTreasureDig, saveTreasureDig, buyTreasureDigPick, spendTreasureDigCoins, getTreasureDigWeeklyTop, treasureDigWeekKey, TD_PICK_COSTS,
+    getTreasureDig, saveTreasureDig, buyTreasureDigPick, spendTreasureDigCoins, getTreasureDigWeeklyTop, getTreasureDigTops, treasureDigWeekKey, TD_PICK_COSTS,
     awardNumberLineJumpBonus,
     awardMathTennisBonus,
     touchMathTennisStats, getMathTennisLifetimeSummary, getMathTennisAchievements,
