@@ -6729,6 +6729,24 @@
     const cur = snap.exists() ? snap.val() : null;
     if (!cur || secondsUsed < cur.sec) await ref.set({ sec: secondsUsed, name: player.name });
   }
+  // Fastest escape today (one read of players/, same pattern as the weekly rank).
+  const erDayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; };
+  async function touchEscapeRoomDailyBest(secondsUsed) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    const ref = aigDb.ref(`players/${player.id}/escapeRoomDaily/${erDayKey()}`);
+    const snap = await ref.get();
+    const cur = snap.exists() ? snap.val() : null;
+    if (!cur || secondsUsed < cur.sec) await ref.set({ sec: secondsUsed, name: player.name });
+  }
+  async function getEscapeRoomDailyTop() {
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return [];
+    const dk = erDayKey();
+    return Object.entries(snap.val())
+      .map(([id, data]) => { const w = data.escapeRoomDaily && data.escapeRoomDaily[dk]; return { id, name: (w && w.name) || id, sec: (w && w.sec) || 0 }; })
+      .filter(r => r.sec > 0).sort((a, b) => a.sec - b.sec).slice(0, 3);
+  }
   async function getEscapeRoomWeeklyRank() {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return null;
@@ -7148,7 +7166,7 @@
     sendDuelChallenge, getDuelInbox, getDuelSentResults, dismissDuelResult, resolveDuelChallenge,
     awardEscapeRoomBonus,
     touchEscapeRoomStats, getEscapeRoomLifetimeSummary, getEscapeRoomAchievements,
-    touchEscapeRoomWeeklyBest, getEscapeRoomWeeklyRank,
+    touchEscapeRoomWeeklyBest, getEscapeRoomWeeklyRank, touchEscapeRoomDailyBest, getEscapeRoomDailyTop,
     awardQuizShowBonus,
     awardMonsterBattleBonus,
     getCityBuilder, awardCityBuilderBricks, placeCityBuilding, awardCityBuilderBonus,

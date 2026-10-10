@@ -48,11 +48,24 @@ function initEscapeRoom() {
     clock: { emoji: "⏱️", name: "+15s", hint: true },
     key: { emoji: "🔑", name: "Spare Key" },
     torch: { emoji: "🔦", name: "Torch" },
-    skip: { emoji: "🗝️", name: "Skip Door", hint: true }
+    skip: { emoji: "🗝️", name: "Skip Door", hint: true },
+    smoke: { emoji: "🌫️", name: "Smoke" },
+    emp: { emoji: "⚡", name: "EMP" }
   };
-  const FINDABLE = ["fifty", "peek", "clock", "key", "torch"];
+  const FINDABLE = ["fifty", "peek", "clock", "key", "torch", "smoke", "emp"];
   const ARTIFACTS = ["🏺", "📜", "💎", "👑", "🗿", "⚱️", "🪙", "🧭", "🔮", "⚔️", "🛡️", "📿"];
-  const KEYS = { sound: "aig_er_sound", haptics: "aig_er_haptics", reduced: "aig_er_reduced", tutorial: "aig_er_tutorial_seen", isNew: "aig_er_round1_seen", history: "aig_er_history", artifacts: "aig_er_artifacts", achSeen: "aig_er_ach_seen" };
+  const KEYS = { sound: "aig_er_sound", haptics: "aig_er_haptics", reduced: "aig_er_reduced", tutorial: "aig_er_tutorial_seen", isNew: "aig_er_round1_seen", history: "aig_er_history", artifacts: "aig_er_artifacts", achSeen: "aig_er_ach_seen", pace: "aig_er_pace", classClaim: "aig_er_class_claim" };
+  const BUFFS = [
+    { e: "🕶️", n: "Stealth", d: "Guard 25% slower", apply: st => { st.mods.guardMul *= 0.75; } },
+    { e: "⏱️", n: "Extra Time", d: "+40s on the clock", apply: st => { st.secondsLeft += 40; st.durTotal += 40; } },
+    { e: "🎯", n: "Sharp Eye", d: "+2 50/50", apply: st => { st.inv.fifty = (st.inv.fifty || 0) + 2; } },
+    { e: "🧠", n: "Calm Mind", d: "+3s on every question", apply: st => { st.mods.qBonus += 3000; } },
+    { e: "🌫️", n: "Smoke Pack", d: "+2 smoke bombs", apply: st => { st.inv.smoke = (st.inv.smoke || 0) + 2; } },
+    { e: "💰", n: "Greedy", d: "Score +30%", bad: "Guard 20% faster", apply: st => { st.mods.scoreMul *= 1.3; st.mods.guardMul *= 1.2; } },
+    { e: "🎰", n: "All In", d: "Score +60%", bad: "Timers 20% shorter", apply: st => { st.mods.scoreMul *= 1.6; st.mods.qMul *= 0.8; } }
+  ];
+  const RIVALS = { slow: { rate: 1 / 75, e: "🐢" }, bot: { rate: 1 / 55, e: "🤖" }, fast: { rate: 1 / 40, e: "🚀" } };
+  function hashStr(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 
   const $ = id => document.getElementById(id);
   const page = $("er-page"), vault = $("er-vault"), doorEl = $("er-door"), lockEl = $("er-lock");
@@ -112,7 +125,11 @@ function initEscapeRoom() {
     heart: () => { tone([90], 0.1, 0.22, "sine"); setTimeout(() => tone([80], 0.1, 0.18, "sine"), 160); },
     item: () => tone([784, 988], 0.1, 0.1),
     win: () => tone([523, 659, 784, 1046], 0.18, 0.14),
-    fail: () => tone([300, 220, 160], 0.25, 0.12, "sawtooth")
+    fail: () => tone([300, 220, 160], 0.25, 0.12, "sawtooth"),
+    swish: () => tone([900, 500], 0.07, 0.07, "triangle"),
+    warn: () => tone([520, 520], 0.1, 0.1, "square"),
+    boom: () => { noise(0.4, 0.3, 200); tone([70], 0.4, 0.22, "sawtooth"); },
+    slow: () => tone([150], 0.7, 0.12, "sine")
   };
 
   // ---- state ----------------------------------------------------------------
@@ -124,7 +141,9 @@ function initEscapeRoom() {
     score: 0, scoreAnswers: 0, scoreDoors: 0, scoreExtra: 0, streak: 0, alarm: 0,
     inv: {}, hintsUsed: 0, nextTrap: null, keyArmed: false, cleanDoors: 0, anyWrongRun: false, secretUsed: false, bossBeaten: false,
     turn: 1, coopCorrect: { 1: 0, 2: 0 }, reviewLog: [], artifactsFound: [],
-    currentQ: null, qShownAt: 0, qTimerId: null, answered: false, lastBoAt: 0, lockEmoji: "🔒", puzTimers: [], heroLeft: 12, durTotal: 300, creepTick: 0
+    currentQ: null, qShownAt: 0, qTimerId: null, answered: false, lastBoAt: 0, lockEmoji: "🔒", puzTimers: [], heroLeft: 12, durTotal: 300, creepTick: 0,
+    tense: true, selTense: true, selRival: "bot", hold: false, danger: 0, pose: "idle", nextHaz: 8, empUntil: 0, smokeUntil: 0, bossAtkIn: 3.5, activeSec: 0, lastTickAt: 0,
+    mods: { guardMul: 1, qBonus: 0, scoreMul: 1, qMul: 1 }, scoreBoost: 0, rival: null, rivalRoom: 0, rivalDone: false, rivalBeaten: false, chase: false, bigN: null, seedLabel: "", shortUsed: false, hazSeen: false
   };
   function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
   function shuffle(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rand(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; }
@@ -195,7 +214,20 @@ function initEscapeRoom() {
     }).catch(() => {});
     AIGLeaderboard.getEscapeRoomAchievements().then(list => { renderAch("er-ach-row", list); renderAchProgress(list); }).catch(() => {});
   }
-  refreshStartInfo();
+  function renderBoard() {
+    const LB = window.AIGLeaderboard; if (!LB || !LB.getEscapeRoomDailyTop) return;
+    Promise.all([LB.getEscapeRoomDailyTop(), LB.getEscapeRoomWeeklyRank()]).then(([day, wk]) => {
+      const medals = ["🥇", "🥈", "🥉"], f = sec => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`, GOAL = 8;
+      const total = wk ? wk.total : 0, wkKey = LB.treasureDigWeekKey ? LB.treasureDigWeekKey() : "";
+      let claimed = false; try { claimed = localStorage.getItem(KEYS.classClaim) === wkKey; } catch (e) {}
+      const el = $("er-board"), nm = r => String(r.name || r.id).slice(0, 14);
+      el.innerHTML = `📅 <b>Fastest escape today</b><br>${day.length ? day.map((r, i) => `${medals[i]} ${nm(r)} — ${f(r.sec)}`).join("<br>") : "No escapes yet today"}<br>🏆 <b>Class escapes this week</b>: ${Math.min(total, GOAL)}/${GOAL}` +
+        (total >= GOAL ? (claimed ? " ✅" : ` <button type="button" id="er-class-claim" class="er-chip-btn" style="padding:2px 8px">🎁 Claim</button>`) : "");
+      el.classList.remove("hidden");
+      const cb = $("er-class-claim"); if (cb) cb.onclick = async () => { try { await LB.creditWallet({ coins: 25, gems: 1 }); localStorage.setItem(KEYS.classClaim, wkKey); } catch (e) {} cb.outerHTML = "✅ +25 🪙 +1 💎"; };
+    }).catch(() => {});
+  }
+  refreshStartInfo(); renderBoard();
 
   // ---- helpers: floaters, Bo, sparks ----------------------------------------------
   function floatText(text, good) {
@@ -296,17 +328,18 @@ function initEscapeRoom() {
     const urgent = state.running && !state.ended && state.secondsLeft <= 30;
     hudTimer.classList.toggle("urgent", urgent);
     page.classList.toggle("urgent", urgent);
-    alarmFill.style.width = Math.min(100, state.alarm / ALARM_MAX * 100) + "%";
-    alarmEl.classList.toggle("hot", state.alarm >= ALARM_MAX - 1);
-    // Chase + rising gas (live scene): the guard closes in as the alarm climbs,
-    // the gas creeps up as the clock runs down.
-    const gx = state.heroLeft - 4 - (1 - Math.min(1, state.alarm / ALARM_MAX)) * (state.heroLeft + 14);
-    vault.style.setProperty("--gx", gx + "%");
+    renderGuard();
     gasEl.style.height = Math.max(0, Math.min(75, (1 - state.secondsLeft / state.durTotal) * 70)) + "%";
     gasEl.classList.toggle("danger", state.secondsLeft <= 30);
     hudTurn.classList.toggle("hidden", state.mode !== "coop");
     hudTurn.textContent = `👤 P${state.turn}`;
     renderRoomTrack();
+  }
+  function renderGuard() {
+    alarmFill.style.width = Math.min(100, state.alarm / ALARM_MAX * 100) + "%";
+    alarmEl.classList.toggle("hot", state.alarm >= ALARM_MAX - 1);
+    const gx = state.heroLeft - 4 - (1 - Math.min(1, state.alarm / ALARM_MAX)) * (state.heroLeft + 14);
+    vault.style.setProperty("--gx", gx + "%");
   }
   function renderRoomTrack() {
     roomTrack.style.display = state.mode === "endless" ? "none" : "";
@@ -347,11 +380,12 @@ function initEscapeRoom() {
   function bossReact(kind) { bossEl.classList.remove("hurt", "attack"); void bossEl.offsetWidth; bossEl.classList.add(kind); setTimeout(() => bossEl.classList.remove(kind), 450); }
   // The guard catches you: it lunges at the hero, red flash, time fine.
   function caughtByGuard() {
-    state.alarm = 2; sfx.alarm(); vib([80, 40, 80]);
+    if (state.chase) { clearTimeout(state.chaseEnd); clearInterval(state.chaseIv); finishGame(false, { caught: true }); return; }
+    state.alarm = state.tense ? 1.6 : 2; sfx.alarm(); vib([80, 40, 80]);
     vault.style.setProperty("--gx", (state.heroLeft - 1) + "%");
     guardEl.classList.add("grab"); heroReact("hit", 600); flashScene(false); shakeDoor();
     setTimeout(() => { guardEl.classList.remove("grab"); updateHud(); }, 750);
-    adjustTime(-ALARM_FINE_SEC, `🚨 -${ALARM_FINE_SEC}s caught!`);
+    const fine = state.tense ? 20 : ALARM_FINE_SEC; adjustTime(-fine, `🚨 -${fine}s caught!`);
     boSay("The guard caught you! Stay calm...");
   }
   function addAlarm(delta) {
@@ -364,7 +398,7 @@ function initEscapeRoom() {
     updateHud();
     if (state.secondsLeft <= 0 && !state.ended) finishGame(false);
   }
-  function addScore(n) { state.score += n; hudScore.textContent = Math.round(state.score); }
+  function addScore(n) { const extra = n * (state.mods.scoreMul - 1); state.score += n + extra; state.scoreBoost += extra; hudScore.textContent = Math.round(state.score); }
 
   // ---- timer / pause ---------------------------------------------------------------------------------------
   function startTimer() {
@@ -372,7 +406,7 @@ function initEscapeRoom() {
     state.timerId = setInterval(() => {
       if (state.paused || state.ended) return;
       state.secondsLeft--; state.elapsed++;
-      if (++state.creepTick % 10 === 0) addAlarm(0.34); // the guard keeps creeping closer
+      if (!state.tense && ++state.creepTick % 10 === 0) addAlarm(0.34); // chill mode: the guard creeps closer
       if (state.secondsLeft === 30) { sfx.alarm(); boSay("30 seconds left! Hurry!"); }
       else if (state.secondsLeft < 30 && state.secondsLeft > 0) { sfx.tick(); if (state.secondsLeft <= 10) sfx.heart(); }
       updateHud();
@@ -397,6 +431,7 @@ function initEscapeRoom() {
     $("er-room-name").textContent = `${theme.emoji} ${theme.name}${type === "boss" ? " -- BOSS" : ""}`;
     $("er-vault-flavor").textContent = theme.flavor;
     vault.style.setProperty("--dark", String(Math.min(10, state.mode === "endless" ? state.room : state.room * 2)));
+    state.bossAtkIn = 3.5;
     renderDots(); updateHud();
   }
   function spinLock() { if (motionReduced()) return; lockEl.classList.remove("spin"); void lockEl.offsetWidth; lockEl.classList.add("spin"); }
@@ -434,6 +469,10 @@ function initEscapeRoom() {
       state.alarm = Math.max(0, state.alarm - 1);
       vault.classList.add("lit"); setTimeout(() => vault.classList.remove("lit"), 4000);
       updateHud();
+    } else if (kind === "smoke") {
+      state.smokeUntil = performance.now() + 6000; state.alarm = Math.max(0, state.alarm - 1.2); boSay("Smoke bomb! The guard is confused."); renderGuard();
+    } else if (kind === "emp") {
+      state.empUntil = performance.now() + 9000; floatText("⚡ Lasers & lights off!", true);
     } else if (kind === "skip") {
       stopQTimer(); state.answered = true; $("er-question-overlay").classList.add("hidden");
       openDoor(true); return;
@@ -442,14 +481,16 @@ function initEscapeRoom() {
   }
 
   // ---- question flow --------------------------------------------------------------------------------------------------------
-  function stopQTimer() { clearInterval(state.qTimerId); state.qTimerId = null; }
+  function stopQTimer() { clearInterval(state.qTimerId); state.qTimerId = null; state.qFrac = undefined; if (state.bigN != null && !state.chase) bigText(null); }
   function startQTimer(ms, onTimeout) {
     const wrap = $("er-qtimer"), fill = $("er-qtimer-fill");
-    wrap.classList.remove("hidden"); fill.style.width = "100%";
+    wrap.classList.remove("hidden", "low"); fill.style.width = "100%";
     let left = ms; stopQTimer();
     state.qTimerId = setInterval(() => {
-      if (state.paused) return;
-      left -= 100; fill.style.width = Math.max(0, left / ms * 100) + "%";
+      if (state.paused || state.hold || document.hidden || blockedByOverlay()) return;
+      left -= 100; state.qFrac = left / ms; fill.style.width = Math.max(0, left / ms * 100) + "%"; wrap.classList.toggle("low", left < ms * 0.3);
+      if (state.tense && left <= 3000 && left > 0) { const n = Math.ceil(left / 1000); if (state.bigN !== n) { bigText(n); sfx.tick(); } }
+      else if (state.bigN != null && !state.chase) bigText(null);
       if (left <= 0) { stopQTimer(); onTimeout(); }
     }, 100);
   }
@@ -484,7 +525,13 @@ function initEscapeRoom() {
       setTimeout(() => { if (!state.answered) shuffle([...grid.children]).forEach(c => grid.appendChild(c)); }, 2000);
     }
     state.nextTrap = null;
-    if (L.qMs) startQTimer(L.qMs, () => handleAnswer(null, null, q)); else $("er-qtimer").classList.add("hidden");
+    if (state.tense) {
+      let t = Math.max(6500, 15500 - state.room * 900 + state.mods.qBonus) * state.mods.qMul;
+      if (state.diff === "easy") t *= 1.25; else if (state.diff === "hard") t *= 0.85;
+      t = Math.round(t); if (L.qMs) t = Math.min(L.qMs, t);
+      if (state.lockType === "boss" && state.correctInDoor >= needFor("boss") - 1) t = Math.min(t, 6000);
+      startQTimer(t, () => handleAnswer(null, null, q));
+    } else if (L.qMs) startQTimer(L.qMs, () => handleAnswer(null, null, q)); else $("er-qtimer").classList.add("hidden");
     renderInventory();
   }
 
@@ -493,6 +540,8 @@ function initEscapeRoom() {
     state.answered = true; stopQTimer();
     const isCorrect = opt !== null && opt === q.correctLabel;
     const L = LOCKS[state.lockType], D = DIFFS[state.diff];
+    const decisive = state.tense && (state.alarm / ALARM_MAX > 0.8 || state.secondsLeft <= 10 || (state.lockType === "boss" && state.correctInDoor >= needFor("boss") - 1));
+    if (decisive) { vault.classList.add("slowmo"); sfx.slow(); }
     document.querySelectorAll("#er-q-grid .er-q-btn").forEach(b => {
       b.disabled = true;
       if (b.textContent === q.correctLabel) b.classList.add("correct"); else if (b === btn) b.classList.add("wrong");
@@ -508,7 +557,7 @@ function initEscapeRoom() {
       if (quick) { adjustTime(FAST_BONUS, `⚡ +${FAST_BONUS}s fast!`); }
       spinLock(); sfx.click(); vib(25);
       state.alarm = Math.max(0, state.alarm - 0.5);
-      heroReact("cheer", 600);
+      heroReact("cheer", 600); zoomScene();
       if (state.lockType === "boss") bossReact("hurt");
     } else {
       state.streak = 0; state.anyWrongRun = true; state.wrongInDoor++;
@@ -538,9 +587,11 @@ function initEscapeRoom() {
     renderDots(); updateHud();
     if (state.mode === "coop") state.turn = state.turn === 1 ? 2 : 1;
     setTimeout(() => {
+      vault.classList.remove("slowmo");
       $("er-question-overlay").classList.add("hidden");
       if (state.ended) return;
       const proceed = () => { if (outcome === "open") openDoor(false); else askQuestion(); };
+      if (state.tense && isCorrect && outcome === "continue" && (state.lockType === "classic" || state.lockType === "nomistake") && Math.random() < 0.45) { showTiming(proceed); return; }
       if (state.lockType === "dial" && isCorrect && outcome !== "jam") { showCrank(proceed); return; }
       if (outcome === "open") openDoor(false);
       else if (outcome === "jam") {
@@ -548,7 +599,7 @@ function initEscapeRoom() {
         adjustTime(-5, "🔧 Lock jammed! -5s"); boSay("The lock jammed -- try again!");
         if (!state.ended) askQuestion();
       } else askQuestion();
-    }, 650);
+    }, decisive ? 1300 : 650);
   }
 
   // ---- doors opening / rewards ------------------------------------------------------------------------------------------------
@@ -583,11 +634,15 @@ function initEscapeRoom() {
   }
   function afterDoor() {
     if (state.ended) return;
-    if (state.mode !== "endless" && state.room >= CLASSIC_DOORS) { finishGame(true); return; }
+    if (state.mode !== "endless" && state.room >= CLASSIC_DOORS) { if (state.tense) exitChase(); else finishGame(true); return; }
     const steps = [];
+    const cpDue = state.mode === "endless" ? state.room % 5 === 0 : state.room === 3;
+    if (cpDue) steps.push(showCheckpoint);
     if (state.cleanDoors >= 3 && !state.secretUsed) steps.push(showSecretRoom);
     const puzzleDue = state.mode === "endless" ? state.room % 4 === 0 : (state.room === 2 || state.room === 4);
     if (puzzleDue) steps.push(showPuzzle);
+    if (state.tense && state.room >= 2 && (state.mode === "endless" || state.room < CLASSIC_DOORS - 1) && Math.random() < 0.3) steps.push(showBomb);
+    if (state.tense && !state.shortUsed && state.room >= 1 && (state.mode === "endless" || state.room + 3 <= CLASSIC_DOORS - 1) && Math.random() < 0.3) steps.push(showShortcut);
     (function run() { const s = steps.shift(); if (s && !state.ended) s(run); else nextDoor(); })();
   }
   function nextDoor() {
@@ -599,6 +654,7 @@ function initEscapeRoom() {
       setupDoor(); vault.classList.remove("wipe");
       const pathEligible = state.lockType !== "boss" && (state.mode === "endless" ? state.room > 0 && state.room % 2 === 1 : state.room >= 1 && state.room <= 4);
       if (pathEligible) { $("er-path-overlay").classList.remove("hidden"); return; }
+      if (state.tense && state.lockType === "boss") { showCine("👹", "VAULT BOSS", () => setTimeout(askQuestion, 300)); return; }
       setTimeout(askQuestion, 500);
     }, 380);
   }
@@ -708,29 +764,234 @@ function initEscapeRoom() {
     }
   }
 
+  // =====================================================================================
+  // TENSION ENGINE -- the clock never stops: the guard walks toward you for real, questions
+  // have timers, lasers and lights sweep the room (JUMP / DUCK), bosses throw attacks, a
+  // rival thief races you, the heartbeat music follows the danger and the final door is a
+  // chase. "Chill" mode keeps the old relaxed escape.
+  // =====================================================================================
+  const OVERLAY_IDS = ["er-path-overlay", "er-puzzle-overlay", "er-crank-overlay", "er-checkpoint-overlay", "er-buffs-overlay", "er-cine", "er-settings-overlay", "er-pause-overlay", "er-event-overlay", "er-tutorial-overlay", "er-start-overlay", "er-end-overlay"];
+  function blockedByOverlay() { return OVERLAY_IDS.some(id => { const e = $(id); return e && !e.classList.contains("hidden"); }); }
+  function bigText(t, ms) {
+    const b = $("er-bigcount"); clearTimeout(b._t);
+    if (t === null || t === undefined) { b.classList.add("hidden"); state.bigN = null; return; }
+    state.bigN = t; b.classList.remove("hidden"); b.innerHTML = `<span>${t}</span>`;
+    if (ms) b._t = setTimeout(() => { b.classList.add("hidden"); state.bigN = null; }, ms);
+  }
+  function zoomScene() { vault.classList.add("zoom"); setTimeout(() => vault.classList.remove("zoom"), 220); }
+  function guardRate() { // alarm units per second -- the guard walks toward you for real
+    let T = Math.max(26, 72 - state.room * 8); T *= { easy: 1.25, normal: 1, hard: 0.8 }[state.diff];
+    let m = state.mods.guardMul;
+    if (state.path === "red") m *= 1.35;
+    if (state.lockType === "boss") m *= 0.5;
+    if (performance.now() < state.smokeUntil) m *= 0.25;
+    if (state.chase) m = 1.2;
+    return ALARM_MAX / (T / m);
+  }
+  function renderRival() {
+    const chip = $("er-hud-rival"); if (!state.rival) { chip.classList.add("hidden"); return; }
+    const r = Math.floor(state.rivalRoom), diff = state.room - r;
+    chip.classList.remove("hidden"); chip.textContent = `${state.rival.e} door ${r} (${diff >= 0 ? "you +" + diff : "behind " + (-diff)})`;
+    chip.style.color = diff >= 0 ? "#7ef0a3" : "#ff8a8a";
+  }
+  function computeDanger() {
+    const g = state.alarm / ALARM_MAX; let d = 0;
+    if (g > 0.55) d = Math.max(d, (g - 0.55) / 0.45 * 0.9);
+    if (state.qFrac !== undefined && state.qFrac < 0.3) d = Math.max(d, 0.75);
+    if (state.secondsLeft <= 30 && state.running) d = Math.max(d, 0.7);
+    if (state.chase) d = Math.max(d, 0.6);
+    state.danger = Math.min(1, d);
+    const el = $("er-danger"); el.style.opacity = state.danger; el.classList.toggle("on", state.danger > 0.3);
+    heroEl.classList.toggle("scared", state.danger > 0.55);
+  }
+  // -- real-time tick (50 ms)
+  function tick() {
+    const now = performance.now(); let dt = (now - state.lastTickAt) / 1000; state.lastTickAt = now; if (dt > 0.25) dt = 0.25;
+    if (!state.running || state.ended || state.paused || state.hold || document.hidden || blockedByOverlay()) return;
+    state.activeSec += dt;
+    if (state.rival) {
+      state.rivalRoom += state.rival.rate * dt; renderRival();
+      if (!state.rivalDone && state.mode !== "endless" && state.rivalRoom >= CLASSIC_DOORS) { state.rivalDone = true; floatText(`${state.rival.e} escaped first!`, false); sfx.alarm(); addAlarm(1.2); boSay("Your rival tripped the alarm!"); }
+    }
+    if (!state.tense) return;
+    state.alarm = Math.min(ALARM_MAX, state.alarm + guardRate() * dt);
+    if (state.alarm >= ALARM_MAX && !state.ended) { caughtByGuard(); if (state.ended) return; }
+    renderGuard();
+    if (!state.chase && now > state.empUntil && state.activeSec > 8) {
+      if (state.lockType === "boss" && !bossEl.classList.contains("hidden")) {
+        state.bossAtkIn -= dt;
+        if (state.bossAtkIn <= 0) { const enraged = state.correctInDoor >= needFor("boss") - 1; launchHazard(Math.random() < 0.5 ? "high" : "low", { warn: enraged ? 560 : 760, travel: 850, boss: true }); state.bossAtkIn = enraged ? 2.4 : 3.8; }
+      } else if (state.lockType !== "boss") {
+        state.nextHaz -= dt;
+        if (state.nextHaz <= 0) { launchHazard(Math.random() < 0.5 ? "high" : "low", {}); state.nextHaz = Math.max(3.5, 8.5 - state.room * 0.6) + Math.random() * 2.5; }
+      }
+    }
+    computeDanger();
+  }
+  // -- JUMP / DUCK
+  function setPose(p, ms) {
+    if (!state.running || state.ended) return;
+    clearTimeout(state.poseT); state.pose = p; heroEl.classList.remove("jump", "duck"); heroEl.classList.add(p); sfx.swish();
+    state.poseT = setTimeout(() => { state.pose = "idle"; heroEl.classList.remove("jump", "duck"); }, ms);
+  }
+  const doJump = () => setPose("jump", 720), doDuck = () => setPose("duck", 950);
+  function launchHazard(kind, o) {
+    o = o || {}; const high = kind === "high", warn = o.warn || 750, travel = o.travel || 1000;
+    const w = document.createElement("div"); w.className = "er-haz-warn"; w.textContent = high ? "⬇ DUCK!" : "⬆ JUMP!"; w.style.bottom = high ? "52%" : "26%"; vault.appendChild(w); sfx.warn();
+    if (!state.hazSeen) { state.hazSeen = true; boSay("Top half of the room = JUMP, bottom half = DUCK!"); }
+    setTimeout(() => {
+      w.remove(); if (state.ended) return;
+      const h = document.createElement("div"); h.className = "er-haz " + (high ? "high" : "low") + (o.boss ? " boss" : ""); if (o.boss) h.textContent = high ? "🦇" : "🔥"; vault.appendChild(h);
+      requestAnimationFrame(() => requestAnimationFrame(() => { h.style.transition = `left ${travel}ms linear`; h.style.left = "-16%"; }));
+      setTimeout(() => {
+        if (state.ended) return;
+        const safe = high ? state.pose === "duck" : state.pose === "jump";
+        if (safe) { floatText("✔ dodged!", true); sfx.swish(); } else hazardHit();
+      }, travel * 0.8);
+      setTimeout(() => h.remove(), travel + 100);
+    }, warn);
+  }
+  function hazardHit() {
+    sfx.wrong(); vib([60, 30, 60]); heroReact("hit", 500); flashScene(false); shakeDoor();
+    adjustTime(-3, "💥 -3s"); addAlarm(0.8);
+  }
+  // -- heartbeat music (tempo follows danger)
+  function startPulse() {
+    stopPulse(); state.pulseOn = true;
+    const beat = () => {
+      if (!state.pulseOn) return;
+      if (!state.paused && !state.ended && !blockedByOverlay() && soundOn()) { tone([75], 0.14, 0.18 + state.danger * 0.14, "sine"); if (state.danger > 0.45) setTimeout(() => tone([60], 0.1, 0.14, "sine"), 170); }
+      state.pulseT = setTimeout(beat, Math.round(900 - state.danger * 520));
+    };
+    beat();
+  }
+  function stopPulse() { state.pulseOn = false; clearTimeout(state.pulseT); }
+  // -- cinematic boss intro
+  function showCine(emoji, name, done) {
+    $("er-cine-em").textContent = emoji; $("er-cine-nm").textContent = name;
+    const c = $("er-cine"); c.classList.remove("hidden", "rumble"); void c.offsetWidth; c.classList.add("rumble"); sfx.boom(); vib(200);
+    let fin = false; const end = () => { if (fin) return; fin = true; c.classList.add("hidden"); if (!state.ended) done(); };
+    c.onclick = end; setTimeout(end, 1900);
+  }
+  // -- boost cards before the run
+  function showBuffs(done) {
+    const cards = shuffle(BUFFS).slice(0, 3);
+    $("er-buff-cards").innerHTML = cards.map((b, i) => `<button type="button" data-i="${i}"><span class="e">${b.e}</span>${b.n}<small>${b.d}</small>${b.bad ? `<small class="bad">⚠ ${b.bad}</small>` : ""}</button>`).join("");
+    $("er-buff-cards").querySelectorAll("button").forEach(btn => btn.onclick = () => {
+      const b = cards[+btn.dataset.i]; b.apply(state); $("er-buffs-overlay").classList.add("hidden"); floatText(`${b.e} ${b.n}!`, true); updateHud(); done();
+    });
+    $("er-buffs-overlay").classList.remove("hidden");
+  }
+  // -- checkpoint: sneak out with 70% or push deeper
+  function showCheckpoint(done) {
+    $("er-cp-sub").textContent = `You're at door ${state.room} with ${Math.round(state.score)} points. Sneak out with 70% of everything, or push deeper for the full prize.`;
+    $("er-checkpoint-overlay").classList.remove("hidden");
+    $("er-cp-out").onclick = () => { $("er-checkpoint-overlay").classList.add("hidden"); finishGame(false, { cashout: true }); };
+    $("er-cp-go").onclick = () => { $("er-checkpoint-overlay").classList.add("hidden"); done(); };
+  }
+  // -- timing mini-game for pins (pick the lock)
+  function showTiming(done) {
+    $("er-ev-title").textContent = "🔧 Pick the lock!"; $("er-ev-sub").textContent = "Hit STOP when the white bar is in the green zone.";
+    $("er-ev-body").innerHTML = `<div class="er-timing"><div class="zone"></div><div class="mark" id="er-mark"></div></div><button class="er-btn er-btn-red" id="er-stop" type="button">🛑 STOP!</button>`;
+    $("er-event-overlay").classList.remove("hidden");
+    const mark = $("er-mark"), speed = 0.9 + Math.random() * 0.5, t0 = performance.now(); let stopped = false;
+    const pos = () => { const p = ((performance.now() - t0) / 1000 * speed) % 2; return p < 1 ? p : 2 - p; };
+    const frame = () => { if (stopped || state.ended) return; const x = pos(); mark.style.left = `calc(${x * 100}% - ${x * 10}px)`; requestAnimationFrame(frame); }; frame();
+    $("er-stop").onclick = () => {
+      if (stopped) return; stopped = true; const x = pos(), ok = x > 0.34 && x < 0.66;
+      if (ok) { sfx.unlock(); state.alarm = Math.max(0, state.alarm - 0.6); adjustTime(2, "🔧 +2s"); addScore(5); } else { sfx.wrong(); addAlarm(0.35); floatText("Slipped!", false); }
+      setTimeout(() => { $("er-event-overlay").classList.add("hidden"); if (!state.ended) done(); }, 450);
+    };
+  }
+  // -- chained timed questions (bomb, shortcut)
+  function chain(o) {
+    return new Promise(resolve => {
+      let i = 0, left = o.total || 0;
+      const next = () => {
+        if (state.ended) { resolve(false); return; }
+        if (i >= o.n) { $("er-question-overlay").classList.add("hidden"); resolve(true); return; }
+        const q = rollQuestion("mixed", tierFor()); state.currentQ = q; state.answered = false; state.qShownAt = performance.now();
+        const t0 = performance.now();
+        renderQuestion(q, (btn, opt) => {
+          if (state.answered || state.ended) return; state.answered = true; stopQTimer();
+          const ok = opt === q.correctLabel;
+          document.querySelectorAll("#er-q-grid .er-q-btn").forEach(b => { b.disabled = true; if (b.textContent === q.correctLabel) b.classList.add("correct"); else if (b === btn) b.classList.add("wrong"); });
+          if (window.AIGLeaderboard) { try { AIGLeaderboard.recordTopicAttempt("escape-room", q.key || "escape-room", ok); } catch (e) {} }
+          if (o.total) left -= performance.now() - t0;
+          setTimeout(() => { if (!ok) { $("er-question-overlay").classList.add("hidden"); resolve(false); } else { i++; sfx.click(); next(); } }, 550);
+        }, `${o.banner} ${i + 1}/${o.n}`);
+        $("er-turn").classList.add("hidden"); $("er-inv").innerHTML = "";
+        startQTimer(o.total ? Math.max(1500, left) : o.msEach, () => { if (!state.answered) { state.answered = true; $("er-question-overlay").classList.add("hidden"); resolve(false); } });
+      };
+      next();
+    });
+  }
+  function showBomb(done) {
+    sfx.warn(); flashScene(false); shakeDoor(); boSay("A time bomb! Answer 2 before it blows!");
+    chain({ banner: "💣 BOMB!", n: 2, total: 10000 }).then(ok => {
+      if (state.ended) return;
+      if (ok) { adjustTime(10, "💣 Defused +10s"); addScore(30); sfx.win(); } else { sfx.boom(); flashScene(false); adjustTime(-10, "💥 Boom! -10s"); addAlarm(1.2); }
+      done();
+    });
+  }
+  function showShortcut(done) {
+    state.shortUsed = true;
+    $("er-ev-title").textContent = "🕳️ Vent shortcut!"; $("er-ev-sub").textContent = "Skip 2 rooms! Answer 3 in a row (6s each). Wrong answer = -10s.";
+    $("er-ev-body").innerHTML = `<button class="er-btn er-btn-primary" id="er-sc-go">🚀 Crawl in!</button><button class="er-btn er-btn-secondary" id="er-sc-no">No thanks</button>`;
+    $("er-event-overlay").classList.remove("hidden");
+    $("er-sc-no").onclick = () => { $("er-event-overlay").classList.add("hidden"); done(); };
+    $("er-sc-go").onclick = () => {
+      $("er-event-overlay").classList.add("hidden");
+      chain({ banner: "🕳️ Vent", n: 3, msEach: 6000 }).then(ok => {
+        if (state.ended) return;
+        if (ok) { state.room += 2; addScore(80); state.scoreDoors += 80; floatText("🕳️ Skipped 2 rooms!", true); sfx.win(); updateHud(); } else { adjustTime(-10, "🕳️ Stuck! -10s"); sfx.wrong(); }
+        done();
+      });
+    };
+  }
+  // -- final door: run for the exit!
+  function exitChase() {
+    state.chase = true; state.alarm = Math.min(state.alarm, 1.5); renderGuard();
+    $("er-question-overlay").classList.add("hidden"); lockPanel.innerHTML = ""; bossEl.classList.add("hidden");
+    vault.classList.add("running"); heroEl.classList.remove("idle", "cheer", "hit"); heroEl.classList.add("run");
+    bigText("RUN!", 1100); sfx.alarm(); boSay("RUN! The guard is right behind you!");
+    let k = 0; const total = 7;
+    state.chaseIv = setInterval(() => { if (state.ended || k >= total) { clearInterval(state.chaseIv); return; } launchHazard(Math.random() < 0.5 ? "high" : "low", { warn: 600, travel: 900 }); k++; }, 1700);
+    state.chaseEnd = setTimeout(() => { if (state.ended) return; state.chase = false; finishGame(true, { chaseBonus: 60 }); }, 1200 + total * 1700 + 1500);
+  }
+
   // ---- end of run ---------------------------------------------------------------------------------------------------------------------------
-  function finishGame(escaped) {
+  function finishGame(escaped, opts) {
+    opts = opts || {};
     if (state.ended) return;
     state.ended = true; state.running = false;
-    clearInterval(state.timerId); stopQTimer(); clearPuzTimers();
-    ["er-question-overlay", "er-path-overlay", "er-puzzle-overlay", "er-pause-overlay", "er-crank-overlay"].forEach(id => $(id).classList.add("hidden"));
+    clearInterval(state.timerId); clearInterval(state.tickId); clearTimeout(state.chaseEnd); clearInterval(state.chaseIv); stopPulse(); stopQTimer(); clearPuzTimers();
+    document.querySelectorAll(".er-haz, .er-haz-warn").forEach(e => e.remove()); bigText(null);
+    vault.classList.remove("slowmo", "zoom", "running"); $("er-danger").style.opacity = 0; $("er-danger").classList.remove("on"); heroEl.classList.remove("scared", "jump", "duck");
+    ["er-question-overlay", "er-path-overlay", "er-puzzle-overlay", "er-pause-overlay", "er-crank-overlay", "er-event-overlay", "er-checkpoint-overlay", "er-buffs-overlay", "er-cine"].forEach(id => $(id).classList.add("hidden"));
     page.classList.remove("urgent"); hudTimer.classList.remove("urgent");
-    const timeBonus = escaped ? Math.min(state.secondsLeft, 300) * 2 : 0;
+    const done = escaped || opts.cashout;
+    const timeBonus = escaped ? Math.min(state.secondsLeft, 300) * 2 : opts.cashout ? Math.min(state.secondsLeft, 300) : 0;
     const flawless = escaped && !state.anyWrongRun, noHints = escaped && state.hintsUsed === 0;
-    const flawBonus = flawless ? 100 : 0, hintBonus = noHints ? 80 : 0;
-    const total = Math.round(state.score + timeBonus + flawBonus + hintBonus);
+    const flawBonus = flawless ? 100 : 0, hintBonus = noHints ? 80 : 0, chaseBonus = opts.chaseBonus || 0;
+    const rivalBonus = done && state.rival && !state.rivalDone ? 50 : 0; state.rivalBeaten = rivalBonus > 0;
+    let total = Math.round(state.score + timeBonus + flawBonus + hintBonus + chaseBonus + rivalBonus), cutLoss = 0;
+    if (opts.cashout) { const t2 = Math.round(total * 0.7); cutLoss = t2 - total; total = t2; }
     const endless = state.mode === "endless";
-    $("er-end-emoji").textContent = escaped ? "🏆" : state.room >= 4 ? "🥳" : state.room >= 2 ? "🙂" : "💪";
+    $("er-end-emoji").textContent = escaped ? "🏆" : opts.cashout ? "🏃" : opts.caught ? "😵" : state.room >= 4 ? "🥳" : state.room >= 2 ? "🙂" : "💪";
     $("er-end-emoji").className = "er-end-emoji " + (escaped ? "victory" : "lights-out");
-    $("er-end-title").textContent = escaped ? "You escaped the vault!" : endless ? `You reached door ${state.room + 1}!` : "Time's up!";
+    $("er-end-title").textContent = escaped ? "You escaped the vault!" : opts.cashout ? "Smart exit!" : opts.caught ? "Caught at the exit!" : endless ? `You reached door ${state.room + 1}!` : "Time's up!";
     $("er-end-sub").textContent = escaped
       ? `You broke out with ${fmt(state.secondsLeft)} left on the clock${state.mode === "coop" ? ` -- P1 got ${state.coopCorrect[1]} right, P2 got ${state.coopCorrect[2]}` : ""}!`
-      : endless ? `You cleared ${state.room} door${state.room === 1 ? "" : "s"} before the clock ran out.` : `You made it through ${state.room}/${CLASSIC_DOORS} doors before time ran out.`;
-    const rows = [["✅ Answers", Math.round(state.scoreAnswers)], ["🚪 Doors", state.scoreDoors], ["🗝️ Secret room", state.scoreExtra], ["⏱️ Time bonus", timeBonus], ["💎 Flawless", flawBonus], ["🧠 No hints", hintBonus]].filter(r => r[1] > 0);
-    $("er-breakdown").innerHTML = rows.map(r => `<div><span>${r[0]}</span><span>+${r[1]}</span></div>`).join("") + `<div class="total"><span>Total</span><span>${total}</span></div>`;
+      : opts.cashout ? `You slipped out after ${state.room} door${state.room === 1 ? "" : "s"} and kept 70% of your haul.`
+      : opts.caught ? "So close! The guard grabbed you right before the exit." : endless ? `You cleared ${state.room} door${state.room === 1 ? "" : "s"} before the clock ran out.` : `You made it through ${state.room}/${CLASSIC_DOORS} doors before time ran out.`;
+    const rows = [["✅ Answers", Math.round(state.scoreAnswers)], ["🚪 Doors", state.scoreDoors], ["🗝️ Secret room", state.scoreExtra], ["🃏 Boost", Math.round(state.scoreBoost)], ["⏱️ Time bonus", timeBonus], ["🏃 Great escape", chaseBonus], ["🥷 Rival beaten", rivalBonus], ["💎 Flawless", flawBonus], ["🧠 No hints", hintBonus], ["✂️ Sneak-out (70%)", cutLoss]].filter(r => r[1] !== 0);
+    $("er-breakdown").innerHTML = rows.map(r => `<div><span>${r[0]}</span><span>${r[1] > 0 ? "+" : ""}${r[1]}</span></div>`).join("") + `<div class="total"><span>Total</span><span>${total}</span></div>`;
     $("er-end-bonus").textContent = ""; $("er-end-rank").textContent = ""; $("er-end-artifact").textContent = "";
+    $("er-end-seed").textContent = `🎲 Seed: ${state.seedLabel}${state.rival ? `  ·  ${state.rival.e} ${state.rivalBeaten ? "beaten!" : "got there first"}` : ""}`;
     if (state.artifactsFound.length) $("er-end-artifact").textContent = "🏺 Found: " + state.artifactsFound.map(a => ARTIFACTS[a.idx] + (a.isNew ? "✨" : "")).join(" ");
     if (escaped) { sfx.win(); } else sfx.fail();
+    if (escaped && state.mode === "classic" && state.elapsed > 20) { try { const pace = CLASSIC_DOORS / state.elapsed, old = parseFloat(localStorage.getItem(KEYS.pace) || "0"); if (pace > old) localStorage.setItem(KEYS.pace, String(pace)); } catch (e) {} }
     // history (item 24)
     const h = loadJson(KEYS.history, []); h.push({ win: escaped, score: total, doors: state.room, date: Date.now() });
     try { localStorage.setItem(KEYS.history, JSON.stringify(h.slice(-5))); } catch (e) {}
@@ -753,31 +1014,50 @@ function initEscapeRoom() {
           .then(() => AIGLeaderboard.getEscapeRoomWeeklyRank())
           .then(r => { if (r && r.rank) $("er-end-rank").textContent = `⚡ Fastest escape this week: #${r.rank} of ${r.total} (${fmt(state.elapsed)})`; })
           .catch(() => {});
+        if (AIGLeaderboard.touchEscapeRoomDailyBest) AIGLeaderboard.touchEscapeRoomDailyBest(state.elapsed).catch(() => {});
       }
     }
-    refreshStartInfo();
-    const show = () => $("er-end-overlay").classList.remove("hidden");
+    refreshStartInfo(); renderBoard();
+    const show = () => {
+      $("er-end-overlay").classList.remove("hidden");
+      [...$("er-breakdown").children].forEach((c, i) => { c.style.opacity = 0; setTimeout(() => { c.style.opacity = 1; c.classList.add("er-rise"); sfx.tick(); }, 300 + i * 260); });
+    };
     if (escaped && !motionReduced()) { $("er-sunrise").classList.remove("hidden"); confetti(); setTimeout(() => { $("er-sunrise").classList.add("hidden"); show(); }, 2300); }
-    else { if (escaped) confetti(); show(); }
+    else { if (escaped) confetti(); else { flashScene(false); shakeDoor(); } show(); }
   }
 
   // ---- start / restart -----------------------------------------------------------------------------------------------------------------------------
   function startGame(sameSeed) {
-    state.mode = state.selMode; state.diff = state.selDiff;
-    if (!sameSeed) state.seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0;
+    state.mode = state.selMode; state.diff = state.selDiff; state.tense = state.selTense;
+    const seedVal = ($("er-seed").value || "").trim();
+    if (seedVal) { state.seedLabel = seedVal; state.seed = hashStr("er|" + seedVal); }
+    else if (!sameSeed) { state.seedLabel = String(rand(1000, 9999)); state.seed = hashStr("er|" + state.seedLabel); }
     state.rng = mulberry32(state.seed); state.locks = []; state._pool = null;
     Object.assign(state, { room: 0, combo: 0, asked: 0, correctInDoor: 0, wrongInDoor: 0, path: "blue", secondsLeft: DIFFS[state.diff].dur, elapsed: 0, paused: false, ended: false, running: true,
       score: 0, scoreAnswers: 0, scoreDoors: 0, scoreExtra: 0, streak: 0, alarm: 0, hintsUsed: 0, nextTrap: null, keyArmed: false, cleanDoors: 0, anyWrongRun: false, secretUsed: false, bossBeaten: false,
-      turn: 1, coopCorrect: { 1: 0, 2: 0 }, reviewLog: [], artifactsFound: [], answered: false, lastBoAt: 0, creepTick: 0, durTotal: DIFFS[state.diff].dur, heroLeft: 12 });
-    state.inv = { fifty: 1, clock: 1, skip: 1 };
+      turn: 1, coopCorrect: { 1: 0, 2: 0 }, reviewLog: [], artifactsFound: [], answered: false, lastBoAt: 0, creepTick: 0, durTotal: DIFFS[state.diff].dur, heroLeft: 12,
+      hold: true, danger: 0, pose: "idle", nextHaz: 8, empUntil: 0, smokeUntil: 0, bossAtkIn: 3.5, activeSec: 0, lastTickAt: performance.now(), mods: { guardMul: 1, qBonus: 0, scoreMul: 1, qMul: 1 }, scoreBoost: 0,
+      rivalRoom: 0, rivalDone: false, rivalBeaten: false, chase: false, bigN: null, shortUsed: false, hazSeen: false });
+    const rv = state.selRival;
+    state.rival = rv === "none" ? null : rv === "ghost" ? { rate: Math.max(0.008, parseFloat(localStorage.getItem(KEYS.pace) || "0") || 1 / 60), e: "👻" } : RIVALS[rv];
+    state.inv = { fifty: 1, clock: 1, skip: 1, smoke: 1 };
     if (DIFFS[state.diff].extraItem) state.inv[DIFFS[state.diff].extraItem] = 1;
     try { localStorage.setItem(KEYS.isNew, "1"); } catch (e) {}
     $("er-new-badge").classList.add("hidden");
-    ["er-end-overlay", "er-start-overlay", "er-question-overlay", "er-path-overlay", "er-puzzle-overlay", "er-pause-overlay", "er-crank-overlay"].forEach(id => $(id).classList.add("hidden"));
-    $("er-sunrise").classList.add("hidden");
-    setupDoor(); startTimer(); updateHud();
-    boSay(state.mode === "endless" ? "How deep can you go?" : "Let's get out of here!");
-    setTimeout(askQuestion, 700);
+    ["er-end-overlay", "er-start-overlay", "er-question-overlay", "er-path-overlay", "er-puzzle-overlay", "er-pause-overlay", "er-crank-overlay", "er-event-overlay", "er-checkpoint-overlay", "er-buffs-overlay", "er-cine"].forEach(id => $(id).classList.add("hidden"));
+    $("er-sunrise").classList.add("hidden"); document.querySelectorAll(".er-haz, .er-haz-warn").forEach(e => e.remove());
+    $("er-btn-jump").classList.toggle("hidden", !state.tense); $("er-btn-duck").classList.toggle("hidden", !state.tense);
+    clearInterval(state.tickId); clearTimeout(state.chaseEnd); clearInterval(state.chaseIv); stopPulse();
+    setupDoor(); renderRival(); updateHud();
+    const go = async () => {
+      if (state.tense) { startPulse(); }
+      for (const t of ["3", "2", "1", "GO!"]) { bigText(t); sfx.tick(); await new Promise(r => setTimeout(r, motionReduced() ? 180 : 520)); if (state.ended) return; }
+      bigText(null); state.hold = false; state.lastTickAt = performance.now();
+      state.tickId = setInterval(tick, 50);
+      startTimer(); boSay(state.mode === "endless" ? "How deep can you go?" : state.tense ? "The guard is coming. Move fast!" : "Let's get out of here!");
+      setTimeout(askQuestion, 200);
+    };
+    if (state.tense) showBuffs(go); else go();
   }
 
   // ---- wiring -----------------------------------------------------------------------------------------------------------------------------------------
@@ -822,6 +1102,24 @@ function initEscapeRoom() {
   $("er-tutorial-close").addEventListener("click", () => { setFlag(KEYS.tutorial, true); $("er-tutorial-overlay").classList.add("hidden"); });
   if (!flag(KEYS.tutorial, false)) $("er-tutorial-overlay").classList.remove("hidden");
   if (!flag(KEYS.isNew, false)) $("er-new-badge").classList.remove("hidden");
+  // tension controls: JUMP / DUCK buttons, scene taps (top half = jump, bottom half = duck) and arrow keys
+  $("er-btn-jump").addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); doJump(); });
+  $("er-btn-duck").addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); doDuck(); });
+  vault.addEventListener("pointerdown", e => {
+    if (!state.running || state.ended || !state.tense || e.target.closest(".er-ctrl")) return;
+    const r = vault.getBoundingClientRect(); ((e.clientY - r.top) / r.height < 0.5) ? doJump() : doDuck();
+  });
+  document.addEventListener("keydown", e => {
+    if (!state.running || state.ended) return;
+    if (e.key === "ArrowUp" || e.key === "w") { doJump(); e.preventDefault(); } else if (e.key === "ArrowDown" || e.key === "s") { doDuck(); e.preventDefault(); }
+  });
+  document.querySelectorAll("#er-tense-row .er-opt").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll("#er-tense-row .er-opt").forEach(x => x.classList.remove("sel")); b.classList.add("sel"); state.selTense = b.dataset.tense === "1";
+  }));
+  document.querySelectorAll("#er-rival-row .er-opt").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll("#er-rival-row .er-opt").forEach(x => x.classList.remove("sel")); b.classList.add("sel"); state.selRival = b.dataset.rival;
+  }));
+  $("er-daily-seed").addEventListener("click", () => { const d = new Date(); $("er-seed").value = "DAY" + d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0"); });
   document.addEventListener("visibilitychange", () => { if (document.hidden) pauseGame(); });
   setupDoor();
 }

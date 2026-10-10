@@ -151,6 +151,7 @@
   .er-qtimer { height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); margin-bottom: 12px; overflow: hidden; }
   .er-qtimer.hidden { display: none; }
   .er-qtimer i { display: block; height: 100%; width: 100%; background: #F7C548; }
+  .er-qtimer.low i { background: #e35252; }
   .er-trap { font-weight: 800; font-size: .78rem; color: #ff9a6b; margin-bottom: 8px; min-height: 1em; }
   .er-turn.hidden { display: none; }
   .er-turn { font-weight: 800; font-size: .78rem; color: #7ec8ff; margin-bottom: 6px; }
@@ -217,6 +218,51 @@
   @keyframes erVictory { 0%, 100% { transform: scale(1) rotate(0); } 30% { transform: scale(1.25) rotate(-10deg); } 60% { transform: scale(1.15) rotate(8deg); } }
   .er-new { display: inline-block; background: #D64545; color: #fff; font-size: .6rem; font-weight: 800; padding: 2px 7px; border-radius: 100px; margin-left: 6px; vertical-align: middle; }
   .er-new.hidden { display: none; }
+
+  /* ===== Tension layer ===== */
+  .er-guard { transition: left .12s linear; }
+  .er-hero.jump { margin-bottom: 62px; transition: margin-bottom .15s ease-out, left 1s cubic-bezier(.4,0,.2,1); }
+  .er-hero.duck { font-size: 1.5rem; margin-bottom: -6px; }
+  .er-hero.scared:not(.cheer):not(.hit):not(.run) { animation: erScared .14s linear infinite; }
+  @keyframes erScared { 0%, 100% { transform: scaleX(-1) translateX(0); } 50% { transform: scaleX(-1) translateX(3px); } }
+  .er-scene { touch-action: manipulation; user-select: none; transition: opacity .35s ease, transform .25s ease, filter .25s ease; }
+  .er-scene.zoom { transform: scale(1.03); }
+  .er-scene.slowmo { transform: scale(1.08); filter: saturate(1.5) contrast(1.15); transition: transform 1.2s ease, filter 1.2s ease; }
+  .er-danger { position: absolute; inset: 0; z-index: 9; pointer-events: none; opacity: 0; box-shadow: inset 0 0 50px 10px rgba(255,0,0,.9); border-radius: 18px; }
+  .er-danger.on { animation: erDangerPulse .45s ease-in-out infinite alternate; }
+  @keyframes erDangerPulse { from { filter: brightness(.6); } to { filter: brightness(1.4); } }
+  .er-bigcount { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 5rem; color: #fff; opacity: .6; text-shadow: 0 0 20px #f00; pointer-events: none; }
+  .er-bigcount.hidden { display: none; }
+  .er-bigcount span { animation: erCount 1s ease; } @keyframes erCount { from { transform: scale(1.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .er-ctrl { position: absolute; z-index: 11; bottom: 6px; width: 54px; height: 40px; border-radius: 12px; border: 2px solid rgba(255,255,255,.35); background: rgba(0,0,0,.45); color: #fff; font-size: .72rem; font-weight: 800; font-family: "Baloo 2", sans-serif; cursor: pointer; line-height: 1.05; }
+  .er-ctrl:active { background: rgba(247,197,72,.5); }
+  .er-ctrl.hidden { display: none; }
+  #er-btn-jump { right: 64px; } #er-btn-duck { right: 6px; }
+  .er-haz-warn { position: absolute; z-index: 9; right: 4%; padding: 3px 9px; border-radius: 10px; background: #D64545; color: #fff; font-weight: 800; font-size: .75rem; font-family: "Baloo 2", sans-serif; animation: erWarnFlash .25s ease-in-out infinite alternate; pointer-events: none; }
+  @keyframes erWarnFlash { from { opacity: .5; } to { opacity: 1; } }
+  .er-haz { position: absolute; z-index: 5; left: 108%; pointer-events: none; }
+  .er-haz.low { bottom: calc(18% - 2px); width: 70px; height: 6px; border-radius: 3px; background: #ff3b3b; box-shadow: 0 0 12px #f00; }
+  .er-haz.high { bottom: calc(15% + 30px); width: 90px; height: 8px; border-radius: 4px; background: #fff6a0; box-shadow: 0 0 22px 6px rgba(255,246,160,.7); }
+  .er-haz.boss { font-size: 1.8rem; height: auto; width: auto; background: none; box-shadow: none; }
+  .er-cine { position: fixed; inset: 0; z-index: 60; background: #000; display: grid; place-items: center; text-align: center; color: #fff; }
+  .er-cine.hidden { display: none; }
+  .er-cine .em { font-size: 8rem; display: block; animation: erCineGrow 1.6s ease-out forwards; }
+  .er-cine .nm { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.8rem; color: #ff6a4a; letter-spacing: 2px; text-shadow: 0 0 20px #f00; animation: erFadeIn 1.2s ease .4s backwards; }
+  @keyframes erCineGrow { 0% { transform: scale(.2); opacity: 0; filter: blur(8px); } 100% { transform: scale(1); opacity: 1; filter: none; } }
+  @keyframes erFadeIn { from { opacity: 0; transform: translateY(20px); } }
+  .er-cine.rumble { animation: erShake .4s ease 2; }
+  .er-timing { position: relative; height: 34px; background: #120c1f; border: 3px solid #5a5a82; border-radius: 12px; margin: 8px 0 12px; overflow: hidden; }
+  .er-timing .zone { position: absolute; top: 0; bottom: 0; left: 38%; width: 24%; background: #3fb86f; }
+  .er-timing .mark { position: absolute; top: 2px; bottom: 2px; width: 10px; background: #fff; border-radius: 5px; left: 0; box-shadow: 0 0 8px #fff; }
+  .er-buff-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+  .er-buff-row button { background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.18); border-radius: 12px; padding: 10px 4px; color: #e8e4f0; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .76rem; cursor: pointer; line-height: 1.2; }
+  .er-buff-row button .e { font-size: 1.8rem; display: block; } .er-buff-row button small { display: block; font-family: "Nunito", sans-serif; font-weight: 700; font-size: .66rem; color: #b8b0d0; margin-top: 3px; } .er-buff-row button small.bad { color: #ff8a7a; }
+  .er-buff-row button:active { border-color: #F7C548; }
+  .er-seedrow { display: flex; gap: 6px; margin-bottom: 8px; }
+  .er-seedrow input { flex: 1; min-width: 0; background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.18); border-radius: 10px; color: #e8e4f0; padding: 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .82rem; }
+  .er-seedrow button { border: 2px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: #e8e4f0; border-radius: 10px; padding: 0 10px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .76rem; cursor: pointer; }
+  .er-board { background: rgba(255,255,255,.07); border-radius: 12px; padding: 8px 10px; margin-bottom: 8px; font-weight: 800; font-size: .76rem; text-align: left; line-height: 1.6; }
+  .er-rise { animation: erRise .45s ease backwards; } @keyframes erRise { from { opacity: 0; transform: translateY(12px); } }
 </style>
 </head>
 <body>
@@ -233,6 +279,7 @@
     <span class="er-hud-chip">🚪 <span id="er-hud-room">0</span>/<span id="er-hud-total">6</span></span>
     <span class="er-hud-chip">⭐ <span id="er-hud-score">0</span></span>
     <span class="er-hud-chip hidden" id="er-hud-turn">👤 P1</span>
+    <span class="er-hud-chip hidden" id="er-hud-rival">🤖</span>
   </div>
   <div class="er-alarm" id="er-alarm" title="Alarm"><i id="er-alarm-fill"></i></div>
   <div class="er-room-track" id="er-room-track"></div>
@@ -256,6 +303,10 @@
     <div class="er-hero idle" id="er-hero">🏃</div>
     <div class="er-gas" id="er-gas"></div>
     <div class="er-bo" id="er-bo"></div>
+    <div class="er-danger" id="er-danger"></div>
+    <div class="er-bigcount hidden" id="er-bigcount"></div>
+    <button type="button" class="er-ctrl" id="er-btn-jump">⬆<br>JUMP</button>
+    <button type="button" class="er-ctrl" id="er-btn-duck">⬇<br>DUCK</button>
     <div class="er-flash" id="er-flash"></div>
   </div>
   <div class="er-lock-label" id="er-lock-label"></div>
@@ -275,6 +326,20 @@
       <div class="er-history" id="er-history"></div>
       <div class="er-ach-row" id="er-ach-row"></div>
       <div class="er-ach-prog" id="er-ach-prog"></div>
+      <div class="er-board hidden" id="er-board"></div>
+      <div class="er-label">Intensity</div>
+      <div class="er-opt-row" id="er-tense-row">
+        <button type="button" class="er-opt sel" data-tense="1">🔥 Deg-degan<br><small>live guard, timers, hazards</small></button>
+        <button type="button" class="er-opt" data-tense="0">😌 Chill<br><small>relaxed, no hazards</small></button>
+      </div>
+      <div class="er-label">Race a rival thief</div>
+      <div class="er-opt-row" id="er-rival-row">
+        <button type="button" class="er-opt" data-rival="slow">🐢</button>
+        <button type="button" class="er-opt sel" data-rival="bot">🤖</button>
+        <button type="button" class="er-opt" data-rival="fast">🚀</button>
+        <button type="button" class="er-opt" data-rival="ghost">👻 Me</button>
+      </div>
+      <div class="er-seedrow"><input id="er-seed" placeholder="Seed code (same code = same vault)" maxlength="12"><button id="er-daily-seed" type="button">🎲 Daily</button></div>
       <div class="er-label">Mode</div>
       <div class="er-opt-row" id="er-mode-row">
         <button type="button" class="er-opt sel" data-mode="classic">🚪 Classic<br><small>6 doors + boss</small></button>
@@ -300,7 +365,7 @@
     <div class="er-card">
       <div class="er-modal-emoji">🗝️</div>
       <div class="er-modal-title">How to Escape</div>
-      <p class="er-modal-sub">🔒 <b>Combo</b>: 2 right in a row. ⚡ <b>Rapid</b>: 3 right out of 4 quick questions. 🎰 <b>Dial</b>: 3 right, mistakes cost time. 🚫 <b>No-mistake</b>: 3 in a row. 👹 <b>Boss</b>: 3 bolts, 10s each.<br><br>Right answers add time, wrong ones cost time and raise the 🚨 alarm. Use items in the question box. Hit max alarm and the guards fine you 30 seconds!</p>
+      <p class="er-modal-sub">🔒 <b>Combo</b>: 2 right in a row. ⚡ <b>Rapid</b>: 3 right out of 4 quick questions. 🎰 <b>Dial</b>: 3 right, mistakes cost time. 🚫 <b>No-mistake</b>: 3 in a row. 👹 <b>Boss</b>: 3 bolts, 10s each.<br><br>Right answers add time, wrong ones cost time and raise the 🚨 alarm. Use items in the question box. Hit max alarm and the guards fine you!<br><br>🔥 <b>Deg-degan mode</b>: the guard walks toward you for real, questions have timers, and lasers/lights sweep the room. <b>Tap the top half of the room (or ⬆) to JUMP</b> red lasers, <b>tap the bottom half (or ⬇) to DUCK</b> bright lights!</p>
       <button class="er-btn er-btn-primary" id="er-tutorial-close">Got it!</button>
     </div>
   </div>
@@ -364,6 +429,11 @@
     </div>
   </div>
 
+  <div class="er-overlay hidden" id="er-buffs-overlay"><div class="er-card"><div class="er-modal-title">🃏 Pick a boost</div><p class="er-modal-sub">One card for this escape. Some have a price!</p><div class="er-buff-row" id="er-buff-cards"></div></div></div>
+  <div class="er-overlay hidden" id="er-checkpoint-overlay"><div class="er-card"><div class="er-modal-emoji">🏃</div><div class="er-modal-title">Checkpoint!</div><p class="er-modal-sub" id="er-cp-sub">Slip out now with 70% of your score, or push deeper for the full prize.</p><button class="er-btn er-btn-primary" id="er-cp-out">🏃 Sneak out (keep 70%)</button><button class="er-btn er-btn-red" id="er-cp-go">⬇ Keep going!</button></div></div>
+  <div class="er-overlay sheet hidden" id="er-event-overlay"><div class="er-card"><div class="er-modal-title" id="er-ev-title" style="font-size:1rem;"></div><div class="er-modal-sub" id="er-ev-sub" style="margin-bottom:4px;"></div><div id="er-ev-body"></div></div></div>
+  <div class="er-cine hidden" id="er-cine"><div><span class="em" id="er-cine-em">👹</span><div class="nm" id="er-cine-nm">VAULT BOSS</div></div></div>
+
   <div class="er-overlay hidden" id="er-end-overlay">
     <div class="er-card">
       <div class="er-end-emoji" id="er-end-emoji">🏆</div>
@@ -373,6 +443,7 @@
       <div class="er-modal-bonus" id="er-end-bonus"></div>
       <div class="er-modal-sub" id="er-end-rank" style="margin-bottom:8px;"></div>
       <div class="er-modal-sub" id="er-end-artifact" style="margin-bottom:8px;"></div>
+      <div class="er-modal-sub" id="er-end-seed" style="margin-bottom:8px;"></div>
       <div class="er-ach-row" id="er-end-ach"></div>
       <button class="er-btn er-btn-primary" id="er-play-again-btn">Try Again</button>
       <button class="er-btn er-btn-secondary" id="er-same-seed-btn">🔁 Same seed (replay this vault)</button>
@@ -415,6 +486,6 @@
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
 <script src="../game-music.js"></script>
-<script src="script.js"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>
