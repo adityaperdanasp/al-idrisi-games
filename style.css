@@ -1910,6 +1910,10 @@ html[data-hub-theme="volcano"] .sc-card { background: #fbe9dd; }
 .sc-game-card.fortress { background: #dbe2ea; transform: rotate(0.6deg); }
 .sc-game-card.duel { background: #fbe0e0; transform: rotate(-0.6deg); }
 .sc-game-card.escape { background: #2a2a4a; transform: rotate(0.6deg); }
+.sc-game-card.vaultquest { background: #3b2f1f; transform: rotate(-0.5deg); }
+.sc-game-card.vaultquest .sc-game-icon { background: transparent; }
+.sc-game-card.vaultquest .sc-game-title { color: #9be564; }
+.sc-game-card.vaultquest .sc-game-sub { color: #cdbf9d; }
 .sc-game-card.escape .sc-game-icon { background: transparent; }
 .sc-game-card.quizshow { background: #3a1a5e; transform: rotate(-0.6deg); }
 .sc-game-card.quizshow .sc-game-icon { background: transparent; }
