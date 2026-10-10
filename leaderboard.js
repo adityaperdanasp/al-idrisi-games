@@ -4582,7 +4582,9 @@
     { id: "silver", name: "Silver Ring", cost: { coins: 20 } },
     { id: "gold", name: "Gold Ring", cost: { coins: 35 } },
     { id: "rainbow", name: "Rainbow Ring", cost: { gems: 2 } },
-    { id: "fire", name: "Fire Ring", cost: { gems: 3 } }
+    { id: "fire", name: "Fire Ring", cost: { gems: 3 } },
+    // BrainBox 2.0 launch gift -- granted by claimV2Welcome(), not buyable.
+    { id: "pioneer", name: "Pioneer 2.0", cost: { gems: 999 } }
   ];
 
   // Avatar Builder, second layer on top of the existing free color
@@ -6387,6 +6389,29 @@
   }
   async function spendMathRaceCoins(n) { return spendWallet({ coins: n }); }
 
+  // ---- BrainBox 2.0 (Block World): avatar + one-time welcome gift. Both live
+  // under players/{id}/... (no new top-level path).
+  async function getBlockAvatar() {
+    const player = perksPlayer(); if (!player) return null;
+    const snap = await aigDb.ref(`players/${player.id}/blockAvatar`).get();
+    return snap.exists() ? snap.val() : null;
+  }
+  async function saveBlockAvatar(cfg) {
+    const player = perksPlayer(); if (!player) return;
+    await aigDb.ref(`players/${player.id}/blockAvatar`).set({ skin: cfg.skin | 0, hair: cfg.hair | 0, shirt: cfg.shirt | 0, hat: cfg.hat | 0 });
+  }
+  async function claimV2Welcome() {
+    const player = perksPlayer(); if (!player) return { ok: false };
+    const ref = aigDb.ref(`players/${player.id}/v2Welcome`);
+    const snap = await ref.get();
+    if (snap.exists() && snap.val()) return { ok: false, already: true };
+    await ref.set(true);
+    await creditWallet({ coins: 50, gems: 3 });
+    await aigDb.ref(`players/${player.id}/ownedCosmetics/frame/pioneer`).set(true);
+    try { await equipCosmetic("frame", "pioneer"); } catch (e) {}
+    return { ok: true };
+  }
+
   // =====================================================================
   // NUMBER LINE LONG JUMP (number-line-jump/) — same one-time-per-round
   // bonus pattern as the other new mini-games, tiered on exact landings
@@ -7282,7 +7307,7 @@
     setQuestionBounty, claimQuestionBounty, BOUNTY_MIN, BOUNTY_MAX,
     getClassFund, donateClassFund, claimClassFundTier, getClassBoss, claimClassBoss, getTeamBattle, claimTeamReward,
     getZoneLevel, recordZoneResult, claimArcadeReward,
-    getMathRaceGhost, saveMathRaceGhost, getMathRaceMeta, saveMathRaceMeta, spendMathRaceCoins, getStoryRead, markStoryRead, getCalendarMonth, STORY_READ_REWARD,
+    getMathRaceGhost, saveMathRaceGhost, getMathRaceMeta, saveMathRaceMeta, spendMathRaceCoins, getBlockAvatar, saveBlockAvatar, claimV2Welcome, getStoryRead, markStoryRead, getCalendarMonth, STORY_READ_REWARD,
     STREAK_FREEZE_COST, STREAK_FREEZE_MAX, PIGGY_CAP, PET_ADVENTURE_COST, WHEEL_EXTRA_COST, BOOSTER_COST,
     getSkinPrefs, awardMiniGame,
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,
