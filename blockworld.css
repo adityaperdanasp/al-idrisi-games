@@ -38,7 +38,7 @@ html.bw .sc-player-name { font-family: var(--bw-font-h); font-size: .72rem; colo
 .sc-player-chip:has(.sc-player-avatar.frame-gold) .bw-head { box-shadow: 0 0 0 3px #F7C548; }
 .sc-player-chip:has(.sc-player-avatar.frame-fire) .bw-head { box-shadow: 0 0 0 3px #E4572E, 0 0 10px 2px rgba(228,87,46,.6); }
 .sc-player-avatar.frame-pioneer, .sc-player-avatar-preview.frame-pioneer { box-shadow: 0 0 0 3px #f5c542, 0 0 10px 2px rgba(245,197,66,.8); }
-html.bw .sc-wallet-badge { background: #2b2b2b; border: 3px solid var(--bw-ink); box-shadow: var(--bw-bevel); color: #fff; font-family: var(--bw-font-h); font-size: .7rem; padding: 5px 8px; gap: 4px; }
+html.bw .sc-wallet-badge { background: #2b2b2b; border: 3px solid var(--bw-ink); box-shadow: var(--bw-bevel); color: #fff; font-family: var(--bw-font) !important; font-weight: 700; font-size: .85rem; padding: 5px 8px; gap: 4px; }
 html.bw .sc-trophy { background: var(--bw-stone); border: 3px solid var(--bw-ink); box-shadow: var(--bw-bevel); transform: none; color: #fff; }
 html.bw .sc-more-menu { background: #3a3a3a; border: 3px solid var(--bw-ink); box-shadow: var(--bw-bevel); }
 html.bw .sc-more-item { color: #fff; font-family: var(--bw-font-h); font-size: .66rem; }
@@ -174,3 +174,7 @@ html.bw [class*="bar"] > i, html.bw .sc-goal-bar-fill { background: var(--bw-gre
 .bw-chest { width: 150px; height: 110px; margin: 10px auto; cursor: pointer; animation: bw-shake 1s steps(4) infinite; } .bw-chest svg { width: 100%; height: 100%; image-rendering: pixelated; } .bw-chest.open { animation: none; }
 @keyframes bw-shake { 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
 .bw-loot { display: grid; gap: 8px; margin: 10px 0; font-size: 1rem; } .bw-loot > div { background: var(--bw-parch); border: 3px solid var(--bw-ink); padding: 8px; } .bw-loot[hidden] { display: none; }
+
+.bw-hp { height: 18px; background: #3a3a3a; border: 3px solid var(--bw-ink); overflow: hidden; }
+.bw-hp .bw-hp-fill { background: repeating-linear-gradient(90deg, #e5484d 0 10px, #c0353a 10px 12px); height: 100%; transition: width .6s steps(10); }
+.bw-hp-text { font-family: var(--bw-font-h); font-size: .55rem; margin-top: 4px; text-align: right; color: var(--bw-text); }

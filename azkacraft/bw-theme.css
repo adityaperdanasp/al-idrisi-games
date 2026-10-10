@@ -1,0 +1,45 @@
+@import url("https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Silkscreen:wght@400;700&display=swap");
+/* =====================================================================
+   BrainBox 2.0 -- Block World theme for the games.
+   MASTER COPY lives at the repo root (blockworld-games.css); each game
+   folder carries an identical copy named bw-theme.css (so the standalone
+   domains that serve a game folder as their root keep working):
+     for g in multipleazka mathville azkacraft azkauniverse; do cp blockworld-games.css $g/bw-theme.css; done
+   Activated by <html class="bw-g" data-bw="race|ville|craft|uni">.
+   Everything is presentation only: fonts, square corners, bevelled
+   blocks, pixel palette. No markup/logic of the games is touched. */
+html.bw-g {
+  --bwg-ink: #1b1b1b; --bwg-dirt: #795330; --bwg-grass: #5fb83a; --bwg-stone: #8b8b8b; --bwg-parch: #ecdcb0; --bwg-text: #3b2a14;
+  --bwg-bevel: inset 3px 3px 0 rgba(255,255,255,.35), inset -3px -3px 0 rgba(0,0,0,.28);
+  --bwg-font: "Pixelify Sans", "Fredoka", sans-serif; --bwg-font-h: "Silkscreen", "Pixelify Sans", monospace;
+}
+html.bw-g, html.bw-g body, html.bw-g body *:not(svg):not(path):not(rect):not(circle):not(g):not(text) { font-family: var(--bwg-font) !important; letter-spacing: 0; }
+html.bw-g h1, html.bw-g h2, html.bw-g .title, html.bw-g [class*="title"]:not(svg *) { font-family: var(--bwg-font-h) !important; }
+html.bw-g button { font-weight: 700; }
+html.bw-g h1, html.bw-g h2 { text-shadow: 2px 2px 0 rgba(0,0,0,.25); }
+html.bw-g *:not(svg *):not(.bw-keep) { border-radius: 0 !important; }
+html.bw-g button:not(:disabled), html.bw-g .btn, html.bw-g [role="button"] { box-shadow: var(--bwg-bevel); }
+html.bw-g button { image-rendering: auto; text-shadow: 1px 1px 0 rgba(0,0,0,.25); }
+html.bw-g img, html.bw-g canvas { image-rendering: pixelated; }
+html.bw-g img[src*="icon"], html.bw-g img[src*="logo"] { image-rendering: auto; }
+
+/* ---------------- Math Race ---------------- */
+html.bw-g[data-bw="race"] { --brand: #3f8f2f; --brand-dark: #2a6a1f; --brand-light: #e4f3d8; --kids: #e0953a; --parent: #4f86f7; --good: #3fae4f; --neutral: #4f86f7; --card: #ecdcb0; --text: #3b2a14; --muted: #6b5a3a; --radius: 0; --shadow: 0 6px 0 rgba(0,0,0,.3); }
+html.bw-g[data-bw="race"] body, html.bw-g[data-bw="race"] body[data-theme] { --page-bg: linear-gradient(180deg, #5aa9f0 0%, #bfe3ff 60%, #5fb83a 60%, #4a9a2c 100%); --lane-kids-bg: linear-gradient(180deg, #8ad05a, #5fb83a); --lane-parent-bg: linear-gradient(180deg, #7ab8f5, #4f86f7); --lane-p3-bg: linear-gradient(180deg, #c9a0f0, #9a6cd6); --track-bg: rgba(0,0,0,.18); --kids-name: #1f4d12; --parent-name: #0b2a66; --p3-name: #3d0a52; background: var(--page-bg); background-attachment: fixed; }
+html.bw-g[data-bw="race"] .card, html.bw-g[data-bw="race"] .panel, html.bw-g[data-bw="race"] [class*="card"] { border: 4px solid var(--bwg-ink); box-shadow: var(--bwg-bevel), 0 6px 0 rgba(0,0,0,.28); }
+html.bw-g[data-bw="race"] .track, html.bw-g[data-bw="race"] [class*="track"] { border: 3px solid var(--bwg-ink); }
+html.bw-g[data-bw="race"] button.primary, html.bw-g[data-bw="race"] .btn-primary, html.bw-g[data-bw="race"] button[class*="primary"] { background: var(--bwg-grass); border: 4px solid var(--bwg-ink); color: #fff; }
+
+/* ---------------- MathVille (+ Ninja Runner, Focus Round) ---------------- */
+html.bw-g[data-bw="ville"], html.bw-g[data-bw="ville"][data-theme] { --wood: #8a5a34; --wood-dark: #6a4224; --cherry: #e5484d; --cherry-dark: #b8343a; --gold: #f5c542; --taupe: #b9cd8c; --cream: #d6eab0; --ink: #3b2a14; --ink-soft: #6b5a3a; --card: #f6ecc8; --good: #3fae4f; --bad: #e5484d; }
+html.bw-g[data-bw="ville"] body { background-color: var(--bwg-dirt); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23795330'/%3E%3Crect x='1' y='2' width='2' height='2' fill='%23634125'/%3E%3Crect x='7' y='1' width='3' height='2' fill='%23876038'/%3E%3Crect x='12' y='4' width='2' height='2' fill='%23634125'/%3E%3Crect x='10' y='9' width='3' height='2' fill='%23634125'/%3E%3Crect x='2' y='12' width='3' height='2' fill='%23876038'/%3E%3C/svg%3E"); background-size: 64px 64px; }
+
+/* ---------------- Language & Arts ---------------- */
+html.bw-g[data-bw="craft"] { --brand: #3f8f2f; --brand-dark: #2a6a1f; --accent-1: #e0953a; --accent-1-dark: #b87326; --accent-2: #f5c542; --accent-3: #4f86f7; --accent-3-dark: #3566c4; --accent-4: #3566c4; --bg-1: #bfe3ff; --bg-2: #cfeccb; --sky-gradient: linear-gradient(180deg, #5aa9f0 0%, #bfe3ff 60%, #5fb83a 60%, #4a9a2c 100%); --paper: #ecdcb0; --ink: #3b2a14; --card-border: #1b1b1b; --radius-lg: 0; --radius-md: 0; --radius-sm: 0; }
+
+/* ---------------- SolarQuest (keeps its space look = "The End") ---------------- */
+html.bw-g[data-bw="uni"] { --primary: #4caf50; --primary-dark: #2a6a1f; --secondary: #4f86f7; --accent-pink: #e86fb3; --accent-yellow: #f5c542; --success: #4caf50; --gentle: #4f86f7; --card-shadow: 0 6px 0 rgba(0,0,0,.45); }
+
+/* readable digits: answer / keypad buttons stay in the plain pixel font */
+html.bw-g[data-bw="race"] .answer-btn, html.bw-g[data-bw="race"] .key { background: #ecdcb0; border: 4px solid var(--bwg-ink); color: #3b2a14; box-shadow: var(--bwg-bevel), 0 4px 0 rgba(0,0,0,.3); font-size: 1.5rem; }
+html.bw-g[data-bw="race"] .answer-btn:active, html.bw-g[data-bw="race"] .key:active { transform: translateY(3px); }

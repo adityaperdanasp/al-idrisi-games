@@ -16,7 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="blockworld.css?v=2">
+<link rel="stylesheet" href="blockworld.css?v=4">
 
 <!-- Hub's own Firebase project: shared leaderboard/player data + Analytics -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1621,9 +1621,13 @@
     const body = document.getElementById("sc-classgoal-body");
     card.hidden = false;
     const pct = Math.min(100, Math.round((goal.progress / goal.target) * 100));
+    // Block World: the class goal is shown as a weekly boss -- every correct
+    // answer from anyone in the class takes HP off it.
+    const hp = Math.max(0, goal.target - goal.progress), hpPct = 100 - pct;
     body.innerHTML = `
-      <p class="sc-goal-desc">${goal.achieved ? "🎉 Class goal reached this week!" : `${goal.progress}/${goal.target} correct answers from everyone combined`}</p>
-      <div class="sc-goal-track"><div class="sc-goal-fill" style="width:${pct}%"></div></div>`;
+      <p class="sc-goal-desc">${goal.achieved ? "🎉 Creeper dikalahkan! Kelas kita hebat!" : `Creeper punya ${hp} HP lagi — setiap jawaban benar dari kelas melukainya!`}</p>
+      <div class="sc-goal-track bw-hp"><div class="sc-goal-fill bw-hp-fill" style="width:${hpPct}%"></div></div>
+      <div class="bw-hp-text">❤ ${hp} / ${goal.target} HP</div>`;
   }
 
   async function renderPerfectWeek() {
