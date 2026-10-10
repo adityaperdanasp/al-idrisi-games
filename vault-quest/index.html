@@ -147,6 +147,43 @@
   .vq-toggle::after { content: ""; position: absolute; top: 1px; left: 1px; width: 16px; height: 16px; background: #ddd; transition: transform .15s; } .vq-toggle.on { background: #5b8c3a; } .vq-toggle.on::after { transform: translateX(22px); }
   .vq-countdown { position: absolute; inset: 0; z-index: 12; display: grid; place-items: center; font-family: "Press Start 2P", monospace; font-size: 3rem; color: #fcdb05; text-shadow: 4px 4px 0 #000; pointer-events: none; }
   .vq-countdown span { animation: vqCount .8s ease; } @keyframes vqCount { from { transform: scale(2.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  /* ---- tension layer ---- */
+  .vq-par { position: absolute; left: 0; right: 0; top: 2%; height: 14%; white-space: nowrap; overflow: hidden; pointer-events: none; opacity: .5; font-size: 1.6rem; }
+  .vq-par span { display: inline-block; animation: vqPar 14s linear infinite; padding-right: 30px; letter-spacing: 26px; }
+  .vq-par.p2 { top: 12%; opacity: .3; font-size: 1.1rem; } .vq-par.p2 span { animation-duration: 8s; }
+  @keyframes vqPar { to { transform: translateX(-50%); } }
+  .vq-dark { position: absolute; inset: 0; z-index: 5; pointer-events: none; background: radial-gradient(circle at 50% 82%, transparent 18%, rgba(0,0,0,.92) 85%); opacity: var(--vqdark, 0); transition: opacity .6s; }
+  .vq-danger { position: absolute; inset: 0; z-index: 7; pointer-events: none; opacity: 0; box-shadow: inset 0 0 50px 10px rgba(255,0,0,.9); } .vq-danger.on { animation: vqDanger .45s ease-in-out infinite alternate; } @keyframes vqDanger { from { filter: brightness(.6); } to { filter: brightness(1.4); } }
+  .vq-lava { position: absolute; left: 0; right: 0; bottom: 0; height: 0; z-index: 4; pointer-events: none; background: repeating-linear-gradient(90deg, #ff5a1a 0 14px, #ff8a2a 14px 24px); box-shadow: 0 -8px 18px rgba(255,90,20,.8); transition: height .2s linear; }
+  .vq-bigcount { position: absolute; inset: 0; z-index: 12; display: grid; place-items: center; font-family: "Press Start 2P", monospace; font-size: 3.6rem; color: #fff; opacity: .6; text-shadow: 0 0 16px #f00, 4px 4px 0 #000; pointer-events: none; } .vq-bigcount span { animation: vqCount .8s ease; }
+  .vq-weather { position: absolute; inset: 0; z-index: 6; pointer-events: none; display: none; }
+  .vq-field.bats .vq-weather { display: block; background: rgba(0,0,0,.5); } .vq-weather i { position: absolute; font-style: normal; font-size: 1.4rem; animation: vqBat 1.4s linear infinite; } @keyframes vqBat { from { left: -10%; } to { left: 110%; } }
+  .vq-field.slowmo { transform: scale(1.04); filter: saturate(1.5) contrast(1.12); transition: transform .8s ease, filter .8s ease; }
+  .vq-field.zoom { transform: scale(1.02); }
+  .vq-rushfx { position: absolute; inset: 0; z-index: 7; pointer-events: none; border: 4px solid #ff9a2e; animation: vqDanger .3s ease-in-out infinite alternate; }
+  .vq-hero.jump { margin-top: -52px; transition: left .12s ease-out, margin-top .12s ease-out; } .vq-hero.slide .mc { transform: scale(1.3, .62); }
+  .vq-hero.fire::before { content: ""; position: absolute; left: -16px; right: -16px; top: -46px; bottom: -2px; border-radius: 50%; background: radial-gradient(circle, rgba(255,160,40,.55), transparent 70%); z-index: -1; animation: vqDanger .4s ease-in-out infinite alternate; }
+  .vq-hero.volt::before { background: radial-gradient(circle, rgba(120,200,255,.7), transparent 70%); }
+  .vq-hero.dash { filter: drop-shadow(0 0 10px #7ec8ff) brightness(1.3); }
+  .vq-cartem { position: absolute; z-index: 3; transform: translate(-50%, -50%); font-size: 1.8rem; pointer-events: none; transition: left .12s ease-out; }
+  .vq-field.veh-cart .vq-floor { --f1: #5a4a35; --f2: #4a3c2b; } .vq-field.veh-boat .vq-floor { --f1: #d1562a; --f2: #b94620; } .vq-field.veh-elytra .vq-floor { --f1: #2a1a4a; --f2: #3a2766; }
+  .vq-block.web { background: repeating-radial-gradient(circle, #ddd 0 3px, transparent 3px 8px); border-color: #888; } .vq-block.bat { background: #2a2038; } .vq-block.cartob { background: #6b6b6b; } .vq-block.piston { background: #8a2a2a; } .vq-block.creeper { background: #4a9a3a; } .vq-block.fireball { background: radial-gradient(circle, #ffe14a, #ff3a1a); border-radius: 50%; } .vq-block.void { background: #000; border-color: #440066; }
+  .vq-block[data-h="low"]::after, .vq-block[data-h="pit"]::after { content: "⬆"; position: absolute; top: -18px; font-size: .9rem; color: #7ef0a3; } .vq-block[data-h="high"]::after { content: "⬇"; position: absolute; top: -18px; font-size: .9rem; color: #7ec8ff; } .vq-block.drift::before { content: "↔"; position: absolute; top: -18px; left: 0; font-size: .9rem; color: #fcdb05; animation: vqDanger .3s infinite alternate; }
+  .vq-block { position: relative; } .vq-block.retract { opacity: .35; transform: scaleY(.3); transition: all .4s ease; } .vq-gate.fog { color: transparent; text-shadow: none; } .vq-gate.fog::after { content: "???"; color: #bbb; text-shadow: 2px 2px 0 #000; }
+  .vq-pickup { width: 34px; height: 34px; border-radius: 8px; border: 3px solid #fcdb05; background: #2a2a2a; display: grid; place-items: center; font-size: 1.2rem; box-shadow: 0 0 12px #fcdb05; }
+  .vq-forksign { min-width: 76px; padding: 6px 4px; text-align: center; font-family: "Press Start 2P", monospace; font-size: .5rem; line-height: 1.4; color: #fff; border: 3px solid #1b1b1b; text-shadow: 1px 1px 0 #000; } .vq-forksign.safe { background: #2f7a4a; } .vq-forksign.risk { background: #b8601a; }
+  .vq-warn { position: absolute; z-index: 5; transform: translate(-50%, -50%); font-size: 1.6rem; animation: vqDanger .25s ease-in-out infinite alternate; pointer-events: none; }
+  .vq-shot { position: absolute; z-index: 6; transform: translate(-50%, -50%); font-size: 1.8rem; pointer-events: none; transition: top .3s ease-in; }
+  .vq-ctrl .vq-btn.sm { font-size: .6rem; padding: 14px 0; } .vq-ctrl4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; padding: 10px 10px 4px; } .vq-ctrl4.chill { grid-template-columns: 1fr 1fr; }
+  .vq-ctrl4 .vq-btn { margin: 0; font-size: .6rem; padding: 14px 0; line-height: 1.3; }
+  .vq-abrow { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 10px 0; } .vq-abrow .vq-btn { margin: 0; font-size: .5rem; } .vq-abrow .vq-btn.hidden { display: none; } .vq-abrow.solo { grid-template-columns: 1fr; }
+  .vq-cine { position: fixed; inset: 0; z-index: 70; background: #000; display: grid; place-items: center; text-align: center; color: #fff; } .vq-cine .em { font-size: 8rem; display: block; animation: vqCineGrow 1.6s ease-out forwards; } .vq-cine .nm { font-family: "Press Start 2P", monospace; font-size: 1rem; color: #ff6a4a; line-height: 1.6; text-shadow: 0 0 16px #f00; animation: vqCineFade 1.2s ease .4s backwards; }
+  @keyframes vqCineGrow { 0% { transform: scale(.2); opacity: 0; filter: blur(8px); } 100% { transform: scale(1); opacity: 1; filter: none; } } @keyframes vqCineFade { from { opacity: 0; transform: translateY(20px); } }
+  .vq-seg { display: flex; gap: 6px; margin-bottom: 8px; } .vq-seg button { flex: 1; border: 3px solid #1b1b1b; background: #4a4a4a; color: #fff; font-family: "Press Start 2P", monospace; font-size: .46rem; line-height: 1.5; padding: 8px 2px; cursor: pointer; } .vq-seg button.on { background: #5b8c3a; border-color: #9fd36a; }
+  .vq-seedrow { display: flex; gap: 6px; margin-bottom: 10px; } .vq-seedrow input { flex: 1; min-width: 0; background: #2a2a2a; border: 3px solid #1b1b1b; color: #fff; padding: 8px; font-family: "Nunito", sans-serif; font-weight: 800; } .vq-seedrow button { border: 3px solid #1b1b1b; background: #4a4a4a; color: #fff; font-family: "Press Start 2P", monospace; font-size: .46rem; padding: 0 8px; cursor: pointer; }
+  .vq-buffs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; } .vq-buffs button { background: #2a2a2a; border: 3px solid #1b1b1b; color: #fff; padding: 10px 4px; font-weight: 800; font-size: .72rem; cursor: pointer; line-height: 1.25; } .vq-buffs button .e { font-size: 1.8rem; display: block; } .vq-buffs button small { display: block; font-weight: 700; font-size: .62rem; color: #bdb299; margin-top: 3px; } .vq-buffs button small.bad { color: #ff8a7a; } .vq-buffs button:active { border-color: #fcdb05; }
+  .vq-rise { animation: vqRiseIn .45s ease backwards; } @keyframes vqRiseIn { from { opacity: 0; transform: translateY(12px); } }
 </style>
 </head>
 <body>
@@ -161,6 +198,7 @@
     <div class="vq-world-banner" id="vq-world-banner"></div>
     <div class="vq-levels" id="vq-levels"></div>
     <div class="vq-nav">
+      <button type="button" class="vq-btn red" id="vq-endless-btn" style="grid-column: 1 / -1;">♾️ ENDLESS RUN</button>
       <button type="button" class="vq-btn dark" id="vq-crew-btn">👥 CREW</button>
       <button type="button" class="vq-btn dark" id="vq-gadget-btn">🎒 GADGETS</button>
       <button type="button" class="vq-btn dark" id="vq-pet-btn">🐾 PET</button>
@@ -175,29 +213,47 @@
     <div class="vq-hud">
       <div class="vq-hearts" id="vq-hearts"></div>
       <span class="vq-chip px">🪙 <span id="vq-run-coins">0</span></span>
+      <span class="vq-chip px hidden" id="vq-rival">🤖</span>
       <span class="vq-chip px" id="vq-combo">x0</span>
       <button type="button" class="vq-iconbtn" id="vq-pause-btn">⏸</button>
     </div>
     <div class="vq-progress" id="vq-progress"><i id="vq-prog-fill"></i><b id="vq-ghost" class="hidden">👻</b></div>
     <div class="vq-sign" id="vq-sign">Get ready!</div>
     <div class="vq-field w1" id="vq-field">
+      <div class="vq-par p1" id="vq-par1"><span>⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️ ⛰️</span></div>
+      <div class="vq-par p2" id="vq-par2"><span>☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️ ☁️</span></div>
       <div class="vq-floor" id="vq-floor"></div>
+      <div class="vq-lava" id="vq-lava"></div>
       <div class="vq-boss hidden" id="vq-boss"><div class="vq-boss-hp"><i id="vq-boss-fill"></i></div><span class="em" id="vq-boss-em">🧟</span></div>
       <div id="vq-ents"></div>
       <div class="vq-zombie" id="vq-zombie"><div class="mc zombie run"><i class="h"></i><i class="b"></i><i class="a1"></i><i class="a2"></i><i class="l1"></i><i class="l2"></i></div></div>
       <div class="vq-pet" id="vq-pet">🐺</div>
+      <div class="vq-cartem hidden" id="vq-cartem">🛒</div>
       <div class="vq-hero" id="vq-hero"><div class="mc run" id="vq-hero-mc" data-skin="miner"><i class="h"></i><i class="b"></i><i class="a1"></i><i class="a2"></i><i class="l1"></i><i class="l2"></i></div></div>
+      <div class="vq-weather" id="vq-weather"><i style="top:18%;animation-delay:0s">🦇</i><i style="top:40%;animation-delay:-.5s">🦇</i><i style="top:62%;animation-delay:-1s">🦇</i></div>
+      <div class="vq-dark" id="vq-dark"></div>
+      <div class="vq-danger" id="vq-danger"></div>
+      <div class="vq-rushfx hidden" id="vq-rushfx"></div>
+      <div class="vq-bigcount hidden" id="vq-bigcount"></div>
       <div class="vq-flash" id="vq-flash"></div>
       <div class="vq-countdown hidden" id="vq-countdown"></div>
     </div>
-    <div class="vq-ctrl"><button type="button" class="vq-btn" id="vq-left">◀</button><button type="button" class="vq-btn" id="vq-right">▶</button></div>
-    <button type="button" class="vq-btn green vq-ability hidden" id="vq-ability">ABILITY</button>
+    <div class="vq-ctrl4"><button type="button" class="vq-btn" id="vq-left">◀</button><button type="button" class="vq-btn" id="vq-jump">⬆<br>JUMP</button><button type="button" class="vq-btn" id="vq-slide">⬇<br>SLIDE</button><button type="button" class="vq-btn" id="vq-right">▶</button></div>
+    <div class="vq-abrow" id="vq-abrow"><button type="button" class="vq-btn green hidden" id="vq-ability">ABILITY</button><button type="button" class="vq-btn gold" id="vq-dash">💨 DASH ×1</button></div>
   </div>
 
   <!-- ===================== OVERLAYS ===================== -->
-  <div class="vq-overlay hidden" id="vq-intro"><div class="vq-panel"><div class="vq-h" id="vq-intro-title"></div><div class="vq-sub" id="vq-intro-story"></div><div class="vq-sub" id="vq-intro-loadout"></div><button class="vq-btn green" id="vq-intro-go">▶ START</button><button class="vq-btn dark" id="vq-intro-back">BACK</button></div></div>
+  <div class="vq-overlay hidden" id="vq-intro"><div class="vq-panel"><div class="vq-h" id="vq-intro-title"></div><div class="vq-sub" id="vq-intro-story"></div><div class="vq-sub" id="vq-intro-loadout"></div>
+    <div class="vq-seg" id="vq-mode-seg"><button data-t="0">😌 CHILL</button><button data-t="1" class="on">🔥 DEG-DEGAN</button></div>
+    <div class="vq-sub" style="margin-bottom:4px">Race a rival</div>
+    <div class="vq-seg" id="vq-rival-seg"><button data-r="slow">🐢</button><button data-r="bot" class="on">🤖</button><button data-r="fast">🚀</button><button data-r="ghost">👻 ME</button></div>
+    <div class="vq-seedrow"><input id="vq-seed" placeholder="Seed (same = same level)" maxlength="12"><button id="vq-daily-seed" type="button">🎲 DAILY</button></div>
+    <button class="vq-btn green" id="vq-intro-go">▶ START</button><button class="vq-btn dark" id="vq-intro-back">BACK</button></div></div>
 
-  <div class="vq-overlay hidden" id="vq-win"><div class="vq-panel"><div class="vq-h" id="vq-win-title">LEVEL CLEAR!</div><div class="vq-stars" id="vq-win-stars"></div><div class="vq-rows" id="vq-win-rows"></div><div class="vq-sub" id="vq-win-class"></div><button class="vq-btn gold" id="vq-win-chest">🧰 OPEN CHEST</button><button class="vq-btn green hidden" id="vq-win-next">NEXT LEVEL ▶</button><button class="vq-btn dark" id="vq-win-home">MAP</button></div></div>
+  <div class="vq-overlay hidden" id="vq-buffs"><div class="vq-panel"><div class="vq-h">PICK A BOOST</div><div class="vq-sub">One card for this level. Some have a price!</div><div class="vq-buffs" id="vq-buff-cards"></div></div></div>
+  <div class="vq-cine hidden" id="vq-cine"><div><span class="em" id="vq-cine-em">🧟</span><div class="nm" id="vq-cine-nm">BOSS</div></div></div>
+
+  <div class="vq-overlay hidden" id="vq-win"><div class="vq-panel"><div class="vq-h" id="vq-win-title">LEVEL CLEAR!</div><div class="vq-stars" id="vq-win-stars"></div><div class="vq-rows" id="vq-win-rows"></div><div class="vq-sub" id="vq-win-class"></div><button class="vq-btn gold" id="vq-win-chest">🧰 OPEN CHEST</button><button class="vq-btn gold hidden" id="vq-win-bonus">💰 TREASURE ROOM!</button><button class="vq-btn green hidden" id="vq-win-next">NEXT LEVEL ▶</button><button class="vq-btn dark" id="vq-win-home">MAP</button></div></div>
 
   <div class="vq-overlay hidden" id="vq-fail"><div class="vq-panel"><div class="vq-h">OUCH! THE ZOMBIE GOT YOU</div><div class="vq-sub" id="vq-fail-sub"></div><button class="vq-btn green" id="vq-fail-retry">↻ TRY AGAIN</button><button class="vq-btn dark" id="vq-fail-home">MAP</button></div></div>
 
@@ -208,7 +264,7 @@
   <div class="vq-overlay hidden" id="vq-pets"><div class="vq-panel"><div class="vq-h">YOUR PET</div><div class="vq-chest" id="vq-pet-big">🐺</div><div class="vq-sub" id="vq-pet-info"></div><div class="vq-bar"><i id="vq-pet-bar" style="width:0%"></i></div><div class="vq-grid" id="vq-pet-grid"></div><button class="vq-btn dark vq-close">CLOSE</button></div></div>
   <div class="vq-overlay hidden" id="vq-missions"><div class="vq-panel"><div class="vq-h">DAILY MISSIONS</div><div id="vq-mission-list"></div><button class="vq-btn dark vq-close">CLOSE</button></div></div>
 
-  <div class="vq-overlay hidden" id="vq-tutorial"><div class="vq-panel"><div class="vq-h">HOW TO PLAY</div><div class="vq-sub">🏃 You run automatically.<br>◀ ▶ (or swipe) to switch lanes.<br><br>🧱 Run THROUGH the gate with the <b>right answer</b>.<br>🔥 Dodge lava and TNT.<br>🪙 Grab coins.<br>❤️ Each mistake lets the zombie get closer!<br><br>Beat levels for ⭐, open chests, unlock heroes and train your pet!</div><button class="vq-btn green" id="vq-tutorial-close">LET'S GO!</button></div></div>
+  <div class="vq-overlay hidden" id="vq-tutorial"><div class="vq-panel"><div class="vq-h">HOW TO PLAY</div><div class="vq-sub">🏃 You run automatically.<br>◀ ▶ (or swipe) to switch lanes.<br><br>🧱 Run THROUGH the gate with the <b>right answer</b> before the countdown ends.<br>⬆ <b>JUMP</b> low fire/pits (swipe up), ⬇ <b>SLIDE</b> under bats (swipe down), change lane for walls.<br>🧟 The zombie WALKS toward you in 🔥 Deg-degan mode: right answers push him back!<br>💨 Dash saves you in a pinch.<br><br>Beat levels for ⭐, open chests, unlock heroes and train your pet!</div><button class="vq-btn green" id="vq-tutorial-close">LET'S GO!</button></div></div>
   <div class="vq-overlay hidden" id="vq-settings"><div class="vq-panel"><div class="vq-h">SETTINGS</div>
     <div class="vq-row"><span>🔊 Sound</span><button type="button" class="vq-toggle" id="vq-set-sound"></button></div>
     <div class="vq-row"><span>📳 Haptics</span><button type="button" class="vq-toggle" id="vq-set-haptics"></button></div>
@@ -225,6 +281,6 @@
 <script src="../skin.js"></script>
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
-<script src="script.js"></script>
+<script src="script.js?v=7"></script>
 </body>
 </html>
