@@ -349,162 +349,19 @@
         <div class="sc-hero-tagline">Pick a quest, have fun, and level up! 🎉</div>
       </div>
 
-      <a class="sc-world-strip" id="sc-world-strip" href="bo-home/?tab=world" hidden></a>
       <a class="sc-search-link" href="search/">🔍 Search games &amp; practice…</a>
+      <!-- Home is intentionally minimal: games first. Everything that
+           used to stack above the games (Today panel, daily quests,
+           streak, goals, pet, season pass, spin...) now lives inside the
+           "My Rewards" sheet (#sc-rewards-overlay near the bottom of
+           this file). Same elements/ids, just moved, so every render*()
+           function keeps working untouched. -->
+      <button class="sc-rewards-btn" id="sc-rewards-btn" type="button">
+        <span class="sc-rewards-btn-icon">🎁</span>
+        <span class="sc-rewards-btn-txt">My Rewards</span>
+        <span class="sc-rewards-dot" id="sc-rewards-dot" hidden></span>
+      </button>
 
-      <!-- Seasonal event banner (PM round 10, item 9) -- leaderboard.js's SEASONS -->
-      <a class="sc-season-banner" id="sc-season-banner" href="extras/" hidden></a>
-
-      <div class="sc-newfeature-banner" id="sc-startier-banner" hidden>
-        <span>🆕 New! Replay a chapter you've already 3-starred in MathVille, Language & Arts, or SolarQuest to earn Silver 🥈 stars — then Gold 🥇!</span>
-        <button id="sc-startier-banner-close" type="button" aria-label="Dismiss">✕</button>
-      </div>
-
-      <!-- "Today" panel -- a single consolidated list replacing what used
-           to be ~12 separate full-width white cards stacked down the
-           page (Beat Yesterday, Comeback, Theme Day, Outfit, Mistake
-           Review, Mystery Box, Diagnostic, Smart Practice, Perfect Week,
-           Seasonal, Bonus Hour/Weekend banners, Subject Streaks). Every
-           render*() function below is COMPLETELY UNCHANGED -- still
-           independently shows/hides its own row by setting `hidden` on
-           its own element, exactly as before. The panel wrapper itself
-           just watches those same elements via MutationObserver
-           (setupTodayPanelObserver() near the bottom of this script) and
-           shows/hides the whole panel based on whether ANY row inside is
-           currently visible -- zero changes needed to the render logic
-           itself, only to where the markup lives and how it's styled
-           (see .sc-today-panel/.sc-today-items in style.css). -->
-      <div class="sc-today-panel" id="sc-today-panel" hidden>
-        <div class="sc-today-panel-title">📋 Today</div>
-        <div class="sc-today-items" id="sc-today-items">
-          <div class="sc-smart-card" id="sc-bonus-hour-banner" hidden><span class="sc-smart-text">⚡ Bonus Hour! Double coins right now!</span></div>
-          <div class="sc-smart-card" id="sc-weekend-bonus-banner" hidden><span class="sc-smart-text">🎉 Weekend Bonus! Double coins all weekend!</span></div>
-
-          <div class="sc-smart-card" id="sc-seasonal-card" hidden>
-            <span class="sc-smart-text" id="sc-seasonal-text"></span>
-            <button class="sc-quest-claim-btn" id="sc-seasonal-claim-btn">Claim</button>
-          </div>
-
-          <div class="sc-smart-card" id="sc-beat-yesterday-card" hidden>
-            <span class="sc-smart-text" id="sc-beat-yesterday-text"></span>
-          </div>
-
-          <div class="sc-smart-card sc-comeback-card" id="sc-comeback-card" hidden>
-            <span class="sc-smart-text" id="sc-comeback-text"></span>
-            <button class="sc-quest-claim-btn" id="sc-comeback-claim-btn">Claim</button>
-          </div>
-
-          <div class="sc-smart-card" id="sc-themeday-card" hidden>
-            <span class="sc-smart-text" id="sc-themeday-text"></span>
-            <button class="sc-quest-claim-btn" id="sc-themeday-claim-btn" hidden>Claim</button>
-          </div>
-
-          <div class="sc-smart-card" id="sc-outfit-card" hidden>
-            <span class="sc-smart-text" id="sc-outfit-text">👗 Today's Outfit</span>
-            <button class="sc-quest-claim-btn" id="sc-outfit-wear-btn">Wear it!</button>
-          </div>
-
-          <div class="sc-smart-card" id="sc-mistake-review-card" hidden>
-            <span class="sc-smart-text" id="sc-mistake-review-text"></span>
-            <button class="sc-quest-claim-btn" id="sc-mistake-review-btn">Review Now</button>
-          </div>
-
-          <div class="sc-subject-streaks" id="sc-subject-streaks" hidden>
-            <div class="sc-subject-streak-item">
-              <span class="sc-subject-streak-emoji">🔢</span>
-              <span class="sc-subject-streak-label">Math</span>
-              <span class="sc-subject-streak-count" id="sc-streak-math">0</span>
-            </div>
-            <div class="sc-subject-streak-item">
-              <span class="sc-subject-streak-emoji">📖</span>
-              <span class="sc-subject-streak-label">Language</span>
-              <span class="sc-subject-streak-count" id="sc-streak-language">0</span>
-            </div>
-            <div class="sc-subject-streak-item">
-              <span class="sc-subject-streak-emoji">🪐</span>
-              <span class="sc-subject-streak-label">Science</span>
-              <span class="sc-subject-streak-count" id="sc-streak-science">0</span>
-            </div>
-          </div>
-
-          <div class="sc-smart-card" id="sc-mysterybox-card" hidden>
-            <span class="sc-smart-text">🎁 Daily Mystery Box — spin for a surprise!</span>
-            <button class="sc-quest-claim-btn" id="sc-mysterybox-btn">🪙10</button>
-          </div>
-
-          <!-- Daily Deal -- one cosmetic item, same for everyone today,
-               30% off. See leaderboard.js's getDailyDeal/getDailyDealStatus. -->
-          <div class="sc-smart-card" id="sc-dailydeal-card" hidden>
-            <span class="sc-smart-text">🏷️ Daily Deal! <span id="sc-dailydeal-preview"></span> <b id="sc-dailydeal-name"></b> <s id="sc-dailydeal-original"></s></span>
-            <button class="sc-quest-claim-btn" id="sc-dailydeal-btn"></button>
-          </div>
-
-          <div class="sc-smart-card" id="sc-diagnostic-card" hidden>
-            <span class="sc-smart-text">🩺 New here? Take a 2-minute Quick Check to see where you're starting!</span>
-            <button class="sc-quest-claim-btn" id="sc-diagnostic-btn">Start</button>
-          </div>
-
-          <div class="sc-smart-card" id="sc-smart-practice-card" hidden>
-            <span class="sc-smart-text">🎯 Recommended for you: <b id="sc-smart-practice-topic"></b></span>
-            <button class="sc-quest-claim-btn" id="sc-smart-practice-btn">Practice Now</button>
-          </div>
-
-          <div class="sc-smart-card" id="sc-perfectweek-card" hidden>
-            <span class="sc-smart-text" id="sc-perfectweek-text"></span>
-          </div>
-
-          <div class="sc-goal-card" id="sc-nickname-card" hidden>
-            <div class="sc-goal-title">💬 My Tagline</div>
-            <div id="sc-nickname-body"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="sc-goal-card" id="sc-classgoal-card" hidden>
-        <div class="sc-goal-title">🤝 Class Goal This Week</div>
-        <div id="sc-classgoal-body"></div>
-      </div>
-
-      <div class="sc-daily-panel" id="sc-daily-panel" hidden>
-        <div class="sc-streak-badge">
-          <span class="sc-streak-flame">🔥</span>
-          <span class="sc-streak-count" id="sc-streak-count">0</span>
-          <span class="sc-streak-label">day streak</span>
-          <span class="sc-streak-mult-badge" id="sc-streak-mult-badge" hidden></span>
-        </div>
-        <div class="sc-quest-list" id="sc-quest-list"></div>
-        <div class="sc-daily-bonus-claim" id="sc-daily-bonus-claim" hidden>
-          <span class="sc-quest-text">🎉 All 3 quests done!</span>
-          <button class="sc-quest-claim-btn" id="sc-daily-bonus-claim-btn">Claim +2 💎</button>
-        </div>
-        <div class="sc-daily-bonus-note" id="sc-daily-bonus-note" hidden>🎉 Daily Bonus claimed — +2 💎!</div>
-      </div>
-
-      <div class="sc-goal-card" id="sc-goal-card" hidden>
-        <div class="sc-goal-title">🎯 My Weekly Goal</div>
-        <div id="sc-goal-body"></div>
-      </div>
-
-      <div class="sc-goal-card" id="sc-pet-card" hidden>
-        <div class="sc-goal-title">🐾 My Pet</div>
-        <div id="sc-pet-body"></div>
-      </div>
-
-      <div class="sc-bp-panel" id="sc-bp-panel" hidden>
-        <div class="sc-bp-header">
-          <span class="sc-bp-title">🎖️ Season Pass</span>
-          <span class="sc-bp-sub" id="sc-bp-sub">Tier 0/15</span>
-        </div>
-        <div class="sc-bp-next" id="sc-bp-next"></div>
-        <button class="sc-bp-toggle" id="sc-bp-toggle" type="button">View all tiers ▾</button>
-        <div class="sc-bp-tiers" id="sc-bp-tiers" hidden></div>
-      </div>
-
-      <div class="sc-roulette-card">
-        <span class="sc-smart-text">🎡 Not sure what to play?</span>
-        <button class="sc-quest-claim-btn" id="sc-roulette-btn" type="button">Spin!</button>
-      </div>
-      <div class="sc-roulette-result hidden" id="sc-roulette-result"></div>
 
       <div class="sc-game-list">
         <div class="sc-emoji" style="top:2px;right:2px;font-size:16px;transform:rotate(10deg);z-index:0;">⭐</div>
@@ -609,6 +466,8 @@
             </div>
           </div>
         </a>
+        <button class="sc-more-games-btn" id="sc-more-games-btn" type="button" aria-expanded="false">🎮 More games ▾</button>
+        <div class="sc-more-games" id="sc-more-games" hidden>
         <!-- Own card + own standalone page (kids-quiz/), same footing as
              Focus Round/Ninja above -- but unlike those, this one does
              NOT redirect into MathVille's engine, since its questions are
@@ -945,6 +804,7 @@
             <span class="sc-game-sub">Explore landmarks, solve riddles</span>
           </span>
         </a>
+        </div>
       </div>
 
       <div class="sc-greeting" id="sc-greeting" role="button" tabindex="0">
@@ -1003,6 +863,172 @@
       <div class="sc-whois-title">Playing as <span id="sc-whois-name">Azka</span>?</div>
       <button class="sc-whois-btn" id="sc-whois-child">🧒 Just me</button>
       <button class="sc-whois-btn" id="sc-whois-parent">🧑 My parent is playing with/for me</button>
+    </div>
+  </div>
+
+  <!-- My Rewards sheet -- holds all the "extras" that used to clutter the
+       top of the home screen. Elements below are the ORIGINAL ones, moved
+       here unchanged (ids intact). -->
+  <div id="sc-rewards-overlay" class="sc-modal-overlay" hidden>
+    <div class="sc-modal-card sc-rewards-card">
+      <div class="sc-modal-header">
+        <span class="sc-modal-title">🎁 My Rewards</span>
+        <button class="sc-modal-close" id="sc-rewards-close" type="button">✕</button>
+      </div>
+      <a class="sc-world-strip" id="sc-world-strip" href="bo-home/?tab=world" hidden></a>
+      <!-- Seasonal event banner (PM round 10, item 9) -- leaderboard.js's SEASONS -->
+      <a class="sc-season-banner" id="sc-season-banner" href="extras/" hidden></a>
+
+      <div class="sc-newfeature-banner" id="sc-startier-banner" hidden>
+        <span>🆕 New! Replay a chapter you've already 3-starred in MathVille, Language & Arts, or SolarQuest to earn Silver 🥈 stars — then Gold 🥇!</span>
+        <button id="sc-startier-banner-close" type="button" aria-label="Dismiss">✕</button>
+      </div>
+
+      <!-- "Today" panel -- a single consolidated list replacing what used
+           to be ~12 separate full-width white cards stacked down the
+           page (Beat Yesterday, Comeback, Theme Day, Outfit, Mistake
+           Review, Mystery Box, Diagnostic, Smart Practice, Perfect Week,
+           Seasonal, Bonus Hour/Weekend banners, Subject Streaks). Every
+           render*() function below is COMPLETELY UNCHANGED -- still
+           independently shows/hides its own row by setting `hidden` on
+           its own element, exactly as before. The panel wrapper itself
+           just watches those same elements via MutationObserver
+           (setupTodayPanelObserver() near the bottom of this script) and
+           shows/hides the whole panel based on whether ANY row inside is
+           currently visible -- zero changes needed to the render logic
+           itself, only to where the markup lives and how it's styled
+           (see .sc-today-panel/.sc-today-items in style.css). -->
+      <div class="sc-today-panel" id="sc-today-panel" hidden>
+        <div class="sc-today-panel-title">📋 Today</div>
+        <div class="sc-today-items" id="sc-today-items">
+          <div class="sc-smart-card" id="sc-bonus-hour-banner" hidden><span class="sc-smart-text">⚡ Bonus Hour! Double coins right now!</span></div>
+          <div class="sc-smart-card" id="sc-weekend-bonus-banner" hidden><span class="sc-smart-text">🎉 Weekend Bonus! Double coins all weekend!</span></div>
+
+          <div class="sc-smart-card" id="sc-seasonal-card" hidden>
+            <span class="sc-smart-text" id="sc-seasonal-text"></span>
+            <button class="sc-quest-claim-btn" id="sc-seasonal-claim-btn">Claim</button>
+          </div>
+
+          <div class="sc-smart-card" id="sc-beat-yesterday-card" hidden>
+            <span class="sc-smart-text" id="sc-beat-yesterday-text"></span>
+          </div>
+
+          <div class="sc-smart-card sc-comeback-card" id="sc-comeback-card" hidden>
+            <span class="sc-smart-text" id="sc-comeback-text"></span>
+            <button class="sc-quest-claim-btn" id="sc-comeback-claim-btn">Claim</button>
+          </div>
+
+          <div class="sc-smart-card" id="sc-themeday-card" hidden>
+            <span class="sc-smart-text" id="sc-themeday-text"></span>
+            <button class="sc-quest-claim-btn" id="sc-themeday-claim-btn" hidden>Claim</button>
+          </div>
+
+          <div class="sc-smart-card" id="sc-outfit-card" hidden>
+            <span class="sc-smart-text" id="sc-outfit-text">👗 Today's Outfit</span>
+            <button class="sc-quest-claim-btn" id="sc-outfit-wear-btn">Wear it!</button>
+          </div>
+
+          <div class="sc-smart-card" id="sc-mistake-review-card" hidden>
+            <span class="sc-smart-text" id="sc-mistake-review-text"></span>
+            <button class="sc-quest-claim-btn" id="sc-mistake-review-btn">Review Now</button>
+          </div>
+
+          <div class="sc-subject-streaks" id="sc-subject-streaks" hidden>
+            <div class="sc-subject-streak-item">
+              <span class="sc-subject-streak-emoji">🔢</span>
+              <span class="sc-subject-streak-label">Math</span>
+              <span class="sc-subject-streak-count" id="sc-streak-math">0</span>
+            </div>
+            <div class="sc-subject-streak-item">
+              <span class="sc-subject-streak-emoji">📖</span>
+              <span class="sc-subject-streak-label">Language</span>
+              <span class="sc-subject-streak-count" id="sc-streak-language">0</span>
+            </div>
+            <div class="sc-subject-streak-item">
+              <span class="sc-subject-streak-emoji">🪐</span>
+              <span class="sc-subject-streak-label">Science</span>
+              <span class="sc-subject-streak-count" id="sc-streak-science">0</span>
+            </div>
+          </div>
+
+          <div class="sc-smart-card" id="sc-mysterybox-card" hidden>
+            <span class="sc-smart-text">🎁 Daily Mystery Box — spin for a surprise!</span>
+            <button class="sc-quest-claim-btn" id="sc-mysterybox-btn">🪙10</button>
+          </div>
+
+          <!-- Daily Deal -- one cosmetic item, same for everyone today,
+               30% off. See leaderboard.js's getDailyDeal/getDailyDealStatus. -->
+          <div class="sc-smart-card" id="sc-dailydeal-card" hidden>
+            <span class="sc-smart-text">🏷️ Daily Deal! <span id="sc-dailydeal-preview"></span> <b id="sc-dailydeal-name"></b> <s id="sc-dailydeal-original"></s></span>
+            <button class="sc-quest-claim-btn" id="sc-dailydeal-btn"></button>
+          </div>
+
+          <div class="sc-smart-card" id="sc-diagnostic-card" hidden>
+            <span class="sc-smart-text">🩺 New here? Take a 2-minute Quick Check to see where you're starting!</span>
+            <button class="sc-quest-claim-btn" id="sc-diagnostic-btn">Start</button>
+          </div>
+
+          <div class="sc-smart-card" id="sc-smart-practice-card" hidden>
+            <span class="sc-smart-text">🎯 Recommended for you: <b id="sc-smart-practice-topic"></b></span>
+            <button class="sc-quest-claim-btn" id="sc-smart-practice-btn">Practice Now</button>
+          </div>
+
+          <div class="sc-smart-card" id="sc-perfectweek-card" hidden>
+            <span class="sc-smart-text" id="sc-perfectweek-text"></span>
+          </div>
+
+          <div class="sc-goal-card" id="sc-nickname-card" hidden>
+            <div class="sc-goal-title">💬 My Tagline</div>
+            <div id="sc-nickname-body"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sc-goal-card" id="sc-classgoal-card" hidden>
+        <div class="sc-goal-title">🤝 Class Goal This Week</div>
+        <div id="sc-classgoal-body"></div>
+      </div>
+
+      <div class="sc-daily-panel" id="sc-daily-panel" hidden>
+        <div class="sc-streak-badge">
+          <span class="sc-streak-flame">🔥</span>
+          <span class="sc-streak-count" id="sc-streak-count">0</span>
+          <span class="sc-streak-label">day streak</span>
+          <span class="sc-streak-mult-badge" id="sc-streak-mult-badge" hidden></span>
+        </div>
+        <div class="sc-quest-list" id="sc-quest-list"></div>
+        <div class="sc-daily-bonus-claim" id="sc-daily-bonus-claim" hidden>
+          <span class="sc-quest-text">🎉 All 3 quests done!</span>
+          <button class="sc-quest-claim-btn" id="sc-daily-bonus-claim-btn">Claim +2 💎</button>
+        </div>
+        <div class="sc-daily-bonus-note" id="sc-daily-bonus-note" hidden>🎉 Daily Bonus claimed — +2 💎!</div>
+      </div>
+
+      <div class="sc-goal-card" id="sc-goal-card" hidden>
+        <div class="sc-goal-title">🎯 My Weekly Goal</div>
+        <div id="sc-goal-body"></div>
+      </div>
+
+      <div class="sc-goal-card" id="sc-pet-card" hidden>
+        <div class="sc-goal-title">🐾 My Pet</div>
+        <div id="sc-pet-body"></div>
+      </div>
+
+      <div class="sc-bp-panel" id="sc-bp-panel" hidden>
+        <div class="sc-bp-header">
+          <span class="sc-bp-title">🎖️ Season Pass</span>
+          <span class="sc-bp-sub" id="sc-bp-sub">Tier 0/15</span>
+        </div>
+        <div class="sc-bp-next" id="sc-bp-next"></div>
+        <button class="sc-bp-toggle" id="sc-bp-toggle" type="button">View all tiers ▾</button>
+        <div class="sc-bp-tiers" id="sc-bp-tiers" hidden></div>
+      </div>
+
+      <div class="sc-roulette-card">
+        <span class="sc-smart-text">🎡 Not sure what to play?</span>
+        <button class="sc-quest-claim-btn" id="sc-roulette-btn" type="button">Spin!</button>
+      </div>
+      <div class="sc-roulette-result hidden" id="sc-roulette-result"></div>
     </div>
   </div>
 
@@ -3508,6 +3534,28 @@
     update();
   }
   setupTodayPanelObserver();
+
+  // Simplified home: "My Rewards" sheet + collapsed "More games".
+  (function setupSimpleHome() {
+    const ov = document.getElementById("sc-rewards-overlay"), btn = document.getElementById("sc-rewards-btn"), dot = document.getElementById("sc-rewards-dot");
+    const more = document.getElementById("sc-more-games"), moreBtn = document.getElementById("sc-more-games-btn");
+    if (!ov || !btn) return;
+    btn.addEventListener("click", () => { ov.hidden = false; });
+    document.getElementById("sc-rewards-close").addEventListener("click", () => { ov.hidden = true; });
+    ov.addEventListener("click", e => { if (e.target === ov) ov.hidden = true; });
+    if (more && moreBtn) moreBtn.addEventListener("click", () => {
+      more.hidden = !more.hidden; moreBtn.setAttribute("aria-expanded", String(!more.hidden));
+      moreBtn.textContent = more.hidden ? "🎮 More games ▾" : "🎮 Fewer games ▴";
+    });
+    // Red dot when something in the sheet can be claimed right now.
+    function visible(el) { for (let n = el; n && n !== ov; n = n.parentElement) if (n.hidden) return false; return true; }
+    function refreshDot() {
+      const n = [...ov.querySelectorAll("button.sc-quest-claim-btn")].filter(b => visible(b) && !b.disabled && (/^\s*Claim/i.test(b.textContent) || b.id === "sc-mysterybox-btn")).length;
+      dot.hidden = n === 0; dot.textContent = n > 9 ? "9+" : String(n);
+    }
+    new MutationObserver(refreshDot).observe(ov, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "disabled"] });
+    refreshDot(); setInterval(refreshDot, 3000);
+  })();
 
   // "More" header menu -- toggle open/closed, close on any item click
   // (the items' own click handlers, e.g. opening Weekly Recap, are

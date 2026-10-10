@@ -2206,3 +2206,17 @@ html[data-hub-theme="volcano"] .sc-card { background: #fbe9dd; }
 html[data-hub-theme="golden"],
 html[data-hub-theme="golden"] .hub.sc-page { background: linear-gradient(180deg, #fff3b0 0%, #ffd66b 55%, #e0a526 100%); }
 html[data-hub-theme="golden"] .sc-card { background: #fff8dc; }
+
+/* Simplified home -- games first; extras live in the "My Rewards" sheet */
+.sc-rewards-btn { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: calc(100% - 32px); margin: 0 16px 6px; padding: 14px 18px; border: none; border-radius: 22px; background: linear-gradient(135deg, #f6e3b4, #f6c1e0); color: #5a3a2a; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.15rem; box-shadow: 0 4px 0 rgba(0,0,0,.08); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.sc-rewards-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.08); }
+.sc-rewards-btn-icon { font-size: 1.5rem; }
+.sc-rewards-dot { position: absolute; top: -6px; right: 14px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 100px; background: #e5484d; color: #fff; font-family: "Nunito", sans-serif; font-weight: 900; font-size: .8rem; line-height: 24px; text-align: center; box-shadow: 0 2px 6px rgba(229,72,77,.5); animation: sc-dot-pulse 1.4s ease-in-out infinite; }
+.sc-rewards-dot[hidden] { display: none; }
+@keyframes sc-dot-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+.sc-more-games-btn { align-self: center; border: 2px dashed #d9c9a8; background: #fff9ec; color: #8a6a3a; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1rem; padding: 10px 22px; border-radius: 100px; cursor: pointer; position: relative; z-index: 1; }
+.sc-more-games { display: flex; flex-direction: column; gap: 16px; }
+.sc-more-games[hidden] { display: none; }
+.sc-rewards-card { max-width: 440px; max-height: 88vh; padding: 16px; }
+.sc-rewards-card > [class*="sc-"]:not(.sc-modal-header) { margin-left: 0; margin-right: 0; }
+.sc-rewards-card .sc-roulette-card { margin-top: 12px; }
