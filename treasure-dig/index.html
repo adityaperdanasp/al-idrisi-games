@@ -212,7 +212,7 @@
   .td-lever { position: relative; height: 34px; background: #120c07; border: 3px solid #5a3f27; border-radius: 12px; margin: 8px 0 12px; overflow: hidden; }
   .td-lever .zone { position: absolute; top: 0; bottom: 0; left: 38%; width: 24%; background: #3fb86f; }
   .td-lever .mark { position: absolute; top: 2px; bottom: 2px; width: 10px; background: #fff; border-radius: 5px; left: 0; box-shadow: 0 0 8px #fff; }
-  .td-cart { position: relative; height: 168px; background: linear-gradient(180deg, #120c07, #3a281a); border: 3px solid #5a3f27; border-radius: 12px; overflow: hidden; touch-action: none; }
+  .td-cart { position: relative; height: 150px; background: linear-gradient(180deg, #120c07, #3a281a); border: 3px solid #5a3f27; border-radius: 12px; overflow: hidden; touch-action: none; }
   .td-cart .lane { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,.12); }
   .td-cart .ent { position: absolute; transform: translate(-50%, -100%); font-size: 1.7rem; text-align: center; }
   .td-cart .gate { min-width: 66px; padding: 6px 4px; background: #6b6b6b; border: 3px solid #1b1b1b; border-radius: 8px; color: #fff; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .86rem; line-height: 1.1; }
@@ -236,6 +236,40 @@
   .td-seedrow { display: flex; gap: 6px; margin-bottom: 10px; } .td-seedrow input { flex: 1; min-width: 0; background: #3a281a; border: 2px solid #5a3f27; border-radius: 10px; color: #f6e7cf; padding: 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; } .td-seedrow button { border: 2px solid #5a3f27; background: #4a3220; color: #f6e7cf; border-radius: 10px; padding: 0 10px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .78rem; cursor: pointer; }
   .td-dragon { background: #3a281a; border-radius: 12px; padding: 8px 10px; margin-bottom: 10px; font-weight: 800; font-size: .78rem; text-align: left; }
   .td-dragon .td-bar { margin-top: 5px; height: 12px; } .td-dragon button { margin-top: 6px; }
+
+  /* ---- variety pack ---- */
+  .td-hero.jump { margin-top: -50px; transition: margin-top .15s ease-out, transform .15s ease-out; }
+  .td-jumpbtn { position: absolute; z-index: 11; right: 8px; top: 8px; width: 52px; height: 40px; border-radius: 12px; border: 2px solid rgba(255,255,255,.35); background: rgba(0,0,0,.45); color: #fff; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .68rem; line-height: 1.05; cursor: pointer; }
+  .td-jumpbtn:active { background: rgba(247,197,72,.5); } .td-jumpbtn.hidden { display: none; }
+  .td-wall { position: relative; }
+  .td-rv { position: absolute; left: 62%; width: 26px; top: 0; bottom: 0; background: rgba(0,0,0,.12); border-left: 2px solid rgba(0,0,0,.15); border-right: 2px solid rgba(0,0,0,.15); }
+  .td-rv.dug { background: #150f0a; box-shadow: inset 0 0 8px rgba(0,0,0,.8); }
+  .td-rival { right: auto !important; margin-left: -2px; z-index: 4; }
+  .td-scene[data-biome="1"] .td-motes i { background: rgba(190,190,200,.7); animation-name: tdMoteDown; width: 5px; height: 5px; border-radius: 1px; }
+  .td-scene[data-biome="2"] .td-motes i { background: #7ee8ff; box-shadow: 0 0 8px #7ee8ff; animation-name: tdTwinkle; animation-duration: 3s !important; }
+  .td-scene[data-biome="3"] .td-motes i { background: #ff9a2e; box-shadow: 0 0 8px #ff6a1a; animation-duration: 3.5s !important; }
+  .td-scene[data-biome="4"] .td-motes i { background: rgba(240,220,160,.8); animation-name: tdSand; animation-duration: 5s !important; width: 6px; height: 2px; }
+  @keyframes tdMoteDown { from { transform: translateY(-20px); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(340px); opacity: 0; } }
+  @keyframes tdTwinkle { 0%, 100% { opacity: 0; transform: scale(.5); } 50% { opacity: 1; transform: scale(1.6); } }
+  @keyframes tdSand { from { transform: translate(-30px, 60px); opacity: 0; } 20% { opacity: 1; } to { transform: translate(380px, 120px); opacity: 0; } }
+  .td-shard { position: absolute; z-index: 9; margin-left: -14px; font-size: 1.7rem; pointer-events: auto !important; cursor: pointer; filter: drop-shadow(0 0 8px #7ee8ff); }
+  .td-fall { position: absolute; z-index: 8; margin-left: -22px; min-width: 44px; padding: 4px 6px; text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .8rem; background: #4a3220; border: 2px solid #f7c548; border-radius: 10px; color: #fff; pointer-events: none; }
+  .td-fall.good { background: #1f5a38; border-color: #3fb86f; } .td-fall.bad { background: #6a2222; border-color: #e35252; opacity: .6; }
+  .td-flame { position: absolute; z-index: 5; margin-left: -20px; top: 84px; font-size: 1.6rem; animation: tdWarn .2s ease-in-out infinite alternate; pointer-events: none; }
+  .td-arrow { position: absolute; z-index: 7; left: 108%; top: 86px; font-size: 1.5rem; pointer-events: none; }
+  .td-vis { display: flex; justify-content: center; margin: 0 0 8px; } .td-vis svg { display: block; width: 96px; height: 96px; } .td-emojigrid { font-size: 1.35rem; line-height: 1.5; text-align: center; max-width: 300px; letter-spacing: 2px; }
+  .td-q-grid.td-blocks .td-q-btn { background: repeating-linear-gradient(0deg, #6b6f76 0 14px, #5a5e66 14px 28px); border-color: #3a3d43; color: #fff; text-shadow: 1px 1px 0 #000; padding: 18px 6px; }
+  .td-q-grid.td-blocks .td-q-btn.wrong { animation: tdShake .4s ease; }
+  .td-puzbox { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .td-puzbox.two { grid-template-columns: 1fr 1fr; } .td-puzbox .td-col { display: flex; flex-direction: column; gap: 8px; }
+  .td-puzbox .td-q-btn.sel { border-color: #f7c548; background: #6a5320; } .td-puzbox .td-q-btn.pad { padding: 26px 4px; opacity: .55; } .td-puzbox .td-q-btn.pad.lit { opacity: 1; box-shadow: 0 0 18px 4px rgba(255,255,255,.7); }
+  .td-puzbox .wordline { grid-column: 1 / -1; text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.5rem; letter-spacing: 6px; min-height: 2.2rem; color: #f7c548; }
+  .td-mounds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0; } .td-mound { border: 3px solid #5a3f27; border-bottom-width: 5px; background: #4a3220; border-radius: 12px; font-size: 1.8rem; padding: 12px 0; cursor: pointer; } .td-mound:disabled { opacity: .85; }
+  .td-shop { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; } .td-shop button { border: 3px solid #5a3f27; background: #3a281a; color: #f6e7cf; border-radius: 12px; padding: 10px 4px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .8rem; cursor: pointer; } .td-shop button:disabled { opacity: .4; }
+  .td-season { background: linear-gradient(90deg, #5a2a6a, #8a3a1a); border-radius: 12px; padding: 7px 10px; margin-bottom: 10px; font-weight: 800; font-size: .76rem; } .td-season.hidden { display: none; }
+  .td-rulebtn { display: block; width: 100%; border: 2px dashed #f7c548; background: none; color: #f7c548; border-radius: 12px; padding: 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .76rem; cursor: pointer; margin-bottom: 8px; line-height: 1.3; } .td-rulebtn.off { opacity: .55; border-color: #6b4b2e; color: #cbb593; }
+  .td-item.shelf { border-color: #f7c548; background: #4a3b1a; }
+  .td-shelfrow { background: #3a281a; border-radius: 12px; padding: 7px 8px; margin-bottom: 8px; font-weight: 800; font-size: .76rem; text-align: left; }
+  .td-skill { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #4a3220; text-align: left; font-weight: 800; font-size: .8rem; } .td-skill .e { font-size: 1.5rem; } .td-skill small { display: block; color: #cbb593; font-weight: 700; font-size: .68rem; } .td-skill .td-btn { width: 90px; margin: 0; padding: 7px 2px; font-size: .74rem; flex: none; }
 </style>
 </head>
 <body>
@@ -277,6 +311,7 @@
     <div class="td-danger" id="td-danger"></div>
     <div class="td-rushborder hidden" id="td-rush"></div>
     <div class="td-bigcount hidden" id="td-bigcount"></div>
+    <button type="button" class="td-jumpbtn" id="td-jump-btn">⬆<br>JUMP</button>
     <div class="td-flash" id="td-flash"></div>
     <div class="td-bo" id="td-bo"><img src="../icon-192.png" alt="Bo"><span id="td-bo-text">Let's dig!</span></div>
   </div>
@@ -291,6 +326,8 @@
     <h2>Treasure Dig</h2>
     <p class="td-sub">Dig down through 5 biomes, beat the bosses, find relics and decide when to cash out. Risk it all for the deep stuff!</p>
     <div class="td-stat"><span id="td-st-best">Best: 0 m</span><span id="td-st-streak">🔥 Day 1</span><span id="td-st-relics">🏺 0/25</span></div>
+    <div class="td-season hidden" id="td-season"></div>
+    <button type="button" class="td-rulebtn" id="td-rule-btn"></button>
     <div class="td-dragon hidden" id="td-dragon"></div>
     <div class="td-board" id="td-board">Loading this week's top diggers…</div>
     <div class="td-seg" id="td-mode"><button data-m="chill">😌 Chill (no timers)</button><button data-m="hard" class="on">🔥 Deg-degan! ×1.3 loot</button></div>
@@ -310,9 +347,9 @@
 <div class="td-overlay hidden" id="td-buffs"><div class="td-card"><h2>🃏 Pick a boost</h2><p class="td-sub">Choose one card for this dig. Some have a price!</p><div class="td-card-pick" id="td-buff-cards"></div></div></div>
 <div class="td-cine hidden" id="td-cine"><div><span class="em" id="td-cine-em">🗿</span><div class="nm" id="td-cine-nm">BOSS</div></div></div>
 <div class="td-overlay hidden" id="td-work"><div class="td-card"><h2>🛠️ Workshop</h2>
-  <div class="td-seg" id="td-work-tabs"><button data-t="pick" class="on">⛏️ Pick</button><button data-t="pack">🧰 Pack</button><button data-t="look">🎨 Look</button><button data-t="buddy">🐾 Buddy</button></div>
+  <div class="td-seg" id="td-work-tabs"><button data-t="pick" class="on">⛏️ Pick</button><button data-t="pack">🧰 Pack</button><button data-t="look">🎨 Look</button><button data-t="buddy">🐾 Buddy</button><button data-t="skills">⭐ Skills</button></div>
   <div id="td-work-body"></div><button class="td-btn dark td-close">Close</button></div></div>
-<div class="td-overlay hidden" id="td-museum"><div class="td-card"><h2>🏺 Relic Museum</h2><p class="td-sub" id="td-museum-sub"></p><div class="td-grid g5" id="td-museum-grid"></div><h2 style="font-size:1.05rem">🏅 Badges</h2><div class="td-grid g3" id="td-badge-grid"></div><button class="td-btn dark td-close">Close</button></div></div>
+<div class="td-overlay hidden" id="td-museum"><div class="td-card"><h2>🏺 Relic Museum</h2><p class="td-sub" id="td-museum-sub"></p><div class="td-shelfrow" id="td-shelfrow"></div><div class="td-grid g5" id="td-museum-grid"></div><h2 style="font-size:1.05rem">🏅 Badges</h2><div class="td-grid g3" id="td-badge-grid"></div><button class="td-btn dark td-close">Close</button></div></div>
 <div class="td-overlay hidden" id="td-missions"><div class="td-card"><h2>📋 Daily Missions</h2><div id="td-mission-list"></div><button class="td-btn dark td-close">Close</button></div></div>
 <div class="td-overlay hidden" id="td-settings"><div class="td-card"><h2>⚙️ Settings</h2>
   <div class="td-row2"><span>🔊 Sound</span><button class="td-toggle" id="td-set-sound"></button></div>
@@ -331,6 +368,6 @@
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
 <script src="../synth-bgm.js?v=2"></script>
-<script src="script.js?v=6"></script>
+<script src="script.js?v=9"></script>
 </body>
 </html>

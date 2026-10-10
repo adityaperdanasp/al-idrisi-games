@@ -67,7 +67,9 @@ function initTreasureDig() {
     { id: "secret", icon: "🗝️", name: "Treasure Hunter", text: "Open the secret vault" }, { id: "legend", icon: "👑", name: "Legend Found", text: "Find a legendary relic" },
     { id: "rival", icon: "🏁", name: "Rival Beaten", text: "Dig deeper than your rival" }, { id: "cart", icon: "🛒", name: "Cart Racer", text: "Finish a minecart ride" },
     { id: "climb", icon: "🧗", name: "Rope Master", text: "Climb out successfully" }, { id: "gamble", icon: "🎲", name: "High Roller", text: "Win a bag gamble" },
-    { id: "swat", icon: "🦇", name: "Bat Swatter", text: "Swat 5 bats in one dig" }, { id: "lava", icon: "🌋", name: "Hot Foot", text: "Survive a lava burn" }
+    { id: "swat", icon: "🦇", name: "Bat Swatter", text: "Swat 5 bats in one dig" }, { id: "lava", icon: "🌋", name: "Hot Foot", text: "Survive a lava burn" },
+    { id: "arrow", icon: "🏹", name: "Acrobat", text: "Dodge 3 arrows in a row" }, { id: "puzzle", icon: "🧩", name: "Puzzle Pro", text: "Open a temple door" },
+    { id: "detector", icon: "📡", name: "Treasure Sniffer", text: "Find a chest with the detector" }, { id: "npc", icon: "🤝", name: "Friendly Miner", text: "Make a deal with a stranger" }
   ];
   const MISSION_DEFS = [
     { type: "depth", text: n => `Dig down to ${n} m`, target: [4, 6], reward: 12, max: true },
@@ -75,7 +77,10 @@ function initTreasureDig() {
     { type: "correct", text: n => `Answer ${n} questions right`, target: [10, 16], reward: 12 },
     { type: "boss", text: () => "Beat a boss", target: [1, 1], reward: 20 },
     { type: "cash", text: () => "Cash out at a camp", target: [1, 1], reward: 15 },
-    { type: "combo", text: n => `Reach a ${n}x combo`, target: [4, 6], reward: 14, max: true }
+    { type: "combo", text: n => `Reach a ${n}x combo`, target: [4, 6], reward: 14, max: true },
+    { type: "relicB", biome: true, text: (n, b) => `Find ${n} relic${n > 1 ? "s" : ""} in ${BIOMES[b || 0].name}`, target: [1, 2], reward: 18 },
+    { type: "noHit", text: () => "Beat a boss without losing a heart", target: [1, 1], reward: 25 },
+    { type: "swat", text: n => `Swat ${n} bats`, target: [3, 5], reward: 14 }
   ];
   const BUFFS = [
     { id: "time", e: "⏱", n: "Calm Mind", d: "+3s on every question", apply: S => { S.timeBonus += 3000; } },
@@ -218,14 +223,14 @@ function initTreasureDig() {
       const idxs = MISSION_DEFS.map((d, i) => i).sort(() => rng() - 0.5).slice(0, 3);
       td.missions = { day: today, list: idxs.map(i => {
         const d = MISSION_DEFS[i], target = d.target[0] === d.target[1] ? d.target[0] : d.target[Math.floor(rng() * 2)];
-        return { type: d.type, target, prog: 0, claimed: false, reward: d.reward };
+        const m = { type: d.type, target, prog: 0, claimed: false, reward: d.reward }; if (d.biome) m.b = Math.floor(rng() * 5); return m;
       }) };
     }
   }
-  function bump(type, n = 1) {
+  function bump(type, n = 1, b) {
     if (!td.missions || !td.missions.list) return;
     const def = MISSION_DEFS.find(d => d.type === type);
-    td.missions.list.forEach(m => { if (m.type !== type || m.claimed) return; m.prog = Math.min(m.target, def && def.max ? Math.max(m.prog || 0, n) : (m.prog || 0) + n); });
+    td.missions.list.forEach(m => { if (m.type !== type || m.claimed || (m.b !== undefined && m.b !== b)) return; m.prog = Math.min(m.target, def && def.max ? Math.max(m.prog || 0, n) : (m.prog || 0) + n); });
   }
   function unlockAch(id) {
     td.achv = td.achv || {}; if (td.achv[id]) return;
@@ -258,9 +263,9 @@ function initTreasureDig() {
     } else {
       const b = biomeOf(i); row.className = `td-row b${b}`;
       const deco = () => Math.random() < 0.38 ? `<span style="left:${rand(8, 70)}%">${pick(BIOMES[b].deco)}</span>` : "";
-      row.innerHTML = `<div class="td-wall">${deco()}</div><div class="td-cell"></div><div class="td-wall">${deco()}</div>`;
+      row.innerHTML = `<div class="td-wall">${deco()}</div><div class="td-cell"></div><div class="td-wall"><div class="td-rv"></div>${deco()}</div>`;
     }
-    row._cell = row.querySelector(".td-cell"); world.appendChild(row); world._rows[i] = row;
+    row._cell = row.querySelector(".td-cell"); row._rv = row.querySelector(".td-rv"); world.appendChild(row); world._rows[i] = row;
   }
   function resetWorld() {
     world.innerHTML = ""; world._rows = {}; rowsBuilt = 0;
@@ -276,12 +281,14 @@ function initTreasureDig() {
       if (i > S.depth) c.classList.remove("breaking");
     });
     world.style.transform = `translateY(${CAM_OFFSET - S.depth * ROW}px)`;
+    scene.dataset.biome = String(biomeOf(Math.max(1, S.depth)));
     renderDynamic();
   }
   const targetCell = () => world._rows[S.depth + 1] && world._rows[S.depth + 1]._cell;
   function initMotes() {
     const m = $("td-motes"); m.innerHTML = "";
     for (let i = 0; i < 8; i++) { const d = document.createElement("i"); d.style.left = rand(4, 96) + "%"; d.style.animationDelay = (-Math.random() * 6) + "s"; d.style.animationDuration = rand(5, 9) + "s"; m.appendChild(d); }
+    const se = season(); if (se) for (let i = 0; i < 4; i++) { const e = document.createElement("i"); e.textContent = se.emoji; e.style.cssText = `left:${rand(6, 94)}%;background:none;width:auto;height:auto;font-size:.95rem;animation-delay:${-Math.random() * 6}s;animation-duration:${rand(6, 10)}s`; m.appendChild(e); }
   }
 
   // everything that changes every tick: lava, bars, darkness, danger
@@ -299,10 +306,10 @@ function initTreasureDig() {
       $("td-fuel-bar").classList.toggle("low", S.fuel < 25);
       $("td-heat").style.opacity = clamp((4 - gap) / 4, 0, 0.9);
       const depthDark = Math.min(0.8, S.depth * 0.04), fuelDark = S.fuel < 40 ? (40 - S.fuel) / 40 * 0.92 : 0;
-      $("td-dark").style.setProperty("--dark", Math.max(depthDark, fuelDark));
+      $("td-dark").style.setProperty("--dark", Math.max(depthDark, fuelDark, S.darkBase || 0));
     } else {
       lavaEl.classList.add("hidden"); $("td-heat").style.opacity = 0;
-      $("td-dark").style.setProperty("--dark", Math.min(0.8, S.depth * 0.045));
+      $("td-dark").style.setProperty("--dark", Math.max(Math.min(0.8, S.depth * 0.045), S.darkBase || 0));
     }
     // rival marker
     if (S.rivalSpeed > 0) {
@@ -310,6 +317,9 @@ function initTreasureDig() {
       const diff = S.depth - Math.floor(S.rival), chip = $("td-rival-chip");
       chip.textContent = `${S.rivalIcon} ${Math.floor(S.rival)} m (${diff >= 0 ? "you +" + diff : "behind " + (-diff)})`;
       chip.style.borderColor = diff >= 0 ? "#3fb86f" : "#e35252";
+      const rf = Math.floor(S.rival);
+      if (rf !== S.rvShown) { S.rvShown = rf; Object.keys(world._rows).forEach(k => { const r = world._rows[k]; if (r._rv) r._rv.classList.toggle("dug", +k <= rf); }); }
+      const wallW = (scene.clientWidth - 150) / 2; rivalEl.style.left = (scene.clientWidth / 2 + 75 + wallW * 0.62 + 13 - 11) + "px";
     }
     // danger level -> vignette, bars, music tempo, camera, miner mood
     let d = 0;
@@ -332,7 +342,7 @@ function initTreasureDig() {
     $("td-hud-energy").textContent = "❤️".repeat(Math.max(0, S.energy)) + "🖤".repeat(Math.max(0, S.energyMax - S.energy)) + (S.shield ? " 🛡️" : "");
     $("td-hud-bagc").textContent = S.bag.coins; $("td-hud-bagg").textContent = S.bag.gems;
     const c = $("td-hud-combo"); c.classList.toggle("hidden", S.streak < 2); c.textContent = `🔥 x${S.streak}`; c.classList.toggle("hot", S.streak >= 3);
-    $("td-miner").classList.toggle("fire", S.streak >= 3);
+    $("td-miner").classList.toggle("fire", S.streak >= (hasSkill("fire") ? 2 : 3));
     $("td-rush").classList.toggle("hidden", !(S.rush > 0));
   }
   function setSheet(html) { $("td-sheet").innerHTML = html; return $("td-sheet"); }
@@ -368,21 +378,22 @@ function initTreasureDig() {
   function pickQ(tier) {
     for (let i = 0; i < 6; i++) {
       const P = window.AIGQuestionPools;
-      const q = P ? P.rollMixed(() => rollMath(tier)) : rollMath(tier);
+      let q = S.onlyPool === "sci" && P && P.pickScience ? P.pickScience() : null;
+      if (q) q = { key: "science", ...q }; else q = P ? P.rollMixed(() => rollMath(tier)) : rollMath(tier);
       if (!S.seen.has(q.prompt) || i === 5) { S.seen.add(q.prompt); return q; }
     }
   }
   function qTimer(d, extra = 0) {
     if (!S.pressure) return 0;
     let t = Math.max(6000, 16000 - d * 650) + (S.timeBonus || 0) + extra;
-    t *= Math.pow(0.8, S.curse || 0); if (S.rush > 0) t *= 0.75;
+    t *= Math.pow(0.8, S.curse || 0) * (S.timeMul || 1); if (S.rush > 0) t *= 0.75;
     return Math.max(2500, Math.round(t));
   }
 
   // ask(): question in the bottom sheet -> {ok, blast, timeout, aborted}
   function ask(o) {
     return waitFor(resolve => {
-      let q = pickQ(o.tier), done = false, left = o.timerMs || 0, tid = null;
+      let q = o.q || pickQ(o.tier), done = false, left = o.timerMs || 0, tid = null;
       const total = left;
       if (o.two) { const wrong = shuffle(q.options.filter(x => x !== q.correctLabel))[0]; q = { ...q, options: shuffle([q.correctLabel, wrong]) }; }
       S.cancelAsk = () => { done = true; clearInterval(tid); resolve({ aborted: true }); };
@@ -391,6 +402,9 @@ function initTreasureDig() {
         const sh = setSheet(`${o.header || ""}${total ? `<div class="td-timer" id="td-timer"><i></i></div>` : ""}<div class="td-q-prompt"></div><div class="td-q-grid"></div><div class="td-tools" id="td-tools"></div>`);
         sh.querySelector(".td-q-prompt").textContent = q.prompt;
         const grid = sh.querySelector(".td-q-grid");
+        if (q.html) { const v = document.createElement("div"); v.className = "td-vis"; v.innerHTML = q.html; grid.parentNode.insertBefore(v, grid); }
+        if (o.blocks) grid.classList.add("td-blocks");
+        if (o.flash && !q.html && q.prompt.length <= 34 && !o.flashed) { o.flashed = true; toast("👁 FLASH! Memorize it!"); setTimeout(() => { const pe = $("td-sheet").querySelector(".td-q-prompt"); if (!done && pe) pe.textContent = "❓ It vanished! (you saw it...)"; }, 2300); }
         q.options.forEach(opt => { const b = document.createElement("button"); b.type = "button"; b.className = "td-q-btn"; b.textContent = opt; b.onclick = () => answer(b, opt); grid.appendChild(b); });
         if (o.lifelines) {
           const tools = $("td-tools");
@@ -419,6 +433,7 @@ function initTreasureDig() {
       function answer(btn, opt) {
         if (done) return; done = true; clearInterval(tid); bigCount(null); S.qFrac = undefined;
         const ok = opt === q.correctLabel;
+        if (o.blocks) { const t = $("td-tool"); t.classList.remove("swing"); void t.offsetWidth; t.classList.add("swing"); sfx.dig(); }
         $("td-sheet").querySelectorAll(".td-q-btn").forEach(b => { b.disabled = true; if (b.textContent === q.correctLabel) b.classList.add("correct"); else if (b === btn) b.classList.add("wrong"); });
         try { LB.recordTopicAttempt("treasure-dig", q.key || "math", ok); } catch (e) {}
         const slow = !!o.decisive || S.energy === 1;
@@ -440,7 +455,9 @@ function initTreasureDig() {
   }
   function hurt(reason) { // -> true if the dig is over
     S.streak = 0; S.mistakes++; S.rush = 0;
+    if (S.helmet) { S.helmet = false; floatText("🪖 Blocked!"); sfx.block(); renderHud(); return false; }
     if (S.shield) { S.shield = false; floatText("🤖 Blocked!"); sfx.block(); renderHud(); return false; }
+    if (reason === "boss") S.bossHits = (S.bossHits || 0) + 1;
     S.energy--; flash("rgba(220,40,40,.6)"); shake(); sfx.bad(); buzz(120); if (reason !== "lava") boLine("bad"); renderHud();
     heroEl.classList.add("stun"); setTimeout(() => heroEl.classList.remove("stun"), 500);
     if (S.energy <= 0) { endRun("dead"); return true; }
@@ -453,7 +470,7 @@ function initTreasureDig() {
   function addBag(c, g) { S.bag.coins = Math.max(0, S.bag.coins + c); S.bag.gems = Math.max(0, S.bag.gems + g); renderHud(); }
   const pickMult = () => 1 + 0.15 * (td.pick || 0);
   const hasBuddy = id => look.buddy === id;
-  const coinsMul = (base, extra = 1) => Math.round(base * S.modeMul * S.lootMul * pickMult() * extra);
+  const coinsMul = (base, extra = 1) => Math.round(base * S.modeMul * S.lootMul * pickMult() * shelfMult() * extra);
 
   function debris() {
     for (let i = 0; i < 8; i++) {
@@ -478,6 +495,7 @@ function initTreasureDig() {
 
   // ---------------- relics + loot ----------------
   function pickRelic(d, rich) {
+    const se = season(); if (se && R() < 0.16) return rpick(se.relics);
     const r = R(); let rar;
     if (rich) rar = r < 0.2 ? "C" : r < 0.75 ? "R" : "L"; else rar = r < 0.7 ? "C" : r < 0.95 ? "R" : "L";
     const maxB = biomeOf(d); const b = R() < 0.55 ? maxB : rr(0, maxB);
@@ -487,7 +505,7 @@ function initTreasureDig() {
   async function relicFound(r) {
     const prev = td.relics[r.id] || 0; td.relics[r.id] = prev + 1;
     S.found.push({ r, isNew: prev === 0 });
-    bump("relics"); sfx.relic(); buzz(60);
+    bump("relics"); bump("relicB", 1, biomeOf(Math.max(1, S.depth))); sfx.relic(); buzz(60);
     let bonus = 0; if (prev > 0) { bonus = DUP_BONUS[r.rar]; addBag(bonus, 0); }
     const cursed = r.rar !== "C" && S.pressure && S.curse < 2 && R() < 0.22;
     if (cursed) { S.curse++; addBag(20, 0); }
@@ -513,16 +531,17 @@ function initTreasureDig() {
     }
   }
   async function lootStep(d, path, fast) {
-    const rock = path === "rock" ? 2 : 1, heat = S.streak >= 3 ? 1.5 : 1, rush = S.rush > 0 ? 3 : 1;
+    const rock = path === "rock" ? 2 : 1, heat = S.streak >= (hasSkill("fire") ? 2 : 3) ? 1.5 : 1, rush = S.rush > 0 ? 3 : 1;
+    if (hasBuddy("mole") && buddyLevel() >= 2) addBag(1, 0);
     if (R() < Math.min(0.85, 0.35 + d * 0.03)) {
       const coins = coinsMul(Math.min(14, 2 + Math.floor(d * 0.8)) * rock * heat * rush * (fast ? 1.25 : 1));
-      const gem = R() < 0.08 + d * 0.02 + (hasBuddy("mole") ? 0.06 : 0) + (rock > 1 ? 0.05 : 0) ? 1 : 0;
+      const gem = R() < 0.08 + d * 0.02 + (hasBuddy("mole") ? 0.06 : 0) + (rock > 1 ? 0.05 : 0) + (hasSkill("gem") ? 0.04 : 0) + (hasBuddy("mole") && buddyLevel() >= 3 ? 0.05 : 0) ? 1 : 0;
       addBag(coins, gem); sfx.coin(); floatText(`+${coins} 🪙${gem ? " +1 💎" : ""}${rush > 1 ? " 🔥" : ""}`);
       await dly(500); if (S.ended) return;
     }
     if (S.rush > 0) { S.rush--; renderHud(); }
     if (R() < 0.1 + (td.pick || 0) * 0.03 + (hasBuddy("mole") ? 0.08 : 0) + (rock > 1 ? 0.1 : 0) + (heat > 1 ? 0.03 : 0)) { await relicFound(pickRelic(d, false)); if (S.ended) return; }
-    if (R() < 0.04) { td.maps = (td.maps || 0) + 1; toast(`🗺️ Map piece ${Math.min(td.maps, 4)}/4`); save(); }
+    if (R() < 0.05) addMapPiece(d);
     if (R() < 0.05) { const k = rpick(["fifty", "skip"]); S[k]++; toast(k === "fifty" ? "🎯 Found a 50/50!" : "⏭ Found a Skip!"); }
     if (R() < 0.13) await chestEvent(2, false);
   }
@@ -543,7 +562,7 @@ function initTreasureDig() {
     const b = document.createElement("div"); b.className = "td-bat2"; b.textContent = "🦇";
     const fromLeft = Math.random() < 0.5; b.style.left = fromLeft ? "-8%" : "104%"; b.style.top = rand(30, 90) + "px"; fx.appendChild(b);
     let swatted = false;
-    b.onpointerdown = e => { e.stopPropagation(); if (swatted) return; swatted = true; S.swats++; spark(b); sfx.coin(); addBag(1, 0); floatText("+1 🪙 swat!"); b.remove(); checkAch(); };
+    b.onpointerdown = e => { e.stopPropagation(); if (swatted) return; swatted = true; S.swats++; bump("swat"); spark(b); sfx.coin(); addBag(1, 0); floatText("+1 🪙 swat!"); b.remove(); checkAch(); };
     requestAnimationFrame(() => requestAnimationFrame(() => { b.style.left = `calc(50% + ${(S.lane - 1) * LANE_PX - 12}px)`; b.style.top = "62px"; }));
     setTimeout(() => { if (!swatted) { b.remove(); if (S && !S.ended) { S.fuel = Math.max(0, S.fuel - 10); floatText("🦇 -10 🔦"); sfx.bad(); buzz(50); } } }, 2300);
   }
@@ -561,7 +580,8 @@ function initTreasureDig() {
       if (S.lava >= S.depth - 0.3) { lavaHit(); if (S.ended) return; }
       if (S.hazards && S.depth >= 2) {
         S.nextRock -= dt; if (S.nextRock <= 0) { spawnRock(); S.nextRock = 4 + Math.random() * 3; }
-        if (S.depth >= 3) { S.nextBat -= dt; if (S.nextBat <= 0) { spawnBat(); S.nextBat = 9 + Math.random() * 5; } }
+        if (S.depth >= 3) { S.nextBat -= dt; if (S.nextBat <= 0) { spawnBat(); S.nextBat = (9 + Math.random() * 5) * ((season() || {}).batMul || 1); } }
+        if (S.depth >= 6) { S.nextBiome -= dt; if (S.nextBiome <= 0) { biomeHazard(); S.nextBiome = 9 + Math.random() * 5; } }
       }
     }
     renderDynamic();
@@ -570,7 +590,8 @@ function initTreasureDig() {
   // ---------------- mini-games ----------------
   function tapDig(path) { // -> true if fast
     if (!S.pressure) return Promise.resolve(true);
-    const need = Math.max(3, (path === "rock" ? 9 : 5) - (S.rush > 0 ? 2 : 0)), total = 2300;
+    if (Math.random() < 0.3) return holdDig();
+    const need = Math.max(3, (path === "rock" ? 9 : 5) - (S.rush > 0 ? 2 : 0) - (hasSkill("hands") ? 1 : 0)), total = 2300;
     return waitFor(res => {
       let taps = 0, left = total, tid = null, fin = false;
       setSheet(`<h2>⛏️ SMASH IT! Tap fast!</h2><div class="td-timer"><i id="td-tapbar"></i></div><button class="td-tapbtn" id="td-tap" type="button">⛏️ TAP!<small id="td-tapn">0 / ${need}</small></button>`);
@@ -716,7 +737,7 @@ function initTreasureDig() {
   async function bossFight(d) {
     const b = BOSSES[(Math.floor(d / 5) - 1) % 5], tag = Math.floor((d / 5 - 1) / 5) > 0 ? "Elder " : "", bi = Math.floor(d / 5) - 1;
     let shield = bi === 0 ? 1 : 2, hp = 3 + Math.floor(d / 10); const maxHp = hp, maxShield = shield;
-    S.calm = true; S.hazards = false;
+    S.calm = true; S.hazards = false; S.bossHits = 0; if (hasBuddy("owl") && buddyLevel() >= 3) S.fifty++;
     await cinematic(b.emoji, `${tag}${b.name}`.toUpperCase()); if (S.ended) return;
     showMonster(b.emoji); flash("rgba(160,0,0,.5)"); shake(); bo(`BOSS: ${tag}${b.name}! Dodge its attacks!`);
     setSheet(`<h2>⚔️ BOSS: ${tag}${esc(b.name)}</h2><p>Break the 🛡️ shield, then drain its HP. ${S.pressure ? "It attacks in lanes — tap the mine's left/right side to dodge!" : ""}</p><button class="td-btn red" id="td-fight">⚔️ Fight!</button>`);
@@ -725,7 +746,7 @@ function initTreasureDig() {
     while ((hp > 0 || shield > 0) && !S.ended) {
       const last = hp === 1 && shield <= 0;
       const hpBar = `<div class="td-bosshp" style="border-color:#4f8fe0;margin-bottom:3px"><i style="width:${shield / maxShield * 100}%;background:#4f8fe0"></i></div><div class="td-bosshp"><i style="width:${hp / maxHp * 100}%"></i></div>`;
-      const r = await ask({ tier: TIERS[tierIdxFor(d)], timerMs: S.pressure ? (last ? 5000 : qTimer(d, 3000)) : 0, lifelines: true, decisive: last, header: `<h2>${last ? "💥 FINAL BLOW!" : (shield > 0 ? "🛡️ " : "") + b.emoji + " " + esc(b.name)}</h2>${hpBar}` });
+      const r = await ask({ tier: TIERS[tierIdxFor(d)], timerMs: S.pressure ? (last ? 5000 : qTimer(d, 3000)) : 0, lifelines: true, decisive: last, q: bossQ(bi, TIERS[tierIdxFor(d)]), header: `<h2>${last ? "💥 FINAL BLOW!" : (shield > 0 ? "🛡️ " : "") + b.emoji + " " + esc(b.name)}</h2>${hpBar}` });
       if (S.ended) { stopAtk(); return; }
       if (r.ok) {
         if (shield > 0) { shield--; floatText("🛡️ Shield cracked!"); if (shield === 0) { toast("😡 ENRAGED!"); sfx.warn(); } } else hp--;
@@ -738,31 +759,32 @@ function initTreasureDig() {
     stopAtk();
     if (S.ended) return;
     $("td-monster").textContent = "💥"; sfx.boom(); flash("rgba(255,200,80,.7)"); await dly(700); hideMonster();
-    S.bosses++; bump("boss"); S.energy = Math.min(S.energyMax, S.energy + 1);
+    S.bosses++; bump("boss"); td.dp = (td.dp || 0) + 2; if (!S.bossHits) bump("noHit"); if (hasBuddy("robot") && buddyLevel() >= 3) S.shield = true; S.energy = Math.min(S.energyMax, S.energy + 1);
     S.calm = false; S.lava = Math.min(S.lava, S.depth - 5); S.fuel = Math.min(100, S.fuel + 30);
     await digDown(); if (S.ended) return;
     const coins = coinsMul(10 + d * 2); addBag(coins, 1); floatText(`BOSS LOOT +${coins} 🪙 +1 💎`); await dly(900); if (S.ended) return;
-    if (R() < 0.25) { td.maps = (td.maps || 0) + 1; toast(`🗺️ Map piece ${Math.min(td.maps, 4)}/4`); }
+    if (R() < 0.3) addMapPiece(d);
     await relicFound(pickRelic(d, true)); if (S.ended) return;
     checkAch(); renderHud(); S.hazards = true;
   }
 
   // ---------------- minecart bonus ride ----------------
-  async function minecart() {
-    if (S.ended) return;
+  async function minecart(kind) {
+    kind = kind || "cart"; if (S.ended) return;
     const tier = TIERS[tierIdxFor(S.depth)], laneX = [20, 50, 80];
     S.calm = true; hold();
-    const plan = []; for (let i = 0; i < 3; i++) { plan.push({ k: "coin" }, { k: "rock" }, { k: "gate", q: pickQ(tier) }); }
+    const plan = []; for (let i = 0; i < 3; i++) { plan.push({ k: "coin" }, { k: "rock" }, ...(kind === "cart" ? [{ k: "gap" }] : []), { k: "gate", q: pickQ(tier) }); }
     const r = await waitFor(res => {
-      setSheet(`<h2>🛒 Minecart bonus ride!</h2><div class="td-cart-sign" id="td-cart-sign">Get ready…</div><div class="td-cart" id="td-cart"></div><div class="td-cart-ctrl"><button id="td-cl" type="button">◀</button><button id="td-cr" type="button">▶</button></div>`);
+      setSheet(`<h2>${kind === "river" ? "🛶 River rafting!" : "🛒 Minecart bonus ride!"}</h2><div class="td-cart-sign" id="td-cart-sign">Get ready…</div><div class="td-cart" id="td-cart"></div><div class="td-cart-ctrl"><button id="td-cl" type="button">◀</button><button id="td-cj" type="button">⬆</button><button id="td-cr" type="button">▶</button></div>`);
       const field = $("td-cart"); laneX.forEach(x => { const l = document.createElement("div"); l.className = "lane"; l.style.left = x + "%"; field.appendChild(l); });
-      const me = document.createElement("div"); me.className = "me"; me.textContent = "🛒"; me.style.top = "86%"; field.appendChild(me);
+      const me = document.createElement("div"); me.className = "me"; me.textContent = kind === "river" ? "🛶" : "🛒"; me.style.top = "86%"; field.appendChild(me);
       let lane = 1, pos = 0, y0 = 0, rows = [], gatesDone = 0, endAt = 0, coins = 0, correct = 0, finished = false, last = performance.now(), qi = 0;
       const setL = l => { lane = clamp(l, 0, 2); me.style.left = laneX[lane] + "%"; }; setL(1);
       $("td-cl").onpointerdown = e => { e.preventDefault(); setL(lane - 1); }; $("td-cr").onpointerdown = e => { e.preventDefault(); setL(lane + 1); };
-      let sx = null; field.onpointerdown = e => { sx = e.clientX; };
-      field.onpointerup = e => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 24) setL(lane + (dx > 0 ? 1 : -1)); else { const rc = field.getBoundingClientRect(), f = (e.clientX - rc.left) / rc.width; setL(f < 0.4 ? lane - 1 : f > 0.6 ? lane + 1 : lane); } };
-      const key = e => { if (e.key === "ArrowLeft") setL(lane - 1); else if (e.key === "ArrowRight") setL(lane + 1); }; document.addEventListener("keydown", key);
+      let jumpUntil = 0; const cJump = () => { jumpUntil = performance.now() + 650; me.style.marginTop = "-34px"; setTimeout(() => { me.style.marginTop = ""; }, 650); }; $("td-cj").onpointerdown = e => { e.preventDefault(); cJump(); };
+      let sx = null, sy = 0; field.onpointerdown = e => { sx = e.clientX; sy = e.clientY; };
+      field.onpointerup = e => { if (sx === null) return; const dx = e.clientX - sx, dy = e.clientY - sy; sx = null; if (dy < -28 && Math.abs(dy) > Math.abs(dx)) { cJump(); return; } if (Math.abs(dx) > 24) setL(lane + (dx > 0 ? 1 : -1)); else { const rc = field.getBoundingClientRect(), f = (e.clientX - rc.left) / rc.width; setL(f < 0.4 ? lane - 1 : f > 0.6 ? lane + 1 : lane); } };
+      const key = e => { if (e.key === "ArrowLeft") setL(lane - 1); else if (e.key === "ArrowRight") setL(lane + 1); else if (e.key === "ArrowUp") cJump(); }; document.addEventListener("keydown", key);
       const gates = plan.filter(p => p.k === "gate");
       gates.forEach(p => { const cor = p.q.correctLabel, wr = shuffle(p.q.options.filter(o => o !== cor)).slice(0, 2); p.labels = shuffle([cor, ...wr]); p.correctIdx = p.labels.indexOf(cor); p.lettered = p.labels.some(l => String(l).length > 8); });
       const sign = () => { const p = gates[qi]; if (!p) return; $("td-cart-sign").innerHTML = esc(p.q.prompt) + (p.lettered ? "<br>" + p.labels.map((l, i) => `<b style="color:#f7c548">${"ABC"[i]})</b> ${esc(l)}`).join(" &nbsp;") : ""); };
@@ -776,6 +798,7 @@ function initTreasureDig() {
           const p = plan[pos], row = { k: p.k, y: y0 - pos * 0.55, items: [], resolved: false, p };
           const mkEnt = (txt, cls) => { const e = document.createElement("div"); e.className = "ent" + (cls ? " " + cls : ""); e.textContent = txt; field.appendChild(e); return e; };
           if (p.k === "coin") shuffle([0, 1, 2]).slice(0, rand(1, 2)).forEach(l => row.items.push({ l, e: mkEnt("🪙") }));
+          else if (p.k === "gap") shuffle([0, 1, 2]).slice(0, rand(1, 2)).forEach(l => row.items.push({ l, e: mkEnt("🕳️") }));
           else if (p.k === "rock") shuffle([0, 1, 2]).slice(0, rand(1, 2)).forEach(l => row.items.push({ l, e: mkEnt("🪨") }));
           else p.labels.forEach((lab, i) => row.items.push({ l: i, e: mkEnt(p.lettered ? "ABC"[i] : lab, "gate"), idx: i }));
           rows.push(row); pos++;
@@ -786,6 +809,7 @@ function initTreasureDig() {
           if (!row.resolved && prev < 0.86 && row.y >= 0.86) {
             row.resolved = true;
             if (row.k === "coin") { row.items.forEach(it => { if (it.l === lane) { coins += 1; it.e.style.opacity = 0; sfx.coin(); } }); }
+            else if (row.k === "gap") { const hit = row.items.find(it => it.l === lane); if (hit && performance.now() > jumpUntil) { S.fuel = Math.max(0, S.fuel - 15); hit.e.style.opacity = 0; sfx.bad(); buzz(60); floatText("🕳️ -15 🔦"); } else if (hit) floatText("✔ jumped!"); }
             else if (row.k === "rock") { const hit = row.items.find(it => it.l === lane); if (hit) { S.fuel = Math.max(0, S.fuel - 15); hit.e.style.opacity = 0; sfx.bad(); buzz(60); floatText("🪨 -15 🔦"); } }
             else {
               const it = row.items.find(x => x.l === lane), ok = it && it.idx === row.p.correctIdx;
@@ -809,6 +833,381 @@ function initTreasureDig() {
     const bonus = coinsMul(r.coins + r.correct * 3); addBag(bonus, 0); unlockAch("cart"); toast(`🛒 Ride done! +${bonus} 🪙`); sfx.chest(); await dly(700);
   }
 
+  // =====================================================================================
+  // VARIETY PACK -- every biome plays differently, questions come in many shapes, and the
+  // tunnel is full of side branches, mini-games, monsters, NPCs and seasonal surprises.
+  // =====================================================================================
+  const SEASONS = [
+    { id: "halloween", from: [10, 1], to: [11, 2], name: "Halloween", emoji: "🎃", batMul: 0.55, banner: "🎃 Halloween event: extra bats and spooky relics!", relics: [{ id: "s_pumpkin", name: "Jack Lantern", emoji: "🎃", rar: "R", b: -1 }, { id: "s_ghost", name: "Tiny Ghost", emoji: "👻", rar: "R", b: -1 }, { id: "s_candy", name: "Candy Bone", emoji: "🍬", rar: "C", b: -1 }] },
+    { id: "xmas", from: [12, 15], to: [1, 2], name: "Winter", emoji: "❄️", batMul: 1, banner: "🎄 Winter event: snowy relics hide in the mine!", relics: [{ id: "s_tree", name: "Crystal Tree", emoji: "🎄", rar: "R", b: -1 }, { id: "s_snow", name: "Snowman", emoji: "⛄", rar: "R", b: -1 }, { id: "s_gift", name: "Buried Gift", emoji: "🎁", rar: "C", b: -1 }] },
+    { id: "merdeka", from: [8, 10], to: [8, 20], name: "Merdeka", emoji: "🇮🇩", batMul: 1, banner: "🇮🇩 Merdeka event: heroic relics are buried below!", relics: [{ id: "s_flag", name: "Red-White Flag", emoji: "🚩", rar: "R", b: -1 }, { id: "s_bamboo", name: "Bamboo Spear", emoji: "🎋", rar: "R", b: -1 }, { id: "s_cracker", name: "Kerupuk", emoji: "🍘", rar: "C", b: -1 }] }
+  ];
+  function season() {
+    const d = new Date(), md = (d.getMonth() + 1) * 100 + d.getDate();
+    return SEASONS.find(s => { const a = s.from[0] * 100 + s.from[1], b = s.to[0] * 100 + s.to[1]; return a <= b ? (md >= a && md <= b) : (md >= a || md <= b); }) || null;
+  }
+  const SKILLS = [
+    { id: "lamp", e: "🔦", n: "Bright Lamp", d: "Torch burns 15% slower", cost: 3 },
+    { id: "helm", e: "🪖", n: "Thick Helmet", d: "Absorbs your first hit each dig", cost: 4 },
+    { id: "hands", e: "⚡", n: "Quick Hands", d: "1 fewer tap to smash blocks", cost: 3 },
+    { id: "gem", e: "💎", n: "Gem Eye", d: "+4% gem chance", cost: 5 },
+    { id: "fire", e: "🔥", n: "Fire Pick", d: "Heat starts at a 2x combo", cost: 6 }
+  ];
+  const DAILY_RULES = [
+    { id: "dark", n: "🌑 Blackout", d: "The mine starts in the dark", apply: st => { st.darkBase = 0.55; } },
+    { id: "nolife", n: "🚫 No lifelines", d: "No 50/50 or skip today", apply: st => { st.fifty = 0; st.skip = 0; } },
+    { id: "sci", n: "🔬 Science Day", d: "Only science questions", apply: st => { st.onlyPool = "sci"; } },
+    { id: "sprint", n: "⚡ Sprint", d: "Timers are 30% shorter", apply: st => { st.timeMul = 0.7; } },
+    { id: "gold", n: "💰 Gold Rush", d: "Loot ×2 but lava 25% faster", apply: st => { st.lootMul *= 2; st.lavaMul *= 1.25; } }
+  ];
+  const WORDS = [["planet", "🪐 orbits a star"], ["gravity", "🍎 pulls things down"], ["volcano", "🌋 erupts lava"], ["triangle", "🔺 3 sides"], ["magnet", "🧲 sticks to iron"], ["castle", "🏰 a king lives here"], ["jungle", "🌴 thick wild forest"], ["oxygen", "💨 we breathe it"], ["rainbow", "🌈 after the rain"], ["pyramid", "🔺 in Egypt"], ["library", "📚 full of books"], ["diamond", "💎 a hard gem"], ["compass", "🧭 shows north"], ["dolphin", "🐬 a smart sea animal"], ["eclipse", "🌑 moon blocks the sun"], ["fossil", "🦴 ancient remains"], ["crystal", "🔮 shiny mineral"], ["tunnel", "🚇 an underground path"], ["lantern", "🏮 a portable light"], ["treasure", "🧰 pirates seek it"]];
+  const hasSkill = id => !!(td.skills && td.skills[id]);
+  const buddyLevel = () => { const x = td.buddyXp || 0; return x >= 160 ? 3 : x >= 80 ? 2 : x >= 30 ? 1 : 0; };
+  const shelfMult = () => 1 + (td.shelf || []).reduce((a, id) => { const r = allRelics().find(x => x.id === id); return a + (r ? { C: 0.01, R: 0.02, L: 0.04 }[r.rar] : 0); }, 0);
+  const allRelics = () => RELICS.concat(...SEASONS.map(s => s.relics));
+  const ruleOn = () => { try { return localStorage.getItem("td_rule_off") !== "1"; } catch (e) { return true; } };
+  const todayRule = () => DAILY_RULES[hashStr("rule|" + todayStr()) % DAILY_RULES.length];
+
+  // ---- jump (dodges rubble, arrows, hot floor, spikes) ----
+  function doJump() {
+    if (!S || !S.live || S.ended || S.hold > 0) return;
+    const now = performance.now(); if (now < S.jumpCd) return;
+    S.jumping = true; S.jumpCd = now + 900; heroEl.classList.add("jump"); sfx.swish();
+    setTimeout(() => { if (S) S.jumping = false; heroEl.classList.remove("jump"); }, 620);
+  }
+  function warnAt(lane, txt, ms) { const w = document.createElement("div"); w.className = "td-warn"; w.textContent = txt || "⚠️"; w.style.left = laneLeft(lane); fx.appendChild(w); setTimeout(() => w.remove(), ms); return w; }
+  function fuelHit(n, label) { if (!S || S.ended) return; S.fuel = Math.max(0, S.fuel - n); floatText(label || `-${n} 🔦`); sfx.bad(); shake(); buzz(80); heroEl.classList.add("stun"); setTimeout(() => heroEl.classList.remove("stun"), 500); }
+
+  // ---- one signature hazard per biome ----
+  function biomeHazard() {
+    const b = biomeOf(S.depth);
+    if (b === 1) landslide(); else if (b === 2) crystalShards(); else if (b === 3) hotFloor(); else if (b === 4) arrowTrap();
+  }
+  function landslide() {
+    const lanes = Math.random() < 0.5 ? [0, 1] : [1, 2]; sfx.warn(); bo("Landslide! Get out of the way!");
+    lanes.forEach(l => warnAt(l, "⚠️", 1000));
+    setTimeout(() => {
+      if (!S || S.ended) return;
+      lanes.forEach(l => { const r = document.createElement("div"); r.className = "td-rock"; r.textContent = "🪨"; r.style.left = laneLeft(l); fx.appendChild(r); setTimeout(() => r.remove(), 320); });
+      setTimeout(() => { if (S && !S.ended && lanes.includes(S.lane) && !S.jumping) fuelHit(15, "🪨 -15 🔦"); }, 300);
+    }, 1000);
+  }
+  function crystalShards() {
+    bo("Crystal shards! Tap them before they hit!");
+    for (let i = 0; i < 3; i++) setTimeout(() => {
+      if (!S || S.ended) return;
+      let lane = rand(0, 2), smashed = false; const el = document.createElement("div"); el.className = "td-shard"; el.textContent = "💎"; el.style.left = laneLeft(lane); el.style.top = "-24px"; fx.appendChild(el);
+      requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transition = "top 2.4s linear, left .35s ease"; el.style.top = "88px"; }));
+      setTimeout(() => { if (!smashed) { lane = (lane + (Math.random() < 0.5 ? 1 : 2)) % 3; el.style.left = laneLeft(lane); } }, 900);
+      el.onpointerdown = e => { e.stopPropagation(); if (smashed) return; smashed = true; spark(el); sfx.coin(); const gem = Math.random() < 0.25; addBag(gem ? 0 : 1, gem ? 1 : 0); floatText(gem ? "+1 💎" : "+1 🪙"); el.remove(); };
+      setTimeout(() => { if (smashed) return; el.remove(); if (S && !S.ended && S.lane === lane && !S.jumping) fuelHit(10, "💎 -10 🔦"); }, 2450);
+    }, i * 700);
+  }
+  function hotFloor() {
+    const safe = rand(0, 2), hot = [0, 1, 2].filter(l => l !== safe); sfx.warn(); bo("The floor is hot! Find the stone lane!");
+    hot.forEach(l => warnAt(l, "🔥", 1100)); warnAt(safe, "🪨", 1100);
+    setTimeout(() => {
+      if (!S || S.ended) return;
+      const fl = hot.map(l => { const f = document.createElement("div"); f.className = "td-flame"; f.textContent = "🔥"; f.style.left = laneLeft(l); fx.appendChild(f); setTimeout(() => f.remove(), 700); return f; });
+      void fl; if (hot.includes(S.lane) && !S.jumping) fuelHit(15, "🔥 -15 🔦");
+    }, 1100);
+  }
+  function arrowOnce() {
+    return new Promise(res => {
+      warnAt(1, "⬆ JUMP!", 800); sfx.warn();
+      setTimeout(() => {
+        if (!S || S.ended) { res(true); return; }
+        const a = document.createElement("div"); a.className = "td-arrow"; a.textContent = "🏹"; fx.appendChild(a);
+        requestAnimationFrame(() => requestAnimationFrame(() => { a.style.transition = "left 850ms linear"; a.style.left = "-12%"; }));
+        let ok = false;
+        setTimeout(() => { ok = !!S && S.jumping; if (S && !S.ended) { if (ok) { floatText("✔ dodged!"); sfx.swish(); } else fuelHit(15, "🏹 -15 🔦"); } }, 850 * 0.8);
+        setTimeout(() => { a.remove(); res(ok); }, 950);
+      }, 800);
+    });
+  }
+  function arrowTrap() { bo("Arrow trap! Jump (swipe up)!"); arrowOnce(); }
+
+  // ---- new question shapes ----
+  function mcPack(correctVal, nearFn, fmt) {
+    fmt = fmt || String; const set = new Set([correctVal]); let g = 0;
+    while (set.size < 4 && g++ < 60) { const c = nearFn(); if (c !== correctVal && c >= 0) set.add(c); }
+    let b = 1; while (set.size < 4) set.add(correctVal + b++);
+    return { options: shuffle([...set]).map(fmt), correctLabel: fmt(correctVal) };
+  }
+  function qPattern(tier) {
+    const ti = TIERS.indexOf(tier); let seq, next;
+    if (ti === 0) { const a = rand(1, 9), d = rand(2, 5); seq = [a, a + d, a + 2 * d, a + 3 * d]; next = a + 4 * d; }
+    else if (ti === 1) { if (Math.random() < 0.5) { const a = rand(5, 40), d = rand(6, 13); seq = [a, a + d, a + 2 * d, a + 3 * d]; next = a + 4 * d; } else { const a = rand(2, 5); seq = [a, a * 2, a * 4, a * 8]; next = a * 16; } }
+    else { if (Math.random() < 0.5) { const a = rand(2, 4); seq = [a, a * 3, a * 9, a * 27]; next = a * 81; } else { const n0 = rand(1, 4); seq = [n0 * n0, (n0 + 1) ** 2, (n0 + 2) ** 2, (n0 + 3) ** 2]; next = (n0 + 4) ** 2; } }
+    return { prompt: `What comes next?  ${seq.join(", ")}, ?`, ...mcPack(next, () => next + rand(-9, 9)), key: "pattern" };
+  }
+  function clockSvg(h, m) {
+    const hand = (ang, len, w) => `<line x1="60" y1="60" x2="${60 + len * Math.sin(ang * Math.PI / 180)}" y2="${60 - len * Math.cos(ang * Math.PI / 180)}" stroke="#f6e7cf" stroke-width="${w}" stroke-linecap="round"/>`;
+    let ticks = ""; for (let i = 0; i < 12; i++) { const a = i * 30 * Math.PI / 180; ticks += `<text x="${60 + 46 * Math.sin(a)}" y="${60 - 46 * Math.cos(a) + 4}" fill="#f7c548" font-size="11" font-weight="800" text-anchor="middle">${i === 0 ? 12 : i}</text>`; }
+    return `<svg viewBox="0 0 120 120" width="118" height="118"><circle cx="60" cy="60" r="56" fill="#3a281a" stroke="#f7c548" stroke-width="4"/>${ticks}${hand(((h % 12) / 12) * 360 + (m / 60) * 30, 26, 4)}${hand((m / 60) * 360, 38, 2.5)}<circle cx="60" cy="60" r="3" fill="#f7c548"/></svg>`;
+  }
+  function qClock(tier) {
+    const ti = TIERS.indexOf(tier), mm = () => ti === 0 ? pick([0, 30]) : ti === 1 ? pick([0, 15, 30, 45]) : rand(0, 11) * 5, fmt = (h, m) => `${h}:${String(m).padStart(2, "0")}`;
+    const h = rand(1, 12), m = mm(), correct = fmt(h, m), set = new Set([correct]); let g = 0; while (set.size < 4 && g++ < 60) set.add(fmt(rand(1, 12), mm()));
+    return { prompt: "What time does the clock show?", options: shuffle([...set]), correctLabel: correct, html: clockSvg(h, m), key: "clock" };
+  }
+  function pieSvg(n, k) {
+    let paths = ""; for (let i = 0; i < n; i++) { const a0 = i / n * 2 * Math.PI - Math.PI / 2, a1 = (i + 1) / n * 2 * Math.PI - Math.PI / 2; paths += `<path d="M60 60 L${60 + 50 * Math.cos(a0)} ${60 + 50 * Math.sin(a0)} A50 50 0 ${(a1 - a0) > Math.PI ? 1 : 0} 1 ${60 + 50 * Math.cos(a1)} ${60 + 50 * Math.sin(a1)} Z" fill="${i < k ? "#f7c548" : "#3a281a"}" stroke="#f6e7cf" stroke-width="2"/>`; }
+    return `<svg viewBox="0 0 120 120" width="110" height="110">${paths}</svg>`;
+  }
+  function qFraction(tier) {
+    const ti = TIERS.indexOf(tier), n = ti === 0 ? pick([2, 3, 4]) : ti === 1 ? pick([5, 6, 8]) : pick([8, 10, 12]), k = rand(1, n - 1), correct = `${k}/${n}`, set = new Set([correct]); let g = 0;
+    while (set.size < 4 && g++ < 60) set.add(`${rand(1, n - 1)}/${Math.random() < 0.3 ? n + rand(1, 2) : n}`);
+    return { prompt: "What fraction of the circle is shaded?", options: shuffle([...set]), correctLabel: correct, html: pieSvg(n, k), key: "fraction" };
+  }
+  function qCount(tier) {
+    const ti = TIERS.indexOf(tier), target = pick(["💎", "🪙", "🦴", "🔥"]), others = ["🪨", "🟫", "🔩"], n = rand(3 + ti * 2, 7 + ti * 3), arr = [];
+    for (let i = 0; i < n; i++) arr.push(target); for (let i = 0; i < rand(5, 9 + ti * 3); i++) arr.push(pick(others));
+    return { prompt: `How many ${target} are there?`, ...mcPack(n, () => n + rand(-3, 3)), html: `<div class="td-emojigrid">${shuffle(arr).join(" ")}</div>`, key: "count" };
+  }
+  const visualQ = tier => pick([qPattern, qClock, qFraction, qCount])(tier);
+  function bossQ(bi, tier) {
+    const k = bi % 5, P = window.AIGQuestionPools;
+    if (k === 1) return qPattern(tier); if (k === 2) return pick([qFraction, qCount])(tier); if (k === 4) return qClock(tier);
+    if (k === 3 && P && P.pickScience) { const q = P.pickScience(); if (q) return { key: "science", ...q }; }
+    return null;
+  }
+
+  // ---- interactive puzzle questions ----
+  const mkBtn = txt => { const b = document.createElement("button"); b.type = "button"; b.className = "td-q-btn"; b.textContent = txt; return b; };
+  function interactive(o) {
+    return waitFor(res => {
+      let done = false, left = o.ms || 0, tid = null; const total = left;
+      setSheet(`<h2>${o.title}</h2>${total ? `<div class="td-timer" id="td-timer"><i></i></div>` : ""}<div class="td-puzbox" id="td-puzbox"></div>`);
+      const fin = (ok, timeout) => { if (done) return; done = true; clearInterval(tid); bigCount(null); S.qFrac = undefined; try { LB.recordTopicAttempt("treasure-dig", o.key || "puzzle", ok); } catch (e) {} setTimeout(() => res({ ok, timeout: !!timeout }), ok ? 450 : 750); };
+      S.cancelAsk = () => { done = true; clearInterval(tid); res({ aborted: true }); };
+      o.build($("td-puzbox"), fin);
+      if (total) tid = setInterval(() => {
+        if (done || !S || S.hold > 0 || document.hidden) return; left -= 100; S.qFrac = left / total;
+        const t = $("td-timer"); if (t) { t.firstChild.style.width = Math.max(0, left / total * 100) + "%"; t.classList.toggle("low", left < total * 0.3); }
+        if (left <= 3000 && left > 0) bigCount(Math.ceil(left / 1000)); else bigCount(null);
+        if (left <= 0) fin(false, true);
+      }, 100);
+    });
+  }
+  function askOrder(tier, ms) {
+    const ti = TIERS.indexOf(tier), n = ti === 0 ? 4 : 5, max = ti === 0 ? 50 : ti === 1 ? 500 : 5000, nums = [];
+    while (nums.length < n) { const v = rand(1, max); if (!nums.includes(v)) nums.push(v); }
+    const asc = Math.random() < 0.7, order = [...nums].sort((a, b) => asc ? a - b : b - a);
+    return interactive({ title: `🔢 Tap from ${asc ? "SMALLEST to BIGGEST" : "BIGGEST to SMALLEST"}`, key: "puzzle", ms, build: (box, fin) => {
+      let next = 0;
+      nums.forEach(v => { const b = mkBtn(v.toLocaleString("en-US")); b.onclick = () => { if (b.disabled) return; if (v === order[next]) { b.disabled = true; b.classList.add("correct"); next++; sfx.coin(); if (next >= order.length) fin(true); } else { b.classList.add("wrong"); sfx.bad(); fin(false); } }; box.appendChild(b); });
+    } });
+  }
+  function askMatch(tier, ms) {
+    const ti = TIERS.indexOf(tier), lim = ti === 0 ? 6 : ti === 1 ? 9 : 12, facts = [], used = new Set();
+    while (facts.length < 3) { const a = rand(2, lim), b = rand(2, lim); if (used.has(a * b)) continue; used.add(a * b); facts.push({ l: `${a} × ${b}`, r: String(a * b) }); }
+    return interactive({ title: "🔗 Match each sum to its answer", key: "puzzle", ms, build: (box, fin) => {
+      box.classList.add("two"); const left = shuffle(facts), right = shuffle(facts); let sel = null, matched = 0;
+      const L = left.map(f => { const b = mkBtn(f.l); b.onclick = () => { if (b.disabled) return; L.forEach(x => x.classList.remove("sel")); b.classList.add("sel"); sel = f; }; return b; });
+      const Rb = right.map(f => { const b = mkBtn(f.r); b.onclick = () => { if (b.disabled || !sel) return; if (sel === f) { b.disabled = true; b.classList.add("correct"); const lb = L[left.indexOf(f)]; lb.disabled = true; lb.classList.add("correct"); lb.classList.remove("sel"); sel = null; matched++; sfx.coin(); if (matched >= 3) fin(true); } else { b.classList.add("wrong"); sfx.bad(); fin(false); } }; return b; });
+      const c1 = document.createElement("div"), c2 = document.createElement("div"); c1.className = c2.className = "td-col"; L.forEach(b => c1.appendChild(b)); Rb.forEach(b => c2.appendChild(b)); box.appendChild(c1); box.appendChild(c2);
+    } });
+  }
+  function askScramble(tier, ms) {
+    const [word, hint] = pick(WORDS), letters = shuffle(word.split("").map((c, i) => ({ c, i })));
+    return interactive({ title: `🔤 Unscramble the word: ${esc(hint)}`, key: "puzzle", ms, build: (box, fin) => {
+      let typed = ""; const line = document.createElement("div"); line.className = "wordline"; line.textContent = "_ ".repeat(word.length).trim(); box.appendChild(line);
+      letters.forEach(l => { const b = mkBtn(l.c.toUpperCase()); b.onclick = () => { if (b.disabled) return; if (word[typed.length] === l.c) { typed += l.c; b.disabled = true; b.classList.add("correct"); line.textContent = (typed + "_".repeat(word.length - typed.length)).toUpperCase().split("").join(" "); sfx.coin(); if (typed.length === word.length) fin(true); } else { b.classList.add("wrong"); sfx.bad(); fin(false); } }; box.appendChild(b); });
+    } });
+  }
+  function askPads(ms, ti) {
+    const colors = ["#e05555", "#55b36a", "#4f8be0", "#e0c250"], len = 4 + ti, seq = Array.from({ length: len }, () => rand(0, 3));
+    return interactive({ title: "💡 Watch the lights, then repeat!", key: "puzzle", ms: ms ? ms + len * 800 + 1000 : 0, build: (box, fin) => {
+      box.classList.add("two"); let input = 0, listening = false;
+      const pads = colors.map((c, i) => { const b = mkBtn(""); b.className = "td-q-btn pad"; b.style.background = c; b.onclick = () => { if (!listening) return; b.classList.add("lit"); setTimeout(() => b.classList.remove("lit"), 200); sfx.coin(); if (i === seq[input]) { input++; if (input >= seq.length) { listening = false; fin(true); } } else { listening = false; sfx.bad(); fin(false); } }; box.appendChild(b); return b; });
+      seq.forEach((p, k) => { setTimeout(() => { pads[p].classList.add("lit"); sfx.tick(); }, 800 + k * 750); setTimeout(() => pads[p].classList.remove("lit"), 1200 + k * 750); });
+      setTimeout(() => { listening = true; }, 800 + seq.length * 750);
+    } });
+  }
+  function askCatch(tier, fall) {
+    return waitFor(res => {
+      const q = pickQ(tier), correct = q.correctLabel, labels = shuffle([correct, ...shuffle(q.options.filter(o => o !== correct)).slice(0, 2)]), lettered = labels.some(l => String(l).length > 8);
+      setSheet(`<h2>🪂 Catch the right answer!</h2><div class="td-q-prompt"></div><p>${lettered ? labels.map((l, i) => `<b>${"ABC"[i]})</b> ${esc(l)}`).join("&nbsp; ") : "Move under the falling answer you think is right!"}</p>`);
+      $("td-sheet").querySelector(".td-q-prompt").textContent = q.prompt; S.lastQ = q;
+      const els = labels.map((l, i) => { const e = document.createElement("div"); e.className = "td-fall"; e.textContent = lettered ? "ABC"[i] : l; e.style.left = laneLeft(i); e.style.top = "-20px"; fx.appendChild(e); return e; });
+      requestAnimationFrame(() => requestAnimationFrame(() => els.forEach(e => { e.style.transition = `top ${fall}ms linear`; e.style.top = "84px"; })));
+      const ci = labels.indexOf(correct); let done = false;
+      const tm = setTimeout(() => {
+        if (done || !S || S.ended) { els.forEach(e => e.remove()); return; } done = true; const ok = S.lane === ci;
+        els.forEach((e, i) => { e.classList.add(i === ci ? "good" : "bad"); setTimeout(() => e.remove(), 700); });
+        try { LB.recordTopicAttempt("treasure-dig", q.key || "math", ok); } catch (e) {} setTimeout(() => res({ ok }), 650);
+      }, fall + 150);
+      S.cancelAsk = () => { done = true; clearTimeout(tm); els.forEach(e => e.remove()); res({ aborted: true }); };
+    });
+  }
+  async function askMain(d, ti, header, timerMs) {
+    const tier = TIERS[ti], roll = Math.random();
+    if (roll < 0.12) return ask({ q: visualQ(tier), tier, timerMs, lifelines: true, allowBlast: true, header });
+    if (roll < 0.23) { const ms = S.pressure ? Math.round((timerMs || 12000) * 1.6) : 0, k = pick(["order", "match", "scramble"]); return k === "order" ? askOrder(tier, ms) : k === "match" ? askMatch(tier, ms) : askScramble(tier, ms); }
+    if (roll < 0.31) return askCatch(tier, S.pressure ? 3300 : 5200);
+    return ask({ tier, timerMs, lifelines: true, allowBlast: true, header, blocks: Math.random() < 0.25, flash: Math.random() < 0.1 });
+  }
+
+  // ---- extra events ----
+  async function forkEvent(d) {
+    const opts = [{ k: "treasure", e: "🧰", n: "Treasure nook", s: "1 lock, big loot" }, { k: "gauntlet", e: "🏹", n: "Arrow corridor", s: "Jump 3 arrows for loot" }, { k: "shortcut", e: "🚀", n: "Quick tunnel", s: "2 questions, skip a layer" }, { k: "merchant", e: "🛒", n: "Merchant cave", s: "Spend your bag coins" }, { k: "rest", e: "⛺", n: "Quiet cave", s: "Heal 1 ❤️ + refuel" }];
+    const two = shuffle(opts).slice(0, 2);
+    setSheet(`<h2>🚪 The tunnel splits!</h2><p>Pick a side:</p><div class="td-choice">${two.map(o => `<button type="button" data-k="${o.k}"><span class="e">${o.e}</span>${o.n}<small>${o.s}</small></button>`).join("")}</div>`);
+    const c = await waitFor(res => $("td-sheet").querySelectorAll("button[data-k]").forEach(b => b.onclick = () => res(b.dataset.k)));
+    if (S.ended || !c || c.aborted) return;
+    if (c === "treasure") await chestEvent(1, false);
+    else if (c === "gauntlet") {
+      setSheet(`<h2>🏹 Arrow corridor!</h2><p>Jump over each arrow (swipe up or tap the button)!</p><button class="td-btn primary" id="td-jumpbig" type="button">⬆ JUMP!</button>`);
+      $("td-jumpbig").onpointerdown = e => { e.preventDefault(); doJump(); };
+      let clean = 0; for (let i = 0; i < 3; i++) { const ok = await arrowOnce(); if (S.ended) return; if (ok) clean++; await dly(450); }
+      if (clean === 3) { unlockAch("arrow"); const co = coinsMul(14 + d); addBag(co, 0); floatText(`+${co} 🪙 clean run!`); if (Math.random() < 0.5) await relicFound(pickRelic(d, false)); } else if (clean > 0) { const co = coinsMul(4 * clean); addBag(co, 0); floatText(`+${co} 🪙`); }
+    } else if (c === "shortcut") {
+      let ok = true; for (let i = 0; i < 2; i++) { const r = await ask({ tier: TIERS[tierIdxFor(d)], timerMs: S.pressure ? 7000 : 0, lifelines: false, header: `<h2>🚀 Quick tunnel ${i + 1}/2</h2>` }); if (S.ended) return; if (r.ok) gainCorrect(); else { ok = false; break; } }
+      if (ok && S.depth % 5 !== 3) { toast("🚀 Skipped a layer!"); await digDown(true); if (S.ended) return; await lootStep(S.depth, "soft"); } else if (!ok) hurt("shortcut");
+    } else if (c === "merchant") await npcEvent(d, "merchant");
+    else if (c === "rest") { S.energy = Math.min(S.energyMax, S.energy + 1); S.fuel = Math.min(100, S.fuel + 30); renderHud(); floatText("⛺ rested! +1 ❤️"); sfx.heart && sfx.heart(); await dly(700); }
+  }
+  async function cavernEvent(d) {
+    showMonster("💎"); bo("Crystal cavern! Collect coins, dodge 🔺!");
+    setSheet(`<h2>💎 Crystal cavern!</h2><p>Move under the falling coins and gems. Dodge the 🔺 spikes (or JUMP)!</p>`);
+    await dly(900); if (S.ended) return;
+    let got = 0, gems = 0, spawned = 0; const total = 13;
+    await waitFor(res => {
+      const iv = setInterval(() => {
+        if (!S || S.ended) { clearInterval(iv); res(); return; } if (S.hold > 0 || document.hidden) return;
+        if (spawned >= total) { clearInterval(iv); setTimeout(res, 900); return; } spawned++;
+        const r = Math.random(), kind = r < 0.68 ? "coin" : r < 0.82 ? "gem" : "spike", lane = rand(0, 2), e = document.createElement("div");
+        e.className = "td-fall"; e.textContent = kind === "coin" ? "🪙" : kind === "gem" ? "💎" : "🔺"; e.style.left = laneLeft(lane); e.style.top = "-20px"; fx.appendChild(e);
+        requestAnimationFrame(() => requestAnimationFrame(() => { e.style.transition = "top 900ms linear"; e.style.top = "88px"; }));
+        setTimeout(() => { e.remove(); if (!S || S.ended || S.lane !== lane) return; if (kind === "spike") { if (!S.jumping) fuelHit(10, "🔺 -10 🔦"); } else { if (kind === "coin") got++; else gems++; sfx.coin(); } }, 920);
+      }, 650);
+    });
+    hideMonster(); if (S.ended) return;
+    const co = coinsMul(got * 2 + 4); addBag(co, gems); floatText(`+${co} 🪙${gems ? ` +${gems} 💎` : ""}`); await dly(700);
+  }
+  async function ladderEvent() {
+    bo("A ladder! Climb to escape the lava!"); const ok = await climb(12, 4500); if (S.ended) return;
+    if (ok) { S.lava = Math.min(S.lava, S.depth - 6); S.fuel = Math.min(100, S.fuel + 20); toast("🪜 Climbed! Lava pushed back"); } else toast("You slipped off the ladder...");
+    await dly(500);
+  }
+  async function templeEvent(d) {
+    showMonster("🏛️"); bo("A temple door with a puzzle!");
+    const tier = TIERS[tierIdxFor(d)], r = Math.random() < 0.5 ? await askOrder(tier, S.pressure ? 16000 : 0) : await askPads(S.pressure ? 14000 : 0, tierIdxFor(d));
+    hideMonster(); if (S.ended || !r || r.aborted) return;
+    if (r.ok) { unlockAch("puzzle"); sfx.chest(); toast("🏛️ The door opens!"); addBag(coinsMul(10 + d), 0); await relicFound(pickRelic(d, true)); } else { toast("The door stays shut..."); await dly(500); }
+  }
+  async function monsterEvent(d) {
+    const M = pick([{ e: "🕷️", n: "Cave spider", hp: 3 }, { e: "🟢", n: "Slime", hp: 4 }, { e: "🧟", n: "Zombie", hp: 5 }]);
+    showMonster(M.e); sfx.warn(); bo(`A ${M.n}! Smash it!`);
+    const r = await waitFor(res => {
+      let hp = M.hp, left = 3300, fin = false;
+      setSheet(`<h2>${M.e} ${M.n}!</h2><div class="td-timer"><i id="td-mbar"></i></div><button class="td-tapbtn" id="td-mhit" type="button">⚔️ HIT!<small id="td-mhp">HP ${hp}</small></button>`);
+      const finish = ok => { if (fin) return; fin = true; clearInterval(tid); res({ ok }); };
+      $("td-mhit").addEventListener("pointerdown", e => { e.preventDefault(); if (fin) return; hp--; sfx.dig(); const m = $("td-monster"); m.classList.remove("hurt"); void m.offsetWidth; m.classList.add("hurt"); $("td-mhp").textContent = `HP ${Math.max(0, hp)}`; if (hp <= 0) finish(true); });
+      const tid = setInterval(() => { if (S.hold > 0 || document.hidden) return; left -= 50; $("td-mbar").style.width = Math.max(0, left / 3300 * 100) + "%"; if (left <= 0) finish(false); }, 50);
+    });
+    hideMonster(); if (!r || r.aborted || S.ended) return;
+    if (r.ok) { const c = coinsMul(6 + M.hp * 2); addBag(c, 0); floatText(`+${c} 🪙`); sfx.coin(); if (Math.random() < 0.25) await relicFound(pickRelic(d, false)); } else hurt("monster");
+  }
+  async function detectorEvent(d) {
+    const target = rand(0, 8); let taps = 0, found = false;
+    await waitFor(res => {
+      setSheet(`<h2>📡 Treasure detector!</h2><p>Tap a mound. 🔥 hot = very close, 🟠 warm, 🧊 cold. You get 4 taps!</p><div class="td-mounds" id="td-mounds"></div>`);
+      const box = $("td-mounds");
+      for (let i = 0; i < 9; i++) {
+        const b = document.createElement("button"); b.type = "button"; b.className = "td-mound"; b.textContent = "🟫"; box.appendChild(b);
+        b.onclick = () => {
+          if (b.disabled || found) return; b.disabled = true; taps++;
+          const dist = Math.max(Math.abs(i % 3 - target % 3), Math.abs(Math.floor(i / 3) - Math.floor(target / 3)));
+          if (i === target) { found = true; b.textContent = "🧰"; sfx.chest(); setTimeout(() => res(), 700); }
+          else { b.textContent = dist === 1 ? "🔥" : dist === 2 ? "🟠" : "🧊"; sfx.tick(); if (taps >= 4) setTimeout(() => res(), 700); }
+        };
+      }
+    });
+    if (S.ended) return;
+    if (found) { unlockAch("detector"); const co = coinsMul(18 + d * 2); addBag(co, 1); floatText(`+${co} 🪙 +1 💎`); await dly(700); if (S.ended) return; if (Math.random() < 0.5) await relicFound(pickRelic(d, true)); } else { toast("Nothing found this time..."); await dly(400); }
+  }
+  async function dynamiteEvent() {
+    const k = Math.random() < 0.5 ? 0 : 2; sfx.warn(); bo("Lit dynamite! Run to the OTHER side!");
+    const dy = document.createElement("div"); dy.className = "td-fall"; dy.textContent = "🧨"; dy.style.left = laneLeft(k); dy.style.top = "84px"; fx.appendChild(dy);
+    setSheet(`<h2>🧨 DYNAMITE!</h2><p>Get away from the fuse — move to the far side of the mine!</p>`);
+    for (let n = 3; n >= 1; n--) { bigCount(n); sfx.tick(); await delay(settings.motion ? 300 : 850); if (S.ended) { dy.remove(); return; } }
+    bigCount(null); sfx.boom(); flash("rgba(255,200,80,.8)"); shake(); dy.remove();
+    if ([k, 1].includes(S.lane) && !S.jumping) { floatText("💥 BOOM!"); hurt("dynamite"); } else { const c = coinsMul(8); addBag(c, Math.random() < 0.3 ? 1 : 0); floatText(`+${c} 🪙 safe!`); }
+  }
+  async function quakeEvent(d) {
+    shake(); sfx.boom(); flash("rgba(255,120,0,.4)");
+    setSheet(`<h2>🌋 EARTHQUAKE!</h2><p>Quick, decide!</p><div class="td-choice"><button type="button" data-q="cover"><span class="e">🛡️</span>Take cover<small>Safe: costs 10 🔦</small></button><button type="button" class="rock" data-q="run"><span class="e">🏃</span>Run!<small>Dodge 3 rocks → coins. Hit → ouch</small></button></div>`);
+    const c = await waitFor(res => $("td-sheet").querySelectorAll("button[data-q]").forEach(b => b.onclick = () => res(b.dataset.q)));
+    if (S.ended || !c || c.aborted) return;
+    if (c === "cover") { S.fuel = Math.max(0, S.fuel - 10); floatText("🛡️ ducked! −10 🔦"); await dly(800); return; }
+    setSheet(`<h2>🏃 RUN!</h2><p>Move away from ⚠️!</p>`); let hits = 0;
+    for (let i = 0; i < 3; i++) {
+      const lane = rand(0, 2); warnAt(lane, "⚠️", 700); await delay(settings.motion ? 200 : 700); if (S.ended) return;
+      const r = document.createElement("div"); r.className = "td-rock"; r.textContent = "🪨"; r.style.left = laneLeft(lane); fx.appendChild(r); await delay(300); r.remove();
+      if (S && !S.ended && S.lane === lane && !S.jumping) { hits++; shake(); sfx.bad(); } await delay(350); if (S.ended) return;
+    }
+    if (hits === 0) { const c2 = coinsMul(10 + d); addBag(c2, 0); floatText(`+${c2} 🪙`); } else hurt("quake");
+  }
+  async function npcEvent(d, forced) {
+    const type = forced || rpick(["merchant", "challenger", "healer"]);
+    if (type === "merchant") {
+      showMonster("🧑‍🔧"); bo("Psst! Wanna buy something?");
+      const stock = [{ k: "fifty", e: "🎯", n: "50/50", c: 6 }, { k: "skip", e: "⏭", n: "Skip", c: 6 }, { k: "dyn", e: "💥", n: "Dynamite", c: 10 }, { k: "heart", e: "❤️", n: "Heal 1", c: 14 }];
+      for (;;) {
+        setSheet(`<h2>🛒 Merchant</h2><p>Your bag: 🪙 ${S.bag.coins}</p><div class="td-shop">${stock.map(s => `<button type="button" data-k="${s.k}" ${S.bag.coins < s.c ? "disabled" : ""}>${s.e} ${s.n}<br>🪙 ${s.c}</button>`).join("")}</div><button class="td-btn dark" id="td-leave" type="button">Leave</button>`);
+        const c = await waitFor(res => { $("td-sheet").querySelectorAll("button[data-k]").forEach(b => b.onclick = () => res(b.dataset.k)); $("td-leave").onclick = () => res("leave"); });
+        if (S.ended || !c || c.aborted || c === "leave") break;
+        const it = stock.find(x => x.k === c); if (S.bag.coins < it.c) continue; addBag(-it.c, 0); unlockAch("npc"); sfx.coin();
+        if (c === "fifty") S.fifty++; else if (c === "skip") S.skip++; else if (c === "dyn") S.dynamite = Math.min(3, S.dynamite + 1); else S.energy = Math.min(S.energyMax, S.energy + 1);
+        renderHud();
+      }
+      hideMonster(); return;
+    }
+    if (type === "challenger") {
+      showMonster("🧙"); bo("I challenge you to a riddle!");
+      const r = await ask({ tier: TIERS[tierIdxFor(d)], timerMs: S.pressure ? qTimer(d) : 0, lifelines: false, header: `<h2>🧙 Riddle challenge! Right = reward, wrong = lose 5 🪙</h2>` });
+      hideMonster(); if (S.ended) return;
+      if (r.ok) { gainCorrect(); unlockAch("npc"); const c = coinsMul(16 + d); addBag(c, 0); floatText(`+${c} 🪙`); if (Math.random() < 0.35) await relicFound(pickRelic(d, false)); } else { addBag(-5, 0); floatText("−5 🪙"); S.streak = 0; renderHud(); }
+      return;
+    }
+    showMonster("🧑‍⚕️"); bo("You look tired. Let me help!");
+    if (S.energy >= S.energyMax) { setSheet(`<h2>🧑‍⚕️ Healer</h2><p>You're in perfect shape! He gives you a snack: +20 🔦</p>`); S.fuel = Math.min(100, S.fuel + 20); await dly(1200); hideMonster(); return; }
+    setSheet(`<h2>🧑‍⚕️ Healer</h2><p>Heal 1 ❤️ for 8 🪙 from your bag?</p><div class="td-btnrow"><button class="td-btn green" id="td-heal" ${S.bag.coins < 8 ? "disabled" : ""}>Heal (8 🪙)</button><button class="td-btn dark" id="td-noheal">No thanks</button></div>`);
+    const c = await waitFor(res => { $("td-heal").onclick = () => res("y"); $("td-noheal").onclick = () => res("n"); });
+    hideMonster(); if (S.ended || !c || c.aborted) return;
+    if (c === "y") { addBag(-8, 0); S.energy = Math.min(S.energyMax, S.energy + 1); unlockAch("npc"); renderHud(); floatText("❤️ healed!"); sfx.heart && sfx.heart(); await dly(600); }
+  }
+  function addMapPiece(d) {
+    const b = biomeOf(Math.max(1, d)); td.mapB = td.mapB || [0, 0, 0, 0, 0]; td.mapB[b]++; toast(`🗺️ ${BIOMES[b].name} map piece ${Math.min(td.mapB[b], 3)}/3`); save();
+  }
+
+  function buddyInfoHtml() {
+    if (look.buddy === "none") return "";
+    const x = td.buddyXp || 0, lv = buddyLevel(), nxt = [30, 80, 160][lv];
+    const perks = { mole: ["+1 🪙 every level", "+5% gem chance"], owl: ["+1 extra 50/50", "free 50/50 at every boss"], robot: ["shield returns at camps", "shield returns after bosses"] }[look.buddy] || [];
+    return `<div class="td-shelfrow">🐾 Buddy level ${lv}/3 · XP ${x}${nxt ? ` / ${nxt}` : " (MAX)"}<br>${perks.slice(0, Math.max(0, lv - 1)).join(" · ") || "Dig more to level up! (level 2 unlocks a perk)"}</div>`;
+  }
+  function holdDig() {
+    return waitFor(res => {
+      let fin = false, t0 = 0, raf = 0, holding = false;
+      setSheet(`<h2>⛏️ POWER SWING! Hold, then release in the green!</h2><div class="td-lever"><div class="zone" style="left:72%;width:22%"></div><div class="mark" id="td-pw" style="left:0;width:0;background:#f7c548"></div></div><button class="td-tapbtn" id="td-hold" type="button">⛏️ HOLD…<small>release in the green zone</small></button>`);
+      const bar = $("td-pw");
+      const finish = ok => { if (fin) return; fin = true; cancelAnimationFrame(raf); res(ok); };
+      const frame = () => { if (fin || !holding) return; const p = Math.min(1, (performance.now() - t0) / 1300); bar.style.width = p * 100 + "%"; if (p >= 1) { finish(false); return; } raf = requestAnimationFrame(frame); };
+      const btn = $("td-hold");
+      btn.addEventListener("pointerdown", e => { e.preventDefault(); if (fin) return; holding = true; t0 = performance.now(); sfx.tick(); frame(); });
+      const rel = () => { if (fin || !holding) return; holding = false; const p = Math.min(1, (performance.now() - t0) / 1300); finish(p >= 0.72 && p <= 0.94); };
+      btn.addEventListener("pointerup", rel); btn.addEventListener("pointerleave", rel);
+      setTimeout(() => finish(false), 6000);
+    }).then(r => {
+      if (r && r.aborted) return false;
+      if (!r) { S.lava += 0.35; floatText("Missed! 🌋 closer"); sfx.bad(); } else { S.fuel = Math.min(100, S.fuel + 5); sfx.dig(); }
+      return !!r;
+    });
+  }
+
   // ---------------- decisions: path, camp, climb, gamble, mini-boss ----------------
   function choosePath(d) {
     boLine("start");
@@ -819,9 +1218,9 @@ function initTreasureDig() {
       $("td-sheet").querySelectorAll("button[data-p]").forEach(b => b.onclick = () => res(b.dataset.p));
     });
   }
-  function climb() { // -> true on success
+  function climb(needN, totalMs) { // -> true on success
     return waitFor(res => {
-      const need = 22, total = 6500; let n = 0, last = null, left = total, fin = false, tid = null;
+      const need = needN || 22, total = totalMs || 6500; let n = 0, last = null, left = total, fin = false, tid = null;
       setSheet(`<h2>🧗 Climb out! Alternate L ↔ R!</h2><div class="td-timer"><i id="td-clbar"></i></div><div class="td-climbrow"><button class="td-tapbtn next" id="td-cl-l" type="button">🧗 LEFT</button><button class="td-tapbtn" id="td-cl-r" type="button">RIGHT 🧗</button></div><p class="td-sub" id="td-cl-n" style="margin-top:8px">0 / ${need}</p>`);
       const finish = ok => { if (fin) return; fin = true; clearInterval(tid); res(ok); };
       const hit = side => { if (fin || side === last) return; last = side; n++; sfx.swish(); buzz(8); $("td-cl-n").textContent = `${n} / ${need}`; $("td-cl-l").classList.toggle("next", side === "r"); $("td-cl-r").classList.toggle("next", side === "l"); if (n >= need) finish(true); };
@@ -830,7 +1229,7 @@ function initTreasureDig() {
     }).then(r => (r && r.aborted) ? false : !!r);
   }
   async function campStep() { // -> "cash" | "go"
-    S.energy = Math.min(S.energyMax, S.energy + 1); S.fuel = Math.min(100, S.fuel + 30); renderHud(); boLine("camp"); sfx.chest(); hold();
+    S.energy = Math.min(S.energyMax, S.energy + 1); S.fuel = Math.min(100, S.fuel + 30); if (hasBuddy("robot") && buddyLevel() >= 2) S.shield = true; renderHud(); boLine("camp"); sfx.chest(); hold();
     let usedG = false, usedM = false;
     while (!S.ended) {
       const d = S.depth;
@@ -858,11 +1257,17 @@ function initTreasureDig() {
 
   // ---------------- director: what happens on each level ----------------
   function pickEvent(d) {
-    if (d < 2 || R() > (S.pressure ? 0.5 : 0.25)) return null;
+    if (d < 2 || R() > (S.pressure ? 0.6 : 0.38)) return null;
     const pool = [["trap", 3], ["lever", 2]];
     if (S.pressure) { pool.push(["chasm", 2]); if (d >= 3) pool.push(["bomb", 2]); if (d >= 4) pool.push(["bridge", 2]); }
     if (d >= 3) pool.push(["maze", 2]);
     if (d >= 4 && (d % 5 === 1 || d % 5 === 2)) pool.push(["shortcut", 2]);
+    const bb = biomeOf(d);
+    pool.push(["monster", 2], ["npc", 2]);
+    if (d >= 3) pool.push(["fork", 2], ["cavern", 2], ["dynamite", 2]);
+    if (d >= 4) pool.push(["detector", 2], ["quake", 2], ["temple", bb === 4 ? 4 : 1]);
+    if (d >= 5) pool.push(["river", bb === 2 ? 3 : 1]);
+    if (S.pressure && d >= 3) pool.push(["ladder", 2]);
     const tot = pool.reduce((a, p) => a + p[1], 0); let r = R() * tot;
     for (const [n, w] of pool) { r -= w; if (r <= 0) return n; }
     return pool[0][0];
@@ -870,6 +1275,9 @@ function initTreasureDig() {
   async function runEvent(ev, d) {
     if (ev === "trap") return trapEvent(d); if (ev === "lever") return leverEvent(); if (ev === "chasm") return chasmEvent(d);
     if (ev === "bomb") return bombEvent(d); if (ev === "bridge") return bridgeEvent(d); if (ev === "maze") return mazeEvent(d);
+    if (ev === "monster") return monsterEvent(d); if (ev === "npc") return npcEvent(d); if (ev === "fork") return forkEvent(d); if (ev === "cavern") return cavernEvent(d);
+    if (ev === "dynamite") return dynamiteEvent(); if (ev === "detector") return detectorEvent(d); if (ev === "quake") return quakeEvent(d); if (ev === "temple") return templeEvent(d);
+    if (ev === "river") return minecart("river"); if (ev === "ladder") return ladderEvent();
   }
   async function runLoop() {
     while (!S.ended) {
@@ -878,7 +1286,7 @@ function initTreasureDig() {
         await bossFight(d); if (S.ended) return;
         await minecart(); if (S.ended) return;
       } else {
-        if (S.secret && d === 4 && !S.secretDone) {
+        if (S.secret && d === S.secretAt && !S.secretDone) {
           setSheet(`<h2>🗝️ A secret door!</h2><p>Your map led you here. Crack 3 locks in a row for a jackpot!</p><button class="td-btn primary" id="td-secret">Open the door</button>`);
           await waitFor(res => { $("td-secret").onclick = () => res("go"); }); if (S.ended) return;
           await chestEvent(3, true); S.secretDone = true; save(); if (S.ended) return;
@@ -893,7 +1301,7 @@ function initTreasureDig() {
           while (!dug && !S.ended) {
             const cell = targetCell(); if (cell) { cell.classList.toggle("hard", path === "rock"); cell.textContent = path === "rock" ? "🪨" : ""; }
             const ti = clamp(tierIdxFor(d) + (path === "rock" ? 1 : -1), 0, 2);
-            const r = await ask({ tier: TIERS[ti], timerMs: qTimer(d, path === "rock" ? -1000 : 0), lifelines: true, allowBlast: true, header: `<h2>⛏️ Level ${d} · ${path === "rock" ? "🪨 Hard rock" : "🟫 Soft dirt"}${S.bet ? " · 🎰 bet" : ""}</h2>` });
+            const r = await askMain(d, ti, `<h2>⛏️ Level ${d} · ${path === "rock" ? "🪨 Hard rock" : "🟫 Soft dirt"}${S.bet ? " · 🎰 bet" : ""}</h2>`, qTimer(d, path === "rock" ? -1000 : 0));
             if (S.ended) return;
             if (r.blast) {
               sfx.boom(); flash("rgba(255,160,40,.7)"); shake(); buzz(150); floatText("💥 BLAST!");
@@ -929,10 +1337,12 @@ function initTreasureDig() {
     const bagC = S.bag.coins, bagG = S.bag.gems, mult = kind === "cash" ? (S.cashMult || 1) : 1;
     const beatRival = S.rivalSpeed > 0 && S.depth > Math.floor(S.rival);
     const rivalBonus = beatRival ? 10 : 0;
-    const bankC = (kind === "dead" ? Math.floor(bagC / 2) : Math.round(bagC * mult)) + rivalBonus, bankG = kind === "dead" ? Math.floor(bagG / 2) : bagG;
+    let bankC = (kind === "dead" ? Math.floor(bagC / 2) : Math.round(bagC * mult)) + rivalBonus; const bankG = kind === "dead" ? Math.floor(bagG / 2) : bagG;
+    if (S.ruleOn) bankC = Math.round(bankC * 1.5);
     try { await LB.awardTreasureDigLoot(bankC, bankG); } catch (e) {}
     let bonus = null; try { const r = await LB.awardTreasureDigRoundBonus(S.depth, 10); bonus = r && r.bonus; } catch (e) {}
     const prevBest = td.bestDepth || 0;
+    if (look.buddy !== "none") td.buddyXp = (td.buddyXp || 0) + Math.max(1, S.depth); td.dp = (td.dp || 0) + Math.floor(S.depth / 5);
     td.runs = (td.runs || 0) + 1; td.bosses = (td.bosses || 0) + S.bosses; td.bestDepth = Math.max(prevBest, S.depth);
     const wk = LB.treasureDigWeekKey(), today = todayStr();
     if (!td.week || td.week.key !== wk) td.week = { key: wk, depth: 0 }; td.week.depth = Math.max(td.week.depth, S.depth);
@@ -977,11 +1387,15 @@ function initTreasureDig() {
   function makeState(seedStr, rv, potion) {
     const st = { depth: 0, energyMax: 3 + (potion > 0 ? 1 : 0), energy: 0, bag: { coins: 0, gems: 0 }, found: [], streak: 0, bestStreak: 0, dynamite: 0, rush: 0, curse: 0,
       fifty: 1 + (hasBuddy("owl") ? 1 : 0) + ((td.supplies && td.supplies.fifty) || 0), skip: 1 + ((td.supplies && td.supplies.skip) || 0),
-      mistakes: 0, bosses: 0, correct: 0, secret: (td.maps || 0) >= 4, secretDone: false, shield: hasBuddy("robot"), ended: false, finalised: false, seen: new Set(), waiters: [],
+      mistakes: 0, bosses: 0, correct: 0, secret: false, secretAt: 0, secretDone: false, shield: hasBuddy("robot"), ended: false, finalised: false, seen: new Set(), waiters: [],
       pressure: mode === "hard", modeMul: mode === "hard" ? 1.3 : 0.6, lootMul: 1, timeBonus: 0, fuelMul: 1, lavaMul: 1, lava: -4, fuel: 100, burn: 0, hold: 0, live: false, calm: false, hazards: true,
       lane: 1, nextRock: 5, nextBat: 10, swats: 0, elapsed: 0, danger: 0, bet: 0, cashMult: 1,
       rival: 0, rivalSpeed: rv.speed, rivalIcon: rv.e, seedLabel: seedStr, rng: mulberry32(hashStr("td|" + seedStr)) };
     st.energy = st.energyMax;
+    st.jumping = false; st.jumpCd = 0; st.nextBiome = 9; st.bossHits = 0; st.rvShown = -1; st.darkBase = 0; st.timeMul = 1; st.onlyPool = ""; st.ruleOn = false; st.helmet = hasSkill("helm");
+    if (hasSkill("lamp")) st.fuelMul *= 0.85;
+    if (hasBuddy("owl") && buddyLevel() >= 2) st.fifty++;
+    const sb = (td.mapB || []).findIndex(n => n >= 3); if (sb >= 0) { st.secret = true; st.secretAt = 5 * sb + 3; st.secretBiome = sb; }
     return st;
   }
   async function startDig() {
@@ -990,7 +1404,9 @@ function initTreasureDig() {
     let seedStr = $("td-seed").value.trim(); if (!seedStr) seedStr = String(rand(1000, 9999));
     const rv = rivalPick === "ghost" ? { speed: td.pace || 0.08, name: "Your ghost", e: "👻" } : rivalPick === "class" ? { speed: tops && tops.week[0] ? Math.max(0.05, tops.week[0].depth / 240) : 0.1, name: "Class top", e: "🏆" } : RIVALS[rivalPick];
     S = makeState(seedStr, rv, potion);
-    td.supplies = { fifty: 0, skip: 0, potion: 0 }; if (S.secret) td.maps -= 4; save();
+    if (ruleOn()) { todayRule().apply(S); S.ruleOn = true; }
+    td.supplies = { fifty: 0, skip: 0, potion: 0 }; if (S.secret) { td.mapB[S.secretBiome] -= 3; setTimeout(() => toast(`🗺️ Your ${BIOMES[S.secretBiome].name} map points to a secret vault at ${S.secretAt} m!`), 600); } save();
+    $("td-jump-btn").classList.toggle("hidden", !S.pressure);
     resetWorld(); initMotes(); renderWorld(); renderHud(); hideMonster(); applyLook(); setLane(1); fx.innerHTML = "";
     const buff = await chooseBuff(); if (S.ended || !buff || buff.aborted) return; buff.apply(S); toast(`${buff.e} ${buff.n}!`); renderHud();
     setSheet(`<h2>Get ready…</h2><p>${S.pressure ? "🌋 The lava is coming. Tap the mine's left/right to dodge rocks!" : "😌 Chill dig — no timers."}</p>`);
@@ -1003,6 +1419,8 @@ function initTreasureDig() {
 
   // ---------------- overlays ----------------
   function openHome() {
+    { const se = season(), sb = $("td-season"); if (se) { sb.textContent = se.banner; sb.classList.remove("hidden"); } else sb.classList.add("hidden");
+      const rb = $("td-rule-btn"), rl = todayRule(), on = ruleOn(); rb.className = "td-rulebtn" + (on ? "" : " off"); rb.innerHTML = `📅 Daily rule: <b>${rl.n}</b> — ${rl.d}<br>${on ? "ON · rewards ×1.5" : "OFF (tap to turn on)"}`; }
     $("td-st-best").textContent = `Best: ${td.bestDepth || 0} m`;
     $("td-st-streak").textContent = `🔥 Day ${td.streak || 1}`;
     $("td-st-relics").textContent = `🏺 ${relicCount()}/${RELICS.length}`;
@@ -1040,9 +1458,12 @@ function initTreasureDig() {
         const r = await LB.spendTreasureDigCoins(+b.dataset.c); if (!r.ok) { toast("Not enough coins yet!"); return; }
         td.supplies[k] = (td.supplies[k] || 0) + 1; await save(); sfx.coin(); renderWork();
       });
+    } else if (workTab === "skills") {
+      body.innerHTML = `<p class="td-sub">⭐ Dig Points: <b>${td.dp || 0}</b> (earned from bosses and deep digs)</p>` + SKILLS.map(sk => `<div class="td-skill"><span class="e">${sk.e}</span><span style="flex:1">${sk.n}<small>${sk.d}</small></span>${hasSkill(sk.id) ? `<button class="td-btn green" disabled>Owned</button>` : `<button class="td-btn primary" data-s="${sk.id}">⭐ ${sk.cost}</button>`}</div>`).join("");
+      body.querySelectorAll("button[data-s]").forEach(b => b.onclick = async () => { const sk = SKILLS.find(x => x.id === b.dataset.s); if ((td.dp || 0) < sk.cost) { toast("Not enough Dig Points!"); return; } td.dp -= sk.cost; td.skills[sk.id] = true; await save(); sfx.chest(); toast(`${sk.e} ${sk.n} unlocked!`); renderWork(); });
     } else {
       const sections = workTab === "look" ? [["treasuredig-pick", "Pickaxe skin", "pick"], ["treasuredig-helmet", "Helmet", "helmet"]] : [["treasuredig-buddy", "Buddy", "buddy"]];
-      body.innerHTML = money + sections.map(s => `<div class="bh" style="margin:8px 0 4px">${s[1]}</div><div class="td-grid g3" id="g-${s[0]}"></div>`).join("");
+      body.innerHTML = money + (workTab === "buddy" ? buddyInfoHtml() : "") + sections.map(s => `<div class="bh" style="margin:8px 0 4px">${s[1]}</div><div class="td-grid g3" id="g-${s[0]}"></div>`).join("");
       sections.forEach(([type, , key]) => {
         const list = (cosmetics && cosmetics.costumes[type]) || [], g = $("g-" + type);
         g.innerHTML = list.map(it => {
@@ -1059,18 +1480,26 @@ function initTreasureDig() {
     }
   }
   function openMuseum() {
-    $("td-museum-sub").textContent = `Found ${relicCount()}/${RELICS.length} relics. Rarer ones hide in harder rock and bosses!`;
-    $("td-museum-grid").innerHTML = RELICS.map(r => { const n = td.relics[r.id] || 0; return `<div class="td-item ${n ? r.rar : ""}" data-n="${esc(n ? r.name : "???")}"><span class="big">${n ? r.emoji : "❓"}</span>${n > 1 ? `<span class="cnt">×${n}</span>` : ""}</div>`; }).join("");
-    $("td-museum-grid").querySelectorAll(".td-item").forEach(el => el.onclick = () => toast(el.dataset.n));
-    $("td-badge-grid").innerHTML = ACHIEVEMENTS.map(a => `<div class="td-item ${td.achv && td.achv[a.id] ? "" : "locked"}"><span class="big">${a.icon}</span>${esc(a.name)}<small>${esc(a.text)}</small></div>`).join("");
-    show("td-museum");
+    const se = season(), list = RELICS.concat(...SEASONS.filter(x => x === se || x.relics.some(r => td.relics[r.id] > 0)).map(x => x.relics)), shelf = td.shelf = td.shelf || [];
+    const paint = () => {
+      $("td-museum-sub").textContent = `Found ${relicCount()} relics. Tap an owned relic to put it on your shelf (max 6) -- shelf relics give a coin bonus!`;
+      $("td-shelfrow").innerHTML = `🪟 <b>Shelf</b> (+${Math.round((shelfMult() - 1) * 100)}% coins): ${shelf.length ? shelf.map(id => (allRelics().find(r => r.id === id) || {}).emoji || "").join(" ") : "empty"}`;
+      $("td-museum-grid").innerHTML = list.map(r => { const n = td.relics[r.id] || 0; return `<div class="td-item ${n ? r.rar : ""} ${shelf.includes(r.id) ? "shelf" : ""}" data-id="${r.id}" data-n="${esc(n ? r.name : "???")}"><span class="big">${n ? r.emoji : "❓"}</span>${n > 1 ? `<span class="cnt">×${n}</span>` : ""}</div>`; }).join("");
+      $("td-museum-grid").querySelectorAll(".td-item").forEach(el => el.onclick = () => {
+        const id = el.dataset.id; if (!(td.relics[id] > 0)) { toast("???"); return; }
+        const i = shelf.indexOf(id); if (i >= 0) { shelf.splice(i, 1); toast("Removed from shelf"); } else if (shelf.length >= 6) { toast("Shelf is full (6)"); } else { shelf.push(id); toast(`${el.dataset.n} is on the shelf!`); }
+        save(); paint();
+      });
+      $("td-badge-grid").innerHTML = ACHIEVEMENTS.map(a => `<div class="td-item ${td.achv && td.achv[a.id] ? "" : "locked"}"><span class="big">${a.icon}</span>${esc(a.name)}<small>${esc(a.text)}</small></div>`).join("");
+    };
+    paint(); show("td-museum");
   }
   function openMissions() {
     const list = td.missions.list;
     $("td-mission-list").innerHTML = list.map((m, i) => {
       const d = MISSION_DEFS.find(x => x.type === m.type), done = m.prog >= m.target;
       const btn = m.claimed ? `<button class="td-btn green" disabled>Done ✔</button>` : done ? `<button class="td-btn primary" data-i="${i}">Claim 🪙${m.reward}</button>` : `<button class="td-btn dark" disabled>${m.prog}/${m.target}</button>`;
-      return `<div class="td-row2"><span>${d.text(m.target)}</span>${btn}</div>`;
+      return `<div class="td-row2"><span>${d.text(m.target, m.b)}</span>${btn}</div>`;
     }).join("") + `<p class="td-sub" style="margin-top:10px">Claim all 3 for a bonus 💎!</p>`;
     $("td-mission-list").querySelectorAll("button[data-i]").forEach(b => b.onclick = async () => {
       const m = list[+b.dataset.i]; if (m.claimed || m.prog < m.target) return; m.claimed = true;
@@ -1087,7 +1516,7 @@ function initTreasureDig() {
   const TUT = [
     { e: "⛏️", t: "Dig deeper!", x: "Pick soft dirt or hard rock, then answer the question before the timer runs out. Right answer = tap fast to smash the block!" },
     { e: "🌋", t: "Run from the lava!", x: "Lava floods down the shaft behind you and your torch keeps burning out. Right answers dig you further away and refuel the torch. Don't stop!" },
-    { e: "🪨", t: "Dodge & swat", x: "While you think, rocks fall and bats dive. TAP the left/right side of the mine to move, and tap bats to swat them!" },
+    { e: "🪨", t: "Dodge & swat", x: "While you think, rocks fall and bats dive. TAP the left/right side of the mine to move, tap bats to swat them, and swipe UP (or press ⬆) to JUMP rubble, spikes and arrows. Every biome has its own trap!" },
     { e: "⚔️", t: "Bosses & camps", x: "Bosses attack in lanes, so dodge while you answer. At camps time stops: cash out, climb, gamble or keep going. Faint and you lose half the bag!" }
   ];
   let tutI = 0;
@@ -1112,14 +1541,20 @@ function initTreasureDig() {
   $("td-set-motion").onclick = () => { settings.motion = !settings.motion; applySettings(); };
   $("td-tut-next").onclick = () => { if (tutI < TUT.length - 1) { tutI++; showTut(); } else { hide("td-tutorial"); try { localStorage.setItem("td_seen_tut2", "1"); } catch (e) {} } };
   // dodge: tap the left / right side of the mine, or use the arrow keys
-  scene.addEventListener("pointerdown", e => {
-    if (!S || S.ended || !S.live || e.target.closest(".td-bat2")) return;
+  let sgx = null, sgy = 0;
+  scene.addEventListener("pointerdown", e => { if (!S || S.ended || !S.live || e.target.closest(".td-bat2,.td-shard,.td-jumpbtn")) { sgx = null; return; } sgx = e.clientX; sgy = e.clientY; });
+  scene.addEventListener("pointerup", e => {
+    if (sgx === null || !S || S.ended || !S.live) return;
+    const dx = e.clientX - sgx, dy = e.clientY - sgy; sgx = null;
+    if (dy < -30 && Math.abs(dy) > Math.abs(dx)) { doJump(); return; }
     const r = scene.getBoundingClientRect(), f = (e.clientX - r.left) / r.width;
     if (f < 0.4) setLane(S.lane - 1); else if (f > 0.6) setLane(S.lane + 1);
   });
+  $("td-jump-btn").addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); doJump(); });
+  $("td-rule-btn").onclick = () => { try { localStorage.setItem("td_rule_off", ruleOn() ? "1" : "0"); } catch (e) {} openHome(); };
   document.addEventListener("keydown", e => {
     if (!S || S.ended || !S.live) return;
-    if (e.key === "ArrowLeft" || e.key === "a") setLane(S.lane - 1); else if (e.key === "ArrowRight" || e.key === "d") setLane(S.lane + 1);
+    if (e.key === "ArrowLeft" || e.key === "a") setLane(S.lane - 1); else if (e.key === "ArrowRight" || e.key === "d") setLane(S.lane + 1); else if (e.key === "ArrowUp" || e.key === "w") doJump();
   });
   document.addEventListener("visibilitychange", () => { lastTick = performance.now(); });
   applySettings();
@@ -1130,7 +1565,7 @@ function initTreasureDig() {
     $("td-start-btn").disabled = true;
     try { td = await LB.getTreasureDig(); } catch (e) { td = null; }
     if (!td) td = { bestDepth: 0, runs: 0, bosses: 0, relics: {}, pick: 0, achv: {}, maps: 0, supplies: { fifty: 0, skip: 0, potion: 0 }, week: { key: "", depth: 0 }, day: { key: "", depth: 0 }, pace: 0, classClaim: "", streak: 0, lastDay: "", missions: { day: "", list: [] }, dailyDay: "" };
-    td.relics = td.relics || {}; td.achv = td.achv || {}; td.supplies = Object.assign({ fifty: 0, skip: 0, potion: 0 }, td.supplies || {});
+    td.relics = td.relics || {}; td.achv = td.achv || {}; td.shelf = td.shelf || []; td.dp = td.dp || 0; td.skills = td.skills || {}; td.buddyXp = td.buddyXp || 0; td.mapB = td.mapB || [0, 0, 0, 0, 0]; td.supplies = Object.assign({ fifty: 0, skip: 0, potion: 0 }, td.supplies || {});
     ensureDaily(); save();
     await refreshCosmetics(); await refreshWallet();
     if (LB.watchWallet) LB.watchWallet(w => { wallet = w; $("td-hud-coins").textContent = w.coins || 0; $("td-hud-gems").textContent = w.gems || 0; });
@@ -1140,5 +1575,6 @@ function initTreasureDig() {
     let seen = false; try { seen = !!localStorage.getItem("td_seen_tut2"); } catch (e) {}
     if (!seen) { tutI = 0; showTut(); }
   })();
+
 
 }
