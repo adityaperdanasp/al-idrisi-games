@@ -234,16 +234,27 @@
 
       <div class="sc-header">
         <div class="sc-header-left">
-          <button class="sc-trophy" id="sc-collection-btn" title="Collection" type="button">📚</button>
-          <button class="sc-trophy" id="sc-customize-btn" title="Customize" type="button">🎨</button>
-          <!-- Collection/Customize stay directly visible since they're
-               the currency-spending surfaces; the other 6 (previously
-               all separate header icons) fold into this "More" menu --
-               same elements/ids/click handlers as before, just moved
-               into a dropdown instead of taking up header width. -->
+          <button class="sc-player-chip" id="sc-player-chip">
+            <span class="sc-player-avatar" id="sc-player-avatar"></span>
+            <span class="sc-player-chip-text">
+              <span class="sc-player-name" id="sc-player-name"></span>
+            </span>
+          </button>
+        </div>
+        <div class="sc-header-right">
+          <div class="sc-wallet-badge" id="sc-wallet-badge" hidden>
+            <span>🪙</span><span id="sc-wallet-coins">0</span>
+            <span>💎</span><span id="sc-wallet-gems">0</span>
+          </div>
+          <!-- Header kept to name + coins + one menu button. Collection and
+               Customize moved into this menu (same elements/ids/handlers);
+               title/level/champion badges are kept in the DOM (JS still
+               fills them) but hidden on the home screen. -->
           <div class="sc-more-menu-wrap">
-            <button class="sc-trophy" id="sc-more-btn" title="More" type="button">☰</button>
+            <button class="sc-trophy" id="sc-more-btn" title="Menu" type="button">☰</button>
             <div class="sc-more-menu" id="sc-more-menu" hidden>
+              <button class="sc-more-item" id="sc-collection-btn" type="button">📚 Collection</button>
+              <button class="sc-more-item" id="sc-customize-btn" type="button">🎨 Customize</button>
               <a href="leaderboard.html" class="sc-more-item">🏆 Leaderboard</a>
               <a href="hall-of-fame/" class="sc-more-item">🏛️ Hall of Fame</a>
               <button class="sc-more-item" id="sc-recap-btn" type="button">📜 Weekly Recap</button>
@@ -255,18 +266,6 @@
               <a href="help/" class="sc-more-item">🆘 Help</a>
             </div>
           </div>
-        </div>
-        <div class="sc-header-right">
-          <div class="sc-wallet-badge" id="sc-wallet-badge" hidden>
-            <span>🪙</span><span id="sc-wallet-coins">0</span>
-            <span>💎</span><span id="sc-wallet-gems">0</span>
-          </div>
-          <button class="sc-player-chip" id="sc-player-chip">
-            <span class="sc-player-avatar" id="sc-player-avatar"></span>
-            <span class="sc-player-chip-text">
-              <span class="sc-player-name" id="sc-player-name"></span>
-            </span>
-          </button>
           <div class="sc-player-title" id="sc-player-title" hidden></div>
           <div class="sc-level-badge" id="sc-level-badge" hidden></div>
           <div class="sc-weekly-champion-badge" id="sc-weekly-champion-badge" hidden>👑 This Week's Champion!</div>
@@ -346,7 +345,6 @@
           </svg>
           <span class="w1">Brain</span><span class="w2">Box</span>
         </div>
-        <div class="sc-hero-tagline">Pick a quest, have fun, and level up! 🎉</div>
       </div>
 
       <a class="sc-search-link" href="search/">🔍 Search games &amp; practice…</a>

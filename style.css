@@ -2220,3 +2220,11 @@ html[data-hub-theme="golden"] .sc-card { background: #fff8dc; }
 .sc-rewards-card { max-width: 440px; max-height: 88vh; padding: 16px; }
 .sc-rewards-card > [class*="sc-"]:not(.sc-modal-header) { margin-left: 0; margin-right: 0; }
 .sc-rewards-card .sc-roulette-card { margin-top: 12px; }
+
+/* Calmer top of the home screen */
+#sc-screen-landing > .sc-emoji, #sc-screen-landing > .sc-dot, #sc-screen-landing > .sc-star, #sc-screen-landing > .sc-blob { display: none; }
+#sc-screen-landing .sc-hero > .sc-emoji, #sc-screen-landing .sc-hero > .sc-dot { display: none; }
+#sc-screen-landing .sc-player-title, #sc-screen-landing .sc-level-badge, #sc-screen-landing .sc-weekly-champion-badge { display: none !important; }
+#sc-screen-landing .sc-header-right { flex-wrap: nowrap; }
+#sc-screen-landing .sc-more-menu { left: auto; right: 0; }
+#sc-screen-landing .sc-hero { padding: 20px 20px 18px; margin-top: 14px; transform: none; }
