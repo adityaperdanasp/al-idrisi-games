@@ -4887,6 +4887,28 @@
     { id: "gem", name: "Crystal Lock", cost: { coins: 20 }, preview: "💠" },
     { id: "eye", name: "Evil Eye Lock", cost: { gems: 2 }, preview: "🧿" }
   ];
+  // Treasure Dig cosmetics: pickaxe skin, helmet and a mining buddy (buddies
+  // also carry a small perk, see treasure-dig/script.js).
+  const TD_PICKS = [
+    { id: "default", name: "Classic Pickaxe", cost: null, preview: "⛏️" },
+    { id: "hammer", name: "Hammer", cost: { coins: 20 }, preview: "🔨" },
+    { id: "axe", name: "Battle Axe", cost: { coins: 30 }, preview: "🪓" },
+    { id: "sword", name: "Dagger", cost: { coins: 40 }, preview: "🗡️" },
+    { id: "wand", name: "Magic Wand", cost: { gems: 2 }, preview: "🪄" }
+  ];
+  const TD_HELMETS = [
+    { id: "default", name: "Safety Helmet", cost: null, preview: "⛑️" },
+    { id: "cap", name: "Cap", cost: { coins: 15 }, preview: "🧢" },
+    { id: "army", name: "Army Helmet", cost: { coins: 20 }, preview: "🪖" },
+    { id: "tophat", name: "Top Hat", cost: { coins: 25 }, preview: "🎩" },
+    { id: "crown", name: "Crown", cost: { gems: 2 }, preview: "👑" }
+  ];
+  const TD_BUDDIES = [
+    { id: "none", name: "Go solo", cost: null, preview: "🚫" },
+    { id: "mole", name: "Mole -- finds more relics and gems", cost: { coins: 30 }, preview: "🦫" },
+    { id: "owl", name: "Owl -- 1 extra 50/50 each dig", cost: { coins: 40 }, preview: "🦉" },
+    { id: "robot", name: "Robot -- blocks your first mistake", cost: { coins: 80 }, preview: "🤖" }
+  ];
   const BOSSRUSH_FIGHTERS = [
     { id: "default", name: "Classic", cost: null, preview: "🥋" },
     { id: "boxer", name: "Boxer", cost: { coins: 15 }, preview: "🥊" },
@@ -4951,6 +4973,9 @@
     "mathtennis-trail": MATH_TENNIS_TRAILS,
     "escapevault-theme": ESCAPE_THEMES,
     "escapevault-lock": ESCAPE_LOCKS,
+    "treasuredig-pick": TD_PICKS,
+    "treasuredig-helmet": TD_HELMETS,
+    "treasuredig-buddy": TD_BUDDIES,
     "bossrush-fighter": BOSSRUSH_FIGHTERS,
     "dino-skin": DINO_SKINS
   };
@@ -5022,6 +5047,9 @@
         "mathtennis-trail": equipped["mathtennis-trail"] || "default",
         "escapevault-theme": equipped["escapevault-theme"] || "default",
         "escapevault-lock": equipped["escapevault-lock"] || "default",
+        "treasuredig-pick": equipped["treasuredig-pick"] || "default",
+        "treasuredig-helmet": equipped["treasuredig-helmet"] || "default",
+        "treasuredig-buddy": equipped["treasuredig-buddy"] || "none",
         "bossrush-fighter": equipped["bossrush-fighter"] || "default",
         "dino-skin": equipped["dino-skin"] || "default",
         "bo-costume": equipped["bo-costume"] || "none"
@@ -6235,6 +6263,47 @@
     return { ok: true, bonus };
   }
 
+
+  // ---- Treasure Dig progress: relic museum, pickaxe level, achievements,
+  // daily missions + streak, weekly best depth. One document per player under
+  // players/{id}/treasureDig (no new top-level path, rules stay untouched).
+  const TD_DEFAULT = { bestDepth: 0, runs: 0, bosses: 0, relics: {}, pick: 0, achv: {}, maps: 0, supplies: { fifty: 0, skip: 0, potion: 0 },
+    week: { key: "", depth: 0 }, streak: 0, lastDay: "", missions: { day: "", list: [] }, dailyDay: "" };
+  const TD_PICK_COSTS = [40, 100, 200];
+  async function getTreasureDig() {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    const base = JSON.parse(JSON.stringify(TD_DEFAULT));
+    if (!player || player.role === "parent") return base;
+    const snap = await aigDb.ref(`players/${player.id}/treasureDig`).get();
+    return Object.assign(base, snap.exists() ? snap.val() : {});
+  }
+  async function saveTreasureDig(data) {
+    const player = window.AIGPlayer && AIGPlayer.getPlayer();
+    if (!player || player.role === "parent") return;
+    await aigDb.ref(`players/${player.id}/treasureDig`).set(data);
+  }
+  async function spendTreasureDigCoins(n) { return spendWallet({ coins: n }); }
+  async function buyTreasureDigPick(data) {
+    const cur = data.pick || 0;
+    if (cur >= TD_PICK_COSTS.length) return { ok: false, reason: "max" };
+    const paid = await spendWallet({ coins: TD_PICK_COSTS[cur] });
+    if (!paid.ok) return paid;
+    data.pick = cur + 1;
+    await saveTreasureDig(data);
+    return { ok: true };
+  }
+  function treasureDigWeekKey() { return weekKey(); }
+  async function getTreasureDigWeeklyTop() {
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return [];
+    const wk = weekKey(), out = [];
+    Object.entries(snap.val()).forEach(([id, d]) => {
+      const w = d.treasureDig && d.treasureDig.week;
+      if (w && w.key === wk && w.depth > 0) out.push({ id, depth: w.depth });
+    });
+    return out.sort((a, b) => b.depth - a.depth).slice(0, 3);
+  }
+
   // =====================================================================
   // NUMBER LINE LONG JUMP (number-line-jump/) — same one-time-per-round
   // bonus pattern as the other new mini-games, tiered on exact landings
@@ -7052,6 +7121,7 @@
     getBasketballStreakLeaderboard,
     awardMemoryMatchBonus,
     awardTreasureDigLoot, awardTreasureDigRoundBonus,
+    getTreasureDig, saveTreasureDig, buyTreasureDigPick, spendTreasureDigCoins, getTreasureDigWeeklyTop, treasureDigWeekKey, TD_PICK_COSTS,
     awardNumberLineJumpBonus,
     awardMathTennisBonus,
     touchMathTennisStats, getMathTennisLifetimeSummary, getMathTennisAchievements,

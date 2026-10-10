@@ -4,124 +4,233 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Treasure Dig — BrainBox</title>
-<meta name="theme-color" content="#8B5A2B">
+<meta name="theme-color" content="#1b120b">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #FDF0DD 0%, #E8C79A 100%); font-family: "Nunito", sans-serif; color: #3d2e22; }
-  .td-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 30px; }
+  html, body { margin: 0; min-height: 100%; background: #1b120b; font-family: "Nunito", sans-serif; color: #f6e7cf; overflow-x: hidden; }
+  .hidden { display: none !important; }
+  html.td-reduced *, html.td-reduced *::before, html.td-reduced *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
+  .td-page { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding-bottom: 24px; }
+  h1, h2, .bh { font-family: "Baloo 2", sans-serif; font-weight: 800; }
 
-  .td-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
-  .td-back { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #8B5A2B; font-size: 1.05rem; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.1); text-decoration: none; flex: none; }
-  .td-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; margin-right: 34px; color: #8B5A2B; }
-  .td-hud { display: flex; justify-content: center; gap: 10px; padding: 0 14px 12px; }
-  .td-hud-chip { background: #fff; border-radius: 100px; padding: 5px 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .85rem; box-shadow: 0 2px 0 rgba(0,0,0,.05); }
+  /* ---- top bar + HUD ---- */
+  .td-topbar { display: flex; align-items: center; gap: 10px; padding: 10px 12px 4px; }
+  .td-back, .td-iconbtn { width: 34px; height: 34px; border-radius: 10px; background: #3a281a; border: 2px solid #5a3f27; color: #f6e7cf; font-size: 1rem; display: grid; place-items: center; text-decoration: none; flex: none; cursor: pointer; }
+  .td-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; flex: 1; text-align: center; color: #f7c548; }
+  .td-hud { display: flex; justify-content: center; gap: 4px; padding: 2px 10px 8px; flex-wrap: wrap; }
+  .td-chip { background: #2b1d12; border: 2px solid #4a3220; border-radius: 100px; padding: 2px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .74rem; white-space: nowrap; }
+  .td-chip.hot { border-color: #ff9a2e; color: #ffb347; animation: tdPulse .7s ease-in-out infinite alternate; }
+  @keyframes tdPulse { to { box-shadow: 0 0 10px #ff9a2e; } }
 
-  .td-shaft { display: flex; flex-direction: column; gap: 5px; padding: 0 14px; margin-bottom: 16px; }
-  .td-layer { height: 32px; border-radius: 8px; display: flex; align-items: center; padding: 0 12px; font-size: 1.1rem; background: #C89563; box-shadow: inset 0 2px 4px rgba(0,0,0,.15); position: relative; transition: background .3s; }
-  .td-layer.dug { background: #F1E0C4; box-shadow: none; }
-  .td-layer.current { background: linear-gradient(90deg, #F7C548, #E4A020); box-shadow: 0 0 0 2px #8B5A2B; }
-  .td-layer-loot { margin-left: auto; font-size: 1rem; }
+  /* ---- the mine ---- */
+  .td-scene { position: relative; margin: 0 10px; height: 320px; border-radius: 16px; overflow: hidden; border: 3px solid #4a3220; background: #120c07; isolation: isolate; }
+  .td-world { position: absolute; left: 0; right: 0; top: 0; transition: transform .6s cubic-bezier(.4, .1, .2, 1); will-change: transform; }
+  .td-world::before { content: ""; position: absolute; left: 0; right: 0; top: -320px; height: 320px; background: linear-gradient(180deg, #5aa9f0, #cfeaff); }
+  .td-row { height: 64px; display: flex; position: relative; }
+  .td-wall { flex: 1; position: relative; background: var(--wall); border-bottom: 2px solid rgba(0,0,0,.18); background-image: repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 2px, transparent 2px 22px), repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 2px, transparent 2px 16px); }
+  .td-wall span { position: absolute; font-size: 1.2rem; opacity: .85; top: 18px; }
+  .td-cell { width: 96px; position: relative; background: var(--block); border-bottom: 2px solid rgba(0,0,0,.25); display: grid; place-items: center; font-size: 1.6rem; }
+  .td-cell.dug { background: var(--tunnel); box-shadow: inset 0 0 14px rgba(0,0,0,.55); }
+  .td-cell.dug::after { content: "🔦"; position: absolute; left: 4px; top: 4px; font-size: .75rem; opacity: .0; }
+  .td-cell.hard { filter: brightness(.7) contrast(1.2); }
+  .td-cell.target { animation: tdBlockIdle 1.4s ease-in-out infinite; }
+  @keyframes tdBlockIdle { 50% { transform: scale(1.04); filter: brightness(1.15); } }
+  .td-cell.crack::before { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 46%, rgba(0,0,0,.55) 47% 49%, transparent 50%), linear-gradient(60deg, transparent 56%, rgba(0,0,0,.45) 57% 59%, transparent 60%); }
+  .td-cell.breaking { animation: tdBreak .35s ease forwards; }
+  @keyframes tdBreak { 50% { transform: scale(1.12) rotate(2deg); } 100% { transform: scale(.2); opacity: 0; } }
+  .td-row.b0 { --wall: #8a5a35; --block: #a8703f; --tunnel: #3a2415; }
+  .td-row.b1 { --wall: #6b6f76; --block: #868b93; --tunnel: #23262b; }
+  .td-row.b2 { --wall: #3e4f8a; --block: #4f64b0; --tunnel: #131a3a; }
+  .td-row.b3 { --wall: #8a2f1b; --block: #b3401f; --tunnel: #2a0b06; }
+  .td-row.b4 { --wall: #8a7a3e; --block: #b3a054; --tunnel: #2b2610; }
+  .td-row.surface { background: linear-gradient(180deg, #7cc4ff 0%, #d4efff 70%, #6bbf4a 70%); }
+  .td-row.surface .td-wall, .td-row.surface .td-cell { background: transparent; border: none; box-shadow: none; }
+  .td-row.surface .td-cell::after { content: none; }
+  .td-sun { position: absolute; right: 24px; top: 6px; font-size: 1.6rem; }
+  .td-dark { position: absolute; inset: 0; z-index: 5; pointer-events: none; background: radial-gradient(circle at 50% 36%, transparent 70px, rgba(0,0,0, var(--dark, 0)) 190px); }
+  .td-motes { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+  .td-motes i { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,230,160,.7); animation: tdMote 6s linear infinite; }
+  @keyframes tdMote { from { transform: translateY(330px); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(-20px); opacity: 0; } }
+  .td-bat { position: absolute; z-index: 4; top: 40px; font-size: 1.2rem; animation: tdBat 7s linear infinite; pointer-events: none; }
+  @keyframes tdBat { from { left: -10%; } to { left: 110%; } }
+  .td-flash { position: absolute; inset: 0; z-index: 8; pointer-events: none; opacity: 0; }
+  .td-flash.go { animation: tdFlash .5s ease; }
+  @keyframes tdFlash { 0% { opacity: .55; } 100% { opacity: 0; } }
+  .td-scene.shake { animation: tdShake .4s ease; }
+  @keyframes tdShake { 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
 
-  .td-overlay { position: fixed; inset: 0; background: rgba(61,46,34,.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
-  .td-overlay.hidden { display: none; }
-  .td-card { background: #fff; border-radius: 22px; padding: 22px 20px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
-  .td-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: 16px; color: #3d2e22; }
-  .td-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .td-q-btn { border: 2px solid #f1ede6; background: #fdf6ea; border-radius: 14px; padding: 14px 8px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; color: #3d2e22; cursor: pointer; }
-  .td-q-btn:disabled { cursor: default; }
-  .td-q-btn.correct { border-color: #3F8F5F; background: #eaf7ee; }
-  .td-q-btn.wrong { border-color: #D64545; background: #fdeaea; }
+  /* miner (blocky) */
+  .td-miner { position: absolute; z-index: 6; left: 50%; top: 100px; width: 24px; height: 46px; margin-left: -12px; transform: translateY(-46px) scale(1.15); transform-origin: bottom center; --skin: #c68642; --shirt: #e0a030; --pants: #3b3bb9; --hair: #3a2a1a; }
+  .td-miner i { position: absolute; display: block; }
+  .td-miner .h { left: 1px; top: 0; width: 22px; height: 20px; background: var(--skin); border: 2px solid #00000040; box-shadow: inset 0 6px 0 var(--hair); }
+  .td-miner .h::after { content: ""; position: absolute; left: 4px; top: 10px; width: 4px; height: 3px; background: #1a1a2a; box-shadow: 10px 0 0 #1a1a2a; }
+  .td-miner .b { left: 3px; top: 20px; width: 18px; height: 14px; background: var(--shirt); border: 2px solid #00000040; }
+  .td-miner .a1 { left: -3px; top: 20px; width: 5px; height: 13px; background: var(--skin); }
+  .td-miner .a2 { left: 22px; top: 20px; width: 5px; height: 13px; background: var(--skin); transform-origin: top; }
+  .td-miner .l1, .td-miner .l2 { top: 34px; width: 8px; height: 12px; background: var(--pants); border: 1px solid #00000040; }
+  .td-miner .l1 { left: 4px; } .td-miner .l2 { left: 12px; }
+  .td-helmet { position: absolute; z-index: 7; left: 50%; top: 36px; margin-left: -14px; font-size: 1.15rem; transform: translateY(-8px); pointer-events: none; }
+  .td-tool { position: absolute; z-index: 7; left: 50%; top: 66px; margin-left: 10px; font-size: 1.4rem; transform-origin: 20% 90%; pointer-events: none; }
+  .td-tool.swing { animation: tdSwing .35s ease; }
+  @keyframes tdSwing { 0% { transform: rotate(-30deg); } 50% { transform: rotate(80deg); } 100% { transform: rotate(-30deg); } }
+  .td-miner.fire::before { content: ""; position: absolute; inset: -14px; border-radius: 50%; background: radial-gradient(circle, rgba(255,160,40,.55), transparent 70%); z-index: -1; animation: tdPulse .5s ease-in-out infinite alternate; }
+  .td-buddy { position: absolute; z-index: 6; left: calc(50% + 34px); top: 84px; font-size: 1.3rem; transform: translateY(-20px); animation: tdBuddy .7s ease-in-out infinite alternate; }
+  @keyframes tdBuddy { to { transform: translateY(-26px); } }
+  .td-monster { position: absolute; z-index: 6; left: 50%; top: 118px; transform: translateX(-50%); font-size: 3rem; animation: tdBossIdle 1.4s ease-in-out infinite; text-align: center; }
+  .td-monster.hurt { animation: tdBossHurt .4s ease; }
+  @keyframes tdBossIdle { 50% { transform: translateX(-50%) scale(1.08) translateY(-3px); } }
+  @keyframes tdBossHurt { 40% { transform: translateX(-50%) scale(.8) rotate(-12deg); filter: brightness(2.5); } }
+  .td-debris { position: absolute; z-index: 7; width: 7px; height: 7px; background: #c89563; pointer-events: none; animation: tdDebris .6s ease-out forwards; }
+  @keyframes tdDebris { to { transform: translate(var(--dx), var(--dy)) rotate(200deg); opacity: 0; } }
+  .td-float { position: absolute; z-index: 9; left: 50%; top: 80px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.1rem; color: #ffe27a; text-shadow: 0 2px 0 #000; pointer-events: none; animation: tdFloat 1s ease forwards; transform: translateX(-50%); white-space: nowrap; }
+  @keyframes tdFloat { to { transform: translate(-50%, -50px); opacity: 0; } }
+  .td-bo { position: absolute; z-index: 10; left: 6px; bottom: 6px; right: 6px; display: flex; gap: 6px; align-items: flex-end; pointer-events: none; transition: opacity .3s; }
+  .td-bo img { width: 34px; height: 34px; border-radius: 50%; border: 2px solid #f7c548; background: #fff; flex: none; }
+  .td-bo span { background: rgba(20,12,6,.85); border: 2px solid #f7c548; border-radius: 12px; padding: 5px 9px; font-weight: 800; font-size: .74rem; line-height: 1.3; }
+  .td-bo.off { opacity: 0; }
+  .td-biome-banner { position: absolute; z-index: 10; top: 10px; left: 0; right: 0; text-align: center; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.05rem; color: #fff; text-shadow: 0 2px 6px #000; animation: tdBanner 2.6s ease forwards; pointer-events: none; }
+  @keyframes tdBanner { 0% { opacity: 0; transform: translateY(-14px); } 15%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 
-  .td-loot-emoji-btn { position: relative; background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 8px; }
-  .td-loot-emoji { font-size: 3.4rem; display: block; transition: transform .15s ease; }
-  .td-loot-emoji-btn:active .td-loot-emoji { transform: scale(.85); }
-  .td-loot-emoji.collected { animation: tdLootPop .5s ease; }
-  @keyframes tdLootPop { 0% { transform: scale(1); } 35% { transform: scale(1.5) rotate(-8deg); } 60% { transform: scale(1.2) rotate(6deg); } 100% { transform: scale(1) rotate(0deg); } }
+  /* ---- bottom sheet ---- */
+  .td-sheet { margin: 10px 10px 0; background: #2b1d12; border: 3px solid #4a3220; border-radius: 16px; padding: 14px 12px; min-height: 250px; }
+  .td-sheet h2 { margin: 0 0 6px; font-size: 1.05rem; text-align: center; color: #f7c548; }
+  .td-sheet p { margin: 0 0 10px; text-align: center; font-weight: 700; font-size: .85rem; color: #d9c4a3; line-height: 1.45; }
+  .td-q-prompt { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.02rem; margin: 2px 0 10px; text-align: center; line-height: 1.35; background: #3a281a; border-radius: 12px; padding: 10px 8px; border: 2px dashed #6b4b2e; }
+  .td-q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .td-q-btn { border: 3px solid #5a3f27; border-bottom-width: 5px; background: #4a3220; border-radius: 12px; padding: 12px 6px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; color: #f6e7cf; cursor: pointer; }
+  .td-q-btn:active { transform: translateY(2px); border-bottom-width: 3px; }
+  .td-q-btn:disabled { cursor: default; opacity: .55; }
+  .td-q-btn.dim { opacity: .2; }
+  .td-q-btn.correct { border-color: #3fb86f; background: #1f5a38; opacity: 1; }
+  .td-q-btn.wrong { border-color: #e35252; background: #6a2222; opacity: 1; }
+  .td-timer { height: 8px; background: #120c07; border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+  .td-timer i { display: block; height: 100%; width: 100%; background: #5bd33a; transition: width .1s linear; }
+  .td-timer.low i { background: #e35252; }
+  .td-tools { display: flex; gap: 6px; margin-top: 10px; }
+  .td-tool-btn { flex: 1; border: 2px solid #5a3f27; background: #3a281a; color: #f6e7cf; border-radius: 10px; padding: 8px 4px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .78rem; cursor: pointer; }
+  .td-tool-btn:disabled { opacity: .35; cursor: default; }
+  .td-bosshp { height: 12px; background: #120c07; border: 2px solid #6b4b2e; border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+  .td-bosshp i { display: block; height: 100%; background: #e35252; transition: width .3s ease; }
+  .td-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .td-choice button { border: 3px solid #5a3f27; border-bottom-width: 5px; background: #4a3220; border-radius: 14px; padding: 14px 8px; color: #f6e7cf; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .9rem; cursor: pointer; line-height: 1.3; }
+  .td-choice button small { display: block; font-family: "Nunito", sans-serif; font-weight: 700; font-size: .72rem; color: #cbb593; margin-top: 4px; }
+  .td-choice button .e { font-size: 1.8rem; display: block; }
+  .td-choice button.rock { background: #3a3f48; border-color: #6b717a; }
+
+  /* ---- overlays / cards ---- */
+  .td-overlay { position: fixed; inset: 0; background: rgba(12,7,3,.82); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 40; }
+  .td-card { background: #2b1d12; border: 3px solid #5a3f27; border-radius: 20px; padding: 18px 16px; width: 100%; max-width: 380px; max-height: 92vh; overflow-y: auto; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+  .td-card h2 { margin: 0 0 8px; color: #f7c548; font-size: 1.3rem; }
+  .td-sub { font-weight: 700; color: #d9c4a3; font-size: .86rem; line-height: 1.5; margin: 0 0 12px; }
+  .td-btn { display: block; width: 100%; border: none; border-bottom: 4px solid rgba(0,0,0,.3); border-radius: 14px; padding: 12px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .98rem; cursor: pointer; margin-bottom: 8px; text-decoration: none; text-align: center; color: #fff; }
+  .td-btn:active { transform: translateY(2px); border-bottom-width: 2px; }
+  .td-btn.primary { background: #d98a2b; } .td-btn.green { background: #3f9a5f; } .td-btn.dark { background: #4a3220; } .td-btn.red { background: #b53a3a; }
+  .td-btn:disabled { opacity: .45; cursor: default; }
+  .td-btnrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .td-btnrow .td-btn { margin: 0; font-size: .85rem; padding: 10px 4px; }
+  .td-seg { display: flex; gap: 6px; margin-bottom: 12px; }
+  .td-seg button { flex: 1; border: 2px solid #5a3f27; background: #3a281a; color: #f6e7cf; border-radius: 10px; padding: 8px 4px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .82rem; cursor: pointer; }
+  .td-seg button.on { background: #d98a2b; border-color: #f7c548; }
+  .td-stat { display: flex; justify-content: center; gap: 12px; font-weight: 800; font-size: .8rem; color: #cbb593; margin-bottom: 10px; flex-wrap: wrap; }
+  .td-board { background: #3a281a; border-radius: 12px; padding: 8px 10px; margin-bottom: 12px; font-weight: 800; font-size: .8rem; text-align: left; line-height: 1.7; }
+  .td-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px; }
+  .td-grid.g3 { grid-template-columns: repeat(3, 1fr); } .td-grid.g5 { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .td-item { background: #3a281a; border: 3px solid #4a3220; border-radius: 12px; padding: 8px 4px; font-weight: 800; font-size: .74rem; position: relative; }
+  .td-item.sel { border-color: #f7c548; } .td-item.locked { opacity: .5; }
+  .td-item .big { font-size: 1.7rem; display: block; margin-bottom: 2px; }
+  .td-item small { display: block; color: #cbb593; font-weight: 700; margin: 2px 0 5px; font-size: .68rem; line-height: 1.3; }
+  .td-item .td-btn { font-size: .68rem; padding: 6px 2px; margin: 0; border-radius: 8px; }
+  .td-item.C { border-color: #6b717a; } .td-item.R { border-color: #4f8fe0; } .td-item.L { border-color: #f7c548; box-shadow: 0 0 10px rgba(247,197,72,.5); }
+  .td-item .cnt { position: absolute; right: 4px; top: 2px; font-size: .62rem; color: #f7c548; }
+  .td-row2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #4a3220; font-weight: 800; font-size: .84rem; text-align: left; }
+  .td-row2 .td-btn { width: 108px; margin: 0; padding: 7px 2px; font-size: .76rem; flex: none; }
+  .td-toggle { width: 46px; height: 24px; border-radius: 14px; background: #555; border: none; position: relative; cursor: pointer; flex: none; }
+  .td-toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform .15s; }
+  .td-toggle.on { background: #3f9a5f; } .td-toggle.on::after { transform: translateX(22px); }
+  .td-big { font-size: 3.4rem; margin-bottom: 4px; }
+  .td-pop { animation: tdPop .5s ease; } @keyframes tdPop { 0% { transform: scale(.3); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+  .td-stars { font-size: 2rem; letter-spacing: 4px; margin: 4px 0 10px; }
+  .td-stars span { display: inline-block; opacity: .25; filter: grayscale(1); } .td-stars span.on { opacity: 1; filter: none; animation: tdPop .5s ease backwards; }
+  .td-lines div { display: flex; justify-content: space-between; font-weight: 800; font-size: .88rem; padding: 3px 0; }
+  .td-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 8px 0; }
+  .td-chips span { background: #3a281a; border: 2px solid #5a3f27; border-radius: 10px; padding: 3px 8px; font-weight: 800; font-size: .8rem; }
+  .td-chips span.new { border-color: #f7c548; color: #ffe27a; }
+  .td-toast { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 90; background: #2b1d12; border: 2px solid #f7c548; border-radius: 12px; padding: 7px 12px; font-weight: 800; font-size: .82rem; color: #f7c548; max-width: 90%; text-align: center; animation: tdToast 2.4s ease forwards; pointer-events: none; }
+  @keyframes tdToast { 0% { opacity: 0; transform: translate(-50%, -10px); } 12%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+  .td-relic-card { font-size: 4rem; margin: 6px 0; }
   .td-sparkle { position: absolute; top: 50%; left: 50%; font-size: 1.1rem; pointer-events: none; opacity: 0; }
   .td-sparkle.firing { animation: tdSparkle .6s ease-out forwards; }
-  @keyframes tdSparkle { 0% { opacity: 1; transform: translate(-50%, -50%) translate(0, 0) scale(.5); } 100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--sx), var(--sy)) scale(1.1); } }
-  .td-loot-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.2rem; margin-bottom: 6px; }
-  .td-loot-sub { font-weight: 700; color: #8a7a6a; font-size: .9rem; margin-bottom: 4px; }
-  .td-loot-hint { font-weight: 700; color: #b8a68e; font-size: .78rem; }
-
-  .td-end-emoji { font-size: 3.4rem; margin-bottom: 8px; }
-  .td-end-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
-  .td-end-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 6px; font-size: .9rem; }
-  .td-end-bonus { font-weight: 800; color: #8B5A2B; margin-bottom: 16px; min-height: 1.2em; }
-  .td-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
-  .td-btn-primary { background: #C87F3A; color: #fff; }
-  .td-btn-secondary { background: #f1ede6; color: #3d2e22; }
-
-  .td-start-emoji { font-size: 3.4rem; margin-bottom: 8px; }
-  .td-start-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
-  .td-start-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+  @keyframes tdSparkle { 0% { opacity: 1; transform: translate(-50%, -50%) scale(.5); } 100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--sx), var(--sy)) scale(1.1); } }
 </style>
 </head>
 <body>
-
 <div class="td-page">
   <div class="td-topbar">
     <a href="../" class="td-back">←</a>
     <div class="td-title">⛏️ Treasure Dig</div>
+    <button type="button" class="td-iconbtn" id="td-settings-btn">⚙️</button>
   </div>
   <div class="td-hud">
-    <span class="td-hud-chip">⛏️ <span id="td-hud-depth">0</span>/10</span>
-    <span class="td-hud-chip" id="td-hud-energy">❤️❤️❤️</span>
-    <span class="td-hud-chip">🪙 <span id="td-hud-coins">0</span> 💎 <span id="td-hud-gems">0</span></span>
+    <span class="td-chip">⬇ <span id="td-hud-depth">0</span> m</span>
+    <span class="td-chip" id="td-hud-energy">❤️❤️❤️</span>
+    <span class="td-chip">🎒 🪙<span id="td-hud-bagc">0</span> 💎<span id="td-hud-bagg">0</span></span>
+    <span class="td-chip hidden" id="td-hud-combo">🔥 x0</span>
+    <span class="td-chip">🪙 <span id="td-hud-coins">0</span> 💎 <span id="td-hud-gems">0</span></span>
   </div>
 
-  <div class="td-shaft" id="td-shaft"></div>
-
-  <div class="td-overlay" id="td-start-overlay">
-    <div class="td-card">
-      <div class="td-start-emoji">⛏️</div>
-      <div class="td-start-title">Treasure Dig</div>
-      <p class="td-start-sub">Answer questions to dig deeper! Questions get harder the deeper you go, and so does the treasure. 3 wrong answers and your pickaxe needs a rest.</p>
-      <button class="td-btn td-btn-primary" id="td-start-btn">Start Digging</button>
-    </div>
+  <div class="td-scene" id="td-scene">
+    <div class="td-world" id="td-world"></div>
+    <div class="td-motes" id="td-motes"></div>
+    <div class="td-dark" id="td-dark"></div>
+    <div class="td-monster hidden" id="td-monster">👹</div>
+    <div class="td-buddy hidden" id="td-buddy">🦫</div>
+    <div class="td-miner" id="td-miner"><i class="h"></i><i class="b"></i><i class="a1"></i><i class="a2"></i><i class="l1"></i><i class="l2"></i></div>
+    <div class="td-helmet" id="td-helmet">⛑️</div>
+    <div class="td-tool" id="td-tool">⛏️</div>
+    <div class="td-flash" id="td-flash"></div>
+    <div class="td-bo" id="td-bo"><img src="../icon-192.png" alt="Bo"><span id="td-bo-text">Let's dig!</span></div>
   </div>
 
-  <div class="td-overlay hidden" id="td-question-overlay">
-    <div class="td-card">
-      <div class="td-q-prompt" id="td-q-prompt"></div>
-      <div class="td-q-grid" id="td-q-grid"></div>
-    </div>
-  </div>
+  <div class="td-sheet" id="td-sheet"></div>
+</div>
 
-  <div class="td-overlay hidden" id="td-loot-overlay">
-    <div class="td-card">
-      <button class="td-loot-emoji-btn" id="td-loot-emoji-btn" type="button">
-        <span class="td-loot-emoji" id="td-loot-emoji">💎</span>
-      </button>
-      <div class="td-loot-title" id="td-loot-title"></div>
-      <div class="td-loot-sub" id="td-loot-sub"></div>
-      <div class="td-loot-hint" id="td-loot-hint">Tap it!</div>
-    </div>
-  </div>
-
-  <div class="td-overlay hidden" id="td-end-overlay">
-    <div class="td-card">
-      <div class="td-end-emoji" id="td-end-emoji">🏆</div>
-      <div class="td-end-title" id="td-end-title">Nice digging!</div>
-      <div class="td-end-sub" id="td-end-sub"></div>
-      <div class="td-end-bonus" id="td-end-bonus"></div>
-      <button class="td-btn td-btn-primary" id="td-play-again-btn">Dig Again</button>
-      <a href="../" class="td-btn td-btn-secondary">Back to Hub</a>
-    </div>
-  </div>
-
-  <div class="td-overlay hidden" id="td-signedout-overlay">
-    <div class="td-card">
-      <div class="td-start-emoji">⛏️</div>
-      <p class="td-start-sub">Please sign in from the hub first.</p>
-      <a href="../" class="td-btn td-btn-primary">Back to Hub</a>
+<!-- start / home -->
+<div class="td-overlay" id="td-start">
+  <div class="td-card">
+    <div class="td-big">⛏️</div>
+    <h2>Treasure Dig</h2>
+    <p class="td-sub">Dig down through 5 biomes, beat the bosses, find relics and decide when to cash out. Risk it all for the deep stuff!</p>
+    <div class="td-stat"><span id="td-st-best">Best: 0 m</span><span id="td-st-streak">🔥 Day 1</span><span id="td-st-relics">🏺 0/25</span></div>
+    <div class="td-board" id="td-board">Loading this week's top diggers…</div>
+    <div class="td-seg" id="td-mode"><button data-m="chill" class="on">😌 Chill</button><button data-m="speed">⚡ Speed (12s)</button></div>
+    <button class="td-btn primary" id="td-start-btn">⛏️ Start Digging</button>
+    <div class="td-btnrow">
+      <button class="td-btn dark" id="td-open-work">🛠️ Workshop</button>
+      <button class="td-btn dark" id="td-open-museum">🏺 Museum</button>
+      <button class="td-btn dark" id="td-open-missions">📋 Missions</button>
+      <button class="td-btn dark" id="td-open-daily">🎁 Daily Chest</button>
     </div>
   </div>
 </div>
+
+<div class="td-overlay hidden" id="td-work"><div class="td-card"><h2>🛠️ Workshop</h2>
+  <div class="td-seg" id="td-work-tabs"><button data-t="pick" class="on">⛏️ Pick</button><button data-t="pack">🧰 Pack</button><button data-t="look">🎨 Look</button><button data-t="buddy">🐾 Buddy</button></div>
+  <div id="td-work-body"></div><button class="td-btn dark td-close">Close</button></div></div>
+<div class="td-overlay hidden" id="td-museum"><div class="td-card"><h2>🏺 Relic Museum</h2><p class="td-sub" id="td-museum-sub"></p><div class="td-grid g5" id="td-museum-grid"></div><h2 style="font-size:1.05rem">🏅 Badges</h2><div class="td-grid g3" id="td-badge-grid"></div><button class="td-btn dark td-close">Close</button></div></div>
+<div class="td-overlay hidden" id="td-missions"><div class="td-card"><h2>📋 Daily Missions</h2><div id="td-mission-list"></div><button class="td-btn dark td-close">Close</button></div></div>
+<div class="td-overlay hidden" id="td-settings"><div class="td-card"><h2>⚙️ Settings</h2>
+  <div class="td-row2"><span>🔊 Sound</span><button class="td-toggle" id="td-set-sound"></button></div>
+  <div class="td-row2"><span>📳 Haptics</span><button class="td-toggle" id="td-set-haptics"></button></div>
+  <div class="td-row2"><span>🎬 Reduced motion</span><button class="td-toggle" id="td-set-motion"></button></div>
+  <button class="td-btn dark td-close" style="margin-top:12px">Close</button></div></div>
+<div class="td-overlay hidden" id="td-tutorial"><div class="td-card"><div class="td-big" id="td-tut-emoji">⛏️</div><h2 id="td-tut-title"></h2><p class="td-sub" id="td-tut-text"></p><button class="td-btn primary" id="td-tut-next">Next</button></div></div>
+<div class="td-overlay hidden" id="td-relic"><div class="td-card"><h2 id="td-relic-title">Relic found!</h2><button class="td-relic-card" id="td-relic-btn" type="button" style="background:none;border:none;position:relative;cursor:pointer"><span id="td-relic-emoji" style="font-size:4rem;display:block">🏺</span></button><div class="bh" id="td-relic-name" style="font-size:1.1rem"></div><p class="td-sub" id="td-relic-sub"></p><p class="td-sub" id="td-relic-hint" style="color:#b8a68e">Tap it!</p></div></div>
+<div class="td-overlay hidden" id="td-end"><div class="td-card"><div class="td-big" id="td-end-emoji">🏆</div><h2 id="td-end-title"></h2><div class="td-stars" id="td-end-stars"></div><div class="td-lines" id="td-end-lines"></div><div class="td-chips" id="td-end-relics"></div><p class="td-sub" id="td-end-bonus"></p><button class="td-btn primary" id="td-again">⛏️ Dig Again</button><button class="td-btn dark" id="td-end-home">Menu</button></div></div>
+<div class="td-overlay hidden" id="td-signedout"><div class="td-card"><div class="td-big">⛏️</div><p class="td-sub">Please sign in from the hub first.</p><a href="../" class="td-btn primary">Back to Hub</a></div></div>
 
 <script src="../player.js"></script>
 <script src="../firebase.js"></script>
@@ -130,6 +239,6 @@
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
 <script src="../synth-bgm.js?v=2"></script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>
