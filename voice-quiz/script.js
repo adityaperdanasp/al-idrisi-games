@@ -56,17 +56,31 @@ function matchSpeech(heard, options) {
 window.__matchSpeech = matchSpeech;
 
 if (!player) $("vq-overlay").innerHTML = K.signedOutHtml("🗣️");
-else K.ready().then(start);
+else K.ready().then(intro);
+// Audit batch 4: a radio show -- three themed rounds (maths, words, science) and a triple-points
+// jackpot finale, a buzzer race against Bo-Bot (answer before it buzzes for full points), +1 for
+// answering out loud, applause on a 3-streak, a duo mode for two players on one phone, and an
+// average-speed stat at the end.
+let duo = false;
+function applause() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), len = a.sampleRate * 0.8, b = a.createBuffer(1, len, a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) * (Math.random() < 0.3 ? 1 : 0.2); const src = a.createBufferSource(), g = a.createGain(); src.buffer = b; g.gain.value = 0.12; src.connect(g); g.connect(a.destination); src.start(); } catch (e) {} }
+function intro() {
+  $("vq-q").textContent = "📻 Welcome to Bo's Radio Quiz!";
+  $("vq-opts").innerHTML = `<div class="kit-sub" style="grid-column:1/-1;text-align:center">3 rounds + a jackpot question. Beat Bo-Bot to the buzzer! Answering out loud earns a bonus point.</div><button class="kit-btn" id="vq-solo" type="button" style="grid-column:1/-1">🎤 Solo show</button><button class="kit-btn alt" id="vq-duo" type="button" style="grid-column:1/-1">👫 Duo show (take turns on one phone)</button>`;
+  $("vq-solo").onclick = () => { duo = false; start(); }; $("vq-duo").onclick = () => { duo = true; start(); };
+}
 
 function start() {
   const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let n = 0, right = 0, q = null, locked = false, rec = null, listening = false;
+  let n = 0, right = 0, q = null, locked = false, rec = null, listening = false, points = [0, 0], streak = 0, botT = null, t0 = 0, times = [], byVoice = false;
+  const SUBJ = ["math", "math", "math", "lang", "lang", "lang", "sci", null], ROUND = ["Round 1: Maths", "Round 1: Maths", "Round 1: Maths", "Round 2: Words", "Round 2: Words", "Round 2: Words", "Round 3: Science", "💰 JACKPOT!"];
   const LETTERS = ["A", "B", "C", "D"];
 
   function speak(text) { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = 0.9; speechSynthesis.speak(u); } catch (e) {} }
   function next() {
     if (n >= 8) return finish();
-    q = K.question({ difficulty: "easy" }); n++; locked = false;
+    q = K.question({ difficulty: n === 7 ? "medium" : "easy", subject: SUBJ[n] || undefined }); n++; locked = false; byVoice = false; t0 = performance.now();
+    $("vq-round").textContent = `${ROUND[n - 1]}${duo ? ` · ${n % 2 ? "Player 1" : "Player 2"}'s turn` : ""} · Score ${duo ? `${points[0]} – ${points[1]}` : points[0]}`;
+    clearTimeout(botT); const bot = K.bot; botT = setTimeout(() => { if (locked) return; $("vq-heard").textContent = `📻 ${bot.emoji} ${bot.name} buzzed! Answer now for 1 point.`; q.botBuzzed = true; }, Math.max(2500, bot.speedMs * 0.8));
     $("vq-n").textContent = n; $("vq-heard").textContent = Rec ? "Tap the mic and say your answer — or tap an answer." : "Your browser can't listen, so tap your answer (you can still press 🔊).";
     $("vq-q").textContent = q.prompt;
     $("vq-opts").innerHTML = q.options.map((o, i) => `<button class="kit-opt vq-opt" data-i="${i}"><span class="vq-l">${LETTERS[i]}</span> ${K.esc(o)}</button>`).join("");
@@ -75,7 +89,10 @@ function start() {
   $("vq-listen").onclick = () => speak(q ? `${q.prompt}. ${q.options.map((o, i) => `${LETTERS[i]}: ${o}`).join(". ")}` : "");
   function choose(i) {
     if (locked) return; locked = true;
+    clearTimeout(botT); times.push(performance.now() - t0);
     const ok = q.options[i] === q.correctLabel;
+    const pl = duo && n % 2 === 0 ? 1 : 0, mult = n === 8 ? 3 : 1;
+    if (ok) { points[pl] += ((q.botBuzzed ? 1 : 2) + (byVoice ? 1 : 0)) * mult; streak++; if (streak % 3 === 0) { applause(); K.toastAdv(`${streak} in a row — the crowd goes wild!`); } } else streak = 0;
     K.record("voice-quiz", q.key, ok, q);
     $("vq-opts").querySelectorAll(".kit-opt").forEach((b, k) => { b.disabled = true; if (q.options[k] === q.correctLabel) b.classList.add("right"); });
     if (!ok) $("vq-opts").querySelectorAll(".kit-opt")[i].classList.add("wrong"); else { right++; $("vq-r").textContent = right; }
@@ -92,14 +109,14 @@ function start() {
       let idx = -1, heard = e.results[0][0].transcript;
       for (let a = 0; a < e.results[0].length && idx < 0; a++) { heard = e.results[0][a].transcript; idx = matchSpeech(heard, q.options); }
       if (idx < 0) { $("vq-heard").textContent = `I heard “${heard}” but couldn't match it — try again or tap.`; return; }
-      $("vq-heard").textContent = `I heard “${heard}”`; choose(idx);
+      $("vq-heard").textContent = `I heard “${heard}” 🎙️ +1 voice bonus`; byVoice = true; choose(idx);
     };
     rec.onerror = e => { $("vq-heard").textContent = e.error === "not-allowed" ? "Please allow the microphone." : "I couldn't hear that — try again!"; };
     rec.onend = () => { listening = false; $("vq-mic").classList.remove("rec"); };
     try { rec.start(); } catch (e) { $("vq-heard").textContent = "Couldn't start the microphone."; }
   };
   async function finish() {
-    $("vq-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${right >= 6 ? "🌟" : "🗣️"}</div><h2>${right}/8 right</h2><p class="kit-sub">Speaking your answers out loud helps your brain remember them!</p><div class="kit-bonus" id="vq-bonus"></div>
+    $("vq-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${right >= 6 ? "🌟" : "🗣️"}</div><h2>${duo ? (points[0] === points[1] ? "It's a tie!" : points[0] > points[1] ? "Player 1 wins!" : "Player 2 wins!") : `${right}/8 right`}</h2><p class="kit-sub">${duo ? `Player 1: ${points[0]} · Player 2: ${points[1]} points` : `${points[0]} show points`} · ⏱️ average answer ${(times.reduce((a, b) => a + b, 0) / Math.max(1, times.length) / 1000).toFixed(1)}s<br>Speaking your answers out loud helps your brain remember them!</p><div class="kit-bonus" id="vq-bonus"></div>
       <button class="kit-btn block" onclick="location.reload()">Again</button><a class="kit-btn alt block" href="../game-room/">Game Room</a></div></div>`;
     K.finish("voice-quiz", right * 2, $("vq-bonus"));
   }

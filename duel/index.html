@@ -60,6 +60,13 @@
   .dl-result-emoji { font-size: 3.4rem; margin-bottom: 8px; }
   .dl-result-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
   .dl-result-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
+  .dl-arena{margin:0 14px 10px;display:grid;gap:6px}.dl-lg{background:#fff;border:3px solid #1b1b1b;padding:8px;font-size:.85rem}
+  .dl-recs{display:flex;flex-wrap:wrap;gap:4px}.dl-recs span{font-size:.72rem;font-weight:800;background:#fff;border:2px solid #1b1b1b;padding:2px 6px}
+  .dl-themes{display:flex;flex-wrap:wrap;gap:6px}.dl-themes button{border:2px solid #1b1b1b;background:#fff;padding:5px 9px;font-weight:800;font-size:.78rem;cursor:pointer}.dl-themes button.on{background:#b8342f;color:#fff}
+  .dl-fifty{border:2px solid #1b1b1b;background:#fff3c4;font-weight:800;font-size:.75rem;padding:2px 6px;cursor:pointer;margin-left:6px}
+  .dl-vs{position:fixed;inset:0;z-index:300;display:grid;place-items:center;background:rgba(20,10,10,.85);color:#fff;font-weight:800;font-size:1.4rem}.dl-vs div{display:flex;gap:14px;align-items:center;animation:dlVs .5s}.dl-vs span{font-size:2.4rem}
+  @keyframes dlVs{from{transform:scale(2);opacity:0}}
+  .dl-belt-toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:400;background:#1e1e1e;color:#ffd23f;border:4px solid #6a6a6a;padding:10px 14px;font-weight:800}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="duel";</script>
@@ -77,11 +84,12 @@
     <button class="dl-tab" id="dl-tab-mine" type="button">My Duels</button>
   </div>
 
+  <div id="dl-arena" class="dl-arena"></div>
   <div class="dl-panel" id="dl-panel-challenge">
     <div class="dl-card">
       <div class="dl-field">
         <label>Friend's name</label>
-        <input type="text" id="dl-friend-name" placeholder="e.g. Bram" autocomplete="off" />
+        <input type="text" id="dl-friend-name" placeholder="Start typing a friend's name" autocomplete="off" list="dl-friends" /><datalist id="dl-friends"></datalist>
       </div>
       <button class="dl-btn dl-btn-primary" id="dl-challenge-btn">Answer 10 Questions to Challenge!</button>
       <p class="dl-note" id="dl-challenge-note"></p>
@@ -126,7 +134,7 @@
 <script src="../skin.js"></script>
 <script src="../mathville/generators.js"></script>
 <script src="../game-music.js"></script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 <script>document.addEventListener("DOMContentLoaded",()=>{const a=document.createElement("a");a.href="../friend-duel/";a.textContent="Older 8-question duels →";a.style.cssText="display:block;text-align:center;margin:14px;font-weight:800;color:#b8342f";(document.querySelector(".dl-page")||document.body).appendChild(a);});</script>
 </body>
 </html>

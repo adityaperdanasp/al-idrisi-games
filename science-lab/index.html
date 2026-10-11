@@ -17,6 +17,11 @@
   @keyframes slPop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
   .sl-fact{background:#ecfeff;border:2px solid #67e8f9;border-radius:12px;padding:10px;font-weight:700;font-size:.85rem;line-height:1.45;margin-top:10px;text-align:left}
 
+  .sl-steps{display:flex;gap:4px;justify-content:center;margin-bottom:6px}.sl-steps span{font-size:.68rem;font-weight:800;padding:2px 6px;border:2px solid #1b1b1b;opacity:.4}.sl-steps span.on{opacity:1;background:#c9f2d3}
+  .sl-badges{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:10px}.sl-badges span{font-size:.7rem;font-weight:800;border:2px dashed #aaa;padding:2px 6px;opacity:.6}.sl-badges span.on{border:2px solid #b8860b;background:#fff3c4;opacity:1}
+  .sl-note{border-top:1px solid #ddd;padding:6px 0;font-size:.85rem}.sl-note.off{opacity:.5}
+  .sl-var{border:2px solid #1b1b1b;padding:8px;margin-bottom:8px;display:grid;gap:6px;background:#fff}.sl-var input{width:100%}
+  .sl-shadow{height:90px;position:relative;background:#fffbe6;display:flex;align-items:center}.sl-shd{display:block;width:40px;height:50px;background:#333;margin-left:auto;margin-right:30px;transition:transform .2s}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="science-lab";</script>
@@ -39,6 +44,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Science Lab',accent:'#0e7490',bg:'linear-gradient(180deg,#e0f7fa,#bfe9ef)'});</script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

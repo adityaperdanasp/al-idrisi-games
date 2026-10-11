@@ -18,6 +18,7 @@
   .vq-opt{display:flex;gap:8px;align-items:center}
   .vq-l{font-family:"Baloo 2",sans-serif;background:#fce7f3;border-radius:8px;padding:0 8px;font-size:.85rem}
 
+  .vq-onair{margin:0 14px 8px;background:#2b2b2b;color:#ff5a5a;font-weight:800;font-size:.8rem;padding:6px 10px;border:3px solid #111}.vq-onair span{color:#fff;margin-left:6px}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="voice-quiz";</script>
@@ -27,6 +28,7 @@
   <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🗣️ Voice Quiz</div></div>
 
   <div class="kit-hud"><span>🗣️ Question <b id="vq-n">1</b>/8</span><span>⭐ <b id="vq-r">0</b></span></div>
+  <div class="vq-onair">🔴 ON AIR <span id="vq-round"></span></div>
   <div class="kit-card"><div class="kit-q" id="vq-q"></div><div class="kit-opts" id="vq-opts"></div>
     <button class="vq-mic" id="vq-mic" type="button" aria-label="Answer out loud">🎤</button>
     <div class="vq-heard" id="vq-heard">Tap the mic and say your answer — or tap an answer.</div>
@@ -43,6 +45,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Voice Quiz',accent:'#be185d',bg:'linear-gradient(180deg,#fde7f1,#f8cfe2)'});</script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>
