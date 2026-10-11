@@ -1422,6 +1422,10 @@ function initTreasureDig() {
     { const se = season(), sb = $("td-season"); if (se) { sb.textContent = se.banner; sb.classList.remove("hidden"); } else sb.classList.add("hidden");
       const rb = $("td-rule-btn"), rl = todayRule(), on = ruleOn(); rb.className = "td-rulebtn" + (on ? "" : " off"); rb.innerHTML = `📅 Daily rule: <b>${rl.n}</b> — ${rl.d}<br>${on ? "ON · rewards ×1.5" : "OFF (tap to turn on)"}`; }
     $("td-st-best").textContent = `Best: ${td.bestDepth || 0} m`;
+    // Audit round 2: gentle onboarding -- until the first dig is done, the Workshop / Museum /
+    // Missions / Daily Chest row is folded away so a new digger only sees one thing to do.
+    { const row = document.querySelector("#td-start .td-btnrow"), fresh = !(td.bestDepth > 0);
+      if (row) { row.hidden = fresh; let note = document.getElementById("td-unlock-note"); if (fresh && !note) { note = document.createElement("p"); note.id = "td-unlock-note"; note.className = "td-sub"; note.textContent = "🔓 Workshop, Museum and Missions open after your first dig!"; row.after(note); } if (!fresh && note) note.remove(); } }
     $("td-st-streak").textContent = `🔥 Day ${td.streak || 1}`;
     $("td-st-relics").textContent = `🏺 ${relicCount()}/${RELICS.length}`;
     $("td-board").textContent = "Loading top diggers…";

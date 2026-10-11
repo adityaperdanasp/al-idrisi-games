@@ -389,6 +389,7 @@ function initEscapeRoom() {
     boSay("The guard caught you! Stay calm...");
   }
   function addAlarm(delta) {
+    if (delta > 0) state.alarmEver = true;
     state.alarm = Math.min(ALARM_MAX, state.alarm + delta);
     if (state.alarm >= ALARM_MAX && !state.ended) caughtByGuard(); else updateHud();
   }
@@ -1019,8 +1020,10 @@ function initEscapeRoom() {
     }
     if (state.campaign != null) {
       const ch = state.campaign, stars = escaped ? 1 + (state.secondsLeft >= 60 ? 1 : 0) + (flawless ? 1 : 0) : 0, sv = campaignSave();
+      // Audit round 2: 🥷 stealth badge -- escape a chapter without ever raising the alarm.
+      const stealth = escaped && !state.alarmEver; if (stealth) { const st = loadJson("er_stealth", {}); st[ch] = true; try { localStorage.setItem("er_stealth", JSON.stringify(st)); } catch (e) {} }
       if (stars > (sv[ch] || 0)) { sv[ch] = stars; try { localStorage.setItem("er_campaign", JSON.stringify(sv)); } catch (e) {} }
-      $("er-end-seed").textContent = escaped ? `🗺️ Chapter ${ch + 1} cleared: ${"★".repeat(stars)}${"☆".repeat(3 - stars)}${ch < CAMPAIGN.length - 1 ? ` · Chapter ${ch + 2} unlocked!` : " · YOU FINISHED THE CAMPAIGN! 👑"}` : `🗺️ Chapter ${ch + 1} — try again to unlock the next heist.`;
+      $("er-end-seed").textContent = escaped ? `🗺️ Chapter ${ch + 1} cleared: ${"★".repeat(stars)}${"☆".repeat(3 - stars)}${stealth ? " · 🥷 Stealth badge!" : ""}${ch < CAMPAIGN.length - 1 ? ` · Chapter ${ch + 2} unlocked!` : " · YOU FINISHED THE CAMPAIGN! 👑"}` : `🗺️ Chapter ${ch + 1} — try again to unlock the next heist.`;
       if (escaped && ch < CAMPAIGN.length - 1) state.campaign = ch + 1;
       renderCampaign();
     }
@@ -1045,8 +1048,8 @@ function initEscapeRoom() {
   function campaignSave() { return loadJson("er_campaign", {}); }
   function renderCampaign() {
     const host = $("er-campaign"); if (!host) return;
-    const sv = campaignSave(), unlocked = i => i === 0 || (sv[i - 1] || 0) > 0;
-    host.innerHTML = `<div class="er-camp-h">🗺️ Heist Campaign · ⭐ ${Object.values(sv).reduce((a, b) => a + b, 0)}/30</div><div class="er-camp-row">${CAMPAIGN.map((t, i) => `<button type="button" class="er-camp-ch ${unlocked(i) ? "" : "locked"} ${sv[i] ? "done" : ""}" data-ch="${i}" title="${t}">${unlocked(i) ? i + 1 : "🔒"}<small>${sv[i] ? "★".repeat(sv[i]) : ""}</small></button>`).join("")}</div>`;
+    const sv = campaignSave(), unlocked = i => i === 0 || (sv[i - 1] || 0) > 0, stl = loadJson("er_stealth", {});
+    host.innerHTML = `<div class="er-camp-h">🗺️ Heist Campaign · ⭐ ${Object.values(sv).reduce((a, b) => a + b, 0)}/30</div><div class="er-camp-row">${CAMPAIGN.map((t, i) => `<button type="button" class="er-camp-ch ${unlocked(i) ? "" : "locked"} ${sv[i] ? "done" : ""}" data-ch="${i}" title="${t}">${unlocked(i) ? i + 1 : "🔒"}<small>${sv[i] ? "★".repeat(sv[i]) : ""}${stl[i] ? "🥷" : ""}</small></button>`).join("")}</div><div class="er-camp-h" style="font-size:.7rem;font-weight:600">🥷 = escaped without ever raising the alarm</div>`;
     host.querySelectorAll("[data-ch]").forEach(b => b.onclick = () => {
       const i = +b.dataset.ch; if (!unlocked(i)) { boSay("Finish the chapter before it first!"); return; }
       state.campaign = i; startGame(false);
@@ -1067,7 +1070,7 @@ function initEscapeRoom() {
       score: 0, scoreAnswers: 0, scoreDoors: 0, scoreExtra: 0, streak: 0, alarm: 0, hintsUsed: 0, nextTrap: null, keyArmed: false, cleanDoors: 0, anyWrongRun: false, secretUsed: false, bossBeaten: false,
       turn: 1, coopCorrect: { 1: 0, 2: 0 }, reviewLog: [], artifactsFound: [], answered: false, lastBoAt: 0, creepTick: 0, durTotal: DIFFS[state.diff].dur, heroLeft: 12,
       hold: true, danger: 0, pose: "idle", nextHaz: 8, empUntil: 0, smokeUntil: 0, bossAtkIn: 3.5, activeSec: 0, lastTickAt: performance.now(), mods: { guardMul: 1, qBonus: 0, scoreMul: 1, qMul: 1 }, scoreBoost: 0,
-      rivalRoom: 0, rivalDone: false, rivalBeaten: false, chase: false, bigN: null, shortUsed: false, hazSeen: false });
+      rivalRoom: 0, rivalDone: false, rivalBeaten: false, chase: false, bigN: null, shortUsed: false, hazSeen: false, alarmEver: false });
     const rv = state.selRival;
     state.rival = rv === "none" ? null : rv === "ghost" ? { rate: Math.max(0.008, parseFloat(localStorage.getItem(KEYS.pace) || "0") || 1 / 60), e: "👻" } : RIVALS[rv];
     state.inv = { fifty: 1, clock: 1, skip: 1, smoke: 1 };

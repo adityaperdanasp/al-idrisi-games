@@ -2706,3 +2706,6 @@ button { font-family: inherit; }
 .focus-len { display: flex; gap: 6px; align-items: center; justify-content: center; font-weight: 800; font-size: .85rem; margin: 8px 0; flex-wrap: wrap; }
 .focus-len button { border: 2px solid #1b1b1b; background: #fff; padding: 5px 10px; font-weight: 800; cursor: pointer; }
 .focus-len button.on { background: #4a90d9; color: #fff; }
+
+/* Audit round 2: each Town Map stop shows a building that grows with that chapter's stars. */
+.map-stop-build { font-size: 1.3rem; line-height: 1; margin-top: 2px; filter: drop-shadow(0 2px 0 rgba(0,0,0,.25)); }

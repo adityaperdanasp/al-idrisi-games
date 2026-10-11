@@ -600,6 +600,7 @@ function renderTownMap() {
         ${prog.completed ? '<span class="map-stop-check">✓</span>' : ""}
       </div>
       <div class="map-stop-title">${ch.title}</div>
+      <div class="map-stop-build" title="Your building grows with stars">${["🏗️", "🏚️", "🏠", "🏰"][prog.completed ? Math.max(1, Math.min(3, prog.stars || 1)) : 0]}</div>
       ${prog.completed ? `<div class="map-stop-stars${starTierClass(prog.stars, prog.perfectCount) ? " " + starTierClass(prog.stars, prog.perfectCount) : ""}">${"★".repeat(prog.stars)}${"☆".repeat(3 - prog.stars)}</div>` : ""}
     `;
     stop.addEventListener("click", () => mvWalkTo(i, () => goToIntro(ch.id, false)));
@@ -3019,9 +3020,12 @@ async function ensurePlaneQuestionPools() {
       fetch("../azkacraft/questions.json").then(r => r.json())
     ]);
     const solarPool = [];
-    (solar.levels || []).forEach(lvl => (lvl.questions || []).forEach(q => {
+    // Audit round 2: each pooled question carries a tier from its source (SolarQuest level order /
+    // L&A chapter id) so Ninja Runner's Easy/Medium/Hard cards draw genuinely different questions.
+    const solarCount = (solar.levels || []).length || 1;
+    (solar.levels || []).forEach((lvl, li) => (lvl.questions || []).forEach(q => {
       if (q.type === "mc" && !q.image) {
-        solarPool.push({ prompt: q.question, options: q.options, correctLabel: q.options[q.answer] });
+        solarPool.push({ prompt: q.question, options: q.options, correctLabel: q.options[q.answer], tier: li < solarCount * 0.4 ? "easy" : li < solarCount * 0.7 ? "medium" : "hard" });
       }
     }));
     const langPool = [];
@@ -3036,7 +3040,7 @@ async function ensurePlaneQuestionPools() {
       if (ch.id === 6 || ch.id === 7) return;
       (ch.questions || []).forEach(q => {
         if (q.type === "mc") {
-          langPool.push({ prompt: q.prompt, options: q.options, correctLabel: q.answer });
+          langPool.push({ prompt: q.prompt, options: q.options, correctLabel: q.answer, tier: ch.id <= 2 ? "easy" : ch.id === 3 ? "medium" : "hard" });
         }
       });
     });
@@ -8628,6 +8632,8 @@ function defeatNinjaBoss() {
 // longest (Hard) or shortest (Easy) as a stand-in for complexity -- not a
 // real difficulty signal, but better than "same question either way".
 function pickFromPlanePoolByDifficulty(pool, difficulty) {
+  const tiered = (pool || []).filter(q => q.tier === difficulty);
+  if (tiered.length >= 5) return pickFromPlanePool(tiered);
   const tries = difficulty === "medium" ? 1 : 3;
   let best = null;
   for (let i = 0; i < tries; i++) {

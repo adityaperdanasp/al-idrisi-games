@@ -154,9 +154,9 @@ function initMathTennis() {
   // advance. Real tennis-style game score on the HUD (15-30-40 vs the robot), a trophy cabinet of
   // slams won, and a no-question "Practice rally" mode for warming up the timing.
   const TOUR = [
-    { name: "Round 1", surface: "grass", label: "🌱 Grass", robot: "classic", need: 5, mult: 0.9, widen: 0 },
-    { name: "Quarter-final", surface: "clay", label: "🟫 Clay", robot: "lefty", need: 6, mult: 1.15, widen: 4 },
-    { name: "Semi-final", surface: "hard", label: "🟦 Hard court", robot: "rightie", need: 7, mult: 1, widen: 0 },
+    { name: "Round 1", surface: "grass", label: "🌱 Grass", robot: "classic", need: 5, mult: 0.9, widen: 0, style: "lobber", styleLabel: "🎈 Lobber (lots of high lobs)" },
+    { name: "Quarter-final", surface: "clay", label: "🟫 Clay", robot: "lefty", need: 6, mult: 1.15, widen: 4, style: "slicer", styleLabel: "🔪 Slicer (tricky narrow serves)" },
+    { name: "Semi-final", surface: "hard", label: "🟦 Hard court", robot: "rightie", need: 7, mult: 1, widen: 0, style: "speedster", styleLabel: "⚡ Speedster (fast serves)" },
     { name: "FINAL", surface: "night", label: "🌙 Night court", robot: "classic", need: 8, mult: 0.95, widen: -3 }
   ];
   const TOUR_KEY = "aig_mt_tour", SLAMS_KEY = "aig_mt_slams";
@@ -656,11 +656,15 @@ function initMathTennis() {
   }
 
   // ---- Serve type + lane roll ---------------------------------------------
+  // Audit round 2: Tour opponents have a playing style that changes which serves they like.
+  const STYLE_BOOST = { lobber: { lob: 3, balloon: 3 }, slicer: { slice: 3, banana: 2 }, speedster: { fast: 3, rocket: 2 } };
   function pickServeType() {
-    const totalWeight = Object.values(SERVE_TYPES).reduce((s, t) => s + t.weight, 0);
+    const leg = tourSurface(), boost = (leg && STYLE_BOOST[leg.style]) || {};
+    const w = k => SERVE_TYPES[k].weight * (boost[k] || 1);
+    const totalWeight = Object.keys(SERVE_TYPES).reduce((s, k) => s + w(k), 0);
     let r = rng() * totalWeight;
     for (const key of Object.keys(SERVE_TYPES)) {
-      r -= SERVE_TYPES[key].weight;
+      r -= w(key);
       if (r <= 0) return key;
     }
     return "normal";
@@ -1570,7 +1574,7 @@ function initMathTennis() {
   function startMatch() {
     court.classList.remove("surf-grass", "surf-clay", "surf-hard", "surf-night");
     const leg = tourSurface();
-    if (leg) { court.classList.add("surf-" + leg.surface); applyRobotSkin(leg.robot); setTimeout(() => queueCaption(`🏆 ${leg.name} · ${leg.label} · win ${leg.need}+ points to advance`, false), 500); }
+    if (leg) { court.classList.add("surf-" + leg.surface); applyRobotSkin(leg.robot); setTimeout(() => queueCaption(`🏆 ${leg.name} · ${leg.label} · win ${leg.need}+ points to advance`, false), 500); if (leg.styleLabel) setTimeout(() => queueCaption(`Opponent style: ${leg.styleLabel}`, false), 2600); }
     state.qIndex = 0;
     state.pointsWon = 0;
     state.score = 0;

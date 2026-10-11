@@ -177,6 +177,13 @@ function initVaultQuest() {
   // together, plus your last run), ONE big PLAY button that jumps straight to the next level to
   // beat, the Crew/Gadgets/Pet buttons folded into a single LOADOUT toggle, and mission progress
   // shown right on the Missions button.
+  // Audit round 2: a weekly vault event (rotates every Monday) shown in the lobby --
+  // 💰 Gold Rush (coins x1.5), 🧟 Monster Week (boss levels pay +10 bonus coins),
+  // 🐾 Pet Party (+10% coins), ⭐ Star Hunt (a 3-star clear pays +8 bonus coins).
+  function weekEvent() {
+    const EV = [{ id: "gold", t: "💰 Gold Rush week — all coins ×1.5" }, { id: "monster", t: "🧟 Monster week — boss levels pay +10 bonus coins" }, { id: "pet", t: "🐾 Pet Party week — +10% coins" }, { id: "star", t: "⭐ Star Hunt week — 3-star clears pay +8 bonus coins" }];
+    return EV[Math.floor(Date.now() / (7 * 86400000)) % EV.length];
+  }
   function nextLevelId() { return LEVEL_IDS.find(id => isUnlocked(id) && !starsOf(id)) || null; }
   function lastRun(text) { if (text) { try { localStorage.setItem("vq_last_run", text); } catch (e) {} } try { return localStorage.getItem("vq_last_run") || ""; } catch (e) { return ""; } }
   function renderLobby() {
@@ -184,6 +191,7 @@ function initVaultQuest() {
     const lb = $("vq-lobby"); if (!lb) return;
     lb.innerHTML = `<div class="vq-lobby-row"><span class="vq-lobby-hero">${hero.icon}</span><span class="vq-lobby-pet">${petIcon()}</span>${g ? `<span class="vq-lobby-gad">${g.icon}</span>` : ""}</div>
       <div class="vq-lobby-last">${lastRun() ? "Last run: " + lastRun() : "Ready for your first heist!"}</div>
+      <div class="vq-lobby-ev">${weekEvent().t}</div>
       <button type="button" class="vq-btn green vq-play" id="vq-play">▶ PLAY${nxt ? ` · WORLD ${nxt.match(/^w(\d)/)[1]} LEVEL ${nxt.match(/l(\d)$/)[1]}` : " · ENDLESS"}</button>`;
     $("vq-play").onclick = () => { if (nxt) { selWorld = +nxt.match(/^w(\d)/)[1]; openIntro(nxt); } else openIntro("endless"); };
     const ms = (vq.missions && vq.missions.list) || [], done = ms.filter(m => m.prog >= m.target).length;
@@ -996,10 +1004,12 @@ function initVaultQuest() {
     let mult = (G.hero === "miner" ? 1.25 : 1) * (1 + 0.05 * stage) * (G.tense ? 1.2 : 1);
     if (vq.gadget === "magnet") mult *= 1 + 0.05 * glv;
     if (vq.gadget === "bell") mult *= 1 + 0.08 * glv;
+    const ev = weekEvent(); if (ev.id === "gold") mult *= 1.5; if (ev.id === "pet") mult *= 1.1;
     const rivalBeaten = !!G.rival && Math.floor(G.rivalQ) < G.nQ; G.rivalBeaten = rivalBeaten;
     const rivalBonus = rivalBeaten ? 10 : 0;
     const base = G.coins + 5 + stars * 3 + (G.boss ? 10 : 0);
-    const total = Math.round(base * mult) + rivalBonus;
+    const evBonus = (ev.id === "monster" && G.boss ? 10 : 0) + (ev.id === "star" && stars === 3 ? 8 : 0);
+    const total = Math.round(base * mult) + rivalBonus + evBonus;
     const xp = 4 + stars * 3 + (G.boss ? 6 : 0);
     vq.petXp = (vq.petXp || 0) + xp;
     const hadStage = stage, nowStage = petStage();
@@ -1015,7 +1025,8 @@ function initVaultQuest() {
       ["⏱ Time", `${fmtTime(ms)}${newRecord ? " 🏆 NEW RECORD!" : ""}`],
       ["🪙 Coins on the run", G.coins],
       ["🎁 Level bonus", `+${5 + stars * 3 + (G.boss ? 10 : 0)}`],
-      ["✨ Crew/pet/mode bonus", `x${mult.toFixed(2)}`],
+      ["✨ Crew/pet/mode/event bonus", `x${mult.toFixed(2)}`],
+      evBonus ? ["🎉 Weekly event", `+${evBonus} 🪙`] : null,
       G.rival ? [`${G.rival.e} Rival`, rivalBeaten ? "Beaten! +10 🪙" : "Was faster"] : null,
       ["💰 Total earned", `🪙 ${total}${G.boss && firstClear ? " + 💎 2" : ""}`],
       ["🐾 Pet XP", `+${xp}${nowStage > hadStage ? " — EVOLVED!" : ""}`],

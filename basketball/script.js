@@ -894,7 +894,8 @@ function initBasketball() {
   function drawBot() {
     const el = document.getElementById("bh-bot-score"); if (!el) return;
     el.classList.toggle("hidden", state.mode !== "bot");
-    el.textContent = `You ${state.made} made · ⭐${state.points}  |  🤖 Bo-Bot ⭐${state.botPoints || 0}`;
+    let tr = 0; try { tr = Number(localStorage.getItem("aig_bh_tour") || 0); } catch (e) {}
+    el.textContent = `🏆 ${["Quarter-final", "Semi-final", "FINAL"][tr]} · You ${state.made} made · ⭐${state.points}  |  🤖 Bo-Bot ⭐${state.botPoints || 0}`;
   }
   function askNextQuestion() {
     if (state.ended) return;
@@ -1766,7 +1767,13 @@ function initBasketball() {
       const me = state.points, bot = state.botPoints || 0, won = me > bot;
       let rec = { w: 0, l: 0 }; try { rec = JSON.parse(localStorage.getItem("aig_bh_bot_record") || '{"w":0,"l":0}'); } catch (e) {}
       if (me !== bot) { rec[won ? "w" : "l"]++; try { localStorage.setItem("aig_bh_bot_record", JSON.stringify(rec)); } catch (e) {} }
-      teamEl.innerHTML = `<span class="${won ? "bh-team-win" : ""}">You: ${me}</span><span class="${bot > me ? "bh-team-win" : ""}">🤖 Bo-Bot: ${bot}</span><br><small>${won ? "You beat Bo-Bot! 🏆" : me === bot ? "A tie!" : "Bo-Bot wins this time."} Record ${rec.w}W-${rec.l}L</small>`;
+      // Audit round 2: vs Bo-Bot is now a 3-round tournament -- win 3 in a row to lift the cup.
+      let tour = 0; try { tour = Number(localStorage.getItem("aig_bh_tour") || 0); } catch (e) {}
+      const STAGES = ["Quarter-final", "Semi-final", "FINAL"]; let tourMsg = "";
+      if (won) { tour++; if (tour >= 3) { tour = 0; tourMsg = "🏆 TOURNAMENT CHAMPION! +20 coins"; if (window.AIGLeaderboard) AIGLeaderboard.creditWallet({ coins: 20, gems: 1 }).catch(() => {}); burstConfetti(true); } else tourMsg = `✅ ${STAGES[tour - 1]} won! Next: ${STAGES[tour]}`; }
+      else if (me !== bot) { tourMsg = tour ? `❌ Out in the ${STAGES[tour]} — the tournament starts again.` : ""; tour = 0; }
+      try { localStorage.setItem("aig_bh_tour", String(tour)); } catch (e) {}
+      teamEl.innerHTML = `<span class="${won ? "bh-team-win" : ""}">You: ${me}</span><span class="${bot > me ? "bh-team-win" : ""}">🤖 Bo-Bot: ${bot}</span><br><small>${won ? "You beat Bo-Bot! 🏆" : me === bot ? "A tie!" : "Bo-Bot wins this time."} Record ${rec.w}W-${rec.l}L${tourMsg ? `<br><b>${tourMsg}</b>` : ""}</small>`;
       teamEl.classList.remove("hidden");
     } else if (state.mode === "team") {
       const p1 = state.teamScores[1], p2 = state.teamScores[2];
