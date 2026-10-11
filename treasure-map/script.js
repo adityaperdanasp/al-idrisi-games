@@ -223,6 +223,31 @@ function initTreasureMap() {
   }
 
   document.getElementById("tm-start-btn").addEventListener("click", startGame);
+  // Audit round 2: 🧭 Compass hunt -- a 7x7 grid, you start at ⭐. Follow the directions (North,
+  // East, South, West with step counts) in your head and tap the square where the treasure is.
+  // 5 maps, directions get longer; best score kept.
+  (function compassHunt() {
+    const btn = document.createElement("button"); btn.className = "tm-btn"; btn.type = "button"; btn.style.marginTop = "8px";
+    let best = 0; try { best = Number(localStorage.getItem("tm_compass_best") || 0); } catch (e) {}
+    btn.textContent = `🧭 Compass hunt${best ? ` (best ${best}/5)` : ""}`;
+    document.getElementById("tm-start-btn").after(btn);
+    btn.onclick = () => {
+      const o = document.createElement("div"); o.className = "tm-overlay"; document.body.appendChild(o);
+      let round = 0, right = 0; const N = 7, DIRS = [["North", 0, -1, "⬆️"], ["South", 0, 1, "⬇️"], ["East", 1, 0, "➡️"], ["West", -1, 0, "⬅️"]];
+      const play = () => {
+        if (round >= 5) { if (right > best) { best = right; try { localStorage.setItem("tm_compass_best", String(right)); } catch (e) {} } o.innerHTML = `<div class="tm-card"><div style="font-size:2.4rem">🧭</div><h2>${right}/5 treasures found!</h2><button class="tm-btn tm-btn-primary" id="tm-cx">Back</button></div>`; o.querySelector("#tm-cx").onclick = () => { o.remove(); btn.textContent = `🧭 Compass hunt (best ${best}/5)`; }; return; }
+        let x = 3, y = 3; const sx = x, sy = y, steps = [];
+        for (let k = 0; k < 2 + Math.min(2, round); k++) { let d, n, guard = 0; do { d = DIRS[Math.floor(Math.random() * 4)]; n = 1 + Math.floor(Math.random() * 3); guard++; } while ((x + d[1] * n < 0 || x + d[1] * n >= N || y + d[2] * n < 0 || y + d[2] * n >= N) && guard < 40); x += d[1] * n; y += d[2] * n; steps.push(`${d[3]} ${n} ${d[0]}`); }
+        o.innerHTML = `<div class="tm-card"><div style="font-weight:800">🧭 Map ${round + 1}/5 · ✅ ${right}</div><p>Start at ⭐ and walk: <b>${steps.join(", then ")}</b>. Tap where the treasure is!</p><div class="tm-cgrid">${Array.from({ length: N * N }, (_, k) => `<button type="button" data-k="${k}">${k === sy * N + sx ? "⭐" : ""}</button>`).join("")}</div><p class="tm-cmsg" id="tm-cmsg"></p></div>`;
+        o.querySelectorAll(".tm-cgrid button").forEach(b => b.onclick = () => {
+          const k = +b.dataset.k, ok = k === y * N + x; if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("treasure-map", "directions", ok);
+          o.querySelectorAll(".tm-cgrid button").forEach(z => z.disabled = true); o.querySelector(`[data-k="${y * N + x}"]`).textContent = "💰"; if (!ok) b.textContent = "❌"; else right++;
+          o.querySelector("#tm-cmsg").textContent = ok ? "You found it! 🎉" : "The treasure was at 💰."; round++; setTimeout(play, ok ? 900 : 1800);
+        });
+      };
+      play();
+    };
+  })();
   document.getElementById("tm-play-again-btn").addEventListener("click", startGame);
   renderMap();
 }

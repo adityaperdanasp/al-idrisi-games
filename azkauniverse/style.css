@@ -1450,3 +1450,7 @@ button:focus-visible {
 
 /* Home/back always on top of pop-ups and full-screen layers, so a kid can leave mid-game. */
 .topbar { z-index: 10000; }
+
+.sq-museum { margin: 12px auto 0; max-width: 360px; text-align: center; font-weight: 800; }
+.sq-museum div { display: flex; justify-content: center; gap: 10px; margin-top: 6px; font-size: 1.6rem; }
+.sq-museum span { position: relative; } .sq-museum small { position: absolute; right: -8px; bottom: -4px; font-size: .8rem; } .sq-museum .no { opacity: .35; }

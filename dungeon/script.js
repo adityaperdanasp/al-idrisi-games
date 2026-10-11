@@ -45,7 +45,8 @@ async function init() {
 
   $("dg-main").innerHTML = `<div class="kit-card"><div class="kit-q">Choose your hero</div>
     <div class="dg-cls">${Object.entries(CLASSES).map(([id, c]) => `<button class="dg-c" data-c="${id}"><span class="e">${c.emoji}</span>${c.name}<small>❤️ ${c.hp + sum("hp")} · ⚔️ ${c.atk + sum("atk")}<br>${c.desc}</small></button>`).join("")}</div></div>
-    <div class="kit-card"><div class="kit-sub" style="text-align:center;margin:0 0 8px">Your gear (${Object.keys(owned).length}/${GEAR.length}) · best floor ${save.best}/${FLOORS}</div>${gearHtml}</div>`;
+    <div class="kit-card"><div class="kit-sub" style="text-align:center;margin:0 0 8px">Your gear (${Object.keys(owned).length}/${GEAR.length}) · best floor ${save.best}/${FLOORS}</div>${gearHtml}</div>
+    ${(() => { let bs = {}; try { bs = JSON.parse(localStorage.getItem("dg_bestiary") || "{}"); } catch (e) {} const all = MONSTERS.concat([["👹", "Depth Demon"], ["🦂", "Giant Scorpion"], ["🐍", "Shadow Serpent"]]); return `<div class="kit-card"><div class="kit-sub" style="text-align:center;margin:0 0 6px;font-weight:800">📖 Bestiary ${Object.keys(bs).length}/${all.length}</div><div class="dg-best">${all.map(([e, n]) => bs[n] ? `<span title="${K.esc(n)}">${e}<small>×${bs[n].n}</small></span>` : `<span class="lock">❔</span>`).join("")}</div></div>`; })()}`;
   $("dg-main").querySelectorAll("[data-c]").forEach(b => b.onclick = () => fight(b.dataset.c));
 
   function fight(cid) {
@@ -108,6 +109,8 @@ async function init() {
       }, 900);
     }
     async function cleared() {
+      // Audit round 2: bestiary -- every monster type you defeat is recorded with a kill count.
+      try { const bs = JSON.parse(localStorage.getItem("dg_bestiary") || "{}"); const m = mon(); bs[m[1]] = { e: m[0], n: ((bs[m[1]] || {}).n || 0) + 1 }; localStorage.setItem("dg_bestiary", JSON.stringify(bs)); } catch (e) {}
       if (floor === FLOORS && !endless) {
         $("dg-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">🐲💀</div><h2>Dragon defeated!</h2><p class="kit-sub">Stairs lead even deeper… Endless Depths has tougher monsters and more coins.</p><button class="kit-btn block" id="dg-deep" type="button">⬇️ Go deeper</button><button class="kit-btn alt block" id="dg-win" type="button">🏆 Claim victory</button></div></div>`;
         $("dg-deep").onclick = () => { endless = true; $("dg-overlay").innerHTML = ""; cleared(); }; $("dg-win").onclick = () => { $("dg-overlay").innerHTML = ""; end(true); }; return;

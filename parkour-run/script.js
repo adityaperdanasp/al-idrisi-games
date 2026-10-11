@@ -247,8 +247,16 @@ function initParkourRun() {
     setTimeout(spawnNextObstacle, GAP_MS);
   }
 
+  // Audit round 2: the course travels through themed areas -- 🏙️ Rooftops, 🌲 Forest, 🏰 Castle --
+  // switching every 5 obstacles (looping in endless), with a banner when you enter a new area.
+  const AREAS = [["city", "🏙️ Rooftops"], ["forest", "🌲 Forest"], ["castle", "🏰 Castle"]];
+  function area() {
+    const a = AREAS[Math.floor(state.obstacleIndex / 5) % AREAS.length], lane = document.getElementById("pk-lane");
+    if (lane.dataset.area !== a[0]) { lane.dataset.area = a[0]; if (state.obstacleIndex > 0) document.getElementById("pk-feedback").textContent = `Entering ${a[1]}!`; }
+  }
   function spawnNextObstacle() {
     if (!state.running) return;
+    area();
     if (isGateIndex(state.obstacleIndex)) {
       askGate();
     } else {
@@ -283,6 +291,7 @@ function initParkourRun() {
 
   function startGame(endless) {
     state.endless = endless === true; state.score = 0; state.stars = 0;
+    document.getElementById("pk-lane").dataset.area = "city";
     state.obstacleIndex = 0;
     state.lives = START_LIVES;
     state.cleared = 0;

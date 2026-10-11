@@ -109,7 +109,7 @@ function initSpaceRace() {
       objs.forEach(o => { if (o.done) return; o.y += 4; o.el.style.top = o.y + "%";
         if (o.y > 70 && o.y < 90 && o.lane === state.lane) { o.done = true; o.el.remove();
           if (o.kind === "🪨") { if (state.shield) { state.shield = false; flash("🛡️ Shield blocked a rock!"); } else { state.distance = Math.max(0, state.distance - 10); flash("💥 Asteroid! −10 km"); } }
-          else if (o.kind === "⭐") { state.distance += 5; flash("⭐ +5 km"); } else { state.shield = true; flash("🛡️ Shield ready!"); }
+          else if (o.kind === "⭐") { state.distance += 5; addDust(1); flash("⭐ +5 km · +1 ✨ stardust"); } else { state.shield = true; flash("🛡️ Shield ready!"); }
           renderHud(); }
         if (o.y > 110 && !o.done) { o.done = true; o.el.remove(); } });
       if (t >= 3600) { clearInterval(id); objs.forEach(o => o.el.remove()); ctl.classList.add("hidden"); document.getElementById("sr-q-card").classList.remove("hidden"); then(); }
@@ -152,7 +152,7 @@ function initSpaceRace() {
     if (isCorrect) {
       clearInterval(state.bossT);
       const tier = BOOST_TIERS.find(t => elapsed <= t.maxMs);
-      state.distance += tier.distance * (state.boss ? 2 : 1);
+      state.distance += Math.round(tier.distance * (state.boss ? 2 : 1) * (1 + engine() * 0.1));
       document.getElementById("sr-boost-toast").textContent = tier.label;
       rocket.classList.add("boosting");
       setTimeout(() => rocket.classList.remove("boosting"), 400);
@@ -215,9 +215,26 @@ function initSpaceRace() {
     document.getElementById("sr-end-overlay").classList.remove("hidden");
   }
 
+  // Audit round 2: rocket workshop -- stars in the asteroid field become ✨ stardust (kept between
+  // runs). Spend it on 🔥 Engine levels (+10% distance from answers per level, max 3) and a 🛡️
+  // launch shield (start the next run with a shield).
+  const lsr = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+  const lsrw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  function addDust(n) { lsrw("sr_dust", String(Number(lsr("sr_dust", "0")) + n)); }
+  const engine = () => Number(lsr("sr_engine", "0"));
+  function workshop() {
+    const card = document.querySelector("#sr-start-overlay .sr-card, #sr-start-overlay > div"); if (!card) return;
+    let w = document.getElementById("sr-shop"); if (!w) { w = document.createElement("div"); w.id = "sr-shop"; w.className = "sr-shop"; document.getElementById("sr-start-btn").before(w); }
+    const dust = Number(lsr("sr_dust", "0")), lv = engine(), cost = [5, 10, 20][lv], shield = lsr("sr_launch_shield", "") === "1";
+    w.innerHTML = `<b>🛠️ Rocket workshop · ✨ ${dust} stardust</b><button type="button" id="sr-up-eng" ${lv >= 3 || dust < cost ? "disabled" : ""}>🔥 Engine Lv ${lv}/3 ${lv >= 3 ? "MAX" : `→ ${cost} ✨`}</button><button type="button" id="sr-up-sh" ${shield || dust < 8 ? "disabled" : ""}>🛡️ Launch shield ${shield ? "ready ✔" : "→ 8 ✨"}</button>`;
+    document.getElementById("sr-up-eng").onclick = () => { if (dust < cost) return; lsrw("sr_dust", String(dust - cost)); lsrw("sr_engine", String(lv + 1)); workshop(); };
+    document.getElementById("sr-up-sh").onclick = () => { if (dust < 8) return; lsrw("sr_dust", String(dust - 8)); lsrw("sr_launch_shield", "1"); workshop(); };
+  }
+  workshop();
   function startGame() {
     state.qIndex = 0;
-    state.distance = 0; state.lane = 1; state.shield = false; state.passed = 0; state.sci = false;
+    state.distance = 0; state.lane = 1; state.shield = lsr("sr_launch_shield", "") === "1"; state.passed = 0; state.sci = false;
+    if (state.shield) { lsrw("sr_launch_shield", ""); setTimeout(() => flash("🛡️ Launch shield active!"), 300); }
     document.getElementById("sr-start-overlay").classList.add("hidden");
     document.getElementById("sr-end-overlay").classList.add("hidden");
     document.getElementById("sr-q-card").classList.remove("hidden");
@@ -228,6 +245,6 @@ function initSpaceRace() {
   }
 
   document.getElementById("sr-start-btn").addEventListener("click", startGame);
-  document.getElementById("sr-play-again-btn").addEventListener("click", startGame);
+  document.getElementById("sr-play-again-btn").addEventListener("click", () => { workshop(); startGame(); });
   spawnStars();
 }

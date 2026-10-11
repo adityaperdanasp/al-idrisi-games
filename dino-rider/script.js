@@ -81,7 +81,11 @@ function ride(sp) {
     K.record("dino-rider", q.key, ok, q);
     $("dr-opts").querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.dataset.o === q.correctLabel) x.classList.add("right"); });
     dino.classList.remove("run");
-    if (ok) { right++; $("dr-r").textContent = right; dino.classList.add("jump"); $("dr-msg").textContent = "🦖 Leap!"; }
+    if (ok) { right++; $("dr-r").textContent = right; dino.classList.add("jump"); $("dr-msg").textContent = "🦖 Leap!";
+      // Audit round 2: fossil hunting -- a cleared gate sometimes uncovers a fossil for the museum shelf.
+      if (Math.random() < 0.18) { const F = [["🦴", "Leg bone"], ["💀", "Raptor skull"], ["🦷", "T-rex tooth"], ["🐚", "Ammonite"], ["🪶", "Feather fossil"], ["🥚", "Stone egg"], ["🌿", "Fern print"], ["🐾", "Footprint"]], f = F[K.rand(0, F.length - 1)];
+        let got = {}; try { got = JSON.parse(lsr("dr_fossils", "{}")) || {}; } catch (e) {} const fresh = !got[f[1]]; got[f[1]] = f[0]; lsrw("dr_fossils", JSON.stringify(got));
+        $("dr-msg").textContent = `🦖 Leap! ⛏️ You dug up a ${f[0]} ${f[1]}${fresh ? " — NEW for your museum!" : ""}`; } }
     else if (shield) { shield = false; dino.classList.add("jump"); $("dr-msg").textContent = "🦅 Your Ptero flew over it! (free pass used)"; btn.classList.add("wrong"); }
     else { stam--; hearts(); btn.classList.add("wrong"); dino.classList.add("stumble"); $("dr-msg").textContent = `Oof! The answer was ${q.correctLabel}.`; }
     setTimeout(() => { dino.classList.remove("jump", "stumble"); dino.classList.add("run"); if (stam <= 0) return finish(); runSegment(); }, ok ? 900 : 1900);
@@ -100,7 +104,7 @@ function ride(sp) {
     const after = (await LB.getDinoRider()).species.find(x => x.id === sp.id);
     const coins = Math.min(25, Math.round((right * 1.5 + (stam > 0 ? 5 : 0)) * (sp.coin || 1)));
     $("dr-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${stam > 0 ? "🏆" : "🦖"}</div><h2>${stam > 0 ? "You made it!" : endless ? `Endless run: gate ${n}!` : "Out of stamina!"}</h2>
-      <p class="kit-sub">${right}/12 gates cleared · +${xp} XP for ${K.esc(sp.name)}${after.stage > before ? `<br><b>🎉 ${K.esc(sp.name)} evolved into a ${STAGE[after.stage]}!</b>` : ""}</p><div class="kit-bonus" id="dr-bonus"></div>
+      <p class="kit-sub">🦴 Fossil museum: ${(() => { try { const g = JSON.parse(lsr("dr_fossils", "{}")) || {}; return `${Object.values(g).join(" ") || "—"} (${Object.keys(g).length}/8)`; } catch (e) { return "—"; } })()}<br>${right}/12 gates cleared · +${xp} XP for ${K.esc(sp.name)}${after.stage > before ? `<br><b>🎉 ${K.esc(sp.name)} evolved into a ${STAGE[after.stage]}!</b>` : ""}</p><div class="kit-bonus" id="dr-bonus"></div>
       <button class="kit-btn block" onclick="location.reload()">Ride again</button><a class="kit-btn alt block" href="../game-room/">Game Room</a></div></div>`;
     if (after.stage > before && window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 2);
     K.finish("dino-rider", coins, $("dr-bonus"));

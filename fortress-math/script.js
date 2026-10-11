@@ -23,6 +23,10 @@ function initFortressMath() {
   const TOWER_SLOTS_X = [22, 42, 62, 82]; // % positions along the path
   const BUILD_QUESTIONS = TOWER_SLOTS_X.length;
   const WAVE_COUNT = 5;
+  // Audit round 2: ⏩ 2x speed toggle during waves, and ♾️ Endless -- after clearing wave 5 you can
+  // keep going; waves keep growing and a boss comes every 5th wave. Best endless wave is saved.
+  let fast = false, endless = false;
+  const tickMs = () => fast ? TICK_MS / 2 : TICK_MS;
   const FORTRESS_HP_MAX = 5;
   const TICK_MS = 100;
   const TOWER_FIRE_EVERY_TICKS = 5; // 500ms
@@ -234,18 +238,18 @@ function initFortressMath() {
     if (state.ended) return;
     state.wave = waveNum;
     updateHud();
-    phaseBanner.textContent = `🌊 Wave ${waveNum}/${WAVE_COUNT}`;
+    phaseBanner.textContent = endless ? `♾️ Endless wave ${waveNum}` : `🌊 Wave ${waveNum}/${WAVE_COUNT}`;
     const enemyCount = 2 + waveNum;
     const enemyHp = 2 + Math.floor(waveNum / 2);
     const traverseMs = Math.max(3500, 7000 - waveNum * 500);
-    const boss = waveNum === WAVE_COUNT;
+    const boss = waveNum % WAVE_COUNT === 0;
     state.remainingInWave = enemyCount + (boss ? 1 : 0);
     for (let i = 0; i < enemyCount; i++) {
       const r = Math.random(), kind = waveNum >= 3 && r < 0.25 ? "armor" : waveNum >= 2 && r < 0.5 ? "fast" : "normal";
       setTimeout(() => spawnEnemy(enemyHp + (kind === "armor" ? 2 : kind === "fast" ? -1 : 0), traverseMs * (kind === "fast" ? 0.6 : kind === "armor" ? 1.3 : 1), kind), i * 800);
     }
     if (boss) { setTimeout(() => { phaseBanner.textContent = "🐉 BOSS INCOMING!"; spawnEnemy(14, traverseMs * 1.8, "boss"); }, enemyCount * 800 + 600); }
-    if (!state.intervalId) state.intervalId = setInterval(tick, TICK_MS);
+    if (!state.intervalId) state.intervalId = setInterval(tick, tickMs());
   }
 
   function spawnEnemy(hp, traverseMs, kind) {
@@ -279,7 +283,7 @@ function initFortressMath() {
       state.defeated++;
     }
     if (state.remainingInWave <= 0 && !state.ended) {
-      if (state.wave >= WAVE_COUNT) {
+      if (state.wave >= WAVE_COUNT && !endless) {
         endBattle(true);
       } else {
         const nextWave = state.wave + 1;
@@ -329,7 +333,8 @@ function initFortressMath() {
     state.enemies.forEach(e => e.el.remove());
     state.enemies = [];
 
-    const wavesCleared = survived ? WAVE_COUNT : state.wave - 1;
+    const wavesCleared = endless ? state.wave - 1 : survived ? WAVE_COUNT : state.wave - 1;
+    if (endless) { try { const eb = Number(localStorage.getItem("fm_endless_best") || 0); if (wavesCleared > eb) localStorage.setItem("fm_endless_best", String(wavesCleared)); } catch (e) {} }
     const best = Number(lsf("fm_best", "0")), isBest = wavesCleared > best || (survived && state.hp > Number(lsf("fm_best_hp", "0")));
     if (isBest) { try { localStorage.setItem("fm_best", String(Math.max(best, wavesCleared))); if (survived) localStorage.setItem("fm_best_hp", String(state.hp)); } catch (e) {} }
     const emoji = state.hp >= 4 ? "🏆" : state.hp >= 2 ? "🥳" : state.hp >= 1 ? "🙂" : "💪";
@@ -359,7 +364,7 @@ function initFortressMath() {
     state.tickCount = 0;
     state.defeated = 0;
     state.ended = false;
-    state.buildIndex = 0;
+    state.buildIndex = 0; endless = false;
     zaps = 1; drawZap();
     if (state.intervalId) { clearInterval(state.intervalId); state.intervalId = null; }
     updateHud();
@@ -376,6 +381,18 @@ function initFortressMath() {
     state.enemies.slice().forEach(e => { e.hp -= 2; if (e.hp <= 0) removeEnemy(e, false); });
     drawZap();
   };
+  (function extras() {
+    const bar = document.querySelector(".fm-zapbar");
+    const sp = document.createElement("button"); sp.type = "button"; sp.id = "fm-speed"; sp.textContent = "⏩ 2× speed"; sp.style.marginLeft = "6px";
+    sp.onclick = () => { fast = !fast; sp.textContent = fast ? "▶ 1× speed" : "⏩ 2× speed"; if (state.intervalId) { clearInterval(state.intervalId); state.intervalId = setInterval(tick, tickMs()); } };
+    bar.appendChild(sp);
+    const end = document.getElementById("fm-play-again-btn");
+    const eb = document.createElement("button"); eb.className = "fm-btn"; eb.type = "button"; eb.id = "fm-endless-btn"; eb.style.marginTop = "8px";
+    eb.onclick = () => { endless = true; state.ended = false; document.getElementById("fm-end-overlay").classList.add("hidden"); betweenWaves(() => startWave(state.wave + 1)); };
+    end.after(eb);
+    const obs = new MutationObserver(() => { const shown = !document.getElementById("fm-end-overlay").classList.contains("hidden"); eb.hidden = !(shown && !endless && state.hp > 0 && state.wave >= WAVE_COUNT); let b = 0; try { b = Number(localStorage.getItem("fm_endless_best") || 0); } catch (e) {} eb.textContent = `♾️ Keep going — Endless${b ? ` (best ${b} waves)` : ""}`; });
+    obs.observe(document.getElementById("fm-end-overlay"), { attributes: true, attributeFilter: ["class"] });
+  })();
   document.getElementById("fm-start-btn").addEventListener("click", startGame);
   document.getElementById("fm-play-again-btn").addEventListener("click", startGame);
 }

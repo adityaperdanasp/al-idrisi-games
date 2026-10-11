@@ -90,6 +90,9 @@ function start() {
       <button class="kit-btn block" id="cr-next" type="button">${done ? "New match" : "Next round ▶"}</button><a class="kit-btn alt block" href="../game-room/">Game Room</a></div></div>`;
     $("cr-next").onclick = () => { if (done) match = { me: 0, bot: 0, round: 1 }; else match.round++; try { sessionStorage.setItem("cr_match", JSON.stringify(match)); } catch (e) {} location.reload(); };
     if (champ) K.toastAdv("Card Race champion!");
+    // Audit round 2: trophy cabinet -- winning a match at each Bo-Bot speed earns that cup; the three
+    // cups unlock the 🌈 rainbow card back. Lifetime match record kept.
+    if (done) { try { const t = JSON.parse(localStorage.getItem("cr_trophies") || "{}"); t.rec = t.rec || { w: 0, l: 0 }; t.rec[champ ? "w" : "l"]++; if (champ) t[String(speed)] = true; localStorage.setItem("cr_trophies", JSON.stringify(t)); } catch (e) {} }
     K.finish("card-race", won ? (champ ? 18 : 10) : 3, $("cr-bonus"));
   }
   render();
@@ -98,7 +101,8 @@ function start() {
 function setup() {
   $("cr-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">🃏</div><h2>Quiz Card Race</h2><p class="kit-sub">Best of 3 rounds. Watch for action cards: ⏭ skip, ➕2, ⭐ hard!</p>
     <div class="kit-sub" style="font-weight:800">Bo-Bot speed</div><div class="cr-pick">${[["1.4", "🐢 Relaxed"], ["1", "🙂 Normal"], ["0.75", "⚡ Fast"]].map(([v, l]) => `<button type="button" data-sp="${v}" class="${+v === speed ? "on" : ""}">${l}</button>`).join("")}</div>
-    <div class="kit-sub" style="font-weight:800">Card back</div><div class="cr-pick">${["🂠", "🟥", "💠"].map(b => `<button type="button" data-bk="${b}" class="${b === back ? "on" : ""}">${b}</button>`).join("")}</div>
+    <div class="kit-sub" style="font-weight:800">Card back</div><div class="cr-pick">${["🂠", "🟥", "💠"].concat((() => { try { const t = JSON.parse(localStorage.getItem("cr_trophies") || "{}"); return t["1.4"] && t["1"] && t["0.75"] ? ["🌈"] : []; } catch (e) { return []; } })()).map(b => `<button type="button" data-bk="${b}" class="${b === back ? "on" : ""}">${b}</button>`).join("")}</div>
+    ${(() => { let t = {}; try { t = JSON.parse(localStorage.getItem("cr_trophies") || "{}"); } catch (e) {} const cups = [["1.4", "🥉"], ["1", "🥈"], ["0.75", "🥇"]]; return `<div class="kit-sub" style="font-weight:800">🏆 Trophy cabinet: ${cups.map(([k, e]) => t[k] ? e : "▫️").join(" ")} ${t.rec ? `· ${t.rec.w}W-${t.rec.l}L` : ""}${cups.every(([k]) => t[k]) ? " · 🌈 rainbow back unlocked!" : " · win at every speed to unlock 🌈"}</div>`; })()}
     <button class="kit-btn block" id="cr-go" type="button" style="margin-top:10px">Deal the cards!</button></div></div>`;
   $("cr-overlay").querySelectorAll("[data-sp]").forEach(b => b.onclick = () => { speed = +b.dataset.sp; $("cr-overlay").querySelectorAll("[data-sp]").forEach(x => x.classList.toggle("on", x === b)); });
   $("cr-overlay").querySelectorAll("[data-bk]").forEach(b => b.onclick = () => { back = b.dataset.bk; $("cr-overlay").querySelectorAll("[data-bk]").forEach(x => x.classList.toggle("on", x === b)); });

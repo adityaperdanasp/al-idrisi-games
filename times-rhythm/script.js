@@ -22,7 +22,14 @@ const lstw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 function menu() {
   $("tr-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">🎵</div><h2>Pick a song</h2>
     <p class="kit-sub">Notes fall to the beat. Tap the right answer in time — tap late (near the line) for PERFECT!</p>
-    ${Object.entries(SONGS).map(([k, s]) => `<button class="kit-btn block" data-s="${k}">${s[0]} <small>best ${lst("tr_best_" + k, "–")}</small></button>`).join("")}
+    ${(() => {
+      // Audit round 2: concert tour -- each song unlocks after a B rank (or better) on the song before it;
+      // every song at A or better earns the 🌟 Rhythm Star title.
+      const keys = Object.keys(SONGS), rk = k => lst("tr_best_" + k, "–"), good = r => ["S", "A", "B"].includes(r);
+      const star = keys.every(k => ["S", "A"].includes(rk(k)));
+      return (star ? `<div class="kit-sub" style="font-weight:800">🌟 Rhythm Star — every song at A or better!</div>` : `<div class="kit-sub">🎤 Concert tour: get a B on a song to unlock the next one.</div>`) +
+        keys.map((k, i) => { const s = SONGS[k], open = i === 0 || good(rk(keys[i - 1])) || rk(k) !== "–"; return `<button class="kit-btn block ${open ? "" : "alt"}" data-s="${k}" ${open ? "" : "disabled"}>${open ? "" : "🔒 "}${s[0]} <small>best ${rk(k)}</small></button>`; }).join("");
+    })()}
     <div class="tr-pick"><span>Speed:</span>${[["1.3", "🐢"], ["1", "🙂"], ["0.8", "⚡"]].map(([v, l]) => `<button type="button" data-t="${v}" class="${+v === TEMPO ? "on" : ""}">${l}</button>`).join("")}<span>Mode:</span><button type="button" data-m="mult" class="on">×</button><button type="button" data-m="div">÷</button></div></div></div>`;
   $("tr-overlay").querySelectorAll("[data-t]").forEach(b => b.onclick = () => { TEMPO = +b.dataset.t; $("tr-overlay").querySelectorAll("[data-t]").forEach(x => x.classList.toggle("on", x === b)); });
   $("tr-overlay").querySelectorAll("[data-m]").forEach(b => b.onclick = () => { MODE = b.dataset.m; $("tr-overlay").querySelectorAll("[data-m]").forEach(x => x.classList.toggle("on", x === b)); });

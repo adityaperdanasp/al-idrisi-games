@@ -167,9 +167,21 @@ function initBossRush() {
     setTimeout(startRound, 900);
   }
 
+  // Audit round 2: pick your attack each turn -- ⚡ Quick (easier question, normal damage) or
+  // 💪 Power (harder question, double damage). Fire-breath turns skip the choice.
   function startRound() {
+    if (state.boss.name === "Dragon Lord" && (turn + 1) % 4 === 0) { state.power = false; return startRoundReal(); }
+    const card = document.getElementById("br-q-card"); card.classList.remove("hidden");
+    document.getElementById("br-qt").style.width = "100%";
+    document.getElementById("br-q-prompt").textContent = "Choose your attack!";
+    document.getElementById("br-q-grid").innerHTML = `<button class="br-q-btn" type="button" id="br-atk-q">⚡ Quick hit<br><small>easier · ×1</small></button><button class="br-q-btn" type="button" id="br-atk-p">💪 Power hit<br><small>harder · ×2</small></button>`;
+    document.getElementById("br-atk-q").onclick = () => { state.power = false; startRoundReal(); };
+    document.getElementById("br-atk-p").onclick = () => { state.power = true; startRoundReal(); };
+  }
+  function startRoundReal() {
     turn++;
-    const q = rollQuestion(difficultyForBoss(state.bossIndex));
+    const base = difficultyForBoss(state.bossIndex), harder = { easy: "medium", medium: "hard", hard: "hard" }, easier = { easy: "easy", medium: "easy", hard: "medium" };
+    const q = rollQuestion(state.power ? harder[base] : easier[base]);
     const fire = state.boss.name === "Dragon Lord" && turn % 4 === 0;
     q.fire = fire;
     showQuestion(q, (btn, opt) => { clearInterval(qTimer); handleAnswer(btn, opt, q); });
@@ -204,7 +216,7 @@ function initBossRush() {
     if (isCorrect) {
       state.combo++;
       const isSpecial = state.combo % COMBO_SPECIAL_EVERY === 0;
-      const damage = BASE_DAMAGE + bonusDmg + (state.combo - 1) + (isSpecial ? SPECIAL_BONUS_DAMAGE : 0);
+      const damage = (BASE_DAMAGE + bonusDmg + (state.combo - 1) + (isSpecial ? SPECIAL_BONUS_DAMAGE : 0)) * (state.power ? 2 : 1);
       const dodged = state.boss.name === "Werewolf" && !isSpecial && Math.random() < 0.2;
       if (dodged) {
         document.getElementById("br-log").textContent = `💨 ${state.boss.name} dodged! Keep the combo going.`;

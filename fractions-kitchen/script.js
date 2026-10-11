@@ -23,7 +23,28 @@ function pickMode() {
   $("fk-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">👩‍🍳</div><h2>Fractions Kitchen</h2><p class="kit-sub">Shift ${Number(lsk("fk_shift", "0")) + 1} · 📖 ${book.length}/${DISHES.length} recipes in your book</p>
     <button class="kit-btn block" data-m="normal" type="button">🍽️ Normal shift</button><button class="kit-btn block" data-m="busy" type="button">⏱️ Busy kitchen (customers wait 25s, tips!)</button><button class="kit-btn alt block" data-m="blind" type="button">🙈 Blind cup challenge (no marks)</button>
     <div class="fk-book">${DISHES.map(d => `<span class="${book.includes(d) ? "on" : ""}">${book.includes(d) ? d : "❔"}</span>`).join("")}</div></div></div>`;
-  $("fk-overlay").querySelectorAll("[data-m]").forEach(b => b.onclick = () => { MODE = b.dataset.m; $("fk-overlay").innerHTML = ""; start(); });
+  $("fk-overlay").querySelector(".fk-book").insertAdjacentHTML("beforebegin", `<button class="kit-btn alt block" data-m="pizza" type="button">🍕 Pizza party — tap slices to serve the fraction${Number(lsk("fk_pizza_best", "0")) ? ` (best ${lsk("fk_pizza_best", "0")}/8)` : ""}</button>`);
+  $("fk-overlay").querySelectorAll("[data-m]").forEach(b => b.onclick = () => { MODE = b.dataset.m; $("fk-overlay").innerHTML = ""; MODE === "pizza" ? pizza() : start(); });
+}
+// Audit round 2: 🍕 Pizza party -- solid food instead of liquid. The pizza is cut into N slices; tap
+// slices to serve the fraction the guest asks for (equivalent fractions count: 1/2 of an 8-slice
+// pizza is 4 slices). 8 orders, slices per pizza grow from 4 to 12.
+function pizza() {
+  let n = 0, right = 0;
+  const host = document.createElement("div"); host.className = "kit-overlay"; document.body.appendChild(host);
+  const order = () => {
+    if (n >= 8) { const best = Number(lsk("fk_pizza_best", "0")); if (right > best) { try { localStorage.setItem("fk_pizza_best", String(right)); } catch (e) {} } host.innerHTML = `<div class="kit-modal"><div class="kit-big">🍕</div><h2>${right}/8 perfect pizzas!</h2><p class="kit-sub">${right > best ? "🌟 New best!" : `Best: ${best}`}</p><div class="kit-bonus" id="fk-pb"></div><button class="kit-btn block" id="fk-px">Back to the kitchen</button></div>`; K.finish("fractions-kitchen", right * 2, host.querySelector("#fk-pb")); host.querySelector("#fk-px").onclick = () => { host.remove(); pickMode(); }; return; }
+    const S = [4, 4, 6, 6, 8, 8, 12, 12][n], dens = [2, 3, 4, 6, 8, 12].filter(d => S % d === 0 && d <= S), d = dens[K.rand(0, dens.length - 1)], num = K.rand(1, d - 1), need = num * (S / d);
+    const sel = new Set(), guest = ["🧒", "👧", "👴", "👩", "🧑‍🚀", "🐻"][n % 6];
+    const draw = () => {
+      const R = 90, cx = 100, cy = 100, slices = Array.from({ length: S }, (_, k) => { const a0 = (k / S) * 2 * Math.PI - Math.PI / 2, a1 = ((k + 1) / S) * 2 * Math.PI - Math.PI / 2; const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0), x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1); return `<path data-k="${k}" class="fk-slice ${sel.has(k) ? "on" : ""}" d="M${cx},${cy} L${x0.toFixed(1)},${y0.toFixed(1)} A${R},${R} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)} Z"/>`; }).join("");
+      host.innerHTML = `<div class="kit-modal"><div class="kit-sub" style="font-weight:800">Order ${n + 1}/8 · ✅ ${right}</div><div class="kit-q">${guest} “Can I have <b>${num}/${d}</b> of the pizza, please?”</div><svg viewBox="0 0 200 200" class="fk-pizza">${slices}</svg><div class="kit-sub" style="text-align:center">${sel.size} of ${S} slices chosen</div><button class="kit-btn block" id="fk-serve" type="button">🍽️ Serve</button><div class="kit-sub" id="fk-pm" style="text-align:center;min-height:1.2em"></div></div>`;
+      host.querySelectorAll(".fk-slice").forEach(p => p.addEventListener("click", () => { const k = +p.dataset.k; sel.has(k) ? sel.delete(k) : sel.add(k); draw(); }));
+      host.querySelector("#fk-serve").onclick = () => { const ok = sel.size === need; K.record("fractions-kitchen", "fractions", ok); if (ok) right++; host.querySelector("#fk-pm").textContent = ok ? "😋 Perfect slice count!" : `Not quite — ${num}/${d} of ${S} slices is ${need} slices (${num}/${d} = ${need}/${S}).`; host.querySelector("#fk-serve").disabled = true; n++; setTimeout(order, ok ? 1000 : 2600); };
+    };
+    draw();
+  };
+  order();
 }
 function eqHint(fr, S) { return fr.map(([n, d]) => `${n}/${d} = ${n * (S / d)}/${S}`).join(" and "); }
 

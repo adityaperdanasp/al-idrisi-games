@@ -69,9 +69,9 @@ function initCookingRush() {
     };
   }
 
-  function rollMathQuestion() {
+  function rollMathQuestion(diff) {
     const key = GEN_KEYS[rand(0, GEN_KEYS.length - 1)];
-    const raw = MATHVILLE_GENERATORS[key]("medium");
+    const raw = MATHVILLE_GENERATORS[key](diff || "medium");
     return { key, ...buildMc(raw) };
   }
 
@@ -88,6 +88,12 @@ function initCookingRush() {
   }
 
   function newCustomer() {
+    // Audit round 2: on every 3rd day a 🧐 food critic may visit -- a hard maths question, little
+    // patience, but triple tips (and a star review) if you get it right.
+    if (save.day % 3 === 0 && Math.random() < 0.12 && !state.slots.some(x => x && x.critic)) {
+      const pm = Math.max(7, rand(MIN_PATIENCE_SEC, MAX_PATIENCE_SEC) - 4) * 1000;
+      return { emoji: "🧐", critic: true, vip: false, dish: "🍽️", q: { key: "critic", ...rollMathQuestion("hard") }, patienceLeft: pm, patienceMax: pm, resolved: false };
+    }
     const vip = Math.random() < 0.15;
     const base = rand(MIN_PATIENCE_SEC, MAX_PATIENCE_SEC) - Math.min(4, save.day - 1) + (save.up.chairs ? 2 : 0) - (vip ? 3 : 0);
     const patienceMax = Math.max(6, base) * 1000;
@@ -98,11 +104,11 @@ function initCookingRush() {
     const slot = state.slots[i];
     const el = document.getElementById(`cr-slot-${i}`);
     if (!slot) { el.className = "cr-slot empty"; el.innerHTML = ""; return; }
-    el.className = "cr-slot" + (slot.vip ? " vip" : "");
+    el.className = "cr-slot" + (slot.vip ? " vip" : "") + (slot.critic ? " critic" : "");
     const pct = Math.max(0, Math.round((slot.patienceLeft / slot.patienceMax) * 100));
     el.innerHTML = `
       <div class="cr-slot-top">
-        <div class="cr-slot-emoji">${slot.emoji}<span class="cr-order">${slot.dish}</span></div>${slot.vip ? '<span class="cr-vip">👑 VIP ×2</span>' : ""}
+        <div class="cr-slot-emoji">${slot.emoji}<span class="cr-order">${slot.dish}</span></div>${slot.vip ? '<span class="cr-vip">👑 VIP ×2</span>' : ""}${slot.critic ? '<span class="cr-vip">🧐 Food critic ×3</span>' : ""}
         <div class="cr-slot-patience-wrap">
           <div class="cr-slot-patience-bar"><div class="cr-slot-patience-fill${pct <= 30 ? " low" : ""}" style="width:${pct}%"></div></div>
         </div>
@@ -151,7 +157,8 @@ function initCookingRush() {
       state.served++;
       state.combo++;
       const speed = Math.round(10 * slot.patienceLeft / slot.patienceMax);
-      const points = Math.round((5 + speed + Math.min(10, state.combo)) * (slot.vip ? 2 : 1) * (save.up.menu ? 1.25 : 1));
+      const points = Math.round((5 + speed + Math.min(10, state.combo)) * (slot.critic ? 3 : slot.vip ? 2 : 1) * (save.up.menu ? 1.25 : 1));
+      if (slot.critic) { state.reviews = (state.reviews || 0) + 1; }
       state.tips += points;
       statusEl.textContent = `${slot.dish} Served! +🪙${points}${speed >= 7 ? " ⚡ fast tip!" : ""}`;
       statusEl.style.color = "#3F8F5F";
@@ -222,7 +229,7 @@ function initCookingRush() {
     lscw("cr_save", JSON.stringify(save));
     document.getElementById("cr-end-emoji").textContent = "⭐".repeat(stars) || "💪";
     document.getElementById("cr-end-title").textContent = passed ? `Day ${dayPlayed} complete!` : `Day ${dayPlayed}: so close!`;
-    document.getElementById("cr-end-sub").textContent = `Tips: 🪙${state.tips} (goal ${goal}). Served ${state.served} (${Math.round(accuracy * 100)}% happy), missed ${state.missed}.${passed ? ` Day ${save.day} unlocked!` : " Try the day again!"}${newBest ? " 🌟 Best day ever!" : ""}`;
+    document.getElementById("cr-end-sub").textContent = `Tips: 🪙${state.tips} (goal ${goal}). Served ${state.served} (${Math.round(accuracy * 100)}% happy), missed ${state.missed}.${state.reviews ? ` 🧐 ${state.reviews} critic review${state.reviews > 1 ? "s" : ""}: ⭐⭐⭐⭐⭐!` : ""}${passed ? ` Day ${save.day} unlocked!` : " Try the day again!"}${newBest ? " 🌟 Best day ever!" : ""}`;
     drawShop(document.getElementById("cr-end-bonus").parentNode);
     const bonusEl = document.getElementById("cr-end-bonus");
     bonusEl.textContent = "";
@@ -249,7 +256,7 @@ function initCookingRush() {
   }
   drawStart();
   function startGame() {
-    save = crSave(); state.tips = 0;
+    save = crSave(); state.tips = 0; state.reviews = 0;
     state.timeLeftMs = (ROUND_DURATION_SEC + (save.up.bell ? 10 : 0)) * 1000;
     state.served = 0;
     state.missed = 0;

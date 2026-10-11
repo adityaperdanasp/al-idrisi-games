@@ -1119,6 +1119,8 @@ function finishLevel() {
       perfectCount
     };
     saveProgress(progress);
+    // Audit round 2: 2+ stars on a planet adds its rock sample to the Sample Museum (landing page).
+    if (stars >= 2) { try { const lv = questionsData.levels.find(l => l.id === state.levelId), sm = JSON.parse(localStorage.getItem("sq_samples") || "{}"); if (lv && !sm[lv.id]) { sm[lv.id] = lv.emoji; localStorage.setItem("sq_samples", JSON.stringify(sm)); setTimeout(() => { try { showBadgeToast("🪨", `${lv.name} sample collected!`); } catch (e) {} }, 1800); } } catch (e) {} }
     refreshXpBadge();
     if (isNewBadge) {
       const level = questionsData.levels.find(l => l.id === state.levelId);
@@ -1839,6 +1841,10 @@ function asteroidRun(level, done) {
     b.textContent = `▶ Continue: ${lv.emoji} ${lv.name}`;
     b.onclick = () => asteroidRun(lv, () => startLevel(lv.id, "solo"));
     const mc = document.querySelector("#screen-landing .mode-choice"); if (mc) mc.after(b);
+    let sm = {}; try { sm = JSON.parse(localStorage.getItem("sq_samples") || "{}"); } catch (e) {}
+    const mus = document.createElement("div"); mus.className = "sq-museum";
+    mus.innerHTML = `<b>🪨 Sample Museum ${Object.keys(sm).length}/${questionsData.levels.length}</b><div>${questionsData.levels.map(l => sm[l.id] ? `<span title="${l.name}">${l.emoji}<small>🪨</small></span>` : `<span class="no" title="Get 2+ stars on ${l.name}">❔</span>`).join("")}</div>`;
+    b.after(mus);
   } catch (e) {}
 })();
 (function readAloud() {

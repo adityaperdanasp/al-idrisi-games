@@ -60,8 +60,10 @@ function play(boat, level, paint) {
   function beginWave() {
     st.toSpawn = 4 + st.wave * 2; st.nextSpawn = 900; $("sm-wave").textContent = st.wave;
     st.fog = st.wave % 3 === 0; sea.classList.toggle("fog", st.fog);
-    $("sm-msg").textContent = `🌊 Wave ${st.wave}${st.wave % 5 === 0 ? " — the KRAKEN rises!" : st.fog ? " — thick fog!" : ""}`;
-    if (st.wave % 5 === 0) { const el = document.createElement("div"); el.className = "sm-kraken"; el.textContent = "🦑"; sea.appendChild(el); st.kraken = { hp: 5 + st.wave / 5, el, next: performance.now() + 3000, warn: -1 }; }
+    // Audit round 2: the sea boss rotates -- Kraken, Sea Serpent, Megalodon -- each a bit tougher.
+    const BOSS = [["🦑", "KRAKEN", 0], ["🐉", "SEA SERPENT", 2], ["🦈", "MEGALODON", 4]][Math.floor(st.wave / 5 - 1) % 3];
+    $("sm-msg").textContent = `🌊 Wave ${st.wave}${st.wave % 5 === 0 ? ` — the ${BOSS[1]} rises!` : st.fog ? " — thick fog!" : ""}`;
+    if (st.wave % 5 === 0) { const el = document.createElement("div"); el.className = "sm-kraken"; el.textContent = BOSS[0]; sea.appendChild(el); st.kraken = { hp: 5 + st.wave / 5 + BOSS[2], el, next: performance.now() + 3000, warn: -1, name: BOSS[1] }; }
     drawMis();
   }
   function spawn() {
@@ -89,7 +91,7 @@ function play(boat, level, paint) {
     if (ok) {
       st.streak++;
       if (st.kraken) { st.kraken.hp -= power; boom(1, 8); st.kraken.el.classList.remove("hit"); void st.kraken.el.offsetWidth; st.kraken.el.classList.add("hit");
-        if (st.kraken.hp <= 0) { st.kraken.el.remove(); st.kraken = null; st.kills += 5; K.toastAdv("You defeated the Kraken!"); } }
+        if (st.kraken.hp <= 0) { const bn = (st.kraken.name || "Kraken").toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); st.kraken.el.remove(); st.kraken = null; st.kills += 5; K.toastAdv(`You defeated the ${bn}!`); } }
       let targets = st.objs.filter(o => !o.wave && !o.gold && !o.kit).sort((a, b) => b.y - a.y).slice(0, power); // closest monsters first
       if (st.streak % 5 === 0) { const lane = (targets[0] || { lane: st.lane }).lane; targets = st.objs.filter(o => !o.wave && !o.gold && !o.kit && o.lane === lane); $("sm-msg").textContent = "🚀 TORPEDO! The whole lane is cleared!"; }
       targets.forEach(t => { boom(t.lane, t.y); t.el.remove(); st.objs = st.objs.filter(o => o !== t); st.kills += t.ghost ? 3 : 1; if (t.mon === "🦈") st.sharks++; });

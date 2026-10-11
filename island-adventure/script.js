@@ -59,7 +59,7 @@ async function init() {
   const done = () => Object.keys(st.mastered).length;
 
   function map() {
-    $("ia-hud").textContent = `💎 Crystals: ${done()}/4 · Endings found: ${Object.keys(st.endings).length}/4`;
+    $("ia-hud").textContent = `💎 Crystals: ${done()}/4 · Endings found: ${Object.keys(st.endings).length}/4${Number(lsi("ia_pirates", "0")) ? ` · 🏴‍☠️ ${lsi("ia_pirates", "0")} pirate ships sunk` : ""}`;
     $("ia-sea").innerHTML = Object.entries(ISLANDS).map(([id, i]) => {
       const isVol = id === "volcano", lock = isVol && done() < 2, m = st.mastered[id];
       return `<button class="ia-isl ${m ? "done" : ""} ${lock ? "lock" : ""}" style="left:${i.x}%;top:${i.y}%" data-i="${id}" ${lock ? "disabled" : ""}><span class="e">${lock ? "🔒" : i.emoji}</span>${i.name}${m ? "<br>💎 mastered" : ""}</button>`;
@@ -80,7 +80,24 @@ async function init() {
       $("ia-card").innerHTML = `<div class="kit-sub" style="margin:0 0 4px;font-weight:800">🪨 Rocks ahead! Answer to steer safely · ${"🛟".repeat(hull)}</div><div class="kit-q">${K.esc(rq.prompt)}</div><div class="kit-opts">${rq.options.map(o => `<button class="kit-opt" data-o="${K.esc(o)}">${K.esc(o)}</button>`).join("")}</div><div class="kit-sub" id="ia-msg" style="text-align:center;min-height:1.2em"></div>`;
       $("ia-card").querySelectorAll(".kit-opt").forEach(b => b.onclick = () => { const ok = b.dataset.o === rq.correctLabel; K.record("island-adventure", rq.key, ok, rq); if (!ok) hull--; $("ia-card").querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.dataset.o === rq.correctLabel) x.classList.add("right"); }); $("ia-msg").textContent = ok ? "⛵ You steered past the rocks!" : `💥 Bump! The boat lost a lifebuoy (answer: ${rq.correctLabel})`; setTimeout(arrive, ok ? 900 : 1700); });
     }, 700);
+    // Audit round 2: sometimes a pirate ship blocks the way -- 3 cannon shots (questions); win 2 and
+    // you take their treasure chest. Ships sunk are counted on the map.
+    function pirates(then) {
+      let shot = 0, hits = 0;
+      const fire = () => {
+        if (shot >= 3) {
+          const won = hits >= 2; if (won) { lsiw("ia_pirates", String(Number(lsi("ia_pirates", "0")) + 1)); LB.creditWallet({ coins: 4 }).catch(() => {}); }
+          $("ia-card").innerHTML = `<div class="kit-big" style="text-align:center">${won ? "🏴‍☠️💥" : "🏴‍☠️💨"}</div><div class="kit-q">${won ? "Pirate ship sunk! You grabbed their chest (+4 coins)." : "The pirates sailed away… phew!"}</div><button class="kit-btn block" id="ia-pgo" type="button">Sail on ⛵</button>`;
+          $("ia-pgo").onclick = then; return;
+        }
+        const q = K.question({ difficulty: "easy" });
+        $("ia-card").innerHTML = `<div class="kit-sub" style="margin:0 0 4px;font-weight:800">🏴‍☠️ Pirates! Cannon shot ${shot + 1}/3 · 💥 ${hits} hits</div><div class="kit-q">${K.esc(q.prompt)}</div><div class="kit-opts">${q.options.map(o => `<button class="kit-opt" data-o="${K.esc(o)}">${K.esc(o)}</button>`).join("")}</div>`;
+        $("ia-card").querySelectorAll(".kit-opt").forEach(b => b.onclick = () => { const ok = b.dataset.o === q.correctLabel; K.record("island-adventure", q.key, ok, q); $("ia-card").querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.dataset.o === q.correctLabel) x.classList.add("right"); }); if (ok) hits++; else b.classList.add("wrong"); shot++; setTimeout(fire, ok ? 700 : 1400); });
+      };
+      fire();
+    }
     function arrive() {
+      if (id !== "volcano" && !arrive.met && Math.random() < 0.3) { arrive.met = true; return pirates(arrive); }
       const n = NPC[id]; const storm = id !== "volcano" && Math.random() < 0.25;
       $("ia-card").innerHTML = `<div class="ia-npc"><span>${n[0]}</span><div><b>${n[1]}</b><br>${K.esc(n[2])}${storm ? "<br>⛈️ <b>A storm is coming — answer each question in 8 seconds!</b>" : ""}</div></div><button class="kit-btn block" id="ia-start" type="button">Let's go!</button>`;
       $("ia-start").onclick = () => play(storm);

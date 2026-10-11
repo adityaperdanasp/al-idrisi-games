@@ -167,7 +167,13 @@ function initMonsterBattle() {
   // ---------------------------------------------------------------
   // BATTLE PHASE
   // ---------------------------------------------------------------
+  // Audit round 2: a 🤝 partner monster that stays between runs -- after a won battle your strongest
+  // monster becomes (or stays) your partner and gains a level (+1 attack, +3 HP); it joins your team
+  // at the start of every battle.
+  const partner = () => { try { return JSON.parse(lsm("mb_partner", "null")); } catch (e) { return null; } };
   function startBattlePhase() {
+    const pt = partner();
+    if (pt) state.team.unshift({ emoji: pt.emoji, name: `🤝 ${pt.name} Lv${pt.lv}`, type: pt.type, hp: pt.hp, maxHp: pt.hp, atk: pt.atk, partner: true });
     if (state.team.length === 0) state.team.push({ ...STARTER, maxHp: STARTER.hp });
     state.rivalTeam = RIVALS[rivalIdx].team.map(m => ({ ...m, maxHp: m.hp })); charge = 0;
     state.playerActiveIdx = 0;
@@ -275,14 +281,20 @@ function initMonsterBattle() {
   function finishGame(won) {
     clearTimeout(rareTimer);
     if (won && rivalIdx === Number(lsm("mb_rival", "0")) && rivalIdx < 2) lsmw("mb_rival", String(rivalIdx + 1));
+    if (won) {
+      const pt = partner(), best = state.team.filter(m => !m.partner).sort((a, b) => b.atk - a.atk)[0];
+      const base = pt || (best && { emoji: best.emoji, name: best.name.replace(/^✨/, ""), type: best.type, hp: best.maxHp, atk: best.atk, lv: 0 });
+      if (base) { base.lv = (base.lv || 0) + 1; base.atk += 1; base.hp += 3; lsmw("mb_partner", JSON.stringify(base)); state.partnerMsg = `🤝 ${base.name} is now Lv ${base.lv}!`; }
+    }
     document.getElementById("mb-q-card").classList.add("hidden");
-    const caught = state.team.length;
+    const caught = state.team.filter(m => !m.partner).length;
     const emoji = won ? "🏆" : caught >= 3 ? "🙂" : "💪";
     document.getElementById("mb-end-emoji").textContent = emoji;
     document.getElementById("mb-end-title").textContent = won ? "You Won the Battle!" : "Battle Lost!";
     document.getElementById("mb-end-sub").textContent = won
       ? `You caught ${caught} monster${caught === 1 ? "" : "s"} and beat ${RIVALS[rivalIdx].name}'s whole team!${rivalIdx < 2 ? ` ${RIVALS[rivalIdx + 1].name} is unlocked!` : " You are the CHAMPION! 👑"}`
       : `You caught ${caught} monster${caught === 1 ? "" : "s"}, but the rival's team was too strong this time. Try again!`;
+    if (state.partnerMsg) { document.getElementById("mb-end-sub").textContent += " " + state.partnerMsg; state.partnerMsg = ""; }
     const bonusEl = document.getElementById("mb-end-bonus");
     bonusEl.textContent = "";
     if (window.AIGLeaderboard) {

@@ -34,6 +34,22 @@ function beatSound(atMs, accent) {
     const n = actx.createOscillator(), ng = actx.createGain(); n.type = "square"; n.frequency.value = 6000; ng.gain.setValueAtTime(0.025, t + 0.0); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.04); n.connect(ng); ng.connect(actx.destination); n.start(t); n.stop(t + 0.05);
   } catch (e) {}
 }
+// Audit round 2: real songs -- each has a melody (note per beat) played over the kick, picked on
+// the start screen. Best score is kept per song.
+const SONGS = {
+  pop: ["🎤 Pop", [523, 659, 784, 659, 587, 659, 523, 440, 494, 523, 587, 523]],
+  march: ["🥁 March", [392, 392, 523, 523, 659, 587, 523, 392, 440, 494, 523, 523]],
+  disco: ["🪩 Disco", [440, 554, 659, 554, 440, 659, 740, 659, 587, 554, 494, 440]]
+};
+let song = "pop";
+function melody(atMs, idx) {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const notes = SONGS[song][1], f = notes[idx % notes.length], t = actx.currentTime + Math.max(0, atMs) / 1000, o = actx.createOscillator(), g = actx.createGain();
+    o.type = "triangle"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + 0.32);
+  } catch (e) {}
+}
 const lsd = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
 
 const player = window.AIGPlayer && AIGPlayer.getPlayer();
@@ -114,6 +130,7 @@ function initDanceBattle() {
     state.dir = rand(0, 2);
     document.getElementById("db-arrow-cue").textContent = state.arrows ? ARROWS[state.dir] : "";
     beatSound(interval, state.beatIndex % 2 === 0);
+    melody(interval, state.segmentIndex * BEATS_PER_SEGMENT + state.beatIndex);
     state.beatDueAt = performance.now() + interval;
     state.beatResolved = false;
 
@@ -222,7 +239,7 @@ function initDanceBattle() {
   function finishGame() {
     showControls(false);
     document.getElementById("db-page").classList.remove("db-fever");
-    const won = state.score > state.rival, bk = "db_best_" + (state.arrows ? "arrows" : "tap"), best = Number(lsd(bk, "0"));
+    const won = state.score > state.rival, bk = "db_best_" + (state.arrows ? "arrows" : "tap") + "_" + song, best = Number(lsd(bk, "0"));
     if (state.score > best) { try { localStorage.setItem(bk, String(state.score)); } catch (e) {} }
     const emoji = won ? "🏆" : state.score >= 1500 ? "🎉" : "💪";
     document.getElementById("db-end-emoji").textContent = emoji;
@@ -256,6 +273,8 @@ function initDanceBattle() {
   function drawModes() {
     let box = document.getElementById("db-modes"); if (!box) { box = document.createElement("div"); box.id = "db-modes"; box.className = "db-modes"; document.getElementById("db-start-btn").before(box); }
     box.innerHTML = [["arrows", "⬅️⬆️➡️ Arrows"], ["tap", "👆 One button"]].map(([k, l]) => `<button type="button" data-m="${k}" class="${(k === "arrows") === state.arrows ? "on" : ""}">${l}<small>${Number(lsd("db_best_" + k, "0")) ? " best " + lsd("db_best_" + k, "0") : ""}</small></button>`).join("");
+    box.insertAdjacentHTML("beforeend", `<div class="db-songs">${Object.entries(SONGS).map(([k, sg]) => `<button type="button" data-song="${k}" class="${k === song ? "on" : ""}">${sg[0]}</button>`).join("")}</div>`);
+    box.querySelectorAll("[data-song]").forEach(b => b.onclick = () => { song = b.dataset.song; melody(0, 0); melody(250, 1); melody(500, 2); drawModes(); });
     box.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { state.arrows = b.dataset.m === "arrows"; try { localStorage.setItem("db_mode", b.dataset.m); } catch (e) {} drawModes(); });
   }
   drawModes();

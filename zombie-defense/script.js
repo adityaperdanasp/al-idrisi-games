@@ -35,7 +35,19 @@ function start() {
   function hearts() { $("zd-hp").textContent = "❤️".repeat(Math.max(0, st.hp)) + "🖤".repeat(Math.max(0, 5 - st.hp)); }
   function banner(t, ms) { $("zd-banner").textContent = t; if (ms) setTimeout(() => { if ($("zd-banner").textContent === t) $("zd-banner").textContent = ""; }, ms); }
 
+  // Audit round 2: ☀️ daytime supply drop -- after every 3rd wave the sun comes up and you pick one
+  // supply (planks, a heart, a bomb or a freeze) before the next night starts.
+  function dayShop(then) {
+    st.dayOpen = true;
+    const o = document.createElement("div"); o.className = "kit-overlay";
+    o.innerHTML = `<div class="kit-modal"><div class="kit-big">☀️</div><h2>Morning! Supply drop</h2><p class="kit-sub">You survived the night. Pick one supply:</p>
+      <button class="kit-btn block" data-s="planks" type="button">🪵 +2 planks</button><button class="kit-btn block" data-s="heart" type="button" ${st.hp >= 5 ? "disabled" : ""}>❤️ +1 heart</button><button class="kit-btn block" data-s="bomb" type="button">💣 +1 bomb</button><button class="kit-btn block" data-s="freeze" type="button">❄️ +1 freeze</button></div>`;
+    document.body.appendChild(o);
+    o.querySelectorAll("[data-s]").forEach(b => b.onclick = () => { const k = b.dataset.s; if (k === "planks") st.planks += 2; if (k === "heart") st.hp = Math.min(5, st.hp + 1); if (k === "bomb") st.bombs++; if (k === "freeze") st.freezes++; hearts(); drawBar(); o.remove(); st.dayOpen = false; then(); });
+  }
   function beginWave() {
+    if (st.wave > 1 && (st.wave - 1) % 3 === 0 && !st.dayDone) { st.dayDone = st.wave; st.pause = 1e9; return dayShop(() => { st.pause = 0; beginWave(); }); }
+    if (st.dayDone && st.dayDone !== st.wave) st.dayDone = 0;
     st.toSpawn = 3 + st.wave * 2;
     st.bossPending = st.wave % 5 === 0;
     st.spawnIn = 1200;
