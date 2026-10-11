@@ -1287,3 +1287,25 @@ html.mr2-calm .mr-shake, html.mr2-calm .mr-zoom { animation: none !important; } 
 .more-settings { margin: 10px 0; text-align: left; }
 .more-settings summary { cursor: pointer; font-weight: 800; padding: 8px 0; text-align: center; }
 .more-settings summary small { display: block; font-weight: 600; font-size: .7rem; opacity: .75; }
+
+/* Back-to-BrainBox button: on every screen except the race itself it's a
+   clear labelled pill at the top-left (it used to be a tiny 🏠 in the
+   bottom corner, easy to miss -- on a wide desktop window it sat far away
+   from the game card). During a race it stays the small corner icon so it
+   doesn't cover the track HUD. */
+body:not(:has(#screen-race.active)) .home-btn:not(.hidden) {
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+  left: 12px;
+  width: auto;
+  height: auto;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 800;
+  border: 3px solid #1b1b1b;
+  border-radius: 0;
+  box-shadow: 0 3px 0 #1b1b1b;
+  background: #fff;
+  color: #1b1b1b;
+}
+body:not(:has(#screen-race.active)) .home-btn:not(.hidden)::after { content: " BrainBox"; }
