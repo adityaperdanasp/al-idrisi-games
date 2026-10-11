@@ -55,6 +55,12 @@
   const O = { nextQuestion, handleAnswer, startQuestionTimer, resetRaceState, startRace, startSoloOpponent, endSoloRace, loseSoloRace, endGame, spawnSmoke, updateCar, renderPowerupTrack, checkPowerupPickup, goHome };
   const RP = { topic: "times", rival: "bot", cup: { on: false, race: 0, pts: 0 }, raceNo: 0, race: null, q: {}, meta: null, look: { paint: "default", sticker: "none", trail: "default" }, others: {}, seenAtk: {}, timeOverride: null, trailEmoji: "💨", pulseOn: false };
   window.RacePlus = RP;
+  // Extension points used by race-plus2.js (Pack 2). Each hook is wrapped in
+  // try/catch so a bug in an extension can never break the base race.
+  const H = RP.hooks = { mult: [], penalty: [], after: [], qStart: [], beforeQ: [], blocker: [], pre: [], awardMeta: [], over: [], time: [], newRace: [], raceScreen: [], award: [] };
+  const hsum = (list, ctx) => list.reduce((a, f) => { try { return a + (Number(f(ctx)) || 0); } catch (e) { return a; } }, 0);
+  const hprod = (list, ctx) => list.reduce((a, f) => { try { const v = Number(f(ctx)); return a * (v > 0 ? v : 1); } catch (e) { return a; } }, 1);
+  const hrun = (list, ctx) => list.forEach(f => { try { f(ctx); } catch (e) { console.warn("race-plus hook", e); } });
   try { RP.topic = localStorage.getItem("mr_topic") || "times"; RP.rival = localStorage.getItem("mr_rival") || "bot"; } catch (e) {}
 
   // ---------------- settings UI ----------------
@@ -133,6 +139,7 @@
       bestStreak: 0, dodged: 0, pickups: 0, correct: 0, recent: [], adapt: 0, tires: false, clockBonus: 0, oilQ: 0, aiSlowUntil: 0, aiProfile: pick(["sprinter", "steady", "closer", "chaos"]), prevP: 0, q: {}, bonusCoins: 0, photo: false
     };
     RP.others = {}; RP.seenAtk = {}; RP.timeOverride = null;
+    hrun(H.newRace, RP.race);
   };
   function trackEl() { const car = myCar(); return car && car.parentElement; }
   function renderDecor() {
@@ -154,6 +161,7 @@
     const tr = TRAITS[state.vehicle] || TRAITS.car; setTimeout(() => { if (!state.gameOver) showToast(`${(typeof VEHICLE_EMOJI !== "undefined" && VEHICLE_EMOJI[state.vehicle]) || "🏎️"} ${tr.t}`); }, 3300);
     if (state.solo) { const rv = RIVALS[RP.rival]; if (!activeGhostSeconds()) $("lane-name-p2").textContent = `${rv.e} ${rv.n}`; }
     setTimeout(() => { if (!state.gameOver && RP.race === R) startPulse(); }, 3300);
+    hrun(H.raceScreen, R);
   };
   function showToast(t) { try { showPowerupToast(t); } catch (e) {} }
 
@@ -195,6 +203,7 @@
     try {
       if (R.dodgeNext) { /* dodge goes first */ }
       else if (R.pitOffer) { R.pitOffer = false; R.pitDone = true; showPit(); return; }
+      else if (H.beforeQ.some(f => { try { return f(R); } catch (e) { return false; } })) return;
       R.q = { lightning: false, dodge: false }; RP.timeOverride = null; if (R.oilQ > 0) R.oilQ--;
       let label = null;
       if (R.dodgeNext) { R.dodgeNext = false; R.q.dodge = true; label = "🚧 OBSTACLE! Dodge fast!"; RP.timeOverride = 5; }
@@ -210,13 +219,15 @@
       } else { arrayEl(""); withAdapt(() => O.nextQuestion()); }
       const weak = typeof myTopicStats !== "undefined" && myTopicStats && topicsFromQuestionKey(lastQuestionKey).some(tp => { const s = myTopicStats[tp]; return s && s.wrong >= 2 && (s.streak || 0) < 5; });
       wasLabel.textContent = (label || RP.defaultLabel || wasLabel.textContent) + (weak && !label ? "  💡 Tricky one!" : "");
+      R.qStart = performance.now(); R.qText = $("question-text").textContent; R.qAns = state.currentAnswer;
+      hrun(H.qStart, R);
       const qt = $("question-text"); qt.classList.toggle("mr-fogtext", R.weather === "fog");
       if (R.weather === "fog") setTimeout(() => qt.classList.remove("mr-fogtext"), 1500);
     } catch (e) { console.warn("race-plus nextQuestion", e); if (!$("answer-options").children.length) O.nextQuestion(); }
   };
   window.startQuestionTimer = function () {
     const d = DIFFICULTY[state.difficulty], base = d.time, R = RP.race;
-    try { if (R) { let t = RP.timeOverride != null ? RP.timeOverride : base; t += lvl("tires") * 0.5 + R.clockBonus - (R.oilQ > 0 ? 2 : 0); R.clockBonus = 0; d.time = Math.max(2.5, t); } O.startQuestionTimer(); } finally { d.time = base; }
+    try { if (R) { let t = RP.timeOverride != null ? RP.timeOverride : base; t += lvl("tires") * 0.5 + R.clockBonus - (R.oilQ > 0 ? 2 : 0) + hsum(H.time, R); R.clockBonus = 0; d.time = Math.max(2.5, t); } O.startQuestionTimer(); } finally { d.time = base; }
   };
 
   // ---------------- answers ----------------
@@ -240,6 +251,7 @@
     if (R.pitActive) { try { return pitAnswer(isCorrect, value); } catch (e) { console.warn(e); } }
     const role = state.role, baseStep = STEP[role], tr = TRAITS[state.vehicle] || TRAITS.car; let mult = 1;
     R.prevP = state.progress; const wasDodge = !!R.q.dodge, wasLightning = !!R.q.lightning, firstWrong = !isCorrect;
+    const ctx = { R, value, isCorrect, wasDodge, wasLightning, role, ms: R.qStart ? performance.now() - R.qStart : 0 };
     try {
       if (isCorrect) {
         mult *= tr.s * (1 + 0.03 * lvl("engine")) * (R.tires ? 1.08 : 1);
@@ -248,8 +260,10 @@
         if (R.boostReady) { mult *= 2; R.boostReady = false; }
         const ahead = state.solo && typeof soloOpponentProgress === "number" ? soloOpponentProgress : Math.max(0, ...Object.values(RP.others));
         if (ahead - state.progress > 0 && ahead - state.progress < 0.08) { mult *= 1.2; popup("💨 Slipstream!", "good"); }
+        mult *= hprod(H.mult, ctx);
       }
     } catch (e) { console.warn(e); }
+    ctx.mult = mult; hrun(H.pre, ctx);
     STEP[role] = baseStep * mult;
     try { O.handleAnswer(value); } finally { STEP[role] = baseStep; }
     try {
@@ -261,17 +275,19 @@
         if (wasDodge && R.blocking) { R.blocking.cleared = true; R.blocking.el && R.blocking.el.classList.add("dodged"); R.blocking = null; R.dodged++; bumpMission("dodge", 1); popup("🚧 Dodged!", "good"); }
         if (wasLightning) { state.progress = Math.min(0.99, state.progress + STEP[role] * 0.8); popup("⚡ Lightning bonus!", "good"); carUpdate(); }
         const blocker = !wasDodge && R.obst.find(o => !o.cleared && o.p > R.prevP && o.p <= state.progress);
-        if (blocker) { state.progress = Math.min(state.progress, blocker.p - 0.025); R.blocking = blocker; R.dodgeNext = true; carUpdate(); showToast("🚧 Obstacle ahead!"); }
+        if (blocker && H.blocker.some(f => { try { return f(blocker, ctx); } catch (e) { return false; } })) { blocker.cleared = true; blocker.el && blocker.el.classList.add("dodged"); R.dodged++; bumpMission("dodge", 1); popup("🛫 Jumped it!", "good"); }
+        else if (blocker) { state.progress = Math.min(state.progress, blocker.p - 0.025); R.blocking = blocker; R.dodgeNext = true; carUpdate(); showToast("🚧 Obstacle ahead!"); }
         R.picks.forEach(pk => { if (!pk.got && pk.p > R.prevP && pk.p <= state.progress + 0.001) collect(pk); });
         if (!R.pitDone && !R.pitOffer && R.prevP < 0.5 && state.progress >= 0.5) R.pitOffer = true;
         if (state.solo && typeof soloOpponentProgress === "number" && state.progress - soloOpponentProgress < -0.25 && Math.random() < 0.35) { R.comeback = true; showToast("🎁 Comeback crate! Next answer jumps double"); }
         commentary();
       } else if (firstWrong && (state.answerMode === "choice" || state.wrongAttempts === 1)) {
-        let pen = tr.p + (R.weather === "rain" ? 0.02 : 0);
+        let pen = tr.p + (R.weather === "rain" ? 0.02 : 0) + hsum(H.penalty, ctx);
         if (wasDodge && R.blocking) { pen += 0.05 * tr.o; R.blocking.cleared = true; R.blocking.el && R.blocking.el.classList.add("hit"); R.blocking = null; shakeScreen(); popup("💥 Crash!", "neutral"); if (navigator.vibrate) { try { navigator.vibrate(120); } catch (e) {} } }
         if (pen > 0) { state.progress = Math.max(0, state.progress - pen); carUpdate(); }
       }
     } catch (e) { console.warn("race-plus post", e); }
+    finally { hrun(H.after, ctx); }
   };
   function collect(pk) {
     const R = RP.race; pk.got = true; R.pickups++; bumpMission("pickups", 1); pk.el && pk.el.classList.add("gone");
@@ -324,15 +340,17 @@
   window.checkPowerupPickup = function () { /* replaced by Race Plus pickups */ };
   window.startSoloOpponent = function () {
     stopSoloOpponent(); soloOpponentProgress = 0; const R = RP.race; if (!R) return O.startSoloOpponent();
-    const ghost = activeGhostSeconds(), rv = RIVALS[RP.rival], seconds = ghost || DIFFICULTY[state.difficulty].opponentSeconds * rv.m, prof = ghost ? "steady" : R.aiProfile, t0 = performance.now(), phase = Math.random() * 6;
+    if (R.x && R.x.survival) { soloOpponentProgress = 0; return; }
+    const ghost = activeGhostSeconds(), rv = RIVALS[RP.rival], seconds = ghost || DIFFICULTY[state.difficulty].opponentSeconds * rv.m * (R.x && R.x.boss ? 0.88 : 1), prof = ghost ? "steady" : R.aiProfile, t0 = performance.now(), phase = Math.random() * 6;
     soloOpponentTimerId = setInterval(() => {
       if (state.gameOver) { stopSoloOpponent(); return; }
       const t = (performance.now() - t0) / 1000, f0 = t / seconds; let f = 1;
       if (prof === "sprinter") f = f0 < 0.4 ? 1.25 : 0.82; else if (prof === "closer") f = f0 < 0.5 ? 0.8 : 1.2; else if (prof === "chaos") f = 1 + 0.25 * Math.sin(t / 3.5 + phase);
       if (!ghost) { const gap = state.progress - soloOpponentProgress; f *= gap > 0.3 ? 1.18 : gap > 0.15 ? 1.08 : gap < -0.25 ? 0.88 : 1; }
       if (performance.now() < R.aiSlowUntil) f *= 0.5;
+      if (R.x && R.x.boss && t - (R.x.lastAtk || 0) > 11) { R.x.lastAtk = t; R.x.bossAtk = Math.random() < 0.5 ? "scramble" : "blur"; showToast("👾 Creeper is charging an attack!"); }
       soloOpponentProgress = Math.min(soloOpponentProgress + 0.1 / seconds * f, 1);
-      updateCar("p2", { progress: soloOpponentProgress, correct: 0, pace: "parent" }, false);
+      updateCar("p2", { progress: soloOpponentProgress, correct: 0, pace: "parent", vehicle: R.x && R.x.boss ? "creeper" : undefined }, false);
       if (soloOpponentProgress >= 1) { stopSoloOpponent(); loseSoloRace(); }
     }, 100);
   };
@@ -348,15 +366,18 @@
     const R = RP.race; if (!R) return; let coins = 3 + (win ? 3 : 0) + Math.min(4, Math.floor(R.bestStreak / 3)) + R.bonusCoins, note = "";
     const cup = RP.cup;
     if (cup.on && solo) { cup.race++; cup.pts += win ? 3 : 1; note = ` · 🏆 Cup ${cup.race}/3: ${cup.pts} pts`; if (cup.race >= 3) { const gold = cup.pts >= 7; note += gold ? " — CUP WINNER! +15 🪙" : " — cup finished"; if (gold) { coins += 15; if (RP.meta) RP.meta.cups = (RP.meta.cups || 0) + 1; } RP.cup = { on: true, race: 0, pts: 0 }; } }
+    const actx = { win, solo, coins, note, R, el: raceStartTime ? Math.round((Date.now() - raceStartTime) / 1000) : 0 };
+    hrun(H.award, actx); coins = actx.coins; note = actx.note;
     try { if (LB && LB.creditWallet) LB.creditWallet({ coins }); } catch (e) {}
     if (RP.meta) {
       const m = RP.meta; m.races = (m.races || 0) + 1; if (win) m.wins = (m.wins || 0) + 1;
       const tk = m.tracks[R.track.id] = m.tracks[R.track.id] || {}; const el = raceStartTime ? Math.round((Date.now() - raceStartTime) / 1000) : 0;
       if (win) { tk.win = true; if (!tk.best || el < tk.best) tk.best = el; if (state.raceWrongTotal === 0) tk.clean = true; }
       if (solo && win) bumpMission("wins", 1); bumpMission("streak", R.bestStreak, "max"); bumpMission("correct", R.correct);
+      hrun(H.awardMeta, actx);
       saveMeta();
     }
-    setTimeout(() => { const sub = $("over-sub"); if (sub) sub.textContent += `  +${coins} 🪙${note}`; }, 80);
+    setTimeout(() => { const sub = $("over-sub"); if (sub) sub.textContent += `  +${coins} 🪙${note}`; hrun(H.over, actx); }, 80);
   }
   window.endSoloRace = function () {
     const close = typeof soloOpponentProgress === "number" && soloOpponentProgress >= 0.9, R = RP.race;
@@ -388,6 +409,7 @@
     if (!RP.meta && LB && LB.getMathRaceMeta) { RP.meta = await LB.getMathRaceMeta(); ensureMeta(); }
     const m = RP.meta || { garage: {}, tracks: {}, missions: { list: [] } }; let wallet = { coins: 0, gems: 0 }; try { wallet = await LB.getWallet(); } catch (e) {}
     const money = `<p>Wallet: 🪙 ${wallet.coins || 0} · 💎 ${wallet.gems || 0}</p>`;
+    if (RP.garageTabs && RP.garageTabs[gTab]) { try { await RP.garageTabs[gTab](body, m, wallet, money); } catch (e) { body.textContent = "Oops, try again!"; console.warn(e); } return; }
     if (gTab === "up") {
       body.innerHTML = money + Object.entries(UPS).map(([k, u]) => { const l = lvl(k), cost = u.costs[l]; return `<div class="mr-row"><span>${u.e} ${u.n} Lv ${l}/3<br><small>${u.d}</small><div class="mr-bar"><i style="width:${l / 3 * 100}%"></i></div></span>${cost ? `<button data-k="${k}">🪙 ${cost}</button>` : `<button disabled>MAX</button>`}</div>`; }).join("");
       body.querySelectorAll("button[data-k]").forEach(b => b.onclick = async () => { const k = b.dataset.k, cost = UPS[k].costs[lvl(k)]; const r = await LB.spendMathRaceCoins(cost); if (!r.ok) { alert("Not enough coins yet!"); return; } m.garage[k] = lvl(k) + 1; saveMeta(); renderGarage(); });
@@ -411,4 +433,6 @@
   ["btn-garage-role", "btn-garage-pair"].forEach(id => { const b = $(id); if (b) b.addEventListener("click", openGarage); });
   $("mr-garage-close").addEventListener("click", () => { $("mr-garage").classList.add("hidden"); });
   document.querySelectorAll("#mr-garage-tabs .seg-btn").forEach(b => b.addEventListener("click", () => { gTab = b.dataset.t; renderGarage(); }));
+  // ---------------- API for race-plus2.js ----------------
+  RP.api = { popup, showToast, shakeScreen, carUpdate, collect, lvl, saveMeta, ensureMeta, bumpMission, myCar, TRAITS, TRACKS, WEATHERS, RIVALS, PICKS, hashStr, mulberry32, todayStr, esc, cleanup, photo, updateAmmo, renderGarage: () => renderGarage(), openGarage: () => openGarage(), setTab: t => { gTab = t; } };
 })();
