@@ -21,6 +21,10 @@
   @keyframes crOut{to{transform:translateY(-40px) scale(.5);opacity:0}}
   .cr-label{text-align:center;font-weight:800;font-size:.8rem;margin:4px 0}
 
+  .cr-c.act{outline:3px dashed #ffd23f}
+  .cr-shout{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:9999;background:#e5484d;color:#fff;border:4px solid #1b1b1b;font-weight:800;font-size:1.2rem;padding:14px 20px;animation:crPulse .5s infinite alternate;cursor:pointer}
+  @keyframes crPulse{to{transform:translateX(-50%) scale(1.08)}}
+  .cr-pick{display:flex;gap:6px;justify-content:center;margin-bottom:8px}.cr-pick button{border:2px solid #1b1b1b;background:#fff;padding:6px 10px;font-weight:800;cursor:pointer}.cr-pick button.on{background:#5fb83a;color:#fff}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="card-race";</script>
@@ -46,6 +50,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Quiz Card Race',accent:'#8c2f6b',bg:'linear-gradient(180deg,#fdf0f7,#e9dcfa)'});</script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

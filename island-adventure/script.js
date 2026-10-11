@@ -42,6 +42,14 @@ function questionFor(id) {
   return K.question({});
 }
 
+// Audit batch 6: the boat really sails to each island, a reef question on the way (3-hull boat),
+// an island host with lines, storms that put a timer on an island, a treasure dig once an island is
+// mastered, an endings gallery on the map, and a gentle story mode (2 of 4 to master).
+const NPC = { fractions: ["👨‍🍳", "Chef Pip", "Welcome to Fraction Isle! Help me share my pizzas fairly."], shapes: ["🤖", "Robo-Square", "BEEP! Shape Isle needs a shape expert."], words: ["🦉", "Professor Hoot", "Hoo! The Word Library has puzzling pages."], science: ["🧑‍🔬", "Dr. Spark", "Science Isle is full of experiments!"], volcano: ["🔥", "The Fire Spirit", "Only a true explorer can calm my volcano…"] };
+const ENDINGS = [["hero", "🏆 Island Hero"], ["explorer", "🧭 Grand Explorer"], ["adventurer", "⛵ Brave Adventurer"], ["sailor", "🌊 Lost Sailor"]];
+let story = false;
+const lsi = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+const lsiw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 if (!player) $("ia-overlay").innerHTML = K.signedOutHtml("🏝️");
 else K.ready().then(init);
 
@@ -55,19 +63,39 @@ async function init() {
     $("ia-sea").innerHTML = Object.entries(ISLANDS).map(([id, i]) => {
       const isVol = id === "volcano", lock = isVol && done() < 2, m = st.mastered[id];
       return `<button class="ia-isl ${m ? "done" : ""} ${lock ? "lock" : ""}" style="left:${i.x}%;top:${i.y}%" data-i="${id}" ${lock ? "disabled" : ""}><span class="e">${lock ? "🔒" : i.emoji}</span>${i.name}${m ? "<br>💎 mastered" : ""}</button>`;
-    }).join("") + '<div class="ia-boat" style="left:50%;top:92%">⛵</div>';
+    }).join("") + '<div class="ia-boat" id="ia-boat" style="left:50%;top:92%">⛵</div>';
     $("ia-sea").querySelectorAll(".ia-isl:not(.lock)").forEach(b => b.onclick = () => go(b.dataset.i));
-    $("ia-card").innerHTML = `<div class="kit-sub" style="text-align:center;margin:0">${done() < 2 ? "Master 2 islands (3 of 4 questions right) to open the Number Volcano." : "The Volcano is open! Master all 4 islands first for the best ending."}</div>`;
+    $("ia-card").innerHTML = `<div class="kit-sub" style="text-align:center;margin:0">${done() < 2 ? `Master 2 islands (${story ? "2" : "3"} of 4 questions right) to open the Number Volcano.` : "The Volcano is open! Master all 4 islands first for the best ending."}</div>
+      <label class="ia-story"><input type="checkbox" id="ia-st" ${story ? "checked" : ""}> 📖 Story mode (easier mastering)</label>
+      <div class="ia-gal"><b>🎞️ Endings:</b> ${ENDINGS.map(([id, t]) => `<span class="${st.endings[id] ? "on" : ""}">${st.endings[id] ? t : "❔"}</span>`).join("")}</div>`;
+    $("ia-st").onchange = e => { story = e.target.checked; map(); };
   }
 
   function go(id) {
-    const finale = id === "volcano", total = finale ? 5 : 4, need = finale ? 3 : 3;
-    let i = 0, right = 0;
+    const boat = $("ia-boat"); if (boat) { boat.style.left = ISLANDS[id].x + "%"; boat.style.top = (ISLANDS[id].y + 10) + "%"; }
+    let hull = 3;
+    // reef on the way
+    const rq = K.question({ subject: "math", difficulty: "easy" });
+    setTimeout(() => {
+      $("ia-card").innerHTML = `<div class="kit-sub" style="margin:0 0 4px;font-weight:800">🪨 Rocks ahead! Answer to steer safely · ${"🛟".repeat(hull)}</div><div class="kit-q">${K.esc(rq.prompt)}</div><div class="kit-opts">${rq.options.map(o => `<button class="kit-opt" data-o="${K.esc(o)}">${K.esc(o)}</button>`).join("")}</div><div class="kit-sub" id="ia-msg" style="text-align:center;min-height:1.2em"></div>`;
+      $("ia-card").querySelectorAll(".kit-opt").forEach(b => b.onclick = () => { const ok = b.dataset.o === rq.correctLabel; K.record("island-adventure", rq.key, ok, rq); if (!ok) hull--; $("ia-card").querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.dataset.o === rq.correctLabel) x.classList.add("right"); }); $("ia-msg").textContent = ok ? "⛵ You steered past the rocks!" : `💥 Bump! The boat lost a lifebuoy (answer: ${rq.correctLabel})`; setTimeout(arrive, ok ? 900 : 1700); });
+    }, 700);
+    function arrive() {
+      const n = NPC[id]; const storm = id !== "volcano" && Math.random() < 0.25;
+      $("ia-card").innerHTML = `<div class="ia-npc"><span>${n[0]}</span><div><b>${n[1]}</b><br>${K.esc(n[2])}${storm ? "<br>⛈️ <b>A storm is coming — answer each question in 8 seconds!</b>" : ""}</div></div><button class="kit-btn block" id="ia-start" type="button">Let's go!</button>`;
+      $("ia-start").onclick = () => play(storm);
+    }
+    const finale = id === "volcano", total = finale ? 5 : 4, need = finale ? 3 : (story ? 2 : 3);
+    let i = 0, right = 0, stormy = false, tmr = null;
+    function play(sto) { stormy = sto; ask(); }
     const ask = () => {
+      clearInterval(tmr);
       if (i >= total) return finish();
       const q = questionFor(id);
-      $("ia-card").innerHTML = `<div class="kit-sub" style="margin:0 0 4px;font-weight:800">${ISLANDS[id].emoji} ${ISLANDS[id].name} — ${i + 1}/${total}</div><div class="kit-q">${K.esc(q.prompt)}</div><div class="kit-opts">${q.options.map(o => `<button class="kit-opt" data-o="${K.esc(o)}">${K.esc(o)}</button>`).join("")}</div><div class="kit-sub" id="ia-msg" style="text-align:center;margin:8px 0 0;min-height:1.2em"></div>`;
+      $("ia-card").innerHTML = `<div class="kit-sub" style="margin:0 0 4px;font-weight:800">${ISLANDS[id].emoji} ${ISLANDS[id].name} — ${i + 1}/${total} · ${"🛟".repeat(hull)}${stormy ? " · ⛈️" : ""}</div>${stormy ? '<div class="kit-bar" style="margin-bottom:6px"><i id="ia-t"></i></div>' : ""}<div class="kit-q">${K.esc(q.prompt)}</div><div class="kit-opts">${q.options.map(o => `<button class="kit-opt" data-o="${K.esc(o)}">${K.esc(o)}</button>`).join("")}</div><div class="kit-sub" id="ia-msg" style="text-align:center;margin:8px 0 0;min-height:1.2em"></div>`;
+      if (stormy) { let t = 8; tmr = setInterval(() => { t -= 0.1; const el = $("ia-t"); if (el) el.style.width = Math.max(0, t / 8 * 100) + "%"; if (t <= 0) { clearInterval(tmr); const w = [...$("ia-card").querySelectorAll(".kit-opt")].find(x => x.dataset.o !== q.correctLabel); if (w) w.click(); } }, 100); }
       $("ia-card").querySelectorAll(".kit-opt").forEach(b => b.onclick = () => {
+        clearInterval(tmr);
         const ok = b.dataset.o === q.correctLabel;
         K.record("island-adventure", q.key, ok, q);
         $("ia-card").querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.dataset.o === q.correctLabel) x.classList.add("right"); });
@@ -81,8 +109,11 @@ async function init() {
       const ok = right >= need;
       let msg = ok ? `You mastered ${ISLANDS[id].name}! 💎` : `${right}/4 — sail back and try again!`;
       if (ok) { const r = await LB.masterIsland(id); st.mastered[id] = true; if (r.first) msg += ` +🪙${r.coins}`; if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3); }
-      $("ia-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${ok ? "💎" : "🌊"}</div><h2>${ok ? "Island mastered!" : "Not yet…"}</h2><p class="kit-sub">${msg}</p><button class="kit-btn block" id="ia-back">Back to the map</button></div></div>`;
+      const canDig = ok && lsi("ia_dug_" + id, "") !== "1";
+      $("ia-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${ok ? "💎" : "🌊"}</div><h2>${ok ? "Island mastered!" : "Not yet…"}</h2><p class="kit-sub">${msg}</p>${canDig ? `<div class="kit-sub" style="font-weight:800">🗺️ ${NPC[id][1]} whispers: a treasure is buried here! Pick a spot:</div><div class="ia-dig">${["🏝️", "🌴", "🪨"].map((x, k) => `<button type="button" data-dig="${k}">${x}</button>`).join("")}</div><div class="kit-bonus" id="ia-db"></div>` : ""}<button class="kit-btn block" id="ia-back">Back to the map</button></div></div>`;
       $("ia-back").onclick = () => { $("ia-overlay").innerHTML = ""; map(); };
+      const lucky = K.rand(0, 2);
+      $("ia-overlay").querySelectorAll("[data-dig]").forEach(b => b.onclick = async () => { lsiw("ia_dug_" + id, "1"); $("ia-overlay").querySelectorAll("[data-dig]").forEach(x => x.disabled = true); const win = +b.dataset.dig === lucky; b.textContent = win ? "💰" : "🦀"; $("ia-db").textContent = win ? "You found the treasure! +5 🪙" : "Just a crab… but here's 2 🪙 for digging!"; try { await LB.creditWallet({ coins: win ? 5 : 2 }); } catch (e) {} });
     }
     ask();
   }

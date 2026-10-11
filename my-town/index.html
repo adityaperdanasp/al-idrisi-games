@@ -23,6 +23,11 @@
   .mt-b small{color:#7a6a5a;font-weight:700}
   .mt-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #f0e8f7}
 
+  .mt-gwrap{position:relative}.mt-life{position:absolute;inset:0;pointer-events:none;overflow:hidden}.mt-life span{position:absolute;left:-10%;font-size:1rem;animation:mtWalk 13s linear infinite}
+  @keyframes mtWalk{to{left:105%}}.mt-moon{position:absolute;right:6px;top:4px}
+  .mt-grid.mt-night{filter:brightness(.7) saturate(.8)}
+  .mt-level{text-align:center;font-weight:800;font-size:.85rem;margin:4px 0}
+  .mt-box{border:2px solid #1b1b1b;background:#fff;padding:8px;margin-top:8px;font-size:.85rem}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="my-town";</script>
@@ -34,7 +39,7 @@
   <div class="kit-hud"><span id="mt-wallet"></span><span>✨ Beauty <b id="mt-beauty">0</b></span><span id="mt-likes"></span></div>
   <div class="mt-tabs"><button class="mt-tab on" data-t="mine">🏘️ My Town</button><button class="mt-tab" data-t="visit">🚶 Visit</button></div>
   <div id="mt-title" class="kit-sub" style="text-align:center;margin:0 0 6px"></div>
-  <div class="mt-grid" id="mt-grid"></div>
+  <div class="mt-level" id="mt-level"></div><div class="mt-gwrap"><div class="mt-grid" id="mt-grid"></div><div class="mt-life" id="mt-life"></div></div>
   <div class="kit-card" id="mt-panel"></div>
   <div id="mt-overlay"></div>
 
@@ -48,7 +53,7 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'My Town',accent:'#3f8f5f',bg:'linear-gradient(180deg,#e6f5dc,#cfeeb9)'});</script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 <script>document.addEventListener("DOMContentLoaded",()=>{const a=document.createElement("a");a.href="../city-builder/";a.textContent="🧱 Earn bricks and grow your city in City Builder →";a.style.cssText="display:block;text-align:center;margin:10px 14px 40px;padding:10px;background:#fff3c4;border:3px solid #1b1b1b;font-weight:800;color:#5a3a1a;text-decoration:none";(document.querySelector(".kit-page")||document.body).appendChild(a);});</script>
 </body>
 </html>

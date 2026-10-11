@@ -27,6 +27,12 @@ const GEAR = [
 ];
 const MONSTERS = [["👺", "Goblin"], ["🦇", "Giant Bat"], ["🕷️", "Cave Spider"], ["🧌", "Troll"], ["🐲", "Dungeon Dragon"]];
 const FLOORS = 5;
+// Audit batch 6: a hero skill per floor, a power strike (harder question, double damage), monster
+// weaknesses by subject, potions from critical hits, the dragon's fire breath every 3rd turn, a choice of
+// door between floors (treasure / fountain / trap) and Endless Depths after the dragon.
+const SKILL = { knight: ["🛡️ Shield Bash", "Blocks the next hit"], wizard: ["🔥 Fireball", "Next right answer deals triple damage"], archer: ["🏹 Arrow Rain", "Deal 5 damage right now"] };
+const WEAK = { Goblin: "math", "Giant Bat": "sci", "Cave Spider": "lang", Troll: "lang", "Dungeon Dragon": "sci" };
+const SUBJ = { math: "maths", lang: "words", sci: "science" };
 
 if (!player) $("dg-overlay").innerHTML = K.signedOutHtml("🗡️");
 else init();
@@ -45,11 +51,11 @@ async function init() {
   function fight(cid) {
     const cls = CLASSES[cid];
     const maxHp = cls.hp + sum("hp"), atk = cls.atk + sum("atk"), crit = (cid === "archer" ? 0.25 : 0) + sum("crit"), herb = sum("heal");
-    let hp = maxHp, floor = 1, mHp = 0, mMax = 0, q = null, locked = false, newLoot = [];
-    const mon = () => MONSTERS[floor - 1];
+    let hp = maxHp, floor = 1, mHp = 0, mMax = 0, q = null, locked = false, newLoot = [], potions = 0, skillUsed = false, block = false, fire = false, power = false, turn = 0, nextBuff = 0;
+    const mon = () => floor <= FLOORS ? MONSTERS[floor - 1] : [["👹", "Depth Demon"], ["🦂", "Giant Scorpion"], ["🐍", "Shadow Serpent"]][floor % 3];
 
     function spawn() {
-      mMax = mHp = 8 + floor * 4 + (floor === FLOORS ? 8 : 0);
+      mMax = mHp = 8 + floor * 4 + (floor === FLOORS ? 8 : 0) + nextBuff; nextBuff = 0; skillUsed = false; turn = 0;
       draw(); ask();
     }
     function draw() {
@@ -57,10 +63,18 @@ async function init() {
       $("dg-main").innerHTML = `<div class="dg-arena"><div class="dg-fig"><div class="dg-em" id="dg-me">${cls.emoji}</div><div class="dg-name">You · ${hp}/${maxHp}</div><div class="dg-hp me"><i style="width:${Math.max(0, hp / maxHp * 100)}%"></i></div></div>
         <div style="font-size:1.4rem">⚔️</div>
         <div class="dg-fig"><div class="dg-em" id="dg-mo">${m[0]}</div><div class="dg-name">${m[1]} · Floor ${floor}/${FLOORS}</div><div class="dg-hp"><i style="width:${Math.max(0, mHp / mMax * 100)}%"></i></div></div></div>
+        <div class="dg-bar"><button type="button" class="kit-btn" id="dg-skill" ${skillUsed ? "disabled" : ""}>${SKILL[cid][0]}</button><button type="button" class="kit-btn alt" id="dg-power">${power ? "💥 Power: ON" : "⚔️ Normal hit"}</button><button type="button" class="kit-btn alt" id="dg-pot" ${potions ? "" : "disabled"}>🧪 ×${potions}</button></div>
+        <div class="kit-sub" style="text-align:center;margin:0 0 6px">Weak to: <b>${SUBJ[WEAK[m[1]]] || "everything"}</b>${m[1] === "Dungeon Dragon" ? " · 🔥 breathes fire every 3rd turn!" : ""}</div>
         <div class="kit-card"><div class="kit-q" id="dg-q"></div><div class="kit-opts" id="dg-opts"></div><div class="kit-sub" id="dg-msg" style="text-align:center;margin:8px 0 0;min-height:1.2em"></div></div>`;
+      $("dg-skill").onclick = () => { if (skillUsed || locked) return; skillUsed = true; $("dg-skill").disabled = true;
+        if (cid === "knight") { block = true; $("dg-msg").textContent = "🛡️ Ready to block the next hit!"; }
+        else if (cid === "wizard") { fire = true; $("dg-msg").textContent = "🔥 Fireball charged!"; }
+        else { mHp -= 5; shake("dg-mo"); $("dg-msg").textContent = "🏹 Arrow Rain deals 5!"; if (mHp <= 0) { locked = true; setTimeout(cleared, 700); } } };
+      $("dg-power").onclick = () => { if (locked) return; power = !power; $("dg-power").textContent = power ? "💥 Power: ON" : "⚔️ Normal hit"; ask(); };
+      $("dg-pot").onclick = () => { if (!potions || locked) return; potions--; hp = Math.min(maxHp, hp + 8); draw(); ask(); $("dg-msg").textContent = "🧪 +8 HP!"; };
     }
     function ask() {
-      q = K.question({ difficulty: floor >= 4 ? "hard" : "medium" });
+      const w = WEAK[mon()[1]]; q = K.question({ difficulty: power || floor >= 4 ? "hard" : "medium", subject: Math.random() < 0.4 ? w : undefined });
       $("dg-q").textContent = q.prompt;
       const box = $("dg-opts"); box.innerHTML = "";
       q.options.forEach(o => { const b = document.createElement("button"); b.className = "kit-opt"; b.type = "button"; b.textContent = o; b.onclick = () => answer(b, o); box.appendChild(b); });
@@ -73,16 +87,20 @@ async function init() {
       K.record("dungeon", q.key, ok, q);
       btn.classList.add(ok ? "right" : "wrong");
       if (ok) {
-        let dmg = atk + (cid === "wizard" && q.subject !== "math" ? 2 : 0);
-        const isCrit = Math.random() < crit; if (isCrit) dmg *= 2;
+        let dmg = atk + (cid === "wizard" && q.subject !== "math" ? 2 : 0) + (q.subject === WEAK[mon()[1]] ? 2 : 0);
+        if (power) dmg *= 2; if (fire) { dmg *= 3; fire = false; }
+        const isCrit = Math.random() < crit; if (isCrit) { dmg *= 2; if (Math.random() < 0.5) { potions++; } }
         mHp -= dmg; shake("dg-mo");
         $("dg-msg").textContent = `${isCrit ? "💥 Critical! " : "⚔️ "}You deal ${dmg}!`;
       } else {
-        let dmg = 3 + floor + (floor === FLOORS ? 2 : 0);
+        let dmg = 3 + floor + (floor === FLOORS ? 2 : 0) + (power ? 2 : 0);
         if (cid === "knight") dmg = Math.max(1, Math.round(dmg * 0.7));
+        if (block) { block = false; dmg = 0; }
         hp -= dmg; shake("dg-me");
-        $("dg-msg").textContent = `The ${mon()[1]} hits you for ${dmg}! (Answer: ${q.correctLabel})`;
+        $("dg-msg").textContent = dmg ? `The ${mon()[1]} hits you for ${dmg}! (Answer: ${q.correctLabel})` : `🛡️ Blocked! (Answer: ${q.correctLabel})`;
       }
+      turn++;
+      if (mon()[1] === "Dungeon Dragon" && turn % 3 === 0 && mHp > 0) { const f = ok ? 1 : 3; hp -= f; $("dg-msg").textContent += ` 🔥 Fire breath! -${f}`; }
       setTimeout(() => {
         if (hp <= 0) return end(false);
         if (mHp <= 0) return cleared();
@@ -90,22 +108,33 @@ async function init() {
       }, 900);
     }
     async function cleared() {
-      if (floor >= FLOORS) return end(true);
+      if (floor === FLOORS && !endless) {
+        $("dg-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">🐲💀</div><h2>Dragon defeated!</h2><p class="kit-sub">Stairs lead even deeper… Endless Depths has tougher monsters and more coins.</p><button class="kit-btn block" id="dg-deep" type="button">⬇️ Go deeper</button><button class="kit-btn alt block" id="dg-win" type="button">🏆 Claim victory</button></div></div>`;
+        $("dg-deep").onclick = () => { endless = true; $("dg-overlay").innerHTML = ""; cleared(); }; $("dg-win").onclick = () => { $("dg-overlay").innerHTML = ""; end(true); }; return;
+      }
       hp = Math.min(maxHp, hp + 6 + herb);
       let lootMsg = "";
       if (Math.random() < 0.7) {
         const pool = GEAR.filter(g => !owned[g.id]);
         if (pool.length) { const g = pool[K.rand(0, pool.length - 1)]; owned[g.id] = true; newLoot.push(g); AIGLeaderboard.saveDungeon(g.id, floor); lootMsg = `${g.emoji} You found: <b>${K.esc(g.name)}</b>!`; }
       }
-      $("dg-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">🎉</div><h2>Floor ${floor} cleared!</h2><p class="kit-sub">You heal a little (${hp}/${maxHp} ❤️).<br>${lootMsg}</p><button class="kit-btn block" id="dg-go">Descend ⬇️</button></div></div>`;
-      $("dg-go").onclick = () => { $("dg-overlay").innerHTML = ""; floor++; spawn(); };
+      $("dg-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">🎉</div><h2>Floor ${floor} cleared!</h2><p class="kit-sub">You heal a little (${hp}/${maxHp} ❤️).<br>${lootMsg}</p><div class="kit-sub" style="font-weight:800">Pick a door before you descend:</div>
+        <div class="dg-doors"><button type="button" data-door="t">💰<small>Treasure: answer 1 question for a potion</small></button><button type="button" data-door="f">⛲<small>Fountain: full heal, next monster stronger</small></button><button type="button" data-door="x">🚪<small>Plain stairs: go straight on</small></button></div></div></div>`;
+      $("dg-overlay").querySelectorAll("[data-door]").forEach(b => b.onclick = () => {
+        const d = b.dataset.door;
+        if (d === "f") { hp = maxHp; nextBuff = 6; }
+        if (d === "t") { const tq = K.question({ difficulty: "medium" }); $("dg-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">💰</div><div class="kit-q">${K.esc(tq.prompt)}</div><div class="kit-opts">${tq.options.map(o => `<button class="kit-opt" type="button" data-o="${K.esc(o)}">${K.esc(o)}</button>`).join("")}</div></div></div>`;
+          $("dg-overlay").querySelectorAll(".kit-opt").forEach(x => x.onclick = () => { const ok = x.dataset.o === tq.correctLabel; K.record("dungeon", tq.key, ok, tq); if (ok) potions++; x.classList.add(ok ? "right" : "wrong"); setTimeout(() => { $("dg-overlay").innerHTML = ""; floor++; spawn(); }, 800); }); return; }
+        $("dg-overlay").innerHTML = ""; floor++; spawn();
+      });
     }
+    let endless = false;
     async function end(won) {
-      const reached = won ? FLOORS : floor - 1;
+      const reached = won ? Math.max(FLOORS, floor) : floor - 1;
       AIGLeaderboard.saveDungeon(null, reached);
-      const coins = reached * 3 + (won ? 10 : 0);
+      const coins = Math.min(30, reached * 3 + (won ? 10 : 0));
       $("dg-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${won ? "🏆" : "💀"}</div><h2>${won ? "Dungeon conquered!" : "Defeated…"}</h2>
-        <p class="kit-sub">${won ? "You beat the Dungeon Dragon!" : `You made it to floor ${floor}.`} ${newLoot.length ? `<br>New gear: ${newLoot.map(g => g.emoji).join(" ")}` : ""}</p><div class="kit-bonus" id="dg-bonus"></div>
+        <p class="kit-sub">${won ? "You beat the Dungeon Dragon!" : `You made it to floor ${floor}${floor > FLOORS ? " in the Endless Depths" : ""}.`} ${newLoot.length ? `<br>New gear: ${newLoot.map(g => g.emoji).join(" ")}` : ""}</p><div class="kit-bonus" id="dg-bonus"></div>
         <button class="kit-btn block" onclick="location.reload()">Another run</button><a class="kit-btn alt block" href="../game-room/">Game Room</a></div></div>`;
       K.finish("dungeon", coins, $("dg-bonus"));
     }
