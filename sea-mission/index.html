@@ -21,6 +21,10 @@
   .sm-ctrl{display:flex;gap:8px;justify-content:center;margin-bottom:8px}
   .sm-ctrl button{flex:1;max-width:120px}
 
+  .sm-mis{margin:0 14px 6px;font-weight:800;font-size:.8rem}
+  .sm-kraken{position:absolute;top:2%;left:50%;transform:translateX(-50%);font-size:4rem;z-index:3}.sm-kraken.hit{animation:smK .3s}@keyframes smK{50%{transform:translateX(-50%) scale(1.2);filter:brightness(2)}}
+  .sm-warn{position:absolute;top:60%;width:33%;text-align:center;font-size:2rem;animation:smW .4s infinite alternate}@keyframes smW{to{opacity:.3}}
+  #sm-sea.fog::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(220,230,240,.8),rgba(220,230,240,.1) 60%);pointer-events:none}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="sea-mission";</script>
@@ -46,6 +50,6 @@
 <script src="../vehicles.js"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Sea Mission',accent:'#0369a1',bg:'linear-gradient(180deg,#d8f0ff,#8fd0f2)'});</script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

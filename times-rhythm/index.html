@@ -23,6 +23,10 @@
   .tr-prob{position:absolute;top:8px;left:0;right:0;text-align:center;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.9rem;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5);z-index:3}
   .tr-pick{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
 
+  .tr-pick{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center;font-weight:800;font-size:.8rem;margin-top:6px}.tr-pick button{border:2px solid #1b1b1b;background:#fff;padding:4px 10px;font-weight:800;cursor:pointer}.tr-pick button.on{background:#7a3fc2;color:#fff}
+  .tr-stage.fever{box-shadow:0 0 0 4px #ff4dc4,0 0 20px #ff4dc4;animation:trFever .5s infinite alternate}@keyframes trFever{to{filter:hue-rotate(60deg)}}
+  .tr-dance{text-align:center;font-size:1.6rem}.tr-dance.d1{animation:trD 1s infinite}.tr-dance.d2{animation:trD .6s infinite}.tr-dance.d3{animation:trD .35s infinite}@keyframes trD{50%{transform:translateY(-6px) rotate(6deg)}}
+  .tr-rank{font-size:3rem;font-weight:800;color:#c0392b}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="times-rhythm";</script>
@@ -31,8 +35,8 @@
 <div class="kit-page" id="app">
   <div class="kit-top"><a href="../game-room/" class="kit-back">←</a><div class="kit-title">🎵 Times Rhythm</div></div>
 
-  <div class="kit-hud"><span>🎯 <b id="tr-hit">0</b>/<b id="tr-n">0</b></span><span>🔥 Combo <b id="tr-combo">0</b></span><span>❤️ <b id="tr-lives">3</b></span></div>
-  <div class="tr-stage" id="tr-stage"><div class="tr-prob" id="tr-prob"></div>
+  <div class="kit-hud"><span>🎯 <b id="tr-hit">0</b>/<b id="tr-n">0</b></span><span>🏅 <b id="tr-score">0</b></span><span>🔥 Combo <b id="tr-combo">0</b></span><span>❤️ <b id="tr-lives">3</b></span></div>
+  <div class="tr-dance" id="tr-dance">💃🕺</div><div class="tr-stage" id="tr-stage"><div class="tr-prob" id="tr-prob"></div>
     <div class="tr-lane" style="left:0"></div><div class="tr-lane" style="left:25%"></div><div class="tr-lane" style="left:50%"></div><div class="tr-lane" style="left:75%;border:0"></div>
     <div class="tr-line"></div><div class="tr-pulse" id="tr-pulse"></div></div>
   <div class="kit-sub" id="tr-msg" style="text-align:center;min-height:1.2em">Tap the note with the right answer before it passes the line!</div>
@@ -48,6 +52,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Times Rhythm',accent:'#6d28d9',bg:'linear-gradient(180deg,#ece7fb,#d5c9f5)'});</script>
-<script src="script.js"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>

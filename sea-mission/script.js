@@ -35,9 +35,17 @@ async function pick() {
   $("sm-go").onclick = () => { $("sm-overlay").innerHTML = ""; play(chosen, g.levels[chosen.id] || 1, (g.paints && g.paints[chosen.id]) || {}); };
 }
 
+// Audit batch 7: floating treasure (💰) and repair kits (🛟) you collect by steering into them, fog
+// waves where monsters hide as ❓ until they're close, a Kraken boss every 5th wave that slams a lane
+// (watch the ⚠️ and steer away), a torpedo on a 5-streak that clears a whole lane, a rare ghost ship
+// worth 3 kills, a mission for each voyage, and a best-wave record.
 function play(boat, level, paint) {
   const maxHull = 5;
-  const st = { hull: maxHull, lane: 1, wave: 1, kills: 0, objs: [], nextSpawn: 900, toSpawn: 0, pause: 0, pendingBegin: false, over: false, q: null, locked: false, id: 1 };
+  const st = { hull: maxHull, lane: 1, wave: 1, kills: 0, objs: [], nextSpawn: 900, toSpawn: 0, pause: 0, pendingBegin: false, over: false, q: null, locked: false, id: 1, gold: 0, streak: 0, kraken: null, sharks: 0 };
+  const MISSIONS = [["Sink 8 sharks 🦈", () => st.sharks >= 8], ["Collect 3 treasures 💰", () => st.gold >= 3], ["Reach wave 6 🌊", () => st.wave >= 6]];
+  const mission = MISSIONS[K.rand(0, MISSIONS.length - 1)];
+  const misEl = document.createElement("div"); misEl.className = "sm-mis"; $("sm-sea").before(misEl);
+  const drawMis = () => { misEl.textContent = `🎯 Mission: ${mission[0]} ${mission[1]() ? "✅" : ""} · 💰 ${st.gold}${st.streak >= 5 ? " · 🚀 torpedo ready!" : ""}`; };
   const power = level >= 5 ? 3 : level >= 3 ? 2 : 1;
   const sea = $("sm-sea"), boatEl = $("sm-boat");
   boatEl.innerHTML = boat.svg;
@@ -49,15 +57,22 @@ function play(boat, level, paint) {
   $("sm-right").onclick = () => setLane(st.lane + 1);
   document.addEventListener("keydown", e => { if (e.key === "ArrowLeft") setLane(st.lane - 1); if (e.key === "ArrowRight") setLane(st.lane + 1); });
 
-  function beginWave() { st.toSpawn = 4 + st.wave * 2; st.nextSpawn = 900; $("sm-wave").textContent = st.wave; $("sm-msg").textContent = `🌊 Wave ${st.wave}${st.wave % 5 === 0 ? " — a big swarm!" : ""}`; }
+  function beginWave() {
+    st.toSpawn = 4 + st.wave * 2; st.nextSpawn = 900; $("sm-wave").textContent = st.wave;
+    st.fog = st.wave % 3 === 0; sea.classList.toggle("fog", st.fog);
+    $("sm-msg").textContent = `🌊 Wave ${st.wave}${st.wave % 5 === 0 ? " — the KRAKEN rises!" : st.fog ? " — thick fog!" : ""}`;
+    if (st.wave % 5 === 0) { const el = document.createElement("div"); el.className = "sm-kraken"; el.textContent = "🦑"; sea.appendChild(el); st.kraken = { hp: 5 + st.wave / 5, el, next: performance.now() + 3000, warn: -1 }; }
+    drawMis();
+  }
   function spawn() {
-    const lane = K.rand(0, 2), isWave = Math.random() < 0.28;
+    const lane = K.rand(0, 2), r = Math.random(), isWave = r < 0.26, gold = !isWave && r < 0.36, kit = !isWave && !gold && r < 0.4, ghost = !isWave && !gold && !kit && r > 0.97;
     const el = document.createElement("div");
     el.className = "sm-obj"; el.style.left = (lane * 33.33) + "%"; el.style.top = "-6%";
-    el.textContent = isWave ? "🌊" : MONSTERS[K.rand(0, MONSTERS.length - 1)];
+    const mon = ghost ? "👻" : MONSTERS[K.rand(0, MONSTERS.length - 1)];
+    el.textContent = isWave ? "🌊" : gold ? "💰" : kit ? "🛟" : (st.fog ? "❓" : mon);
     if (isWave) el.style.fontSize = "2.6rem";
     sea.appendChild(el);
-    st.objs.push({ id: st.id++, lane, y: -6, wave: isWave, el });
+    st.objs.push({ id: st.id++, lane, y: -6, wave: isWave, gold, kit, ghost, mon, el });
   }
   function nextQuestion() {
     st.q = K.question({ difficulty: st.wave > 4 ? "hard" : "medium" }); st.locked = false;
@@ -72,10 +87,15 @@ function play(boat, level, paint) {
     K.record("sea-mission", st.q.key, ok, st.q);
     $("sm-opts").querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.dataset.o === st.q.correctLabel) x.classList.add("right"); });
     if (ok) {
-      const targets = st.objs.filter(o => !o.wave).sort((a, b) => b.y - a.y).slice(0, power); // closest monsters first
-      targets.forEach(t => { boom(t.lane, t.y); t.el.remove(); st.objs = st.objs.filter(o => o !== t); st.kills++; });
+      st.streak++;
+      if (st.kraken) { st.kraken.hp -= power; boom(1, 8); st.kraken.el.classList.remove("hit"); void st.kraken.el.offsetWidth; st.kraken.el.classList.add("hit");
+        if (st.kraken.hp <= 0) { st.kraken.el.remove(); st.kraken = null; st.kills += 5; K.toastAdv("You defeated the Kraken!"); } }
+      let targets = st.objs.filter(o => !o.wave && !o.gold && !o.kit).sort((a, b) => b.y - a.y).slice(0, power); // closest monsters first
+      if (st.streak % 5 === 0) { const lane = (targets[0] || { lane: st.lane }).lane; targets = st.objs.filter(o => !o.wave && !o.gold && !o.kit && o.lane === lane); $("sm-msg").textContent = "🚀 TORPEDO! The whole lane is cleared!"; }
+      targets.forEach(t => { boom(t.lane, t.y); t.el.remove(); st.objs = st.objs.filter(o => o !== t); st.kills += t.ghost ? 3 : 1; if (t.mon === "🦈") st.sharks++; });
       $("sm-kills").textContent = st.kills; $("sm-msg").textContent = targets.length ? `💥 Cannon fired${power > 1 ? ` (Lv ${level}: ${power} shots)` : ""}!` : "No monsters in range yet — nice aim!";
-    } else { btn.classList.add("wrong"); $("sm-msg").textContent = `The cannon jammed! Answer: ${st.q.correctLabel}`; }
+    } else { st.streak = 0; btn.classList.add("wrong"); $("sm-msg").textContent = `The cannon jammed! Answer: ${st.q.correctLabel}`; }
+    drawMis();
     setTimeout(nextQuestion, ok ? 500 : 1600);
   }
   let last = performance.now();
@@ -84,13 +104,18 @@ function play(boat, level, paint) {
     const now = performance.now(), dt = Math.min(120, now - last); last = now;
     if (st.pause > 0) { st.pause -= dt; if (st.pause <= 0 && st.pendingBegin) { st.pendingBegin = false; beginWave(); } return; }
     if (st.toSpawn > 0) { st.nextSpawn -= dt; if (st.nextSpawn <= 0) { spawn(); st.toSpawn--; st.nextSpawn = Math.max(700, 2300 - st.wave * 140) + K.rand(0, 500); } }
-    else if (!st.objs.length) { st.wave++; st.pause = 1600; st.pendingBegin = true; $("sm-msg").textContent = `✅ Wave ${st.wave - 1} cleared!`; return; }
+    else if (!st.objs.length && !st.kraken) { st.wave++; st.pause = 1600; st.pendingBegin = true; $("sm-msg").textContent = `✅ Wave ${st.wave - 1} cleared!`; return; }
+    if (st.kraken) { const k = st.kraken;
+      if (k.warn < 0 && now > k.next - 1200) { k.warn = K.rand(0, 2); const w = document.createElement("div"); w.className = "sm-warn"; w.textContent = "⚠️"; w.style.left = (k.warn * 33.33) + "%"; sea.appendChild(w); k.wEl = w; }
+      if (now > k.next) { if (k.wEl) k.wEl.remove(); if (st.lane === k.warn) { st.hull--; hull(); boom(k.warn, 80); $("sm-msg").textContent = "🦑 The Kraken slammed your boat!"; if (st.hull <= 0) return end(); } else $("sm-msg").textContent = "🦑 Missed you! Nice steering."; k.warn = -1; k.next = now + 3200; } }
     const speed = Math.min(30, 12 + st.wave * 2.2); // % of the sea per second
     st.objs.forEach(o => {
       o.y += speed * (o.wave ? 1.25 : 1) * dt / 1000;
       o.el.style.top = o.y + "%";
+      if (st.fog && !o.wave && !o.gold && !o.kit && o.y > 40 && o.el.textContent === "❓") o.el.textContent = o.mon;
       if (o.y >= 84) {
         st.objs = st.objs.filter(x => x !== o); o.el.remove();
+        if (o.gold || o.kit) { if (o.lane === st.lane) { if (o.gold) { st.gold++; $("sm-msg").textContent = "💰 Treasure collected!"; } else { st.hull = Math.min(maxHull, st.hull + 1); hull(); $("sm-msg").textContent = "🛟 Hull repaired!"; } drawMis(); } return; }
         if (o.wave) { if (o.lane === st.lane) { st.hull--; $("sm-msg").textContent = "🌊 A wave hit your boat!"; boom(o.lane, 84); hull(); } else $("sm-msg").textContent = "🌊 You steered clear of a wave!"; }
         else { st.hull--; $("sm-msg").textContent = "🦈 A monster bumped your hull!"; boom(o.lane, 84); hull(); }
         if (st.hull <= 0) end();
@@ -100,10 +125,12 @@ function play(boat, level, paint) {
 
   async function end() {
     st.over = true; clearInterval(loop);
-    const coins = Math.min(22, Math.floor(st.kills * 1.2) + st.wave);
-    $("sm-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${st.wave >= 5 ? "🏆" : "⛵"}</div><h2>Your boat sank!</h2><p class="kit-sub">You reached wave ${st.wave} and sank ${st.kills} monster${st.kills === 1 ? "" : "s"} with ${K.esc(boat.name)} (Lv ${level}).</p><div class="kit-bonus" id="sm-bonus"></div>
+    const done = mission[1]();
+    const coins = Math.min(30, Math.floor(st.kills * 1.2) + st.wave + st.gold * 2 + (done ? 5 : 0));
+    try { if (st.wave > Number(localStorage.getItem("sm_best") || 0)) localStorage.setItem("sm_best", String(st.wave)); } catch (e) {}
+    $("sm-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${st.wave >= 5 ? "🏆" : "⛵"}</div><h2>Your boat sank!</h2><p class="kit-sub">You reached wave ${st.wave} and sank ${st.kills} monster${st.kills === 1 ? "" : "s"} with ${K.esc(boat.name)} (Lv ${level}).<br>💰 ${st.gold} treasure · 🎯 ${mission[0]} ${done ? "✅ (+5)" : "❌"}</p><div class="kit-bonus" id="sm-bonus"></div>
       <button class="kit-btn block" onclick="location.reload()">Sail again</button><a class="kit-btn alt block" href="../garage/">🔧 Upgrade my boat</a></div></div>`;
     K.finish("sea-mission", coins, $("sm-bonus"));
   }
-  nextQuestion(); beginWave();
+  nextQuestion(); beginWave(); drawMis();
 }
