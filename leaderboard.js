@@ -6372,15 +6372,32 @@
 
   // ---- Math Race meta: garage upgrades, per-track trophies, daily missions.
   // One document under players/{id}/mathRaceMeta (no new top-level path).
-  const MR_META_DEFAULT = { garage: { engine: 0, tires: 0, nitro: 0 }, tracks: {}, wins: 0, races: 0, cups: 0, missions: { day: "", list: [] }, streak: 0, lastDay: "" };
+  const MR_META_DEFAULT = {
+    garage: { engine: 0, tires: 0, nitro: 0 }, tracks: {}, wins: 0, races: 0, cups: 0, missions: { day: "", list: [] }, streak: 0, lastDay: "",
+    // Pack 2
+    name: "", xp: 0, cars: {}, parts: { spoiler: 0, magnet: 0, shield: 0 }, look2: { plate: "", glow: "none" },
+    skills: { speed: 0, brain: 0, luck: 0 }, loadout: { brain: ["freeze", "fifty"], passive: "second" }, mastered: {}, passClaimed: {},
+    daily: { date: "", best: 0 }, weekly: { week: "", pts: 0 }, prevWeekly: { week: "", pts: 0 }, tourClaimed: "", survivalBest: 0, tutorial: false
+  };
   async function getMathRaceMeta() {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     const base = JSON.parse(JSON.stringify(MR_META_DEFAULT));
     if (!player || player.role === "parent") return base;
     const snap = await aigDb.ref(`players/${player.id}/mathRaceMeta`).get();
     const d = snap.exists() ? snap.val() : {};
-    const out = Object.assign(base, d); out.garage = Object.assign({ engine: 0, tires: 0, nitro: 0 }, d.garage || {}); out.tracks = d.tracks || {};
+    const out = Object.assign(base, d);
+    ["garage", "parts", "look2", "skills", "loadout", "daily", "weekly", "prevWeekly"].forEach(k => { out[k] = Object.assign({}, MR_META_DEFAULT[k], d[k] || {}); });
+    out.loadout.brain = Array.isArray(d.loadout && d.loadout.brain) ? d.loadout.brain : MR_META_DEFAULT.loadout.brain.slice();
+    ["tracks", "cars", "mastered", "passClaimed"].forEach(k => { out[k] = d[k] || {}; });
+    out.missions = d.missions || base.missions;
     return out;
+  }
+  // One-time read of everyone's Math Race meta for the Daily / Weekly boards (same
+  // approach as getWeeklyLeaderboard: roster is small, read only on demand).
+  async function getMathRaceBoard() {
+    const snap = await aigDb.ref("players").get();
+    if (!snap.exists()) return [];
+    return Object.entries(snap.val()).map(([id, data]) => { const m = data.mathRaceMeta; return m ? { id, name: m.name || id, daily: m.daily || {}, weekly: m.weekly || {}, prevWeekly: m.prevWeekly || {}, xp: m.xp || 0 } : null; }).filter(Boolean);
   }
   async function saveMathRaceMeta(data) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
@@ -7307,7 +7324,7 @@
     setQuestionBounty, claimQuestionBounty, BOUNTY_MIN, BOUNTY_MAX,
     getClassFund, donateClassFund, claimClassFundTier, getClassBoss, claimClassBoss, getTeamBattle, claimTeamReward,
     getZoneLevel, recordZoneResult, claimArcadeReward,
-    getMathRaceGhost, saveMathRaceGhost, getMathRaceMeta, saveMathRaceMeta, spendMathRaceCoins, getBlockAvatar, saveBlockAvatar, claimV2Welcome, getStoryRead, markStoryRead, getCalendarMonth, STORY_READ_REWARD,
+    getMathRaceGhost, saveMathRaceGhost, getMathRaceMeta, saveMathRaceMeta, getMathRaceBoard, spendMathRaceCoins, getBlockAvatar, saveBlockAvatar, claimV2Welcome, getStoryRead, markStoryRead, getCalendarMonth, STORY_READ_REWARD,
     STREAK_FREEZE_COST, STREAK_FREEZE_MAX, PIGGY_CAP, PET_ADVENTURE_COST, WHEEL_EXTRA_COST, BOOSTER_COST,
     getSkinPrefs, awardMiniGame,
     getTown, placeBuilding, removeBuilding, listTowns, likeTown, claimTownLikes,

@@ -17,7 +17,7 @@
 <link rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" />
 
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="style.css?v=2" />
 <link rel="stylesheet" href="bw-theme.css?v=3" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="race";</script>
 
@@ -147,6 +147,14 @@
             <button class="seg-btn" data-cup="1">On</button>
           </div>
         </div>
+        <div class="setting-row">
+          <span class="setting-label">🎮 Mode</span>
+          <div class="seg seg-compact" id="rmode-seg">
+            <button class="seg-btn active" data-rmode="race">🏁 Race</button>
+            <button class="seg-btn" data-rmode="daily">📅 Today</button>
+            <button class="seg-btn" data-rmode="survival">♾️ Survival</button>
+          </div>
+        </div>
         <button id="btn-garage-pair" class="ghost-btn">🔧 Garage &amp; Missions</button>
 
       </div>
@@ -213,6 +221,10 @@
         <button class="vehicle-opt" data-vehicle="skateboard" data-cost="coins:10">🛹</button>
         <button class="vehicle-opt" data-vehicle="helicopter" data-cost="coins:25">🚁</button>
         <button class="vehicle-opt" data-vehicle="rocket" data-cost="gems:3">🚀</button>
+        <button class="vehicle-opt" data-vehicle="minecart" data-cost="coins:18">🛒</button>
+        <button class="vehicle-opt" data-vehicle="boat" data-cost="coins:22">⛵</button>
+        <button class="vehicle-opt" data-vehicle="pig" data-cost="coins:12">🐷</button>
+        <button class="vehicle-opt" data-vehicle="glider" data-cost="gems:3">🦅</button>
       </div>
     </div>
   </section>
@@ -443,7 +455,7 @@
 
 <div class="mr-overlay hidden" id="mr-garage"><div class="mr-card">
   <h2>🔧 Garage &amp; Missions</h2>
-  <div class="seg seg-compact" id="mr-garage-tabs"><button class="seg-btn active" data-t="up">⚙️ Upgrades</button><button class="seg-btn" data-t="look">🎨 Style</button><button class="seg-btn" data-t="mis">📋 Missions</button><button class="seg-btn" data-t="cup">🏆 Trophies</button></div>
+  <div class="seg seg-compact" id="mr-garage-tabs"><button class="seg-btn active" data-t="up">⚙️ Upgrades</button><button class="seg-btn" data-t="look">🎨 Style</button><button class="seg-btn" data-t="mis">📋 Missions</button><button class="seg-btn" data-t="cars">🚗 Cars</button><button class="seg-btn" data-t="skills">🧠 Skills</button><button class="seg-btn" data-t="pass">🎟️ Pass</button><button class="seg-btn" data-t="board">📅 Boards</button><button class="seg-btn" data-t="cup">🏆 Trophies</button><button class="seg-btn" data-t="more">⚙️ More</button></div>
   <div id="mr-garage-body"></div>
   <button id="mr-garage-close" class="primary-btn">Close</button>
 </div></div>
@@ -454,4 +466,5 @@
 
 <!-- Game logic -->
 <script src="script.js"></script>
-<script src="race-plus.js?v=1"></script>
+<script src="race-plus.js?v=2"></script>
+<script src="race-plus2.js?v=2"></script>
