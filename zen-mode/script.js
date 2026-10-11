@@ -17,6 +17,12 @@ const lsz = (k, d) => { try { const v = localStorage.getItem(k); return v === nu
 const lszw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 const PLANTS = ["🌱", "🌿", "🌷", "🌼", "🌻", "🍀", "🌸", "🌾"], RARE = ["🌳", "🎋", "🪷", "🌺", "🍄"];
 const today = () => new Date().toISOString().slice(0, 10);
+// Audit round 2: the garden has seasons (spring / rainy / summer / snowy, rotating each week), animal
+// visitors that come once the garden is big enough, a pond that grows every 25 plants, a
+// "just the garden" rest view with no questions, and a choice of breathing rhythm.
+const SEASONS = [["🌸", "Spring", "zm-s-spring"], ["🌧️", "Rainy season", "zm-s-rain"], ["☀️", "Summer", "zm-s-sun"], ["❄️", "Snowy season", "zm-s-snow"]];
+const season = () => SEASONS[Math.floor(Date.now() / (7 * 86400000)) % 4];
+const GUESTS = ["🦋", "🐇", "🐦", "🦔", "🐞", "🐿️"];
 
 // ---- ambience: filtered noise, no audio files ----
 let amb = null;
@@ -40,9 +46,11 @@ function start() {
   let planted = lsz("zm_day", "") === today() ? Number(lsz("zm_today", "0")) : 0;
 
   function drawGarden() {
-    const show = garden.slice(-48);
-    $("zm-garden").innerHTML = `<div class="zm-pond">${streak >= 5 ? "🐟" : ""}${streak >= 10 ? " 🐠" : ""}💧</div>${show.map(p => `<i>${p}</i>`).join("")}${garden.length ? "" : '<small>Your garden is waiting — every first-try answer plants something.</small>'}`;
-    $("zm-sub").textContent = `🌼 ${planted} planted today · garden ${garden.length}`;
+    const show = garden.slice(-48), se = season(), pondLv = Math.min(4, Math.floor(garden.length / 25));
+    const guests = garden.length >= 15 ? GUESTS.slice(0, Math.min(GUESTS.length, Math.floor(garden.length / 15))) : [];
+    const g = $("zm-garden"); SEASONS.forEach(x => g.classList.remove(x[2])); g.classList.add(se[2]);
+    g.innerHTML = `<div class="zm-season">${se[0]} ${se[1]}</div><div class="zm-pond" style="min-width:${40 + pondLv * 18}px">${"🐟".repeat(pondLv)}${streak >= 5 ? "🐟" : ""}${streak >= 10 ? " 🐠" : ""}💧</div>${show.map(p => `<i>${p}</i>`).join("")}${guests.map((x, k) => `<b class="zm-guest" style="animation-delay:${k * 0.7}s">${x}</b>`).join("")}${garden.length ? "" : '<small>Your garden is waiting — every first-try answer plants something.</small>'}`;
+    $("zm-sub").textContent = `🌼 ${planted} planted today · garden ${garden.length}${guests.length ? ` · ${guests.length} visitor${guests.length === 1 ? "" : "s"}` : garden.length < 15 ? ` · visitors come at 15 plants` : ""}`;
   }
   function plant() {
     const n = garden.length + 1, rare = n % 10 === 0;
@@ -55,7 +63,8 @@ function start() {
     const o = document.createElement("div"); o.className = "kit-overlay";
     o.innerHTML = `<div class="kit-modal"><h2>Let's breathe</h2><div class="zm-breath"></div><p class="kit-sub" id="zm-bt">Breathe in…</p></div>`;
     document.body.appendChild(o); let n = 0;
-    const t = setInterval(() => { n++; const el = o.querySelector("#zm-bt"); if (el) el.textContent = n % 2 ? "…and breathe out" : "Breathe in…"; if (n >= 4) { clearInterval(t); o.remove(); after(); } }, 2500);
+    const slow = lsz("zm_breath", "calm") === "slow";
+    const t = setInterval(() => { n++; const el = o.querySelector("#zm-bt"); if (el) el.textContent = n % 2 ? "…and breathe out" : "Breathe in…"; if (n >= 4) { clearInterval(t); o.remove(); after(); } }, slow ? 4000 : 2500);
   }
   function next() {
     misses = 0;
@@ -80,8 +89,11 @@ function start() {
     }
   }
   $("zm-tools").innerHTML = `<div class="zm-row"><span>Practise:</span>${[["mix", "🎲 Mix"], ["math", "➗ Maths"], ["lang", "📖 Words"], ["sci", "🔭 Science"]].map(([k, l]) => `<button type="button" class="zm-chip ${subject === k ? "on" : ""}" data-s="${k}">${l}</button>`).join("")}</div>
+    <div class="zm-row"><span>Breathing:</span><button type="button" class="zm-chip ${lsz("zm_breath", "calm") === "calm" ? "on" : ""}" data-b="calm">🫧 Calm</button><button type="button" class="zm-chip ${lsz("zm_breath", "calm") === "slow" ? "on" : ""}" data-b="slow">🐢 Extra slow</button><button type="button" class="zm-chip" id="zm-rest">🌿 Just the garden</button></div>
     <div class="zm-row"><span>Sound:</span>${[["off", "🔇 Off"], ["rain", "🌧️ Rain"], ["stream", "🏞️ Stream"], ["fire", "🔥 Campfire"]].map(([k, l]) => `<button type="button" class="zm-chip" data-a="${k}">${l}</button>`).join("")}</div>`;
   $("zm-tools").querySelectorAll("[data-s]").forEach(b => b.onclick = () => { subject = b.dataset.s; lszw("zm_subject", subject); $("zm-tools").querySelectorAll("[data-s]").forEach(x => x.classList.toggle("on", x === b)); next(); });
+  $("zm-tools").querySelectorAll("[data-b]").forEach(b => b.onclick = () => { lszw("zm_breath", b.dataset.b); $("zm-tools").querySelectorAll("[data-b]").forEach(x => x.classList.toggle("on", x === b)); });
+  $("zm-rest").onclick = () => { const on = document.body.classList.toggle("zm-resting"); $("zm-rest").classList.toggle("on", on); $("zm-rest").textContent = on ? "📝 Back to questions" : "🌿 Just the garden"; };
   $("zm-tools").querySelectorAll("[data-a]").forEach(b => b.onclick = () => { ambience(b.dataset.a); $("zm-tools").querySelectorAll("[data-a]").forEach(x => x.classList.toggle("on", x === b && b.dataset.a !== "off")); });
   $("zm-done").onclick = async () => {
     ambience("off");

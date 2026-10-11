@@ -53,8 +53,9 @@ async function load() {
     const mine = me ? teams.find(t => t.members.some(m => m.id === me.id)) : null;
     const myRow = mine && mine.members.find(m => m.id === me.id);
     $("cb-sub").innerHTML = `Week of ${week} · ends in <b>${weekEndsIn()}</b> · whole class: <b>${total}</b> right answers`;
-    $("cb-me").innerHTML = mine ? `<div class="cb-mine" style="border-color:${mine.color}"><b>You're on ${mine.emoji} ${K.esc(mine.name)}!</b><br>You added <b>${myRow.score}</b> this week · #${mine.members.indexOf(myRow) + 1} in your team <a class="kit-btn" href="../game-room/" style="margin-top:8px;display:inline-block">⚔️ Help my team</a></div>`
+    $("cb-me").innerHTML = mine ? `<div class="cb-mine" style="border-color:${mine.color}"><b>You're on ${mine.emoji} ${K.esc(mine.name)}!</b><br>You added <b>${myRow.score}</b> this week · #${mine.members.indexOf(myRow) + 1} in your team <div class="cb-goal">🎯 Your weekly target: ${Math.min(myRow.score, 30)}/30<div class="kit-bar"><i style="width:${Math.min(100, myRow.score / 30 * 100)}%;background:${mine.color}"></i></div></div><button type="button" class="kit-btn" id="cb-sprint" style="margin-top:8px">⚔️ 5-question sprint for my team</button> <a class="kit-btn alt" href="../game-room/" style="margin-top:8px;display:inline-block">🎮 Play a game</a></div>`
       : `<div class="cb-mine"><b>Answer one question in any game to join a team!</b><br><small>Your team is picked for you so it's always fair.</small> <a class="kit-btn" href="../game-room/" style="margin-top:8px;display:inline-block">🎮 Play a game</a></div>`;
+    const sb = $("cb-sprint"); if (sb) sb.onclick = () => sprint(mine);
     $("cb-terr").innerHTML = `<div class="cb-h">🗺️ Territory</div>${territory(teams)}`;
     $("cb-list").innerHTML = ranked.map((t, i) => {
       const goal = Math.max(100, t.members.length * 40), lvl = Math.floor(t.score / 100) + 1, mvp = t.members[0];
@@ -69,6 +70,19 @@ async function load() {
     window.__cbPrev = Object.fromEntries(teams.map(t => [t.id, t.score]));
     $("cb-feed").innerHTML = feed.length ? `<div class="cb-h">📣 Just now</div>${feed.map(f => `<div class="cb-f">${K.esc(f)}</div>`).join("")}` : "";
   } catch (e) { $("cb-sub").textContent = "Couldn't load scores — check the connection."; }
+}
+// Audit round 2: a 5-question sprint right on the board (every right answer counts for your team
+// this week, so you can help without leaving) and a personal weekly target of 30.
+function sprint(team) {
+  let i = 0, right = 0;
+  const o = document.createElement("div"); o.className = "kit-overlay"; document.body.appendChild(o);
+  const ask = () => {
+    if (i >= 5) { o.innerHTML = `<div class="kit-modal"><div class="kit-big">${team.emoji}</div><h2>+${right} for ${K.esc(team.name)}!</h2><p class="kit-sub">The board updates in a moment.</p><button class="kit-btn block" id="cb-sd">Back to the board</button></div>`; o.querySelector("#cb-sd").onclick = () => { o.remove(); load(); }; return; }
+    const q = K.question({ difficulty: "medium" });
+    o.innerHTML = `<div class="kit-modal"><div class="kit-sub" style="font-weight:800">${team.emoji} Sprint ${i + 1}/5 · ${right} right</div><div class="kit-q">${K.esc(q.prompt)}</div><div class="kit-opts">${q.options.map(x => `<button class="kit-opt" data-o="${K.esc(x)}">${K.esc(x)}</button>`).join("")}</div></div>`;
+    o.querySelectorAll(".kit-opt").forEach(b => b.onclick = () => { const ok = b.dataset.o === q.correctLabel; K.record("class-board", q.key, ok, q); o.querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.dataset.o === q.correctLabel) x.classList.add("right"); }); if (ok) right++; else b.classList.add("wrong"); setTimeout(() => { i++; ask(); }, 800); });
+  };
+  ask();
 }
 async function loadHistory() {
   try {

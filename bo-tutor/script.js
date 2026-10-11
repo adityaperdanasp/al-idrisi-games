@@ -21,6 +21,9 @@ function subjectOf(game) { return game === "language-arts" ? "lang" : game === "
 // ladder, a "why?" check after some right answers, comeback cheers, pick-any-topic list, accuracy bars,
 // a re-check reminder 2 days after a session, and a certificate when a topic is mastered.
 const DIFFS = ["easy", "easy", "medium", "medium", "hard"];
+// Audit round 2: a "spot Bo's mistake" round after question 2 (Bo shows his answer -- right or
+// wrong -- and you judge it), a 🧠 no-hint hero bonus for 5/5 without hints, and Bo's note cards:
+// every mastered topic adds a card to a collection shown on the topic list.
 const lst = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
 const lstw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 function explainQ(q) {
@@ -62,13 +65,14 @@ async function init() {
   $("bt-say").textContent = "I looked at your practice. These are the topics we can make stronger together — pick one!";
   const due = t => { const d = lst("bt_recheck_" + t, ""); return d && d <= new Date().toISOString().slice(0, 10); };
   const extra = ["times-6", "times-7", "times-8", "times-9", "times-12", "divby-6", "divby-7", "divby-8", "division", "multiplication", "rounding", "measurement"].filter(x => !weak.some(w => w.topic === x));
-  $("bt-body").innerHTML = weak.map((t, i) => `<button class="bt-topic" data-i="${i}"><span style="flex:1">${mastered[t.topic] ? "⭐ " : ""}${K.esc(pretty(t.topic))}${due(t.topic) ? " <b style='color:#c0392b'>· re-check due!</b>" : ""}<br><small>${K.esc(t.game.replace("-", " "))} · ${Math.round(t.acc * 100)}% right so far</small><span class="bt-acc"><i style="width:${Math.round(t.acc * 100)}%"></i></span></span><span>▶</span></button>`).join("")
+  let cards = []; try { cards = JSON.parse(lst("bt_cards", "[]")) || []; } catch (e) {}
+  $("bt-body").innerHTML = (cards.length ? `<div class="bt-cards">📇 Bo's notes: ${cards.map(c => `<span title="${K.esc(pretty(c))}">🗒️</span>`).join("")} <small>${cards.length} topic${cards.length === 1 ? "" : "s"} mastered</small></div>` : "") + weak.map((t, i) => `<button class="bt-topic" data-i="${i}"><span style="flex:1">${mastered[t.topic] ? "⭐ " : ""}${K.esc(pretty(t.topic))}${due(t.topic) ? " <b style='color:#c0392b'>· re-check due!</b>" : ""}<br><small>${K.esc(t.game.replace("-", " "))} · ${Math.round(t.acc * 100)}% right so far</small><span class="bt-acc"><i style="width:${Math.round(t.acc * 100)}%"></i></span></span><span>▶</span></button>`).join("")
     + `<details class="bt-more"><summary>📚 Pick any topic</summary>${extra.map(x => `<button class="bt-topic" data-x="${x}"><span>${mastered[x] ? "⭐ " : ""}${K.esc(pretty(x))}</span><span>▶</span></button>`).join("")}</details>`;
   $("bt-body").querySelectorAll(".bt-topic[data-i]").forEach(b => b.onclick = () => session(weak[+b.dataset.i]));
   $("bt-body").querySelectorAll(".bt-topic[data-x]").forEach(b => b.onclick = () => session({ game: "mathville", topic: b.dataset.x, acc: 0 }));
 
   function session(t) {
-    let n = 0, right = 0, lastWrong = false;
+    let n = 0, right = 0, lastWrong = false, hintsUsed = 0, spotted = false;
     lstw("bt_recheck_" + t.topic, new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10));
     // worked example first (maths topics)
     if (t.topic !== "mixed" && subjectOf(t.game) === "math" && !session.shown) {
@@ -77,13 +81,26 @@ async function init() {
       $("bt-body").innerHTML = `<div class="bt-board"><div class="kit-q">${K.esc(ex.prompt)}</div><p>${K.esc(explainQ(ex))}</p></div><button class="kit-btn block" id="bt-go" type="button">I get it — let's practise!</button>`;
       $("bt-go").onclick = () => { session(t); session.shown = false; }; return;
     }
+    function spot() {
+      spotted = true;
+      const q = makeQuestion(t, "medium"), wrongOpt = q.options.find(o => o !== q.correctLabel), boRight = Math.random() < 0.5, said = boRight ? q.correctLabel : wrongOpt;
+      $("bt-say").textContent = "My turn! I solved one. Am I right? 🤔";
+      $("bt-body").innerHTML = `<div class="bt-board"><div class="kit-q">${K.esc(q.prompt)}</div><p>Bo says: <b>${K.esc(said)}</b></p></div><button class="kit-btn block" data-j="1" type="button">✅ Bo is right</button><button class="kit-btn alt block" data-j="0" type="button">❌ Bo made a mistake</button>`;
+      $("bt-body").querySelectorAll("[data-j]").forEach(b => b.onclick = () => {
+        const ok = (b.dataset.j === "1") === boRight;
+        $("bt-say").textContent = ok ? (boRight ? "Yes, I got that one! Good checking. 🕵️" : `You caught me! The real answer is ${q.correctLabel}. 🕵️`) : (boRight ? "Actually I was right this time — always double-check!" : `I did make a mistake — it's ${q.correctLabel}.`);
+        if (ok) lstw("bt_spots", String(Number(lst("bt_spots", "0")) + 1));
+        setTimeout(ask, 2200);
+      });
+    }
     const ask = () => {
       if (n >= 5) return done();
+      if (n === 2 && !spotted && t.topic !== "mixed" && subjectOf(t.game) === "math") return spot();
       const q = t.topic === "mixed" ? K.question({}) : makeQuestion(t, DIFFS[n]);
       n++; let hint = 0;
       $("bt-say").textContent = n === 1 ? `Let's practice ${t.topic === "mixed" ? "a little of everything" : pretty(t.topic)}! I'll help if you get stuck.` : "Next one — you can do it!";
       $("bt-body").innerHTML = `<div class="bt-stars">${Array.from({ length: 5 }, (_, i) => i < right ? "⭐" : "☆").join("")}</div><div class="kit-sub" style="text-align:center;margin:0">Question ${n}/5</div><div class="kit-q">${K.esc(q.prompt)}</div><div class="kit-opts">${q.options.map(o => `<button class="kit-opt" data-o="${K.esc(o)}">${K.esc(o)}</button>`).join("")}</div><button class="kit-btn alt block" id="bt-hint" type="button" style="margin-top:8px">💡 Hint (1/3)</button>`;
-      $("bt-hint").onclick = () => { hint++; const a = String(q.correctLabel);
+      $("bt-hint").onclick = () => { hint++; hintsUsed++; const a = String(q.correctLabel);
         if (hint === 1) $("bt-say").textContent = TIPS[subjectOf(t.game)];
         else if (hint === 2) { const w = [...$("bt-body").querySelectorAll(".kit-opt:not(:disabled)")].find(x => x.dataset.o !== a); if (w) { w.disabled = true; w.style.opacity = ".3"; } $("bt-say").textContent = "I crossed out one wrong answer for you."; }
         else { $("bt-say").textContent = /^\d/.test(a) ? `The answer has ${a.replace(/[^\d]/g, "").length} digit(s) and ends in ${a.replace(/[^\d]/g, "").slice(-1)}.` : `It starts with “${a[0]}”.`; }
@@ -109,10 +126,13 @@ async function init() {
     async function done() {
       const perfect = right === 5;
       if (perfect && t.topic !== "mixed") AIGLeaderboard.markTutorMastered(t.topic);
+      const noHint = perfect && hintsUsed === 0;
+      if (noHint) { try { await AIGLeaderboard.creditWallet({ coins: 5 }); } catch (e) {} }
+      if (perfect && t.topic !== "mixed") { let c = []; try { c = JSON.parse(lst("bt_cards", "[]")) || []; } catch (e) {} if (!c.includes(t.topic)) { c.push(t.topic); lstw("bt_cards", JSON.stringify(c)); } }
       $("bt-say").textContent = perfect ? "Perfect score! You've mastered this one! 🌟" : right >= 3 ? "Good progress! A little more practice and it's yours." : "That's a tricky one — come back and we'll try again together!";
       $("bt-body").innerHTML = "";
       $("bt-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${perfect ? "🌟" : "🎓"}</div><h2>${right}/5 correct</h2>
-        <p class="kit-sub">${perfect ? "Mastered — you earned a ⭐ on this topic!" : "Every try makes it stronger."}<br><small>🔁 I'll remind you to re-check this in 2 days.</small></p>${perfect && t.topic !== "mixed" ? `<div class="bt-cert">🏅 Certificate<br><b>${K.esc((player && player.name) || "You")}</b><br>has mastered<br><b>${K.esc(pretty(t.topic))}</b><br><small>${new Date().toLocaleDateString()}</small></div>` : ""}<div class="kit-bonus" id="bt-bonus"></div>
+        <p class="kit-sub">${perfect ? "Mastered — you earned a ⭐ on this topic and a 🗒️ note card!" : "Every try makes it stronger."}${noHint ? "<br><b>🧠 No-hint hero: +5 coins!</b>" : ""}<br><small>🔁 I'll remind you to re-check this in 2 days.</small></p>${perfect && t.topic !== "mixed" ? `<div class="bt-cert">🏅 Certificate<br><b>${K.esc((player && player.name) || "You")}</b><br>has mastered<br><b>${K.esc(pretty(t.topic))}</b><br><small>${new Date().toLocaleDateString()}</small></div>` : ""}<div class="kit-bonus" id="bt-bonus"></div>
         <button class="kit-btn block" onclick="location.reload()">Another session</button><a class="kit-btn alt block" href="../game-room/">Game Room</a></div></div>`;
       K.finish("bo-tutor", perfect ? 15 : right * 2, $("bt-bonus"));
     }

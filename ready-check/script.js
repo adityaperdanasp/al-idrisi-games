@@ -33,15 +33,28 @@ function questionFor(id, diff) {
   return K.question({ subject: "math" });
 }
 
+// Audit round 2: 👑 Perfect mode (no clue, 5/5 needed, gold crown), the suggested next gate glows,
+// each gate shows Ready / Almost / Not yet, the Grand Gate (7 mixed questions from gates you've opened)
+// appears after 4 gates, and a failed check links straight to Bo's Classroom.
+let perfectMode = false;
 async function init() {
   const { path, passed } = await AIGLeaderboard.getReadiness();
   const byId = Object.fromEntries(path.map(p => [p.id, p]));
   const menu = () => {
-    $("rc-main").innerHTML = `<div class="kit-q">🚪 The Gates of Level-Up</div><p class="kit-sub" style="text-align:center">Each gate has a guardian with 5 HP. Beat it with 4 right answers to open the gate. 5/5 gives 3 stars!</p>${path.map(p => {
+    const openIds = path.filter(p => passed[p.id] && passed[p.id].passed).map(p => p.id);
+    const next = path.find(p => !(passed[p.id] && passed[p.id].passed) && (!p.after || openIds.includes(p.after)));
+    const label = st => st >= 3 ? "🟢 Ready" : st === 2 ? "🟡 Almost" : st === 1 ? "🟠 Keep going" : "⚪ Not yet";
+    $("rc-main").innerHTML = `<div class="kit-q">🚪 The Gates of Level-Up</div><p class="kit-sub" style="text-align:center">Each gate has a guardian with 5 HP. Beat it with 4 right answers to open the gate. 5/5 gives 3 stars!</p>
+      <label class="rc-perf"><input type="checkbox" id="rc-perf" ${perfectMode ? "checked" : ""}> 👑 Perfect mode — no clue, 5/5 needed, earns a gold crown</label>
+      ${openIds.length >= 4 ? `<button class="kit-btn block" id="rc-grand" type="button">🏰 Grand Gate — 7 mixed questions from your ${openIds.length} gates</button>` : `<p class="kit-sub" style="text-align:center">🏰 Grand Gate opens after 4 gates (${openIds.length}/4)</p>`}
+      ${path.map(p => {
       const ok = passed[p.id] && passed[p.id].passed, pre = p.after ? byId[p.after] : null, preOk = !pre || (passed[pre.id] && passed[pre.id].passed);
       const st = Number(lsr("rc_stars_" + p.id, "0")), at = ok && passed[p.id].at, stale = at && Date.now() - at > 7 * 86400000;
-      return `<button class="rc-topic ${ok ? "pass" : ""}" data-id="${p.id}"><span class="rc-gate">${ok ? "🚪" : "🔒"}<b>${GUARD[p.id] || "🗿"}</b></span><span style="flex:1;text-align:left">${p.name}<small>${pre ? (preOk ? `after ${pre.name} ✓` : `works best after ${pre.name}`) : "start anywhere"}${stale ? " · 🔁 time for a re-check!" : ""}</small></span><span class="rc-st">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span></button>`;
+      const crown = lsr("rc_gold_" + p.id, "") === "1";
+      return `<button class="rc-topic ${ok ? "pass" : ""} ${next && next.id === p.id ? "rc-next" : ""}" data-id="${p.id}"><span class="rc-gate">${ok ? "🚪" : "🔒"}<b>${GUARD[p.id] || "🗿"}</b></span><span style="flex:1;text-align:left">${p.name}${crown ? " 👑" : ""}<small>${next && next.id === p.id ? "👉 Suggested next · " : ""}${label(st)} · ${pre ? (preOk ? `after ${pre.name} ✓` : `works best after ${pre.name}`) : "start anywhere"}${stale ? " · 🔁 time for a re-check!" : ""}</small></span><span class="rc-st">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</span></button>`;
     }).join("")}`;
+    $("rc-perf").onchange = e => { perfectMode = e.target.checked; };
+    const gb = $("rc-grand"); if (gb) gb.onclick = () => grand(openIds);
     $("rc-main").querySelectorAll(".rc-topic").forEach(b => b.onclick = () => check(byId[b.dataset.id]));
   };
   function check(t) {
@@ -50,7 +63,7 @@ async function init() {
       $("rc-main").innerHTML = `<div class="kit-big" style="text-align:center">🤔</div><div class="kit-q">${K.esc(t.name)} works best after ${K.esc(pre.name)}.</div><button class="kit-btn block" id="rc-any" type="button">Try it anyway</button><button class="kit-btn alt block" id="rc-pre" type="button">Check ${K.esc(pre.name)} first</button>`;
       $("rc-any").onclick = () => { check.warned = true; check(t); check.warned = false; }; $("rc-pre").onclick = () => check(pre); return;
     }
-    let i = 0, right = 0, clue = true;
+    let i = 0, right = 0, clue = !perfectMode; const perf = perfectMode;
     const DIFF = ["easy", "easy", "medium", "medium", "hard"];
     const ask = () => {
       if (i >= 5) return done();
@@ -70,16 +83,33 @@ async function init() {
       const r = await AIGLeaderboard.saveReadiness(t.id, right);
       if (r.passed) passed[t.id] = { passed: true, score: right, at: Date.now() };
       const stars = right >= 5 ? 3 : right >= 4 ? 2 : right >= 3 ? 1 : 0; if (stars > Number(lsr("rc_stars_" + t.id, "0"))) lsrw("rc_stars_" + t.id, String(stars));
+      const gold = perf && right === 5 && lsr("rc_gold_" + t.id, "") !== "1";
+      if (gold) { lsrw("rc_gold_" + t.id, "1"); K.toastAdv(`👑 Gold crown on the ${t.name} gate!`); try { await AIGLeaderboard.creditWallet({ coins: 10 }); } catch (e) {} }
       if (r.passed) K.toastAdv(`${t.name} gate opened!`);
       $("rc-main").innerHTML = "";
       $("rc-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${r.passed ? "✅" : "💪"}</div><h2>${r.passed ? "You're ready!" : "Almost there"}</h2>
         <p class="kit-sub">${right}/5 on ${K.esc(t.name)}. ${r.passed ? "Go on to the next topic with confidence!" : "A little more practice first — Bo's Tutor Session can help."}</p><div class="kit-bonus" id="rc-bonus"></div>
-        <div style="font-size:1.6rem">${"⭐".repeat(stars)}${"☆".repeat(3 - stars)}</div>
-        ${r.passed ? "" : '<button class="kit-btn block" id="rc-warm" type="button">🔥 Warm up (3 questions) and try again</button><a class="kit-btn alt block" href="../bo-tutor/">Practise with Bo</a>'}<button class="kit-btn alt block" id="rc-back">Back to the gates</button></div></div>`;
+        <div style="font-size:1.6rem">${"⭐".repeat(stars)}${"☆".repeat(3 - stars)}${gold ? " 👑" : ""}</div>${gold ? '<p class="kit-sub">👑 Perfect mode cleared: +10 coins!</p>' : ""}
+        ${r.passed ? "" : '<button class="kit-btn block" id="rc-warm" type="button">🔥 Warm up (3 questions) and try again</button><a class="kit-btn alt block" href="../bo-class/">🎓 Learn it in Bo\'s Classroom</a><a class="kit-btn alt block" href="../bo-tutor/">Practise with Bo</a>'}<button class="kit-btn alt block" id="rc-back">Back to the gates</button></div></div>`;
       $("rc-back").onclick = () => { $("rc-overlay").innerHTML = ""; menu(); };
       const wb = $("rc-warm"); if (wb) wb.onclick = () => { $("rc-overlay").innerHTML = ""; warmup(t); };
       if (r.passed) K.finish("ready-check", 8, $("rc-bonus"));
     }
+    ask();
+  }
+  function grand(ids) {
+    let i = 0, right = 0; const N = 7;
+    const ask = () => {
+      if (i >= N) {
+        const won = right >= 6, today = new Date().toISOString().slice(0, 10), paid = lsr("rc_grand_day", "") === today;
+        if (won && !paid) { lsrw("rc_grand_day", today); AIGLeaderboard.creditWallet({ coins: 15 }).catch(() => {}); }
+        $("rc-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${won ? "🏰" : "💪"}</div><h2>${won ? "Grand Gate opened!" : "The Grand Guardian held on"}</h2><p class="kit-sub">${right}/${N} right (6 needed).${won && !paid ? " +15 coins!" : won ? " (Today's reward already claimed.)" : " Try again any time."}</p><button class="kit-btn block" id="rc-back2">Back to the gates</button></div></div>`;
+        $("rc-back2").onclick = () => { $("rc-overlay").innerHTML = ""; menu(); }; return;
+      }
+      const id = ids[i % ids.length], q = questionFor(id, i < 3 ? "medium" : "hard");
+      $("rc-main").innerHTML = `<div class="rc-boss"><span class="rc-g" id="rc-g">🏰</span><div class="kit-bar"><i style="width:${(N - right) / N * 100}%;background:#7b3fe4"></i></div><small>Grand Guardian ${N - right}/${N}</small></div><div class="kit-sub" style="margin:0 0 4px;font-weight:800">Grand Gate ${i + 1}/${N} · ${K.esc((byId[id] || {}).name || id)}</div><div class="kit-q">${K.esc(q.prompt)}</div><div class="kit-opts">${q.options.map(o => `<button class="kit-opt" data-o="${K.esc(o)}">${K.esc(o)}</button>`).join("")}</div>`;
+      $("rc-main").querySelectorAll(".kit-opt").forEach(b => b.onclick = () => { const ok = b.dataset.o === q.correctLabel; K.record("ready-check", q.key, ok, q); $("rc-main").querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.dataset.o === q.correctLabel) x.classList.add("right"); }); if (ok) right++; else b.classList.add("wrong"); setTimeout(() => { i++; ask(); }, 900); });
+    };
     ask();
   }
   function warmup(t) {

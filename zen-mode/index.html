@@ -23,6 +23,9 @@
   .zm-chip{border:2px solid #1b1b1b;background:#fff;padding:4px 8px;font-weight:800;font-size:.75rem;cursor:pointer}.zm-chip.on{background:#3f8f5f;color:#fff}
   .zm-breath{width:90px;height:90px;margin:10px auto;border-radius:50% !important;background:#a8d488;animation:zmBreath 5s ease-in-out infinite}
   @keyframes zmBreath{50%{transform:scale(1.5)}}
+  .zm-season{width:100%;font-weight:800;font-size:.8rem;opacity:.8}#zm-garden{position:relative}#zm-garden.zm-s-rain{background-image:linear-gradient(#cfe3f2,transparent)}#zm-garden.zm-s-snow{background-image:linear-gradient(#f2f7fb,transparent)}#zm-garden.zm-s-sun{background-image:linear-gradient(#fff3c4,transparent)}#zm-garden.zm-s-spring{background-image:linear-gradient(#fde2ef,transparent)}
+  .zm-guest{display:inline-block;font-size:1.3rem;animation:zmHop 2.4s ease-in-out infinite}@keyframes zmHop{50%{transform:translate(6px,-6px)}}
+  body.zm-resting .kit-card:has(#zm-q){display:none}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=6" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="zen-mode";</script>
@@ -49,6 +52,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Zen Mode',accent:'#2e8b6a',bg:'linear-gradient(180deg,#e8f8ef,#d0eedd)'});</script>
-<script src="script.js?v=2"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>

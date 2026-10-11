@@ -62,6 +62,9 @@
   .kq-preview{margin:10px 0}.kq-pv-h{font-weight:800;font-size:.8rem;margin-bottom:4px}
   .kq-creator{background:#fff;border:2px solid #1b1b1b;padding:8px;margin-bottom:8px;font-size:.85rem}
   .kq-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.kq-badges span{border:2px dashed #bbb;padding:2px 6px;font-size:.72rem;font-weight:800;opacity:.5}.kq-badges span.on{border:2px solid #b8860b;background:#fff3c4;opacity:1}
+  .kq-timer { position: relative; height: 22px; background: #f1ede6; border-radius: 100px; overflow: hidden; margin: 6px 0 10px; }
+  .kq-timer i { position: absolute; left: 0; top: 0; bottom: 0; background: #ffd27a; transition: width .1s linear; }
+  .kq-timer span { position: relative; display: block; text-align: center; font-weight: 800; font-size: .8rem; line-height: 22px; }
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=6" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="kids-quiz";</script>
@@ -186,7 +189,7 @@
         document.getElementById("kq-play-intro").hidden = true;
         quizQueue = shuffle(pool).slice(0, Math.min(10, pool.length));
         quizIndex = 0;
-        quizScore = 0;
+        quizScore = 0; quizPoints = 0; quizStreak = 0;
         renderQuizStep();
       } catch (e) {
         // A thrown/rejected fetch (flaky connection) must never leave the
@@ -210,8 +213,16 @@
       return a;
     }
 
+    // Audit round 2: a 15-second clock per question, points (10 + speed bonus, x2 on a 3+ streak),
+    // a streak flame, and a personal best score.
+    let quizPoints = 0, quizStreak = 0, qTimer = null;
     function renderQuizStep() {
       const q = quizQueue[quizIndex];
+      clearInterval(qTimer);
+      let left = 15; const tEl = document.getElementById("kq-timer") || (() => { const d = document.createElement("div"); d.id = "kq-timer"; d.className = "kq-timer"; document.getElementById("kq-qnum").after(d); return d; })();
+      const paint = () => { tEl.innerHTML = `<i style="width:${left / 15 * 100}%"></i><span>⏱️ ${Math.ceil(left)}s · ⭐ ${quizPoints}${quizStreak >= 2 ? ` · 🔥${quizStreak}` : ""}</span>`; };
+      paint();
+      qTimer = setInterval(() => { left = Math.max(0, left - 0.1); paint(); if (left <= 0) { clearInterval(qTimer); const wrong = [...document.querySelectorAll("#kq-options .kq-option")].find((b, bi) => bi !== q.correctIndex); if (wrong) { wrong.dataset.timeout = "1"; wrong.click(); } } }, 100);
       document.getElementById("kq-play-question").hidden = false;
       document.getElementById("kq-qnum").textContent = `Question ${quizIndex + 1} of ${quizQueue.length}`;
       const openBounty = q.bounty && q.bounty.amount && !q.bounty.claimedBy;
@@ -224,8 +235,9 @@
         btn.className = "kq-option";
         btn.textContent = opt;
         btn.addEventListener("click", () => {
-          const isCorrect = i === q.correctIndex;
-          if (isCorrect) quizScore++;
+          clearInterval(qTimer);
+          const isCorrect = i === q.correctIndex && !btn.dataset.timeout;
+          if (isCorrect) { quizScore++; quizStreak++; quizPoints += Math.round((10 + left) * (quizStreak >= 3 ? 2 : 1)); } else quizStreak = 0;
           try { AIGLeaderboard.kidsQuizStat(q.authorId, q.id, isCorrect); } catch (e) {}
           // Question Bounty (PM round 9, item 9): first correct classmate
           // takes the author's pot. Best-effort -- never blocks the quiz.
@@ -256,7 +268,9 @@
     function finishQuiz() {
       document.getElementById("kq-play-question").hidden = true;
       document.getElementById("kq-play-result").hidden = false;
-      document.getElementById("kq-result-title").textContent = `You got ${quizScore}/${quizQueue.length}!` + (likedThisRound ? ` You liked ${likedThisRound} question${likedThisRound > 1 ? "s" : ""} — the authors earn a coin for each like!` : "");
+      clearInterval(qTimer);
+      let best = 0; try { best = Number(localStorage.getItem("kq_best") || 0); if (quizPoints > best) localStorage.setItem("kq_best", String(quizPoints)); } catch (e) {}
+      document.getElementById("kq-result-title").textContent = `You got ${quizScore}/${quizQueue.length} · ⭐ ${quizPoints} points${quizPoints > best ? " — new best!" : ` (best ${best})`}!` + (likedThisRound ? ` You liked ${likedThisRound} question${likedThisRound > 1 ? "s" : ""} — the authors earn a coin for each like!` : "");
     }
 
     // ---- My Questions ----
