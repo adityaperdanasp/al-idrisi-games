@@ -30,6 +30,10 @@ function initMemoryMatch() {
   // Audit batch 9: board sizes (6/8/10 pairs), modes (classic, 60-second timed, vs Bo-Bot taking turns
   // with a real memory, and "twist" where unmatched cards reshuffle every 6 moves), a one-time 👀 peek,
   // match combos, and best moves remembered per board size.
+  // Audit round 2: card themes (➗ Maths / 📖 Words / 🔭 Science / 🎲 Mix) and a 📅 daily board --
+  // same seed for everyone today (cards + layout), its own best-moves record.
+  let THEME = "mix", DAILY = false, seedState = 0;
+  const srand = () => { seedState = (seedState * 1103515245 + 12345) & 0x7fffffff; return seedState / 0x7fffffff; };
   let MODE = "classic", timer = null, timeLeft = 0, botScore = 0, myScore = 0, botTurn = false, combo = 0, peekUsed = false;
   const seen = {}; // Bo-Bot's memory: card id -> pairId
   const lsm = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
@@ -51,7 +55,7 @@ function initMemoryMatch() {
   const CARDBACK_EMOJI = { default: "🧠", cards: "🎴", star: "🌟", crystal: "🔮", mythic: "🌌" };
   let cardBackEmoji = "🧠";
 
-  function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function rand(min, max) { return Math.floor((DAILY ? srand() : Math.random()) * (max - min + 1)) + min; }
   function shuffle(arr) {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) { const j = rand(0, i); [a[i], a[j]] = [a[j], a[i]]; }
@@ -82,7 +86,7 @@ function initMemoryMatch() {
   // falls back to an arithmetic fact.
   function tryMixedFact() {
     if (!window.AIGQuestionPools) return null;
-    const isLang = Math.random() < 0.5;
+    const isLang = THEME === "lang" ? true : THEME === "sci" ? false : Math.random() < 0.5;
     const pick = isLang
       ? window.AIGQuestionPools.pickShortLanguage(MAX_PROMPT_LEN, MAX_ANSWER_LEN)
       : window.AIGQuestionPools.pickShortScience(MAX_PROMPT_LEN, MAX_ANSWER_LEN);
@@ -99,7 +103,7 @@ function initMemoryMatch() {
     const facts = [];
     let guard = 0;
     while (facts.length < PAIR_COUNT && guard++ < 500) {
-      const f = (Math.random() < MIXED_PAIR_CHANCE && tryMixedFact()) || randomFact();
+      const f = THEME === "math" || DAILY ? randomFact() : THEME === "lang" || THEME === "sci" ? (tryMixedFact() || randomFact()) : ((Math.random() < MIXED_PAIR_CHANCE && tryMixedFact()) || randomFact());
       const valueKey = String(f.value);
       if (usedValues.has(valueKey)) continue;
       usedValues.add(valueKey);
@@ -202,7 +206,7 @@ function initMemoryMatch() {
   function finishRound() {
     clearInterval(timer);
     const moves = state.moves;
-    const bk = `mm_best_${PAIR_COUNT}`, best = Number(lsm(bk, "0")); if (MODE !== "bot" && state.pairsFound >= PAIR_COUNT && (!best || moves < best)) lsmw(bk, String(moves));
+    const bk = DAILY ? `mm_daily_${new Date().toISOString().slice(0, 10)}` : `mm_best_${PAIR_COUNT}`, best = Number(lsm(bk, "0")); if (MODE !== "bot" && state.pairsFound >= PAIR_COUNT && (!best || moves < best)) lsmw(bk, String(moves));
     const emoji = moves <= 12 ? "🏆" : moves <= 18 ? "🥳" : moves <= 26 ? "🙂" : "💪";
     const title = moves <= 12 ? "Amazing memory!" : moves <= 18 ? "Great job!" : moves <= 26 ? "Nice work!" : "You found them all!";
     document.getElementById("mm-end-emoji").textContent = emoji;
@@ -226,6 +230,7 @@ function initMemoryMatch() {
       cardBackEmoji = CARDBACK_EMOJI[equipped] || "🧠";
     }
     clearInterval(timer); botScore = myScore = combo = 0; botTurn = false; peekUsed = false; Object.keys(seen).forEach(k => delete seen[k]);
+    if (DAILY) { const d = new Date(); seedState = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
     state.cards = buildDeck();
     state.flipped = [];
     state.pairsFound = 0;
@@ -245,9 +250,13 @@ function initMemoryMatch() {
     const ov = document.getElementById("mm-start-overlay"), box = ov.querySelector("div") || ov;
     let pick = document.getElementById("mm-modes"); if (!pick) { pick = document.createElement("div"); pick.id = "mm-modes"; pick.className = "mm-modes"; document.getElementById("mm-start-btn").before(pick); }
     pick.innerHTML = `<div><b>Board</b> ${[6, 8, 10].map(n => `<button type="button" data-n="${n}" class="${n === PAIR_COUNT ? "on" : ""}">${n} pairs</button>`).join("")}</div>
+      <div><b>Cards</b> ${[["mix", "🎲 Mix"], ["math", "➗ Maths"], ["lang", "📖 Words"], ["sci", "🔭 Science"]].map(([k, l]) => `<button type="button" data-t="${k}" class="${k === THEME && !DAILY ? "on" : ""}">${l}</button>`).join("")}</div>
+      <div><button type="button" data-daily="1" class="${DAILY ? "on" : ""}">📅 Today's board${lsm(`mm_daily_${new Date().toISOString().slice(0, 10)}`, "") ? ` (best ${lsm(`mm_daily_${new Date().toISOString().slice(0, 10)}`, "")} moves)` : ""}</button></div>
       <div><b>Mode</b> ${[["classic", "🧠 Classic"], ["timed", "⏱️ Timed"], ["bot", "🤖 vs Bo-Bot"], ["twist", "🌀 Twist"]].map(([k, l]) => `<button type="button" data-m="${k}" class="${k === MODE ? "on" : ""}">${l}</button>`).join("")}</div>`;
     pick.querySelectorAll("[data-n]").forEach(b => b.onclick = () => { PAIR_COUNT = +b.dataset.n; modePicker(); });
     pick.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { MODE = b.dataset.m; modePicker(); });
+    pick.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { THEME = b.dataset.t; DAILY = false; modePicker(); });
+    pick.querySelectorAll("[data-daily]").forEach(b => b.onclick = () => { DAILY = !DAILY; if (DAILY) { PAIR_COUNT = 8; MODE = "classic"; } modePicker(); });
   }
   modePicker();
   document.getElementById("mm-play-again-btn").addEventListener("click", () => { document.getElementById("mm-end-overlay").classList.add("hidden"); document.getElementById("mm-start-overlay").classList.remove("hidden"); modePicker(); });

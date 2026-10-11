@@ -93,7 +93,9 @@ async function init() {
     $("bc-main").innerHTML = `<div class="kit-card"><div class="kit-q">Pick a lesson</div><p class="kit-sub" style="text-align:center">${Object.keys(done).length}/${LESSONS.length} lessons finished · 🔥 ${streak}-day lesson streak</p>
       <button class="bc-tod" data-i="${LESSONS.indexOf(tod)}" type="button">⭐ Lesson of the day: ${tod.emoji} ${K.esc(tod.title)} <small>(+streak)</small></button>
       ${all ? `<div class="bc-cert">🎓 <b>Graduate of Bo's Classroom!</b><br>${K.esc((player && player.name) || "You")} finished all ${LESSONS.length} lessons.</div>` : ""}
-      <div class="bc-lessons">${LESSONS.map((l, i) => `<button class="bc-l ${done[l.id] ? "done" : ""}" data-i="${i}"><span class="e">${l.emoji}</span>${l.title}<br><small>${done[l.id] ? "✅ done" : "3 slides"}</small></button>`).join("")}</div></div>`;
+      ${Object.keys(done).length ? `<button class="kit-btn block" id="bc-recap" type="button">⚡ 1-minute recap quiz${Number(lsc("bc_recap_best", "0")) ? ` (best ${lsc("bc_recap_best", "0")})` : ""}</button>` : ""}
+      <div class="bc-lessons">${LESSONS.map((l, i) => `<button class="bc-l ${done[l.id] ? "done" : ""}" data-i="${i}"><span class="e">${l.emoji}</span>${l.title}<br><small>${done[l.id] ? `${"⭐".repeat(done[l.id].score || 0)}${"☆".repeat(3 - (done[l.id].score || 0))}` : "3 slides"}</small></button>`).join("")}</div></div>`;
+    const rb = $("bc-recap"); if (rb) rb.onclick = recap;
     $("bc-main").querySelectorAll(".bc-tod").forEach(b => b.onclick = () => teach(LESSONS[+b.dataset.i]));
     $("bc-main").querySelectorAll(".bc-l").forEach(b => b.onclick = () => teach(LESSONS[+b.dataset.i]));
   };
@@ -114,6 +116,21 @@ async function init() {
       $("bc-replay").onclick = draw;
     };
     draw();
+  }
+  // Audit round 2: a 60-second recap mixing questions from every lesson you've finished.
+  function recap() {
+    const pool = LESSONS.filter(l => done[l.id]).flatMap(l => l.quiz.map(q => [l, q]));
+    let right = 0, n = 0; const end = Date.now() + 60000;
+    const tick = setInterval(() => { const b = $("bc-rt"); if (b) b.style.width = Math.max(0, (end - Date.now()) / 600) + "%"; if (Date.now() >= end) { clearInterval(tick); fin(); } }, 200);
+    const fin = () => { clearInterval(tick); const best = Number(lsc("bc_recap_best", "0")); if (right > best) lscw("bc_recap_best", String(right)); $("bc-main").innerHTML = `<div class="kit-card" style="text-align:center"><div class="kit-big">⚡</div><div class="kit-q">${right} right in 1 minute!</div><p class="kit-sub">${right > best ? "🌟 New best!" : `Best: ${best}`}</p><button class="kit-btn block" id="bc-rback">Back to lessons</button></div>`; $("bc-rback").onclick = menu; };
+    const ask = () => {
+      if (Date.now() >= end) return;
+      const [l, [q, opts, a]] = pool[Math.floor(Math.random() * pool.length)];
+      const sh = K.shuffle(opts.map((t, k) => ({ t, ok: k === a })));
+      $("bc-main").innerHTML = `<div class="kit-card"><div class="kit-bar" style="margin-bottom:8px"><i id="bc-rt" style="width:100%"></i></div><div class="kit-sub" style="margin:0 0 4px;font-weight:800">⚡ ${right} right · ${l.emoji} ${K.esc(l.title)}</div><div class="kit-q">${K.esc(q)}</div><div class="kit-opts" style="grid-template-columns:1fr">${sh.map((o, k) => `<button class="kit-opt" data-k="${k}">${K.esc(o.t)}</button>`).join("")}</div></div>`;
+      $("bc-main").querySelectorAll(".kit-opt").forEach(b => b.onclick = () => { const ok = sh[+b.dataset.k].ok; K.record("bo-class", l.id, ok); $("bc-main").querySelectorAll(".kit-opt").forEach((x, k) => { x.disabled = true; if (sh[k].ok) x.classList.add("right"); }); if (ok) right++; else b.classList.add("wrong"); n++; setTimeout(ask, ok ? 350 : 1100); });
+    };
+    ask();
   }
   function checkpoint(l, next) {
     const [q, opts, a] = l.quiz[0];

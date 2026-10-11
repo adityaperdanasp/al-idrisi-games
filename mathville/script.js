@@ -3351,6 +3351,12 @@ async function buildFocusRoundSteps(selected) {
     if (list.querySelectorAll(".focus-round-item input:checked").length) startBtn.click();
   };
   cancelBtn.addEventListener("click", () => overlay.classList.add("hidden"));
+  // Audit round 2: choose a short (10) or full (20) Focus Round.
+  (function lenToggle() {
+    const wrap = document.createElement("div"); wrap.className = "focus-len";
+    const paint = () => { const L = (() => { try { return localStorage.getItem("mv_focus_len") || "20"; } catch (e) { return "20"; } })(); wrap.innerHTML = `Length: ${["10", "20"].map(n => `<button type="button" data-len="${n}" class="${n === L ? "on" : ""}">${n} questions</button>`).join("")}`; wrap.querySelectorAll("[data-len]").forEach(b => b.onclick = () => { try { localStorage.setItem("mv_focus_len", b.dataset.len); } catch (e) {} paint(); }); };
+    paint(); startBtn.before(wrap);
+  })();
   startBtn.addEventListener("click", async () => {
     const checked = Array.from(list.querySelectorAll(".focus-round-item input:checked"));
     if (!checked.length) return;
@@ -3368,12 +3374,13 @@ async function buildFocusRoundSteps(selected) {
     overlay.classList.add("hidden");
     state.mode = "solo";
     state.chapterId = "focus-round";
-    state.focusLog = [];
+    state.focusLog = []; state.focusPaid = {};
     state.stepIndex = 0;
     state.mistakes = 0;
     state.lastWrong = null;
     state.lastCorrect = null;
-    state.steps = steps;
+    let flen = 20; try { flen = Number(localStorage.getItem("mv_focus_len") || 20); } catch (e) {}
+    state.steps = steps.slice(0, flen);
     renderStep();
   });
 
@@ -4821,7 +4828,9 @@ function renderStep() {
   renderFocusRoute();
   if (state.chapterId === "focus-round" && state.stepIndex > 0 && state.stepIndex % 5 === 0 && typeof showAdaptiveToast === "function") {
     const right = (state.focusLog || []).filter(Boolean).length;
-    showAdaptiveToast(`🚩 Checkpoint ${state.stepIndex / 5}! ${right}/${state.stepIndex} right so far`);
+    const cp = state.stepIndex / 5; state.focusPaid = state.focusPaid || {};
+    if (!state.focusPaid[cp]) { state.focusPaid[cp] = true; if (window.AIGLeaderboard) AIGLeaderboard.creditWallet({ coins: 2 }).catch(() => {}); }
+    showAdaptiveToast(`🚩 Checkpoint ${cp}! ${right}/${state.stepIndex} right so far · +2 🪙`);
   }
   ["ui-typein", "ui-mc", "ui-tap", "ui-match", "ui-order"].forEach(id => $(id).classList.add("hidden"));
   const step = state.steps[state.stepIndex];

@@ -238,12 +238,29 @@ TABS.unshift({ id: "care", label: "🍪 Care", async render(el) {
     <div class="bh-need"><span>🍪 Food</span><div class="kit-bar"><i style="width:${foodPct}%;background:#e0952f"></i></div><small>${food}/10 right answers today</small></div>
     <div class="bh-need"><span>🎈 Fun</span><div class="kit-bar"><i style="width:${fun ? 100 : 0}%;background:#e86fb3"></i></div><small>${fun ? "Played today ✓" : "Play hide-and-seek"}</small></div>
     <div class="bh-need"><span>🌙 Sleep</span><div class="kit-bar"><i style="width:${night ? 100 : 60}%;background:#6a8fe0"></i></div><small>${night ? "Sleeping now" : "Rested"}</small></div>
+    <div class="bh-react">${food >= 50 ? "🏆 50+ right answers today — Bo is telling everyone about you!" : food >= 25 ? "🌟 25+ right today! Bo is doing a happy dance." : food >= 10 ? "😋 10+ right today — Bo's tummy is full!" : "Bo is cheering for your next right answer!"}</div>
     <button class="kit-btn block" id="bh-hide" type="button" ${night ? "disabled" : ""}>🙈 Play hide-and-seek with Bo</button>
+    <button class="kit-btn block" id="bh-snack" type="button" ${night || lsb("bh_snack", "") === bday() ? "disabled" : ""}>${lsb("bh_snack", "") === bday() ? "🍳 Snack time done today ✓" : "🍳 Snack time: share Bo's cookies fairly"}</button>
     <a class="kit-btn alt block" href="../game-room/">🍪 Feed Bo — play a game</a>
     <button class="kit-btn block" id="bh-cg" type="button" ${allGood && !giftDone ? "" : "disabled"}>${giftDone ? "🎁 Care gift collected today ✓" : allGood ? "🎁 Open today's care gift (🪙6)" : "🎁 Care gift: fill Food and Fun first"}</button><div class="kit-bonus" id="bh-cm"></div></div>`;
   el.querySelector("#bh-cg").onclick = async () => { lsbw("bh_gift", bday()); try { await LB.creditWallet({ coins: 6 }); } catch (e) {} if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3); K.toastAdv("Bo is happy! +6 coins"); this.render(el); };
   el.querySelector("#bh-hide").onclick = () => hideSeek(el, this);
+  el.querySelector("#bh-snack").onclick = () => snackTime(el, this);
 }});
+// Audit round 2: Snack time -- 3 fair-share problems with a plate picture (division as sharing);
+// all 3 right = a full plate for Bo and a few coins, once a day.
+function snackTime(el, tab) {
+  const FOODS = ["🍪", "🧁", "🍓", "🍩"], FRIENDS = ["🐶", "🐱", "🐰", "🦊", "🐻"];
+  let round = 0, right = 0;
+  const ask = () => {
+    if (round >= 3) { lsbw("bh_snack", bday()); el.innerHTML = `<div class="kit-card">${boHeader(right === 3 ? "Yum! Everyone got the same amount — perfect sharing! 🥰" : "Thanks for sharing with me! 😋", right === 3)}<div class="kit-bonus" id="bh-sb"></div><button class="kit-btn block" type="button" id="bh-back">Back</button></div>`; K.finish("bo-home", right * 2, $("bh-sb")); $("bh-back").onclick = () => tab.render(el); return; }
+    const food = FOODS[round % FOODS.length], friends = K.rand(2, 5), each = K.rand(2, 5), total = friends * each;
+    const opts = K.shuffle([...new Set([each, each + 1, Math.max(1, each - 1), each + 2])]).slice(0, 4);
+    el.innerHTML = `<div class="kit-card">${boHeader(`Snack ${round + 1}/3: I have ${total} ${food}. Let's share them fairly with ${friends} friends!`)}<div class="bh-plate">${food.repeat(total)}</div><div class="bh-friends">${FRIENDS.slice(0, friends).join(" ")}</div><div class="kit-q">How many ${food} does each friend get?</div><div class="kit-opts">${opts.map(o => `<button class="kit-opt" data-o="${o}" type="button">${o}</button>`).join("")}</div></div>`;
+    el.querySelectorAll(".kit-opt").forEach(b => b.onclick = () => { const ok = +b.dataset.o === each; K.record("bo-home", "division", ok, { prompt: `${total} ÷ ${friends}`, options: opts.map(String), correctLabel: String(each), key: "division", subject: "math" }); el.querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (+x.dataset.o === each) x.classList.add("right"); }); if (ok) right++; else b.classList.add("wrong"); round++; setTimeout(ask, ok ? 800 : 1600); });
+  };
+  ask();
+}
 function hideSeek(el, tab) {
   const SPOTS = ["🛋️", "🪴", "📦", "🛏️", "🚪", "🧺"], bo = K.rand(0, SPOTS.length - 1); let tries = 3, busy = false;
   const draw = msg => {

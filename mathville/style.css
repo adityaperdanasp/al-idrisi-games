@@ -2702,3 +2702,7 @@ button { font-family: inherit; }
 
 /* Home/back always on top of pop-ups and full-screen layers, so a kid can leave mid-game. */
 .topbar { z-index: 10000; }
+
+.focus-len { display: flex; gap: 6px; align-items: center; justify-content: center; font-weight: 800; font-size: .85rem; margin: 8px 0; flex-wrap: wrap; }
+.focus-len button { border: 2px solid #1b1b1b; background: #fff; padding: 5px 10px; font-weight: 800; cursor: pointer; }
+.focus-len button.on { background: #4a90d9; color: #fff; }

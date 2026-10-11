@@ -115,13 +115,23 @@ function paintRent(now) {
 const today = () => new Date().toISOString().slice(0, 10);
 const lsg = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
 const lss = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+// Audit round 2: a 🏟️ test track (3 laps, a quick question at every corner -- right = clean
+// corner, wrong = spin-out; best lap total kept), a weekly racing contract (win 3 drag races this
+// week = 20 coins), and set bonuses (own every car / plane / boat = 15 coins each, once).
+const weekKey = () => { const d = new Date(); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
+function contract() { let c = {}; try { c = JSON.parse(lsg("gg_contract", "{}")) || {}; } catch (e) {} if (c.w !== weekKey()) c = { w: weekKey(), wins: 0, paid: false }; return c; }
 function fun() {
   const all = ["car", "plane", "boat"].flatMap(c => VEHICLE_SKINS[c]); const own = all.filter(sk => !sk.cost || G.owned[sk.id]).length;
   const job = lsg("gg_job", "") === today() ? (lsg("gg_jobpaid", "") === today() ? "paid" : "done") : "open";
   $("gg-fun").innerHTML = `<div class="gg-funrow"><button class="kit-btn" id="gg-td" type="button">🏁 Test drive</button><button class="kit-btn" id="gg-dr" type="button">🚦 Drag race</button><a class="kit-btn alt" href="../mathville/?drive=1">🚗 Drive Mode</a></div>
     <div class="gg-sub" style="margin-top:8px">🏆 Collection: <b>${own}/${all.length}</b> vehicles <span class="gg-cbar"><i style="width:${Math.round(own / all.length * 100)}%"></i></span></div>
+    <div class="gg-funrow" style="margin-top:6px"><button class="kit-btn" id="gg-tt" type="button">🏟️ Test track${lsg("gg_track_best", "") ? ` (best ${lsg("gg_track_best", "")}s)` : ""}</button></div>
+    <div class="gg-sub">📜 Weekly contract: win 3 drag races — ${(() => { const c = contract(); return c.paid ? "paid ✔" : c.wins >= 3 ? `✅ <button class="kit-btn" id="gg-ct" type="button" style="padding:4px 10px;font-size:.75rem">Claim 🪙20</button>` : `${c.wins}/3`; })()}</div>
+    <div class="gg-sub">🎖️ Sets: ${["car", "plane", "boat"].map(c => { const set = VEHICLE_SKINS[c], have = set.filter(sk => !sk.cost || G.owned[sk.id]).length, full = have === set.length, paid = lsg("gg_set_" + c, "") === "1"; return `${c === "car" ? "🚗" : c === "plane" ? "✈️" : "⛵"} ${have}/${set.length}${full && !paid ? ` <button class="kit-btn" data-set="${c}" type="button" style="padding:3px 8px;font-size:.7rem">Claim 🪙15</button>` : full ? " ✔" : ""}`; }).join(" · ")}</div>
     <div class="gg-sub">🧰 Daily job: finish a test drive or drag race ${job === "open" ? "— 0/1" : job === "done" ? `— ✅ <button class="kit-btn" id="gg-job" type="button" style="padding:4px 10px;font-size:.75rem">Claim 🪙8</button>` : "— paid ✔"}</div>`;
-  $("gg-td").onclick = testDrive; $("gg-dr").onclick = dragRace;
+  $("gg-td").onclick = testDrive; $("gg-dr").onclick = dragRace; $("gg-tt").onclick = testTrack;
+  const ct = $("gg-ct"); if (ct) ct.onclick = async () => { const c = contract(); c.paid = true; lss("gg_contract", JSON.stringify(c)); try { await LB.creditWallet({ coins: 20 }); } catch (e) {} K.toastAdv("Racing contract complete! +20 coins"); load(); };
+  $("gg-fun").querySelectorAll("[data-set]").forEach(b => b.onclick = async () => { lss("gg_set_" + b.dataset.set, "1"); try { await LB.creditWallet({ coins: 15 }); } catch (e) {} K.toastAdv("Full set bonus! +15 coins"); load(); });
   const jb = $("gg-job"); if (jb) jb.onclick = async () => { lss("gg_jobpaid", today()); try { await LB.creditWallet({ coins: 8 }); } catch (e) {} K.toastAdv("Garage job done! +8 coins"); load(); };
 }
 function jobDone() { if (lsg("gg_job", "") !== today()) lss("gg_job", today()); }
@@ -152,7 +162,26 @@ function dragRace() {
     o.querySelector("#gg-o").innerHTML = q.options.map(x => `<button class="kit-opt" type="button" data-o="${K.esc(x)}">${K.esc(x)}</button>`).join("");
     o.querySelectorAll(".kit-opt").forEach(b => b.onclick = () => { const ok = b.dataset.o === q.correctLabel; K.record("garage", q.key, ok, q); if (ok) { right++; me = Math.min(100, me + 21); } o.querySelector("#gg-pa").style.left = me + "%"; n++; if (me >= 100) return end(true); if (n >= 5) return end(me > bot); ask(); });
   }
-  async function end(win) { if (done) return; done = true; clearInterval(bt); jobDone(); o.querySelector(".kit-modal").innerHTML = `<div class="kit-big">${win ? "🏆" : "🤖"}</div><h2>${win ? "You win the drag race!" : "Bo-Bot wins this time"}</h2><p class="kit-sub">${right}/5 right</p><div class="kit-bonus" id="gg-b"></div><button class="kit-btn block" id="gg-x" type="button">Back to the garage</button>`; o.querySelector("#gg-x").onclick = () => { o.remove(); load(); }; K.finish("garage", win ? 6 : 2, o.querySelector("#gg-b")); }
+  async function end(win) { if (done) return; done = true; clearInterval(bt); jobDone(); if (win) { const c = contract(); c.wins++; lss("gg_contract", JSON.stringify(c)); } o.querySelector(".kit-modal").innerHTML = `<div class="kit-big">${win ? "🏆" : "🤖"}</div><h2>${win ? "You win the drag race!" : "Bo-Bot wins this time"}</h2><p class="kit-sub">${right}/5 right</p><div class="kit-bonus" id="gg-b"></div><button class="kit-btn block" id="gg-x" type="button">Back to the garage</button>`; o.querySelector("#gg-x").onclick = () => { o.remove(); load(); }; K.finish("garage", win ? 6 : 2, o.querySelector("#gg-b")); }
+  ask();
+}
+function testTrack() {
+  const o = overlay(`<h2>🏟️ Test track</h2><p class="kit-sub">3 laps, 3 corners each. Answer fast to take each corner cleanly!</p><div class="gg-track"><span id="gg-car">🏎️</span></div><div class="kit-sub" id="gg-lap" style="font-weight:800"></div><div class="kit-q" id="gg-q"></div><div class="kit-opts" id="gg-o"></div>`);
+  let corner = 0, spins = 0; const t0 = performance.now();
+  function ask() {
+    if (corner >= 9) {
+      const secs = Math.round((performance.now() - t0) / 1000 + spins * 3), best = Number(lsg("gg_track_best", "0"));
+      if (!best || secs < best) lss("gg_track_best", String(secs)); jobDone();
+      o.querySelector(".kit-modal").innerHTML = `<div class="kit-big">🏁</div><h2>${secs}s</h2><p class="kit-sub">Spin-outs: ${spins} (+3s each)${!best || secs < best ? " · 🌟 New track record!" : ` · best ${best}s`}</p><div class="kit-bonus" id="gg-b"></div><button class="kit-btn block" id="gg-x" type="button">Back to the garage</button>`;
+      o.querySelector("#gg-x").onclick = () => { o.remove(); load(); }; K.finish("garage", Math.max(2, 9 - spins), o.querySelector("#gg-b")); return;
+    }
+    o.querySelector("#gg-lap").textContent = `Lap ${Math.floor(corner / 3) + 1}/3 · corner ${corner % 3 + 1}/3`;
+    o.querySelector("#gg-car").style.left = (corner / 9 * 90) + "%";
+    const q = K.question({ subject: "math", difficulty: "easy" });
+    o.querySelector("#gg-q").textContent = q.prompt;
+    o.querySelector("#gg-o").innerHTML = q.options.map(x => `<button class="kit-opt" type="button" data-o="${K.esc(x)}">${K.esc(x)}</button>`).join("");
+    o.querySelectorAll(".kit-opt").forEach(b => b.onclick = () => { const ok = b.dataset.o === q.correctLabel; K.record("garage", q.key, ok, q); const car = o.querySelector("#gg-car"); car.classList.remove("spin"); void car.offsetWidth; if (!ok) { spins++; car.classList.add("spin"); } corner++; setTimeout(ask, ok ? 250 : 700); });
+  }
   ask();
 }
 function tuneQuiz(id) {

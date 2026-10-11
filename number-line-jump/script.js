@@ -32,6 +32,14 @@ function initNumberLineJump() {
   const JUMPERS = ["🐇", "🐸", "🦘", "🐿️"];
   const lsn = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
   const lsnw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  // Audit round 2: three kinds of number line -- 🔢 whole numbers, 🍕 fractions (0 to 1, jump to
+  // e.g. 5/8) and ❄️ negatives (-20 to 20) -- plus a Bo-Bot rival who jumps after you each turn.
+  const LINES = { whole: "🔢 Whole", frac: "🍕 Fractions", neg: "❄️ Negatives" };
+  let line = lsn("nlj_line", "whole"); if (!LINES[line]) line = "whole";
+  let botPts = 0;
+  const span = () => state.bound - (state.min || 0);
+  const v2pct = v => (v - (state.min || 0)) / span() * 100, pct2v = p => (state.min || 0) + p / 100 * span();
+  const fmtV = v => line === "frac" ? `${Math.round(v * state.den)}/${state.den}` : Math.round(v).toLocaleString("en-US");
   let mode = lsn("nlj_mode", "normal"), jumper = lsn("nlj_jumper", "🐇"), points = 0, streak = 0;
   if (!MODES[mode]) mode = "normal";
 
@@ -68,10 +76,10 @@ function initNumberLineJump() {
 
   function renderTicks(bound) {
     clearTicks();
-    const n = MODES[mode].ticks === 1 ? 4 : MODES[mode].ticks;
+    const n = line === "frac" ? state.den : line === "neg" ? 8 : MODES[mode].ticks === 1 ? 4 : MODES[mode].ticks;
     for (let i = 0; i <= n; i++) {
       const pct = i * 100 / n;
-      const val = Math.round((bound * pct) / 100);
+      const val = pct2v(pct);
       const tick = document.createElement("div");
       tick.className = "nlj-tick";
       tick.style.left = pct + "%";
@@ -79,7 +87,7 @@ function initNumberLineJump() {
       const label = document.createElement("div");
       label.className = "nlj-tick-label";
       label.style.left = pct + "%";
-      label.textContent = MODES[mode].ticks === 1 && i > 0 && i < n ? "" : n === 10 && i % 2 ? "" : val.toLocaleString("en-US");
+      label.textContent = line === "frac" ? (mode === "pro" && i > 0 && i < n ? "" : n > 5 && i % 2 && i !== n ? "" : i === 0 ? "0" : i === n ? "1" : fmtV(val)) : MODES[mode].ticks === 1 && i > 0 && i < n ? "" : n === 10 && i % 2 ? "" : fmtV(val);
       trackWrap.insertBefore(label, runner);
     }
   }
@@ -109,9 +117,11 @@ function initNumberLineJump() {
 
   function askQuestion() {
     if (state.qIndex >= ROUND_SIZE) { finishRound(); return; }
-    const q = rollQuestion();
+    let q;
+    if (line === "frac") { state.den = [2, 4, 5, 8, 10][rand(0, 4)]; const k = rand(1, state.den - 1); q = { prompt: `Jump to ${k}/${state.den}`, answer: k / state.den }; state.min = 0; state.bound = 1; }
+    else if (line === "neg") { const a = rand(-15, 12), b = rand(-9, 9) || 4, ans = a + b; q = { prompt: `${a} ${b < 0 ? "−" : "+"} ${Math.abs(b)} = ?`.replace(/^-/, "−"), answer: ans }; if (ans < -20 || ans > 20) return askQuestion(); state.min = -20; state.bound = 20; }
+    else { q = rollQuestion(); state.min = 0; state.bound = boundFor(q.answer); }
     state.answer = q.answer;
-    state.bound = boundFor(q.answer);
     document.getElementById("nlj-q-prompt").textContent = q.prompt;
     renderTicks(state.bound);
     resetTrackVisuals();
@@ -138,7 +148,7 @@ function initNumberLineJump() {
     const dx = e.clientX - state.dragStartX;
     const pct = Math.max(0, Math.min(100, (dx / rect.width) * 130));
     pullFill.style.width = pct + "%";
-    pullHint.textContent = pct < 5 ? "👉 Drag right to power up your jump, then let go!" : MODES[mode].live ? `Aiming at ${Math.round(pct / 100 * state.bound).toLocaleString("en-US")} — let go!` : "Let go to jump!";
+    pullHint.textContent = pct < 5 ? "👉 Drag right to power up your jump, then let go!" : MODES[mode].live ? `Aiming at ${fmtV(pct2v(pct))} — let go!` : "Let go to jump!";
   }
 
   function onDragEnd(e) {
@@ -160,11 +170,12 @@ function initNumberLineJump() {
     runner.style.left = landingPct + "%";
     setTimeout(() => {
       runner.classList.remove("jumping");
-      const landingValue = Math.round((landingPct / 100) * state.bound);
-      const targetPct = Math.max(0, Math.min(100, (state.answer / state.bound) * 100));
+      const landingValue = fmtV(pct2v(landingPct)), answerLabel = fmtV(state.answer);
+      const targetPct = Math.max(0, Math.min(100, v2pct(state.answer)));
       const off = Math.abs(landingPct - targetPct), isHit = off <= MODES[mode].tol * 100;
       const grade = off <= 2 ? 3 : off <= MODES[mode].tol * 50 ? 2 : isHit ? 1 : 0;
       if (isHit) { streak++; points += grade + (streak >= 3 ? 1 : 0); } else streak = 0;
+      const br = Math.random(), botGrade = br < 0.25 ? 3 : br < 0.55 ? 2 : br < 0.8 ? 1 : 0; botPts += botGrade;
 
       targetFlag.style.left = targetPct + "%";
       targetFlag.classList.add("show");
@@ -177,10 +188,10 @@ function initNumberLineJump() {
       if (isHit) {
         state.hits++;
         hudHits.textContent = state.hits;
-        resultBanner.textContent = `${grade === 3 ? "🌟 PERFECT" : grade === 2 ? "🎯 GREAT" : "👍 OK"} — landed on ${landingValue}, the answer was ${state.answer}! +${grade}${streak >= 3 ? ` (+1 streak 🔥${streak})` : ""}`;
+        resultBanner.textContent = `${grade === 3 ? "🌟 PERFECT" : grade === 2 ? "🎯 GREAT" : "👍 OK"} — landed on ${landingValue}, the answer was ${answerLabel}! +${grade}${streak >= 3 ? ` (+1 streak 🔥${streak})` : ""} · 🤖 Bo-Bot +${botGrade}`;
         resultBanner.classList.remove("miss");
       } else {
-        resultBanner.textContent = `You landed on ${landingValue}, the answer was ${state.answer}.`;
+        resultBanner.textContent = `You landed on ${landingValue}, the answer was ${answerLabel}. · 🤖 Bo-Bot +${botGrade}`;
         resultBanner.classList.add("miss");
       }
 
@@ -195,8 +206,9 @@ function initNumberLineJump() {
     const title = hits >= 9 ? "Incredible jumps!" : hits >= 6 ? "Great jumping!" : hits >= 3 ? "Nice try!" : "Keep practicing!";
     document.getElementById("nlj-end-emoji").textContent = emoji;
     document.getElementById("nlj-end-title").textContent = title;
-    const bk = "nlj_best_" + mode, best = Number(lsn(bk, "0")); if (points > best) lsnw(bk, String(points));
-    document.getElementById("nlj-end-sub").textContent = `${MODES[mode].label}: you landed ${hits}/${ROUND_SIZE} jumps for ${points} points.${points > best ? " 🌟 New best!" : ` Best: ${best}.`}`;
+    const vsBot = points > botPts ? "You beat Bo-Bot! 🏆" : points === botPts ? "Tied with Bo-Bot!" : "Bo-Bot won this time.";
+    const bk = "nlj_best_" + mode + (line === "whole" ? "" : "_" + line), best = Number(lsn(bk, "0")); if (points > best) lsnw(bk, String(points));
+    document.getElementById("nlj-end-sub").textContent = `${MODES[mode].label}: you landed ${hits}/${ROUND_SIZE} jumps for ${points} points (Bo-Bot ${botPts}). ${vsBot}${points > best ? " 🌟 New best!" : ` Best: ${best}.`}`;
     const bonusEl = document.getElementById("nlj-end-bonus");
     bonusEl.textContent = "";
     if (window.AIGLeaderboard) {
@@ -211,7 +223,7 @@ function initNumberLineJump() {
 
   function startRound() {
     state.qIndex = 0;
-    state.hits = 0; points = 0; streak = 0;
+    state.hits = 0; points = 0; streak = 0; botPts = 0;
     hudHits.textContent = 0;
     runner.textContent = jumper;
     document.getElementById("nlj-end-overlay").classList.add("hidden");
@@ -222,8 +234,10 @@ function initNumberLineJump() {
   function drawPicker() {
     let box = document.getElementById("nlj-pick"); if (!box) { box = document.createElement("div"); box.id = "nlj-pick"; box.className = "nlj-pick"; document.getElementById("nlj-start-btn").before(box); }
     box.innerHTML = `<div>${Object.entries(MODES).map(([k, m]) => `<button type="button" data-m="${k}" class="${k === mode ? "on" : ""}">${m.label}<small>${Number(lsn("nlj_best_" + k, "0")) ? ` best ${lsn("nlj_best_" + k, "0")}` : ""}</small></button>`).join("")}</div>
+      <div>${Object.entries(LINES).map(([k, l]) => `<button type="button" data-l="${k}" class="${k === line ? "on" : ""}">${l}</button>`).join("")}</div>
       <div>${JUMPERS.map(j => `<button type="button" data-j="${j}" class="${j === jumper ? "on" : ""}">${j}</button>`).join("")}</div>`;
     box.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { mode = b.dataset.m; lsnw("nlj_mode", mode); drawPicker(); });
+    box.querySelectorAll("[data-l]").forEach(b => b.onclick = () => { line = b.dataset.l; lsnw("nlj_line", line); drawPicker(); });
     box.querySelectorAll("[data-j]").forEach(b => b.onclick = () => { jumper = b.dataset.j; lsnw("nlj_jumper", jumper); drawPicker(); });
   }
   drawPicker();

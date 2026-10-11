@@ -38,6 +38,7 @@
   .gg-sw button{border:2px solid #e5d5be;background:#fff;border-radius:10px;padding:4px 10px;font-weight:800;cursor:pointer;color:inherit}
   .gg-sw button.on{border-color:#b45309;background:#fde68a}
 
+  .gg-track{position:relative;height:46px;background:repeating-linear-gradient(90deg,#555 0 18px,#666 18px 36px);border:3px solid #1b1b1b;margin:8px 0}.gg-track #gg-car{position:absolute;top:6px;font-size:1.7rem;transition:left .35s;transform:scaleX(-1)}.gg-track #gg-car.spin{animation:ggSpin .6s}@keyframes ggSpin{to{transform:scaleX(-1) rotate(360deg)}}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=6" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="garage";</script>
@@ -63,6 +64,6 @@
 <script src="../vehicles.js"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Vehicle Workshop',accent:'#b45309',bg:'linear-gradient(180deg,#fff3e0,#ffdcae)'});</script>
-<script src="script.js?v=2"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>

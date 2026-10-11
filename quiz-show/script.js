@@ -34,6 +34,7 @@ function initQuizShow() {
   // question 7 with a heartbeat, "take the money" to walk away with your current prize, audience
   // applause on right answers, and a best-prize record.
   const life = document.querySelector(".qs-lifelines") || document.getElementById("qs-lifeline-5050").parentElement;
+  life.insertAdjacentHTML("beforeend", `<button class="qs-lifeline-btn" id="qs-lifeline-swap" type="button" disabled title="Win Fastest Finger to earn it">🔄 Swap</button>`);
   life.insertAdjacentHTML("beforeend", `<button class="qs-lifeline-btn" id="qs-lifeline-aud" type="button">📊 Audience</button><button class="qs-lifeline-btn" id="qs-lifeline-phone" type="button">📞 Phone Bo</button><button class="qs-lifeline-btn qs-walk" id="qs-walk" type="button">💼 Take the money</button>`);
   const extra = document.createElement("div"); extra.className = "qs-extra"; extra.id = "qs-extra"; document.getElementById("qs-q-card").appendChild(extra);
   function beep(f, d) { try { const a = window.__qsA || (window.__qsA = new (window.AudioContext || window.webkitAudioContext)()), o = a.createOscillator(), g = a.createGain(), t = a.currentTime; o.frequency.value = f; g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d); } catch (e) {} }
@@ -275,7 +276,31 @@ function initQuizShow() {
     document.getElementById("qs-end-overlay").classList.remove("hidden");
   }
 
+  // Audit round 2: Fastest Finger -- before the hot seat, race Bo-Bot on 3 quick questions (Bo-Bot
+  // buzzes in after 3-6s). Win 2 and you earn the 🔄 Swap lifeline (replace a question) for the show.
+  function fastestFinger(done) {
+    const o = document.createElement("div"); o.className = "qs-overlay"; document.body.appendChild(o);
+    let n = 0, me = 0, bot = 0, timer = null;
+    const ask = () => {
+      clearInterval(timer);
+      if (n >= 3) { const won = me >= 2; o.innerHTML = `<div class="qs-card"><div class="qs-modal-emoji">${won ? "🏆" : "🤖"}</div><div class="qs-modal-title">${won ? "You won Fastest Finger!" : "Bo-Bot was faster"}</div><p class="qs-modal-sub">You ${me} – ${bot} Bo-Bot. ${won ? "You earned the 🔄 Swap lifeline!" : "You still get the hot seat — good luck!"}</p><button class="qs-btn qs-btn-primary" id="qs-ff-go">Take the hot seat</button></div>`; o.querySelector("#qs-ff-go").onclick = () => { o.remove(); done(won); }; return; }
+      const q = rollQuestion(), botMs = 3000 + Math.random() * 3000, t0 = Date.now();
+      o.innerHTML = `<div class="qs-card"><div class="qs-modal-sub" style="font-weight:800">⚡ Fastest Finger ${n + 1}/3 · You ${me} – ${bot} 🤖</div><div class="qs-ff-bar"><i id="qs-ffb"></i></div><div class="qs-modal-title" style="font-size:1.1rem">${q.prompt}</div><div class="qs-ff-grid">${q.options.map(x => `<button class="qs-q-btn" type="button">${x}</button>`).join("")}</div></div>`;
+      timer = setInterval(() => { const k = (Date.now() - t0) / botMs; const b = o.querySelector("#qs-ffb"); if (b) b.style.width = Math.min(100, k * 100) + "%"; if (k >= 1) { clearInterval(timer); bot++; n++; o.querySelector(".qs-modal-sub").textContent = `🤖 Bo-Bot buzzed first! It was ${q.correctLabel}`; setTimeout(ask, 1300); } }, 80);
+      o.querySelectorAll(".qs-q-btn").forEach(b => b.onclick = () => { clearInterval(timer); const ok = b.textContent === q.correctLabel; if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("quiz-show", q.key, ok); if (ok) me++; else bot++; n++; b.classList.add(ok ? "correct" : "wrong"); setTimeout(ask, 800); });
+    };
+    ask();
+  }
+  document.getElementById("qs-lifeline-swap").addEventListener("click", () => {
+    if (!state.swapReady || !state.currentQ) return; state.swapReady = false; document.getElementById("qs-lifeline-swap").disabled = true;
+    const q = rollQuestion(); state.currentQ = q; showQuestion(q);
+  });
   function startShow() {
+    fastestFinger(won => { state.swapReady = won; document.getElementById("qs-lifeline-swap").disabled = !won; startShowReal(); });
+    document.getElementById("qs-end-overlay").classList.add("hidden");
+    document.getElementById("qs-start-overlay").classList.add("hidden");
+  }
+  function startShowReal() {
     if (window.AIGSynthBgm) AIGSynthBgm.start();
     state.qIndex = 0;
     state.prizeIndex = -1;
