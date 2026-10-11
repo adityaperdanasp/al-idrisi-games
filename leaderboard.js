@@ -23,6 +23,53 @@
   const aigDb = aigApp.database();
 
   // =====================================================================
+  // CLOUD SAVE FOR BROWSER-ONLY PROGRESS (audit round 2) -- many games keep
+  // records, collections and campaigns in localStorage (rekor, Monsterdex,
+  // Heist Campaign, restaurant days, zen garden, settings...). That used to
+  // vanish on a new phone or a cleared browser. Every localStorage write is
+  // now mirrored to players/{id}/localSave/{key} = {k, v, t}, and on page
+  // load anything newer in the cloud is copied back; if that changed a key
+  // the page reloads once so the game reads the restored value. Newest
+  // write wins per key. Keys that already have their own cloud sync or must
+  // stay per-device are skipped (see CS_SKIP).
+  // =====================================================================
+  (function cloudSave() {
+    try {
+      const player = window.AIGPlayer && AIGPlayer.getPlayer();
+      if (!player || player.role === "parent" || !window.localStorage) return;
+      const CS_SKIP = /^(aig_player|aig_cs_meta|aig_offline_queue|aig_dashboard_unlocked|aig_season_override|aig_play_limit|aig_push_token|firebase|mathville\.progress|solarquest\.progress|azkacraft-progress)/;
+      const base = aigDb.ref(`players/${player.id}/localSave`);
+      const enc = k => encodeURIComponent(k).replace(/\./g, "%2E").replace(/\*/g, "%2A");
+      const store = window.localStorage, origSet = Storage.prototype.setItem, origRemove = Storage.prototype.removeItem;
+      const readMeta = () => { try { return JSON.parse(store.getItem("aig_cs_meta") || "{}") || {}; } catch (e) { return {}; } };
+      const writeMeta = m => { try { origSet.call(store, "aig_cs_meta", JSON.stringify(m)); } catch (e) {} };
+      const pending = {}; let timer = null;
+      const flush = () => { timer = null; const meta = readMeta(); Object.keys(pending).forEach(k => { const v = pending[k], t = Date.now(); delete pending[k]; meta[k] = t; base.child(enc(k)).set(v === null ? null : { k, v, t }).catch(() => {}); }); writeMeta(meta); };
+      const queue = (k, v) => { if (CS_SKIP.test(k)) return; pending[k] = v; if (!timer) timer = setTimeout(flush, 1500); };
+      Storage.prototype.setItem = function (k, v) { origSet.call(this, k, v); if (this === store) queue(String(k), String(v)); };
+      Storage.prototype.removeItem = function (k) { origRemove.call(this, k); if (this === store) queue(String(k), null); };
+      window.addEventListener("pagehide", () => { if (timer) { clearTimeout(timer); flush(); } });
+      base.once("value").then(snap => {
+        const cloud = snap.val() || {}, meta = readMeta(); let changed = false;
+        const inCloud = {};
+        Object.values(cloud).forEach(e => {
+          if (!e || typeof e.k !== "string" || CS_SKIP.test(e.k)) return;
+          inCloud[e.k] = true;
+          if ((e.t || 0) > (meta[e.k] || 0)) {
+            if (store.getItem(e.k) !== e.v) { origSet.call(store, e.k, e.v); changed = true; }
+            meta[e.k] = e.t || 0;
+          }
+        });
+        writeMeta(meta);
+        // First run on this device: upload progress that only exists here.
+        for (let i = 0; i < store.length; i++) { const k = store.key(i); if (k && !inCloud[k] && !CS_SKIP.test(k)) queue(k, store.getItem(k)); }
+        const flag = "aig_cs_reloaded" + location.pathname;
+        try { if (changed && !sessionStorage.getItem(flag)) { sessionStorage.setItem(flag, "1"); location.reload(); } } catch (e) {}
+      }).catch(() => {});
+    } catch (e) { /* cloud save must never break a game */ }
+  })();
+
+  // =====================================================================
   // LIGHTWEIGHT CLIENT ERROR LOGGING -- catches uncaught errors and
   // unhandled promise rejections across every game (this file is shared),
   // logging a small record to Firebase instead of a bug only ever
