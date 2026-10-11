@@ -1238,3 +1238,23 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
   from { transform: perspective(800px) rotateY(-70deg); opacity: .15; }
   to { transform: perspective(800px) rotateY(0deg); opacity: 1; }
 }
+
+/* Back-to-hub button: on the landing menu it's a clear labelled pill at the
+   top-left (it used to be a tiny 🏠 in the bottom corner that kids missed,
+   especially on a wide desktop window). Other screens keep the small corner
+   icon so it doesn't collide with their own "← Menu" buttons. */
+body:has(#screen-landing.active) .hub-home-btn {
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+  left: 12px;
+  width: auto;
+  height: auto;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 800;
+  border: 3px solid #1b1b1b;
+  box-shadow: 0 3px 0 #1b1b1b;
+  background: #fff;
+  color: #1b1b1b;
+}
+body:has(#screen-landing.active) .hub-home-btn::after { content: " BrainBox"; }
