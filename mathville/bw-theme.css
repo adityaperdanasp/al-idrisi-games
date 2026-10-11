@@ -44,3 +44,14 @@ html.bw-g[data-bw="uni"] { --primary: #4caf50; --primary-dark: #2a6a1f; --second
 /* readable digits: answer / keypad buttons stay in the plain pixel font */
 html.bw-g[data-bw="race"] .answer-btn, html.bw-g[data-bw="race"] .key { background: #ecdcb0; border: 4px solid var(--bwg-ink); color: #3b2a14; box-shadow: var(--bwg-bevel), 0 4px 0 rgba(0,0,0,.3); font-size: 1.5rem; }
 html.bw-g[data-bw="race"] .answer-btn:active, html.bw-g[data-bw="race"] .key:active { transform: translateY(3px); }
+
+/* ---------------- Game Room kit (gamekit.js pages) ---------------- */
+html.bw-g .kit-card, html.bw-g .kit-modal { border: 3px solid var(--bwg-ink); box-shadow: var(--bwg-bevel), 0 5px 0 rgba(0,0,0,.25); }
+html.bw-g .kit-opt { border: 3px solid var(--bwg-ink) !important; background: var(--bwg-parch); box-shadow: var(--bwg-bevel); font-size: 1.05rem; }
+html.bw-g .kit-opt.right { background: #8be08f !important; } html.bw-g .kit-opt.wrong { background: #ff9d8a !important; }
+html.bw-g .kit-opt:active:not(:disabled) { transform: translateY(2px); }
+html.bw-g .kit-btn { border: 3px solid var(--bwg-ink); }
+html.bw-g .kit-bar { border: 2px solid var(--bwg-ink); background: #3a3a3a; } html.bw-g .kit-bar > i { background: repeating-linear-gradient(90deg, #5fb83a 0 10px, #4a9a2c 10px 12px); }
+html.bw-g .kit-back { border: 2px solid var(--bwg-ink); background: var(--bwg-stone); color: #fff; }
+html.bw-g .gr-card { border: 3px solid var(--bwg-ink) !important; box-shadow: var(--bwg-bevel), 0 4px 0 rgba(0,0,0,.25); background: var(--bwg-parch); }
+html.bw-g .gr-tag { border: 2px solid var(--bwg-ink); background: #fff; }

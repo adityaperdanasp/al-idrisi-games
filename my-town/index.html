@@ -24,6 +24,8 @@
   .mt-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #f0e8f7}
 
 </style>
+<link rel="stylesheet" href="/blockworld-games.css?v=5" />
+<script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="my-town";</script>
 </head>
 <body>
 <div class="kit-page" id="app">
@@ -44,8 +46,9 @@
 <script src="../juice.js"></script>
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
-<script src="../gamekit.js"></script>
+<script src="../gamekit.js?v=3"></script>
 <script>AIGKit.mount({title:'My Town',accent:'#3f8f5f',bg:'linear-gradient(180deg,#e6f5dc,#cfeeb9)'});</script>
 <script src="script.js"></script>
+<script>document.addEventListener("DOMContentLoaded",()=>{const a=document.createElement("a");a.href="../city-builder/";a.textContent="🧱 Earn bricks and grow your city in City Builder →";a.style.cssText="display:block;text-align:center;margin:10px 14px 40px;padding:10px;background:#fff3c4;border:3px solid #1b1b1b;font-weight:800;color:#5a3a1a;text-decoration:none";(document.querySelector(".kit-page")||document.body).appendChild(a);});</script>
 </body>
 </html>

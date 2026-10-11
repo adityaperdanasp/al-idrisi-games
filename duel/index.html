@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
-<title>Duel a Friend — BrainBox</title>
+<title>Duel Arena — BrainBox</title>
 <meta name="theme-color" content="#D64545">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -61,7 +61,7 @@
   .dl-result-title { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 6px; }
   .dl-result-sub { font-weight: 700; color: #8a7a6a; margin-bottom: 18px; font-size: .9rem; line-height: 1.5; }
 </style>
-<link rel="stylesheet" href="/blockworld-games.css?v=4" />
+<link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="duel";</script>
 </head>
 <body>
@@ -69,7 +69,7 @@
 <div class="dl-page" id="dl-page">
   <div class="dl-topbar">
     <a href="../" class="dl-back">←</a>
-    <div class="dl-title">⚔️ Duel a Friend</div>
+    <div class="dl-title">⚔️ Duel Arena</div>
   </div>
 
   <div class="dl-tabs">
@@ -127,5 +127,6 @@
 <script src="../mathville/generators.js"></script>
 <script src="../game-music.js"></script>
 <script src="script.js"></script>
+<script>document.addEventListener("DOMContentLoaded",()=>{const a=document.createElement("a");a.href="../friend-duel/";a.textContent="Older 8-question duels →";a.style.cssText="display:block;text-align:center;margin:14px;font-weight:800;color:#b8342f";(document.querySelector(".dl-page")||document.body).appendChild(a);});</script>
 </body>
 </html>
