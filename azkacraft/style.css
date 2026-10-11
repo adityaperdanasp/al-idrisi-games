@@ -1262,3 +1262,6 @@ body:has(#screen-landing.active) .hub-home-btn {
   color: #1b1b1b;
 }
 body:has(#screen-landing.active) .hub-home-btn::after { content: " BrainBox"; }
+
+/* Home/back always on top of pop-ups and full-screen layers, so a kid can leave mid-game. */
+.hub-home-btn { z-index: 10000; }

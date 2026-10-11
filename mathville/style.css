@@ -2699,3 +2699,6 @@ button { font-family: inherit; }
 .focus-route i { height: 16px; background: #e8e2d4; border: 1px solid #1b1b1b; font-style: normal; font-size: .7rem; display: flex; align-items: center; justify-content: center; }
 .focus-route i.cp { background: #fff3c4; } .focus-route i.ok { background: #6cc04a; } .focus-route i.no { background: #e0483a; }
 .focus-route i.me { transform: scale(1.35); background: #fff; z-index: 1; }
+
+/* Home/back always on top of pop-ups and full-screen layers, so a kid can leave mid-game. */
+.topbar { z-index: 10000; }

@@ -1447,3 +1447,6 @@ button:focus-visible {
 .sq-fly-ctl { display: flex; gap: 10px; padding: 12px; } .sq-fly-ctl button { flex: 1; font-size: 1.4rem; padding: 14px 0; border: 3px solid #1b1b1b; background: #fff; color: #1b1b1b; font-weight: 800; cursor: pointer; } .sq-fly-ctl #sq-skip { font-size: .85rem; flex: .8; }
 .sq-continue { display: block; margin: 14px auto 0; }
 .sq-say { border: 2px solid #1b1b1b; background: #fff; font-size: 1.1rem; padding: 2px 8px; cursor: pointer; margin-left: 6px; }
+
+/* Home/back always on top of pop-ups and full-screen layers, so a kid can leave mid-game. */
+.topbar { z-index: 10000; }

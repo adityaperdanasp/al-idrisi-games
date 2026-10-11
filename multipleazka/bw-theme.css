@@ -55,3 +55,12 @@ html.bw-g .kit-bar { border: 2px solid var(--bwg-ink); background: #3a3a3a; } ht
 html.bw-g .kit-back { border: 2px solid var(--bwg-ink); background: var(--bwg-stone); color: #fff; }
 html.bw-g .gr-card { border: 3px solid var(--bwg-ink) !important; box-shadow: var(--bwg-bevel), 0 4px 0 rgba(0,0,0,.25); background: var(--bwg-parch); }
 html.bw-g .gr-tag { border: 2px solid var(--bwg-ink); background: #fff; }
+
+/* Back button always on top: start menus, mode pickers, question boxes and
+   tutorials are full-screen overlays that used to sit OVER the top-left ←,
+   so mid-game there was no way back to the hub. Lifting the back link above
+   every overlay keeps it tappable on every screen. */
+html.bw-g a[href="../"]:not([style*="position"]),
+html.bw-g a[href="../index.html"],
+html.bw-g a[href="../game-room/"],
+html.bw-g .kit-back { position: relative; z-index: 2147483000; }

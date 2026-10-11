@@ -1313,3 +1313,6 @@ body:not(:has(#screen-race.active)) .home-btn:not(.hidden) {
   color: #1b1b1b;
 }
 body:not(:has(#screen-race.active)) .home-btn:not(.hidden)::after { content: " BrainBox"; }
+
+/* Home/back always on top of pop-ups and full-screen layers, so a kid can leave mid-game. */
+.home-btn { z-index: 10000; }
