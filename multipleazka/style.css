@@ -1294,6 +1294,10 @@ html.mr2-calm .mr-shake, html.mr2-calm .mr-zoom { animation: none !important; } 
    from the game card). During a race it stays the small corner icon so it
    doesn't cover the track HUD. */
 body:not(:has(#screen-race.active)) .home-btn:not(.hidden) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
   top: calc(12px + env(safe-area-inset-top, 0px));
   bottom: auto;
   left: 12px;

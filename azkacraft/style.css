@@ -1244,6 +1244,10 @@ html[data-gender="girl"] .mascot-shirt-boy { display: none; }
    especially on a wide desktop window). Other screens keep the small corner
    icon so it doesn't collide with their own "← Menu" buttons. */
 body:has(#screen-landing.active) .hub-home-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
   top: calc(12px + env(safe-area-inset-top, 0px));
   bottom: auto;
   left: 12px;
