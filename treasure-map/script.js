@@ -12,6 +12,7 @@
    ================================================================= */
 
 const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+const WEEKLY = [["🌴", "⛰️", "🏚️", "🌊", "🗿", "🕳️", "🌵", "🏰"], ["🌲", "🍄", "🦉", "🏞️", "🪵", "🐻", "🌋", "⛺"], ["🏜️", "🐪", "🌵", "🏺", "🦂", "🐍", "☀️", "🕌"]];
 const LANDMARKS = [
   { emoji: "🌴", name: "Palm Cove", x: 15, y: 20, difficulty: "easy" },
   { emoji: "⛰️", name: "Misty Peak", x: 72, y: 14, difficulty: "easy" },
@@ -31,9 +32,14 @@ if (!player || player.role === "parent") {
   initTreasureMap();
 }
 
+// Audit batch 8: an explorer walks to each landmark, a clue points to the next spot (follow it for a
+// bonus), you dig up each treasure with quick taps, one spot is quicksand (needs 2 right answers), a
+// rival pirate moves around and makes his spot's riddle harder, a golden chest hides somewhere, the
+// landmark set changes each week, and your best time is remembered.
 function initTreasureMap() {
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
-  const state = { found: [], activeLandmark: null };
+  const state = { found: [], activeLandmark: null, clueTo: -1, clueHits: 0, quick: -1, quickNeed: 0, pirate: -1, golden: -1, t0: 0, pirateT: null, gold: 0 };
+  const wk = Math.floor(Date.now() / (7 * 86400000)) % WEEKLY.length; LANDMARKS.forEach((lm, i) => { lm.emoji = WEEKLY[wk][i]; });
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
   function shuffle(arr) {
@@ -91,20 +97,27 @@ function initTreasureMap() {
       btn.className = "tm-landmark" + (found ? " found" : "");
       btn.style.left = lm.x + "%";
       btn.style.top = lm.y + "%";
-      btn.textContent = found ? "💰" : lm.emoji;
+      btn.textContent = found ? (i === state.golden ? "👑" : "💰") : lm.emoji + (i === state.pirate ? "🏴‍☠️" : "") + (i === state.clueTo ? "❗" : "");
       btn.title = lm.name;
       btn.addEventListener("click", () => openRiddle(i));
       map.appendChild(btn);
     });
   }
 
+  function walkTo(i, then) {
+    let ex = document.getElementById("tm-explorer"); const map = document.getElementById("tm-map");
+    if (!ex) { ex = document.createElement("div"); ex.id = "tm-explorer"; ex.className = "tm-explorer"; ex.textContent = "🧭"; ex.style.left = "50%"; ex.style.top = "50%"; }
+    map.appendChild(ex); requestAnimationFrame(() => { ex.style.left = LANDMARKS[i].x + "%"; ex.style.top = LANDMARKS[i].y + "%"; }); setTimeout(then, 650);
+  }
   function openRiddle(i) {
     if (state.found.includes(i)) return;
+    if (!state.walking) { state.walking = true; return walkTo(i, () => { state.walking = false; openRiddle(i); }); }
     state.activeLandmark = i;
     const lm = LANDMARKS[i];
     document.getElementById("tm-riddle-feedback").textContent = "";
-    document.getElementById("tm-riddle-label").textContent = `Riddle at ${lm.name} ${lm.emoji}:`;
-    const q = rollQuestion(lm.difficulty);
+    const quick = i === state.quick, pir = i === state.pirate;
+    document.getElementById("tm-riddle-label").textContent = `Riddle at ${lm.name} ${lm.emoji}:${quick ? ` 🏖️ QUICKSAND — ${2 - state.quickNeed} right answers to get out!` : ""}${pir ? " 🏴‍☠️ The pirate made it harder!" : ""}`;
+    const q = rollQuestion(pir ? "hard" : lm.difficulty);
     state.activeQuestion = q;
     document.getElementById("tm-q-prompt").textContent = q.prompt;
     const grid = document.getElementById("tm-q-grid");
@@ -132,10 +145,13 @@ function initTreasureMap() {
     });
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("treasure-map", q.key, isCorrect);
 
+    if (isCorrect && i === state.quick && state.quickNeed < 1) {
+      state.quickNeed++; document.getElementById("tm-riddle-feedback").textContent = "🏖️ One foot free! One more answer…"; document.getElementById("tm-riddle-feedback").style.color = "#3F8F5F";
+      setTimeout(() => openRiddle(i), 900); return;
+    }
     if (isCorrect) {
-      state.found.push(i);
-      document.getElementById("tm-riddle-feedback").textContent = `Treasure found at ${LANDMARKS[i].name}! 💰`;
-      document.getElementById("tm-riddle-feedback").style.color = "#3F8F5F";
+      document.getElementById("tm-riddle-card").classList.add("hidden");
+      return dig(i);
     } else {
       document.getElementById("tm-riddle-feedback").textContent = "No luck -- try this spot again later!";
       document.getElementById("tm-riddle-feedback").style.color = "#D64545";
@@ -149,7 +165,26 @@ function initTreasureMap() {
     }, 1300);
   }
 
+  function dig(i) {
+    const fb = document.getElementById("tm-riddle-feedback"); let taps = 0;
+    fb.innerHTML = `<button type="button" class="tm-dig" id="tm-dig">⛏️ Dig! (tap 5 times)</button>`; fb.style.color = "#3F8F5F";
+    document.getElementById("tm-dig").onclick = () => { taps++; document.getElementById("tm-dig").textContent = `⛏️ ${"🟫".repeat(taps)}`; if (taps >= 5) found(i); };
+  }
+  function found(i) {
+    state.found.push(i);
+    const fb = document.getElementById("tm-riddle-feedback");
+    let msg = `Treasure found at ${LANDMARKS[i].name}! 💰`;
+    if (i === state.golden) { state.gold++; msg = `👑 The GOLDEN CHEST at ${LANDMARKS[i].name}!`; }
+    if (i === state.clueTo) { state.clueHits++; msg += " 🧭 You followed the clue — bonus!"; }
+    const left = LANDMARKS.map((_, k) => k).filter(k => !state.found.includes(k));
+    if (left.length) { const t = left[rand(0, left.length - 1)], dir = (LANDMARKS[t].y < LANDMARKS[i].y ? "north" : "south") + "-" + (LANDMARKS[t].x < LANDMARKS[i].x ? "west" : "east"); state.clueTo = t; msg += ` Next clue: look ${dir} of here… ❗`; }
+    fb.textContent = msg; renderHud(); renderMap();
+    setTimeout(() => { if (fb.textContent === msg) fb.textContent = ""; }, 3000);
+  }
   async function finishHunt(claimedAll) {
+    clearInterval(state.pirateT);
+    const secs = Math.round((Date.now() - state.t0) / 1000);
+    if (claimedAll) { try { const b = Number(localStorage.getItem("tm_best") || 0); if (!b || secs < b) { localStorage.setItem("tm_best", String(secs)); } } catch (e) {} }
     document.getElementById("tm-riddle-card").classList.add("hidden");
     const foundCount = state.found.length;
     const emoji = claimedAll ? "🏆" : foundCount >= 5 ? "🎉" : foundCount >= 1 ? "🙂" : "💪";
@@ -158,6 +193,8 @@ function initTreasureMap() {
     document.getElementById("tm-end-sub").textContent = claimedAll
       ? `You found all ${LANDMARKS.length} treasures and claimed the Grand Treasure!`
       : `You found ${foundCount} of ${LANDMARKS.length} treasures before finishing up. Nice work!`;
+    document.getElementById("tm-end-sub").textContent += ` ⏱️ ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}${state.gold ? " · 👑 golden chest!" : ""}${state.clueHits ? ` · 🧭 ${state.clueHits} clue${state.clueHits > 1 ? "s" : ""} followed` : ""}`;
+    if (state.gold || state.clueHits >= 3) { try { AIGLeaderboard.creditWallet({ coins: state.gold * 4 + (state.clueHits >= 3 ? 3 : 0) }); } catch (e) {} }
     const bonusEl = document.getElementById("tm-end-bonus");
     bonusEl.textContent = "";
     if (window.AIGLeaderboard) {
@@ -175,7 +212,9 @@ function initTreasureMap() {
 
   function startGame() {
     state.found = [];
-    state.activeLandmark = null;
+    state.activeLandmark = null; state.clueTo = -1; state.clueHits = 0; state.quickNeed = 0; state.gold = 0; state.t0 = Date.now();
+    state.quick = rand(3, 7); state.golden = rand(0, 7); state.pirate = rand(0, 7);
+    clearInterval(state.pirateT); state.pirateT = setInterval(() => { const left = LANDMARKS.map((_, k) => k).filter(k => !state.found.includes(k) && k !== state.activeLandmark); if (left.length) { state.pirate = left[rand(0, left.length - 1)]; renderMap(); } }, 30000);
     document.getElementById("tm-start-overlay").classList.add("hidden");
     document.getElementById("tm-end-overlay").classList.add("hidden");
     document.getElementById("tm-riddle-card").classList.add("hidden");

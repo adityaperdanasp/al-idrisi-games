@@ -27,9 +27,14 @@ if (!player || player.role === "parent") {
   initSpaceRace();
 }
 
+// Audit batch 8: between questions you steer through an asteroid field (◀ ▶) — rocks cost 10 km, stars
+// add 5 and a shield blocks one hit; planet checkpoints (Moon, Mars, Jupiter, Saturn) with a science
+// question as you pass; an alien boss as the last question (double distance, 8s timer); and a ghost
+// marker of your best run.
+const PLANETS = [[100, "🌙", "the Moon"], [250, "🔴", "Mars"], [450, "🪐", "Jupiter"], [600, "💫", "Saturn"]];
 function initSpaceRace() {
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
-  const state = { qIndex: 0, distance: 0, qStart: 0 };
+  const state = { qIndex: 0, distance: 0, qStart: 0, lane: 1, shield: false, passed: 0, sci: false, field: null };
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
   function shuffle(arr) {
@@ -89,11 +94,37 @@ function initSpaceRace() {
     document.getElementById("sr-distance").textContent = state.distance;
     const pct = Math.min(92, 4 + (state.distance / MAX_POSSIBLE_DISTANCE) * 88);
     document.getElementById("sr-rocket").style.bottom = pct + "%";
+    document.getElementById("sr-rocket").style.left = (state.lane * 30 + 20) + "%";
+    let g = document.getElementById("sr-ghost"); const best = Number(localStorage.getItem("sr_best") || 0);
+    if (best) { if (!g) { g = document.createElement("div"); g.id = "sr-ghost"; g.className = "sr-ghost"; g.textContent = "👻"; document.getElementById("sr-track").appendChild(g); } g.style.bottom = Math.min(92, 4 + (best / MAX_POSSIBLE_DISTANCE) * 88) + "%"; }
+    const p = PLANETS[state.passed]; if (p && state.distance >= p[0]) { state.passed++; state.sci = true; document.getElementById("sr-boost-toast").textContent = `${p[1]} You passed ${p[2]}! Science question next…`; }
   }
+  function asteroidField(then) {
+    const track = document.getElementById("sr-track"), ctl = document.getElementById("sr-ctl");
+    ctl.classList.remove("hidden"); document.getElementById("sr-q-card").classList.add("hidden");
+    let t = 0, spawned = 0; const objs = [];
+    const id = setInterval(() => {
+      t += 50;
+      if (t % 600 === 0 && spawned < 5) { spawned++; const r = Math.random(), el = document.createElement("div"); el.className = "sr-obj"; const lane = rand(0, 2); el.textContent = r < 0.6 ? "🪨" : r < 0.9 ? "⭐" : "🛡️"; el.style.left = (lane * 30 + 20) + "%"; el.style.top = "-10%"; track.appendChild(el); objs.push({ el, lane, y: -10, kind: el.textContent }); }
+      objs.forEach(o => { if (o.done) return; o.y += 4; o.el.style.top = o.y + "%";
+        if (o.y > 70 && o.y < 90 && o.lane === state.lane) { o.done = true; o.el.remove();
+          if (o.kind === "🪨") { if (state.shield) { state.shield = false; flash("🛡️ Shield blocked a rock!"); } else { state.distance = Math.max(0, state.distance - 10); flash("💥 Asteroid! −10 km"); } }
+          else if (o.kind === "⭐") { state.distance += 5; flash("⭐ +5 km"); } else { state.shield = true; flash("🛡️ Shield ready!"); }
+          renderHud(); }
+        if (o.y > 110 && !o.done) { o.done = true; o.el.remove(); } });
+      if (t >= 3600) { clearInterval(id); objs.forEach(o => o.el.remove()); ctl.classList.add("hidden"); document.getElementById("sr-q-card").classList.remove("hidden"); then(); }
+    }, 50);
+  }
+  function flash(t) { const el = document.getElementById("sr-boost-toast"); el.textContent = t; }
+  document.getElementById("sr-left").onclick = () => { state.lane = Math.max(0, state.lane - 1); renderHud(); };
+  document.getElementById("sr-right").onclick = () => { state.lane = Math.min(2, state.lane + 1); renderHud(); };
 
   function askQuestion() {
-    const q = rollQuestion(difficultyForIndex(state.qIndex));
-    document.getElementById("sr-q-prompt").textContent = q.prompt;
+    let q = rollQuestion(difficultyForIndex(state.qIndex));
+    if (state.sci && window.AIGQuestionPools && AIGQuestionPools.pickScience) { const sq = AIGQuestionPools.pickScience(); if (sq) q = { key: "science", ...sq }; state.sci = false; }
+    const boss = state.qIndex === QUESTION_COUNT - 1; state.boss = boss;
+    document.getElementById("sr-q-prompt").textContent = (boss ? "👾 ALIEN BOSS — double distance, 8 seconds! " : "") + q.prompt;
+    clearInterval(state.bossT); if (boss) { let left = 8; state.bossT = setInterval(() => { left -= 1; if (left <= 0) { clearInterval(state.bossT); const w = [...document.querySelectorAll("#sr-q-grid .sr-q-btn")].find(b => b.textContent !== q.correctLabel); if (w) w.click(); } }, 1000); }
     const grid = document.getElementById("sr-q-grid");
     grid.innerHTML = "";
     q.options.forEach(opt => {
@@ -119,8 +150,9 @@ function initSpaceRace() {
 
     const rocket = document.getElementById("sr-rocket");
     if (isCorrect) {
+      clearInterval(state.bossT);
       const tier = BOOST_TIERS.find(t => elapsed <= t.maxMs);
-      state.distance += tier.distance;
+      state.distance += tier.distance * (state.boss ? 2 : 1);
       document.getElementById("sr-boost-toast").textContent = tier.label;
       rocket.classList.add("boosting");
       setTimeout(() => rocket.classList.remove("boosting"), 400);
@@ -134,6 +166,8 @@ function initSpaceRace() {
       state.qIndex++;
       if (state.qIndex >= QUESTION_COUNT) {
         finishGame();
+      } else if (state.qIndex % 3 === 0) {
+        asteroidField(askQuestion);
       } else {
         askQuestion();
       }
@@ -141,6 +175,7 @@ function initSpaceRace() {
   }
 
   async function finishGame() {
+    try { if (state.distance > Number(localStorage.getItem("sr_best") || 0)) localStorage.setItem("sr_best", String(state.distance)); } catch (e) {}
     document.getElementById("sr-q-card").classList.add("hidden");
     const emoji = state.distance >= 450 ? "🌟" : state.distance >= 250 ? "🎉" : "💪";
     document.getElementById("sr-end-emoji").textContent = emoji;
@@ -182,7 +217,7 @@ function initSpaceRace() {
 
   function startGame() {
     state.qIndex = 0;
-    state.distance = 0;
+    state.distance = 0; state.lane = 1; state.shield = false; state.passed = 0; state.sci = false;
     document.getElementById("sr-start-overlay").classList.add("hidden");
     document.getElementById("sr-end-overlay").classList.add("hidden");
     document.getElementById("sr-q-card").classList.remove("hidden");

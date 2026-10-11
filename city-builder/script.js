@@ -235,3 +235,51 @@ async function initCityBuilder() {
   renderHud();
   renderGrid();
 }
+
+// =================================================================
+// Audit batch 8 -- City Hall: buildings now PRODUCE bricks over time
+// (collect once an hour, capped), a daily city event solved with
+// area/perimeter questions, weekly city missions, a population and city
+// level, residents walking around and night lights.
+// =================================================================
+(function cityHall() {
+  if (!player || player.role === "parent" || !window.AIGLeaderboard) return;
+  const RATE = { house: 1, shop: 2, park: 1, school: 3, tower: 4, castle: 6 };
+  const ls = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+  const lsw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  const day = () => new Date().toISOString().slice(0, 10);
+  const week = () => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
+  const panel = document.createElement("div"); panel.className = "cb-hall"; panel.id = "cb-hall";
+  const anchor = document.getElementById("cb-earn-btn"); (anchor.parentElement || document.body).after(panel);
+  async function draw() {
+    let city; try { city = await AIGLeaderboard.getCityBuilder(); } catch (e) { return; }
+    const tiles = Object.values(city.grid || {}), counts = {}; tiles.forEach(t => { const id = t && (t.id || t); counts[id] = (counts[id] || 0) + 1; });
+    const perHour = Object.entries(counts).reduce((a, [id, n]) => a + (RATE[id] || 0) * n, 0);
+    const last = Number(ls("cb_collect", String(Date.now()))); if (!ls("cb_collect", "")) lsw("cb_collect", String(Date.now()));
+    const hours = Math.min(6, (Date.now() - last) / 3600000), ready = Math.min(20, Math.floor(perHour * hours));
+    const pop = (counts.house || 0) * 4 + (counts.school || 0) * 10 + (counts.castle || 0) * 6, lvl = pop >= 60 ? "🏙️ Metropolis" : pop >= 30 ? "🏘️ Town" : pop >= 8 ? "🏡 Village" : "⛺ Camp";
+    const ev = day() !== ls("cb_event", "");
+    const MIS = [["Build 2 parks 🌳", (counts.park || 0) >= 2, 8], ["Own a school 🏫", (counts.school || 0) >= 1, 10], ["Earn 100 lifetime bricks 🧱", (city.totalEarned || 0) >= 100, 10]];
+    panel.innerHTML = `<div class="cb-hall-h">🏛️ City Hall · ${lvl} · 👥 ${pop}</div>
+      <div class="cb-hall-row">🏭 Your buildings make <b>${perHour}</b> bricks/hour <button type="button" id="cb-collect" ${ready ? "" : "disabled"}>${ready ? `Collect ${ready} 🧱` : "Nothing yet"}</button></div>
+      <div class="cb-hall-row">${ev ? `🚧 City event: the mayor needs measurements! <button type="button" id="cb-event">Help (3 questions)</button>` : "✅ Today's city event is done!"}</div>
+      <div class="cb-hall-row"><b>📋 Missions this week</b></div>${MIS.map(([t, ok, b], k) => { const paid = ls(`cb_mis_${week()}_${k}`, "") === "1"; return `<div class="cb-hall-row">${ok ? "✅" : "⬜"} ${t} ${paid ? "<small>paid</small>" : ok ? `<button type="button" data-mis="${k}" data-b="${b}">+${b} 🧱</button>` : ""}</div>`; }).join("")}`;
+    const night = new Date().getHours() >= 19 || new Date().getHours() < 6; document.getElementById("cb-grid").classList.toggle("cb-night", night);
+    const cb = document.getElementById("cb-collect"); if (cb) cb.onclick = async () => { cb.disabled = true; lsw("cb_collect", String(Date.now())); try { await AIGLeaderboard.awardCityBuilderBricks(ready); } catch (e) {} location.reload(); };
+    const eb = document.getElementById("cb-event"); if (eb) eb.onclick = () => event();
+    panel.querySelectorAll("[data-mis]").forEach(b => b.onclick = async () => { lsw(`cb_mis_${week()}_${b.dataset.mis}`, "1"); try { await AIGLeaderboard.awardCityBuilderBricks(+b.dataset.b); } catch (e) {} location.reload(); });
+  }
+  function event() {
+    const o = document.createElement("div"); o.className = "cb-overlay"; document.body.appendChild(o); let n = 0, right = 0;
+    const ask = () => {
+      if (n >= 3) { const ok = right >= 2; if (ok) lsw("cb_event", day()); o.innerHTML = `<div class="cb-modal"><div class="cb-modal-emoji">${ok ? "🏗️" : "📏"}</div><div class="cb-modal-title">${ok ? "The mayor is happy!" : "Let's measure again tomorrow"}</div><div class="cb-modal-sub">${right}/3 right${ok ? " · +6 🧱" : ""}</div><button class="cb-btn cb-btn-primary" id="cb-ex">Back to town</button></div>`;
+        o.querySelector("#cb-ex").onclick = async () => { if (ok) { try { await AIGLeaderboard.awardCityBuilderBricks(6); } catch (e) {} } location.reload(); }; return; }
+      const w = 2 + Math.floor(Math.random() * 8), h = 2 + Math.floor(Math.random() * 8), area = Math.random() < 0.5, ans = area ? w * h : 2 * (w + h);
+      const opts = [...new Set([ans, area ? 2 * (w + h) : w * h, ans + 2, Math.max(1, ans - 3)])].sort(() => Math.random() - 0.5); n++;
+      o.innerHTML = `<div class="cb-modal"><div class="cb-modal-emoji">📐</div><div class="cb-modal-sub">${n}/3</div><div class="cb-q-prompt">The new ${["park", "plaza", "garden", "car park"][n % 4]} is ${w} m by ${h} m. What is its ${area ? "AREA (m²)" : "PERIMETER (m)"}?</div><div class="cb-q-grid">${opts.map(x => `<button class="cb-q-btn" type="button" data-o="${x}">${x}</button>`).join("")}</div></div>`;
+      o.querySelectorAll("[data-o]").forEach(b => b.onclick = () => { const ok = +b.dataset.o === ans; if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("city-builder", "measurement", ok); if (ok) right++; b.classList.add(ok ? "correct" : "wrong"); setTimeout(ask, ok ? 700 : 1500); });
+    };
+    ask();
+  }
+  setTimeout(draw, 1200);
+})();

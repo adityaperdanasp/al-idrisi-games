@@ -57,6 +57,11 @@
   .qs-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
   .qs-btn-primary { background: #F7C548; color: #1a0a2e; }
   .qs-btn-secondary { background: rgba(255,255,255,.1); color: #fff2d9; }
+  .qs-clock { text-align: center; font-weight: 800; font-size: 1.1rem; margin-top: 8px; }
+  .qs-aud { display: grid; gap: 4px; margin-top: 8px; } .qs-aud div { display: grid; grid-template-columns: 70px 1fr 40px; gap: 6px; align-items: center; font-weight: 800; font-size: .8rem; } .qs-aud i { display: block; height: 12px; background: #ffd23f; border: 1px solid #1b1b1b; }
+  .qs-phone { margin-top: 8px; background: #fff3c4; border: 2px solid #1b1b1b; padding: 8px; font-weight: 700; font-size: .85rem; }
+  .qs-clap { position: fixed; top: 30%; left: 50%; transform: translateX(-50%); font-size: 2.6rem; z-index: 999; animation: qsClap 1.2s forwards; pointer-events: none; }
+  @keyframes qsClap { to { transform: translate(-50%, -60px); opacity: 0; } }
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="quiz-show";</script>
@@ -136,6 +141,6 @@
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
 <script src="../synth-bgm.js?v=2"></script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

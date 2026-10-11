@@ -51,6 +51,12 @@
   .sr-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
   .sr-btn-primary { background: #7FDBFF; color: #050817; }
   .sr-btn-secondary { background: rgba(255,255,255,.1); color: #e6ecff; }
+  .sr-obj { position: absolute; font-size: 1.5rem; transform: translateX(-50%); }
+  .sr-ghost { position: absolute; right: 6%; font-size: 1.1rem; opacity: .7; transition: bottom .5s; }
+  .sr-ctl { display: flex; gap: 10px; justify-content: center; align-items: center; margin: 0 14px 10px; font-weight: 800; }
+  .sr-ctl.hidden { display: none; }
+  .sr-ctl button { font-size: 1.6rem; padding: 8px 22px; border: 3px solid #1b1b1b; background: #7fdbff; cursor: pointer; }
+  .sr-rocket { transition: bottom .5s ease, left .2s ease !important; }
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="space-race";</script>
@@ -72,6 +78,7 @@
     <div class="sr-finish-line"></div>
     <div class="sr-rocket" id="sr-rocket">🚀</div>
   </div>
+  <div class="sr-ctl hidden" id="sr-ctl"><button type="button" id="sr-left">◀</button><span>Dodge the asteroids!</span><button type="button" id="sr-right">▶</button></div>
   <div class="sr-boost-toast" id="sr-boost-toast"></div>
 
   <div class="sr-q-card" id="sr-q-card">
@@ -116,6 +123,6 @@
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
 <script src="../game-music.js"></script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

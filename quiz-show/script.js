@@ -29,7 +29,15 @@ function initQuizShow() {
   const WHEEL_COLORS = ["#8c2f6b", "#2f4c8c", "#3f7a4e", "#a85a1f", "#6b3f9b", "#b8342f", "#1f6b5e", "#2f8ca8"];
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
 
-  const state = { qIndex: 0, prizeIndex: -1, lastCheckpointIndex: -1, hint5050Used: false, skipUsed: false, pickedBtn: null, currentQ: null };
+  const state = { qIndex: 0, prizeIndex: -1, lastCheckpointIndex: -1, hint5050Used: false, skipUsed: false, pickedBtn: null, currentQ: null, audUsed: false, phoneUsed: false, timer: null, beat: null, walked: false };
+  // Audit batch 8: two new lifelines (📊 Ask the audience, 📞 Phone Bo), a 30-second clock from
+  // question 7 with a heartbeat, "take the money" to walk away with your current prize, audience
+  // applause on right answers, and a best-prize record.
+  const life = document.querySelector(".qs-lifelines") || document.getElementById("qs-lifeline-5050").parentElement;
+  life.insertAdjacentHTML("beforeend", `<button class="qs-lifeline-btn" id="qs-lifeline-aud" type="button">📊 Audience</button><button class="qs-lifeline-btn" id="qs-lifeline-phone" type="button">📞 Phone Bo</button><button class="qs-lifeline-btn qs-walk" id="qs-walk" type="button">💼 Take the money</button>`);
+  const extra = document.createElement("div"); extra.className = "qs-extra"; extra.id = "qs-extra"; document.getElementById("qs-q-card").appendChild(extra);
+  function beep(f, d) { try { const a = window.__qsA || (window.__qsA = new (window.AudioContext || window.webkitAudioContext)()), o = a.createOscillator(), g = a.createGain(), t = a.currentTime; o.frequency.value = f; g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d); } catch (e) {} }
+  function stopClock() { clearInterval(state.timer); clearInterval(state.beat); state.timer = state.beat = null; }
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
   function shuffle(arr) {
@@ -150,7 +158,10 @@ function initQuizShow() {
   }
 
   function showQuestion(q) {
+    stopClock(); extra.innerHTML = "";
     document.getElementById("qs-q-prompt").textContent = q.prompt;
+    if (state.qIndex >= 6) { let t = 30; extra.innerHTML = `<div class="qs-clock">⏱️ <b id="qs-t">30</b>s</div>`; state.beat = setInterval(() => beep(90, 0.15), t > 10 ? 900 : 450);
+      state.timer = setInterval(() => { t--; const el = document.getElementById("qs-t"); if (el) el.textContent = t; if (t <= 0) { stopClock(); const w = [...document.querySelectorAll("#qs-q-grid .qs-q-btn")].find(b => b.textContent !== q.correctLabel); if (w) { state.pickedBtn = { btn: w, opt: w.textContent }; lockInAnswer(); } } }, 1000); }
     const grid = document.getElementById("qs-q-grid");
     grid.innerHTML = "";
     state.pickedBtn = null;
@@ -183,6 +194,7 @@ function initQuizShow() {
   });
 
   function lockInAnswer() {
+    stopClock();
     const q = state.currentQ;
     const { btn, opt } = state.pickedBtn;
     const isCorrect = opt === q.correctLabel;
@@ -195,6 +207,7 @@ function initQuizShow() {
 
     setTimeout(() => {
       if (isCorrect) {
+        const clap = document.createElement("div"); clap.className = "qs-clap"; clap.textContent = "👏👏👏"; document.body.appendChild(clap); setTimeout(() => clap.remove(), 1200); beep(660, 0.12); setTimeout(() => beep(880, 0.15), 120);
         state.prizeIndex = state.qIndex;
         if (CHECKPOINT_INDICES.includes(state.qIndex)) state.lastCheckpointIndex = state.qIndex;
         state.qIndex++;
@@ -223,9 +236,23 @@ function initQuizShow() {
     startRound(); // fresh question at the SAME rung -- no penalty
   });
 
+  document.getElementById("qs-lifeline-aud").addEventListener("click", () => {
+    if (state.audUsed || !state.currentQ) return; state.audUsed = true; document.getElementById("qs-lifeline-aud").disabled = true;
+    const q = state.currentQ, btns = [...document.querySelectorAll("#qs-q-grid .qs-q-btn")].filter(b => !b.classList.contains("removed"));
+    let left = 100; const votes = btns.map(b => { const v = b.textContent === q.correctLabel ? 45 + Math.floor(Math.random() * 25) : 0; left -= v; return v; });
+    btns.forEach((b, i) => { if (!votes[i]) { const v = i === btns.length - 1 ? left : Math.floor(Math.random() * left); votes[i] = Math.max(0, v); left -= votes[i]; } });
+    extra.innerHTML += `<div class="qs-aud">${btns.map((b, i) => `<div><span>${b.textContent}</span><i style="width:${votes[i]}%"></i><b>${votes[i]}%</b></div>`).join("")}</div>`;
+  });
+  document.getElementById("qs-lifeline-phone").addEventListener("click", () => {
+    if (state.phoneUsed || !state.currentQ) return; state.phoneUsed = true; document.getElementById("qs-lifeline-phone").disabled = true;
+    const a = String(state.currentQ.correctLabel);
+    extra.innerHTML += `<div class="qs-phone">📞 Bo: “Hmm… ${/^\d/.test(a) ? `I think it has ${a.replace(/[^\d]/g, "").length} digit${a.replace(/[^\d]/g, "").length > 1 ? "s" : ""} and ends in ${a.replace(/[^\d]/g, "").slice(-1)}` : `I'm pretty sure it starts with “${a[0]}”`}. Good luck!”</div>`;
+  });
+  document.getElementById("qs-walk").addEventListener("click", () => { if (state.prizeIndex < 0) return; state.walked = true; stopClock(); finishShow(false); });
   function finishShow(reachedTop) {
+    stopClock();
     if (window.AIGSynthBgm) AIGSynthBgm.stop();
-    const finalPrizeIndex = reachedTop ? PRIZE_LADDER.length - 1 : state.lastCheckpointIndex;
+    const finalPrizeIndex = reachedTop ? PRIZE_LADDER.length - 1 : state.walked ? state.prizeIndex : state.lastCheckpointIndex;
     const finalPrize = finalPrizeIndex >= 0 ? PRIZE_LADDER[finalPrizeIndex] : 0;
     document.getElementById("qs-q-card").classList.add("hidden");
     const emoji = reachedTop ? "🏆" : finalPrize >= 75 ? "🥳" : finalPrize > 0 ? "🙂" : "💪";
@@ -234,7 +261,8 @@ function initQuizShow() {
     document.getElementById("qs-end-title").textContent = title;
     document.getElementById("qs-end-sub").textContent = reachedTop
       ? `You answered all 10 questions and won $${finalPrize}!`
-      : `You walk away with $${finalPrize}${finalPrize > 0 ? " (your last checkpoint)" : ""}.`;
+      : `You walk away with $${finalPrize}${state.walked ? " — smart move!" : finalPrize > 0 ? " (your last checkpoint)" : ""}.`;
+    try { const b = Number(localStorage.getItem("qs_best") || 0); if (finalPrize > b) { localStorage.setItem("qs_best", String(finalPrize)); document.getElementById("qs-end-sub").textContent += " 🏅 New best prize!"; } else if (b) document.getElementById("qs-end-sub").textContent += ` (Best: $${b})`; } catch (e) {}
     const bonusEl = document.getElementById("qs-end-bonus");
     bonusEl.textContent = "";
     if (window.AIGLeaderboard) {
@@ -253,7 +281,8 @@ function initQuizShow() {
     state.prizeIndex = -1;
     state.lastCheckpointIndex = -1;
     state.hint5050Used = false;
-    state.skipUsed = false;
+    state.skipUsed = false; state.audUsed = false; state.phoneUsed = false; state.walked = false;
+    ["qs-lifeline-aud", "qs-lifeline-phone"].forEach(id => { document.getElementById(id).disabled = false; });
     document.getElementById("qs-lifeline-5050").disabled = false;
     document.getElementById("qs-lifeline-skip").disabled = false;
     renderWheel();
