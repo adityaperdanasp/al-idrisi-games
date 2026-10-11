@@ -322,7 +322,7 @@
         const addHelp = () => { const top = document.querySelector(".kit-top");
           if (top && TUT[GAME_ID] && !top.querySelector(".kp-help")) {
             const h = document.createElement("button"); h.type = "button"; h.className = "kp-help"; h.textContent = "?"; h.title = "How to play"; h.onclick = () => tutorial(true);
-            top.appendChild(h); const title = top.querySelector(".kit-title"); if (title) title.style.marginRight = "0";
+            const back = top.querySelector(".kit-back"); if (back) back.after(h); else top.prepend(h); const title = top.querySelector(".kit-title"); if (title) title.style.marginRight = "68px";
           } };
         addHelp(); setTimeout(addHelp, 600); window.addEventListener("load", addHelp);
         setTimeout(() => tutorial(false), 400);

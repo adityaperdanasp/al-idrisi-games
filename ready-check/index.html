@@ -15,6 +15,11 @@
   .rc-topic small{display:block;color:#7a6a5a;font-weight:700}
   .rc-topic.pass{background:#e5f5e8;border-color:#34c759}
 
+  .rc-gate{display:inline-flex;align-items:center;gap:2px;font-size:1.3rem;margin-right:8px}.rc-gate b{font-size:1.1rem}
+  .rc-st{font-size:.8rem;margin-left:6px;white-space:nowrap}
+  .rc-boss{text-align:center;margin-bottom:6px}.rc-g{font-size:3rem;display:inline-block}
+  .rc-g.hit{animation:rcHit .4s}.rc-g.atk{animation:rcAtk .4s}
+  @keyframes rcHit{30%{transform:translateX(8px) rotate(8deg);filter:brightness(2)}}@keyframes rcAtk{50%{transform:scale(1.3)}}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="ready-check";</script>
@@ -34,8 +39,8 @@
 <script src="../juice.js"></script>
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
-<script src="../gamekit.js?v=3"></script>
+<script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Level-Up Check',accent:'#1d4ed8',bg:'linear-gradient(180deg,#dbeafe,#bfd7fb)'});</script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

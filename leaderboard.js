@@ -2439,6 +2439,18 @@
     return { week: wk, teams };
   }
 
+  // Audit batch 2: last N weeks of team totals (same hash as getClassTeams) for the board's history strip.
+  async function getClassTeamsHistory(n) {
+    const all = await readAllPlayers(); const out = [];
+    for (let w = 1; w <= (n || 4); w++) {
+      const d = new Date(); d.setUTCDate(d.getUTCDate() - 7 * w);
+      const day = d.getUTCDay(), m = new Date(d); m.setUTCDate(d.getUTCDate() + ((day === 0 ? -6 : 1) - day));
+      const wk = m.toISOString().slice(0, 10), sc = [0, 0, 0, 0];
+      Object.entries(all).forEach(([id, p]) => { const c = (p && p.weekly && p.weekly[wk] && p.weekly[wk].correct) || 0; if (c > 0) sc[seedFrom(id + "class4") % 4] += c; });
+      out.push({ week: wk, scores: sc });
+    }
+    return { teams: CLASS_TEAMS, weeks: out };
+  }
   // =====================================================================
   // PM ROUND 12, BATCH 1 -- Bo's World: Bo's Home, Bo's level + daily gift,
   // Familiar companion. Everything under players/{id}/...
@@ -3145,6 +3157,15 @@
     await aigDb.ref(`players/${me.id}/vlevels/${id}`).set(e.to);
     await aigDb.ref(`players/${me.id}/vqueue/${id}`).remove();
     return { ok: true, to: e.to, gems };
+  }
+  // Audit batch 2: Tune-up quiz -- each right answer shaves real minutes off a running upgrade (max 3 per day per vehicle).
+  async function tuneUpVehicle(id, minutes) {
+    const me = perksPlayer(); const g = me && await getGarage(); const e = g && g.queue[id];
+    if (!e) return { ok: false, reason: "not-ready" };
+    const left = e.readyAt - Date.now(), cut = Math.min(left, Math.max(0, minutes) * 60000);
+    if (cut >= left) { await aigDb.ref(`players/${me.id}/vlevels/${id}`).set(e.to); await aigDb.ref(`players/${me.id}/vqueue/${id}`).remove(); return { ok: true, done: true, to: e.to }; }
+    await aigDb.ref(`players/${me.id}/vqueue/${id}/readyAt`).set(e.readyAt - cut);
+    return { ok: true, done: false, cut: Math.round(cut / 60000) };
   }
   // Paint: each PART that changes is charged (hue 10 / neon 30 / sticker 15 coins).
   async function applyPaint(id, next) {
@@ -7333,7 +7354,7 @@
     upgradeBuilding, TOWN_LANDMARKS, getDinoRider, unlockDinoRider, addDinoRiderXp, DINO_RIDERS, DINO_XP_STAGES,
     getWorkshop, getTier, upgradeTier, TIER_COST, TIER_NAMES, getBoForms, setBoForm, BO_FORMS, switchFamiliar, familiarStage, PLANE_AMMO,
     getSponsorShop, getAuction, bidAuction, claimAuction, buyTournamentTicket, TOURNEY_TICKET, getGiftStatus, giftCoins,
-    getGarage, startVehicleUpgrade, speedUpVehicle, applyPaint, savePaintPreset, applyPaintPreset, rentVehicle, GARAGE_UPGRADE, GARAGE_MAX_LEVEL, PAINT_PRICES, PAINT_NEONS, PAINT_STICKERS,
+    getGarage, startVehicleUpgrade, speedUpVehicle, tuneUpVehicle, applyPaint, savePaintPreset, applyPaintPreset, rentVehicle, GARAGE_UPGRADE, GARAGE_MAX_LEVEL, PAINT_PRICES, PAINT_NEONS, PAINT_STICKERS,
     getGoals, setGoal, buyGoal,
     getWorldState,
     getSettings, saveSettings, getPlayLimit, exportMyData, sendReport,
@@ -7343,7 +7364,7 @@
     listPlayerNames, getWeeklyReport, getWeakTopics, getTutorMastered, markTutorMastered,
     getMegaQuest, startMegaQuest, claimMegaQuest, endMegaQuest, MEGA_DAYS,
     getAdvent, openAdventDay, claimAdventStreak, restartAdvent, adventReward,
-    getWeeklyFocus, recordFocusAnswer, FOCUS_KEYS, getClassTeams,
+    getWeeklyFocus, recordFocusAnswer, FOCUS_KEYS, getClassTeams, getClassTeamsHistory,
     getDino, evolveDino, DINO_STAGES, getSeason, getSeasonStatus, claimSeasonGift,
     getRotatingShop, getGachaStatus, rollGacha, GACHA_COST, GACHA_X5_COST,
     getFlashStatus, submitFlash, getFlashBoard, FLASH_MAX_PLAYS,

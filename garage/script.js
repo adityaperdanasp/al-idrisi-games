@@ -35,7 +35,7 @@ async function load() {
   G = await LB.getGarage();
   const w = await LB.getWallet();
   $("gg-wallet").textContent = `🪙 ${w.coins || 0}   💎 ${w.gems || 0}`;
-  paint();
+  paint(); fun();
 }
 const thumb = sk => {
   const p = (G.paints && G.paints[sk.id]) || {};
@@ -58,13 +58,13 @@ function card(sk, now) {
   const step = LB.GARAGE_UPGRADE[lv + 1];
   const pips = Array.from({ length: 5 }, (_, i) => `<i class="${i < lv ? "on" : ""}"></i>`).join("");
   let action;
-  if (q) { const left = q.readyAt - now, gems = Math.max(1, Math.ceil(left / 3600000)); action = `<span class="gg-sub">⏳ Upgrading to Lv ${q.to} — ${fmtLeft(left)} left</span><button class="kit-btn" data-speed="${sk.id}">⚡ Rush 💎${gems}</button>`; }
+  if (q) { const left = q.readyAt - now, gems = Math.max(1, Math.ceil(left / 3600000)); action = `<span class="gg-sub">⏳ Upgrading to Lv ${q.to} — ${fmtLeft(left)} left</span><button class="kit-btn" data-speed="${sk.id}">⚡ Rush 💎${gems}</button><button class="kit-btn alt" data-tune="${sk.id}">🔧 Tune-up quiz</button>`; }
   else if (lv >= 5) action = '<span class="gg-sub">⭐ Max level!</span>';
   else if (rented) action = '<span class="gg-sub">Rented vehicles can\'t be upgraded — buy it to level it up.</span>';
   else action = `<button class="kit-btn" data-up="${sk.id}">Upgrade to Lv ${lv + 1} · 🪙${step.coins} · ${step.hours}h</button>`;
   const edit = paintFor === sk.id ? paintPanel(sk) : "";
   return `<div class="gg-car">${thumb(sk)}<div class="gg-body"><div class="gg-name">${K.esc(sk.name)}${sk.kind === "bike" ? " 🏍️" : ""}${rented ? ` <small>⏳ rented ${fmtLeft(G.rentals[sk.id] - now)}</small>` : ""}</div><div class="gg-lv">${pips}</div>
-    <div class="gg-sub">Lv ${lv}/5 · ${tab === "plane" ? `+${(lv - 1) * 5}% fire rate` : `+${(lv - 1) * 4}% speed${sk.kind === "bike" ? " +8% bike" : ""}`}</div>
+    <div class="gg-sub">Lv ${lv}/5 · ${tab === "plane" ? `+${(lv - 1) * 5}% fire rate` : `+${(lv - 1) * 4}% speed${sk.kind === "bike" ? " +8% bike" : ""}`}${lv < 5 ? ` <b style="color:#2f6a2f">→ Lv ${lv + 1}: ${tab === "plane" ? `+${lv * 5}% fire rate` : `+${lv * 4}% speed`}</b>` : ""}</div>
     <div class="gg-btns">${action}<button class="kit-btn alt" data-paint="${sk.id}">🎨 Paint</button></div>${edit}</div></div>`;
 }
 function paintPanel(sk) {
@@ -82,6 +82,7 @@ function wire(now) {
   const msg = t => { const m = $("gg-msg"); if (m) m.textContent = t; };
   const F = { "insufficient-funds": "Not enough coins/gems yet!", busy: "Two upgrades at a time — finish one first!", max: "Already max level." };
   $("gg-main").querySelectorAll("[data-up]").forEach(b => b.onclick = async () => { const r = await LB.startVehicleUpgrade(b.dataset.up); if (!r.ok) return msg(F[r.reason] || "Couldn't start that."); await load(); msg(`🔧 Upgrade started — ready in ${r.hours}h!`); });
+  $("gg-main").querySelectorAll("[data-tune]").forEach(b => b.onclick = () => tuneQuiz(b.dataset.tune));
   $("gg-main").querySelectorAll("[data-speed]").forEach(b => b.onclick = async () => { const r = await LB.speedUpVehicle(b.dataset.speed); if (!r.ok) return msg(F[r.reason] || "Couldn't rush that."); if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3); await load(); msg(`⚡ Done! Now level ${r.to}.`); });
   $("gg-main").querySelectorAll("[data-paint]").forEach(b => b.onclick = () => { const id = b.dataset.paint; paintFor = paintFor === id ? null : id; const c = G.paints[id] || {}; paintDraft = { hue: c.hue || 0, neon: c.neon || "none", sticker: c.sticker || "none" }; paint(); });
   const hue = $("pt-hue"); if (hue) hue.oninput = e => { paintDraft.hue = +e.target.value; paint(); };
@@ -104,4 +105,67 @@ function paintRent(now) {
     const sk = ["car", "plane", "boat"].flatMap(c => VEHICLE_SKINS[c]).find(x => x.id === b.dataset.buy);
     const r = await LB.unlockVehicle("mathville", sk.id, sk.cost); if (!r.ok) return msg("Not enough coins/gems yet!"); await load(); msg(`✅ ${sk.name} is yours!`);
   });
+}
+
+// =================================================================
+// Audit batch 2 -- fun zone: test drive (dodge cones), drag race against
+// Bo-Bot (quick maths), tune-up quiz that shaves minutes off an upgrade,
+// collection progress and a daily garage job.
+// =================================================================
+const today = () => new Date().toISOString().slice(0, 10);
+const lsg = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+const lss = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+function fun() {
+  const all = ["car", "plane", "boat"].flatMap(c => VEHICLE_SKINS[c]); const own = all.filter(sk => !sk.cost || G.owned[sk.id]).length;
+  const job = lsg("gg_job", "") === today() ? (lsg("gg_jobpaid", "") === today() ? "paid" : "done") : "open";
+  $("gg-fun").innerHTML = `<div class="gg-funrow"><button class="kit-btn" id="gg-td" type="button">🏁 Test drive</button><button class="kit-btn" id="gg-dr" type="button">🚦 Drag race</button><a class="kit-btn alt" href="../mathville/?drive=1">🚗 Drive Mode</a></div>
+    <div class="gg-sub" style="margin-top:8px">🏆 Collection: <b>${own}/${all.length}</b> vehicles <span class="gg-cbar"><i style="width:${Math.round(own / all.length * 100)}%"></i></span></div>
+    <div class="gg-sub">🧰 Daily job: finish a test drive or drag race ${job === "open" ? "— 0/1" : job === "done" ? `— ✅ <button class="kit-btn" id="gg-job" type="button" style="padding:4px 10px;font-size:.75rem">Claim 🪙8</button>` : "— paid ✔"}</div>`;
+  $("gg-td").onclick = testDrive; $("gg-dr").onclick = dragRace;
+  const jb = $("gg-job"); if (jb) jb.onclick = async () => { lss("gg_jobpaid", today()); try { await LB.creditWallet({ coins: 8 }); } catch (e) {} K.toastAdv("Garage job done! +8 coins"); load(); };
+}
+function jobDone() { if (lsg("gg_job", "") !== today()) lss("gg_job", today()); }
+function overlay(html) { const o = document.createElement("div"); o.className = "kit-overlay"; o.innerHTML = `<div class="kit-modal">${html}</div>`; document.body.appendChild(o); return o; }
+function testDrive() {
+  const sk = VEHICLE_SKINS.car.find(x => !x.cost || G.owned[x.id]) || VEHICLE_SKINS.car[0];
+  const o = overlay(`<h2>🏁 Test drive</h2><p class="kit-sub">Tap ◀ ▶ to dodge the cones for 20 seconds!</p><div class="gg-road" id="gg-road"><div class="gg-me" id="gg-me">${sk.svg}</div></div><div class="gg-funrow"><button class="kit-btn" id="gg-l" type="button">◀</button><b id="gg-tdt">20</b><button class="kit-btn" id="gg-r" type="button">▶</button></div>`);
+  const road = o.querySelector("#gg-road"), me = o.querySelector("#gg-me"); let lane = 1, hits = 0, t0 = performance.now(), cones = [], next = 0, raf;
+  const place = () => { me.style.left = (lane * 33.3 + 16.6) + "%"; }; place();
+  o.querySelector("#gg-l").onclick = () => { lane = Math.max(0, lane - 1); place(); }; o.querySelector("#gg-r").onclick = () => { lane = Math.min(2, lane + 1); place(); };
+  const loop = now => {
+    const el = (now - t0) / 1000; o.querySelector("#gg-tdt").textContent = Math.max(0, Math.ceil(20 - el));
+    if (now > next) { const c = document.createElement("span"); c.className = "gg-cone"; c.textContent = "🚧"; c.dataset.lane = Math.floor(Math.random() * 3); c.style.left = (c.dataset.lane * 33.3 + 16.6) + "%"; c.dataset.y = -10; road.appendChild(c); cones.push(c); next = now + Math.max(420, 900 - el * 25); }
+    cones.forEach(c => { c.dataset.y = +c.dataset.y + 1.6 + el * 0.06; c.style.top = c.dataset.y + "%"; if (+c.dataset.y > 78 && +c.dataset.y < 92 && +c.dataset.lane === lane && !c.dataset.hit) { c.dataset.hit = 1; hits++; road.classList.remove("hit"); void road.offsetWidth; road.classList.add("hit"); } });
+    cones = cones.filter(c => { if (+c.dataset.y > 105) { c.remove(); return false; } return true; });
+    if (el >= 20) { cancelAnimationFrame(raf); jobDone(); o.querySelector(".kit-modal").innerHTML = `<div class="kit-big">${hits === 0 ? "🏆" : "🚗"}</div><h2>${hits === 0 ? "Perfect drive!" : "Nice driving!"}</h2><p class="kit-sub">Cones hit: ${hits}</p><button class="kit-btn block" id="gg-x" type="button">Back to the garage</button>`; o.querySelector("#gg-x").onclick = () => { o.remove(); load(); }; if (hits === 0) K.toastAdv("Perfect test drive!"); return; }
+    raf = requestAnimationFrame(loop);
+  };
+  raf = requestAnimationFrame(loop);
+}
+function dragRace() {
+  const o = overlay(`<h2>🚦 Drag race</h2><p class="kit-sub">5 quick questions. Each right answer pushes your car — beat Bo-Bot to the line!</p><div class="gg-strip"><span id="gg-pa">🏎️</span></div><div class="gg-strip"><span id="gg-pb">🤖</span></div><div class="kit-q" id="gg-q"></div><div class="kit-opts" id="gg-o"></div>`);
+  let me = 0, bot = 0, n = 0, done = false, right = 0;
+  const bt = setInterval(() => { if (done) return; bot = Math.min(100, bot + 3.2); o.querySelector("#gg-pb").style.left = bot + "%"; if (bot >= 100) end(false); }, 250);
+  function ask() {
+    if (done) return; const q = K.question({ subject: "math", difficulty: "easy" });
+    o.querySelector("#gg-q").textContent = q.prompt;
+    o.querySelector("#gg-o").innerHTML = q.options.map(x => `<button class="kit-opt" type="button" data-o="${K.esc(x)}">${K.esc(x)}</button>`).join("");
+    o.querySelectorAll(".kit-opt").forEach(b => b.onclick = () => { const ok = b.dataset.o === q.correctLabel; K.record("garage", q.key, ok, q); if (ok) { right++; me = Math.min(100, me + 21); } o.querySelector("#gg-pa").style.left = me + "%"; n++; if (me >= 100) return end(true); if (n >= 5) return end(me > bot); ask(); });
+  }
+  async function end(win) { if (done) return; done = true; clearInterval(bt); jobDone(); o.querySelector(".kit-modal").innerHTML = `<div class="kit-big">${win ? "🏆" : "🤖"}</div><h2>${win ? "You win the drag race!" : "Bo-Bot wins this time"}</h2><p class="kit-sub">${right}/5 right</p><div class="kit-bonus" id="gg-b"></div><button class="kit-btn block" id="gg-x" type="button">Back to the garage</button>`; o.querySelector("#gg-x").onclick = () => { o.remove(); load(); }; K.finish("garage", win ? 6 : 2, o.querySelector("#gg-b")); }
+  ask();
+}
+function tuneQuiz(id) {
+  const o = overlay(`<h2>🔧 Tune-up quiz</h2><p class="kit-sub">3 questions — each right answer takes 20 minutes off this upgrade.</p><div class="kit-q" id="gg-q"></div><div class="kit-opts" id="gg-o"></div><div class="kit-bonus" id="gg-tm"></div>`);
+  let n = 0, right = 0;
+  function ask() {
+    const q = K.question({ subject: "math" }); o.querySelector("#gg-q").textContent = q.prompt;
+    o.querySelector("#gg-o").innerHTML = q.options.map(x => `<button class="kit-opt" type="button" data-o="${K.esc(x)}">${K.esc(x)}</button>`).join("");
+    o.querySelectorAll(".kit-opt").forEach(b => b.onclick = async () => { const ok = b.dataset.o === q.correctLabel; K.record("garage", q.key, ok, q); if (ok) right++; n++; o.querySelector("#gg-tm").textContent = `${right} right · −${right * 20} min`; if (n < 3) return ask();
+      const k = "gg_tune_" + id + "_" + today(); if (lsg(k, "") === "1") { o.querySelector(".kit-modal").innerHTML = `<h2>Already tuned today</h2><p class="kit-sub">Come back tomorrow for another tune-up on this vehicle.</p><button class="kit-btn block" id="gg-x" type="button">OK</button>`; o.querySelector("#gg-x").onclick = () => o.remove(); return; }
+      lss(k, "1"); const r = await LB.tuneUpVehicle(id, right * 20);
+      o.querySelector(".kit-modal").innerHTML = `<div class="kit-big">🔧</div><h2>${r.ok ? (r.done ? "Upgrade finished!" : `−${r.cut} minutes!`) : "Tune-up done"}</h2><p class="kit-sub">${right}/3 right</p><button class="kit-btn block" id="gg-x" type="button">Back to the garage</button>`;
+      o.querySelector("#gg-x").onclick = () => { o.remove(); load(); }; });
+  }
+  ask();
 }
