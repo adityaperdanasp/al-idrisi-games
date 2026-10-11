@@ -593,8 +593,9 @@ function handleFillAnswer(q) {
   input.disabled = true;
   submitBtn.disabled = true;
 
-  const given = input.value.trim().toLowerCase();
-  const correct = q.answer.trim().toLowerCase();
+  const isCapitalizationChapter = session.chapter.id === 5;
+  const given = isCapitalizationChapter ? input.value.trim() : input.value.trim().toLowerCase();
+  const correct = isCapitalizationChapter ? q.answer.trim() : q.answer.trim().toLowerCase();
   const isCorrect = given === correct;
 
   if (isCorrect) {
