@@ -34,7 +34,7 @@
 <script src="../leaderboard.js"></script>
 <script src="../skin.js"></script>
 
-<link rel="stylesheet" href="style.css?v=109" />
+<link rel="stylesheet" href="style.css?v=110" />
 <link rel="stylesheet" href="bw-theme.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="ville";</script>
 </head>
@@ -375,6 +375,14 @@
         <button class="theme-btn active" id="theme-btn-boy" data-theme="boy">Boy</button>
         <button class="theme-btn" id="theme-btn-girl" data-theme="girl">Girl</button>
       </div>
+    </div>
+    <!-- Audit batch 11: the most exciting modes were hidden behind small topbar icons; this strip
+         puts Drive, Plane, Family Challenge and Ninja Runner right on the Town Map. -->
+    <div class="mv-modes" id="mv-modes">
+      <button type="button" data-go="drive">🚗<span>Drive</span></button>
+      <button type="button" data-go="plane">✈️<span>Plane</span></button>
+      <button type="button" data-go="family">🤝<span>Family</span></button>
+      <a href="../ninja-runner/">🥷<span>Ninja</span></a>
     </div>
     <div class="boss-of-week-banner" id="boss-of-week-banner" hidden>👑 Boss of the Week: <span id="boss-of-week-name"></span> — beat its Boss Challenge for a bonus!</div>
     <button type="button" class="certwall-link" id="btn-open-certwall">🖼️ My Certificates</button>
@@ -1343,6 +1351,6 @@
 <script src="bgm.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
 <script src="../vehicles.js?v=1"></script>
-<script src="script.js?v=150"></script>
+<script src="script.js?v=151"></script>
 </body>
 </html>

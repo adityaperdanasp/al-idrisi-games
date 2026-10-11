@@ -2687,3 +2687,15 @@ button { font-family: inherit; }
 .ninja-world[data-backdrop="village"] .ninja-bg-far { filter: sepia(.35) hue-rotate(-10deg); }
 .ninja-world[data-backdrop="mountain"] .ninja-bg-far { filter: grayscale(.25) brightness(1.08); }
 .ninja-world[data-backdrop="cloud"] .ninja-bg-far { filter: brightness(1.25) saturate(.7); }
+
+/* Audit batch 11: big mode buttons on the Town Map */
+.mv-modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 4px 0 10px; }
+.mv-modes button, .mv-modes a { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 1.6rem; padding: 8px 2px; border: 3px solid #1b1b1b; background: #fff; color: #1b1b1b; text-decoration: none; cursor: pointer; box-shadow: 0 3px 0 #1b1b1b; }
+.mv-modes span { font-size: .7rem; font-weight: 800; }
+.mv-modes button:active, .mv-modes a:active { transform: translateY(3px); box-shadow: none; }
+
+/* Audit batch 11: Focus Round route */
+.focus-route { display: grid; grid-template-columns: repeat(20, 1fr); gap: 2px; margin: 4px 0 8px; }
+.focus-route i { height: 16px; background: #e8e2d4; border: 1px solid #1b1b1b; font-style: normal; font-size: .7rem; display: flex; align-items: center; justify-content: center; }
+.focus-route i.cp { background: #fff3c4; } .focus-route i.ok { background: #6cc04a; } .focus-route i.no { background: #e0483a; }
+.focus-route i.me { transform: scale(1.35); background: #fff; z-index: 1; }

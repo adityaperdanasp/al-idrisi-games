@@ -2161,6 +2161,13 @@ function launchDriveMode() {
 }
 
 $("btn-drive").addEventListener("click", launchDriveMode);
+// Audit batch 11: Town Map mode strip (Plane jumps straight past the car/plane step).
+document.querySelectorAll("#mv-modes [data-go]").forEach(b => b.addEventListener("click", () => {
+  const go = b.dataset.go;
+  if (go === "drive") launchDriveMode();
+  else if (go === "family") launchChallengeMode();
+  else if (go === "plane") { launchDriveMode(); const pb = document.querySelector('#vehicle-step-category [data-vehicle="plane"]'); if (pb) pb.click(); }
+}));
 $("drive-end-replay").addEventListener("click", () => goToDrive(false));
 
 /* =================================================================
@@ -3361,6 +3368,7 @@ async function buildFocusRoundSteps(selected) {
     overlay.classList.add("hidden");
     state.mode = "solo";
     state.chapterId = "focus-round";
+    state.focusLog = [];
     state.stepIndex = 0;
     state.mistakes = 0;
     state.lastWrong = null;
@@ -4797,8 +4805,24 @@ function escapeHtml(s) {
 /* =================================================================
    5. QUESTION RENDERING — 4 INTERACTION TYPES
    ================================================================= */
+// Audit batch 11: Focus Round as a journey -- a 20-flag route under the question label, your
+// avatar walking along it, each flag turning green/red as you answer, and a checkpoint cheer
+// every 5 questions.
+function renderFocusRoute() {
+  let el = $("focus-route");
+  if (state.chapterId !== "focus-round") { if (el) el.classList.add("hidden"); return; }
+  if (!el) { el = document.createElement("div"); el.id = "focus-route"; el.className = "focus-route"; $("q-label").after(el); }
+  el.classList.remove("hidden");
+  const log = state.focusLog || [], n = state.steps.length;
+  el.innerHTML = Array.from({ length: n }, (_, i) => `<i class="${log[i] === true ? "ok" : log[i] === false ? "no" : ""} ${i === state.stepIndex ? "me" : ""} ${(i + 1) % 5 === 0 ? "cp" : ""}">${i === state.stepIndex ? "🧒" : (i + 1) % 5 === 0 ? "🚩" : ""}</i>`).join("");
+}
 function renderStep() {
   showScreen("screen-question");
+  renderFocusRoute();
+  if (state.chapterId === "focus-round" && state.stepIndex > 0 && state.stepIndex % 5 === 0 && typeof showAdaptiveToast === "function") {
+    const right = (state.focusLog || []).filter(Boolean).length;
+    showAdaptiveToast(`🚩 Checkpoint ${state.stepIndex / 5}! ${right}/${state.stepIndex} right so far`);
+  }
   ["ui-typein", "ui-mc", "ui-tap", "ui-match", "ui-order"].forEach(id => $(id).classList.add("hidden"));
   const step = state.steps[state.stepIndex];
   $("boss-banner").classList.toggle("hidden", !state.isBoss);
@@ -5214,6 +5238,7 @@ function spawnSparkleBurst() {
 }
 
 function submitAnswer(isCorrect, prompt, answerForHint) {
+  if (state.chapterId === "focus-round") { state.focusLog = state.focusLog || []; if (state.focusLog[state.stepIndex] === undefined) state.focusLog[state.stepIndex] = !!isCorrect; renderFocusRoute(); }
   clearQuestionTimer(); // a real answer (or the timeout path itself) always cancels any in-flight question timer -- no-op if Pressure Timer was off
   if (isCorrect) spawnSparkleBurst();
   if (window.AIGJuice) AIGJuice.answer(isCorrect, state.combo || 0); // haptic + rising blip (juice.js)

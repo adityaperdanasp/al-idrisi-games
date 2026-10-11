@@ -690,7 +690,7 @@ async function renderQuestPathMap(container) {
     if (unlocked) {
       btn.addEventListener("click", () => {
         if (shipFlying) return; // ignore taps while a flight is already in progress
-        flyShipTo(i, () => startLevel(level.id, "solo"));
+        flyShipTo(i, () => asteroidRun(level, () => startLevel(level.id, "solo")));
       });
     }
     container.appendChild(btn);
@@ -1798,6 +1798,55 @@ function showMpGameOver() {
    12. EVENT WIRING
    ================================================================= */
 $("btn-mode-solo").addEventListener("click", openSoloMap);
+
+/* =================================================================
+   Audit batch 11: steer your ship, continue, read aloud.
+   - asteroidRun: an 8-second flight to the planet -- tap ◀ ▶ (or swipe/arrow keys) to dodge
+     asteroids and grab ✨ stardust. Hits only shake the ship (no penalty); Skip is always there.
+   - Continue: the landing page offers the next planet that still needs stars.
+   - 🔊 reads the current question out loud.
+   ================================================================= */
+function asteroidRun(level, done) {
+  const o = document.createElement("div"); o.className = "sq-fly";
+  o.innerHTML = `<div class="sq-fly-top">🚀 Flying to ${level.emoji} ${level.name} · ✨ <b id="sq-dust">0</b></div><div class="sq-fly-sky" id="sq-sky"><span class="sq-ship" id="sq-ship">🚀</span></div>
+    <div class="sq-fly-ctl"><button type="button" id="sq-l">◀</button><button type="button" id="sq-skip">Skip ⏭</button><button type="button" id="sq-r">▶</button></div>`;
+  document.body.appendChild(o);
+  let lane = 1, dust = 0, t0 = performance.now(), raf = 0, rocks = [], nextAt = 400, ended = false;
+  const sky = o.querySelector("#sq-sky"), ship = o.querySelector("#sq-ship");
+  const setLane = l => { lane = Math.max(0, Math.min(2, l)); ship.style.left = (lane * 33.3 + 16.6) + "%"; };
+  setLane(1);
+  const finish = () => { if (ended) return; ended = true; cancelAnimationFrame(raf); document.removeEventListener("keydown", key); o.remove(); if (dust && window.AIGLeaderboard && AIGLeaderboard.creditWallet) AIGLeaderboard.creditWallet({ coins: Math.min(5, dust) }).catch(() => {}); done(); };
+  const key = e => { if (e.key === "ArrowLeft") setLane(lane - 1); if (e.key === "ArrowRight") setLane(lane + 1); };
+  document.addEventListener("keydown", key);
+  o.querySelector("#sq-l").onclick = () => setLane(lane - 1); o.querySelector("#sq-r").onclick = () => setLane(lane + 1); o.querySelector("#sq-skip").onclick = finish;
+  let sx = 0; sky.addEventListener("touchstart", e => { sx = e.changedTouches[0].clientX; }, { passive: true });
+  sky.addEventListener("touchend", e => { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 25) setLane(lane + (dx > 0 ? 1 : -1)); }, { passive: true });
+  const tick = now => {
+    const t = now - t0;
+    if (t > nextAt && t < 7200) { const el = document.createElement("span"); const star = Math.random() < 0.3; el.className = "sq-rock"; el.textContent = star ? "✨" : "☄️"; const l = Math.floor(Math.random() * 3); el.style.left = (l * 33.3 + 16.6) + "%"; sky.appendChild(el); rocks.push({ el, l, y: -10, star }); nextAt = t + 450 + Math.random() * 350; }
+    rocks.forEach(r => { r.y += 1.6; r.el.style.top = r.y + "%"; if (!r.hit && r.y > 78 && r.y < 92 && r.l === lane) { r.hit = true; r.el.remove(); if (r.star) { dust++; o.querySelector("#sq-dust").textContent = dust; } else { ship.classList.remove("bump"); void ship.offsetWidth; ship.classList.add("bump"); } } if (r.y > 105) r.el.remove(); });
+    rocks = rocks.filter(r => r.y <= 105 && !r.hit);
+    if (t > 8000) { finish(); return; }
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+}
+(async function continueCard() {
+  try {
+    await loadQuestions();
+    const lv = questionsData.levels.find(l => !(progress.levels[l.id] && progress.levels[l.id].stars >= 3)) || questionsData.levels[0];
+    const b = document.createElement("button"); b.className = "btn btn-primary sq-continue"; b.type = "button";
+    b.textContent = `▶ Continue: ${lv.emoji} ${lv.name}`;
+    b.onclick = () => asteroidRun(lv, () => startLevel(lv.id, "solo"));
+    const mc = document.querySelector("#screen-landing .mode-choice"); if (mc) mc.after(b);
+  } catch (e) {}
+})();
+(function readAloud() {
+  const head = document.querySelector("#screen-play .play-header"); if (!head) return;
+  const b = document.createElement("button"); b.type = "button"; b.className = "sq-say"; b.textContent = "🔊"; b.setAttribute("aria-label", "Read the question");
+  b.onclick = () => { const q = state.questions && state.questions[state.qIndex]; if (!q) return; const txt = q.question || q.prompt || ""; const opts = (q.options || []).join(", "); speak(opts ? `${txt}. ${opts}` : txt); };
+  head.appendChild(b);
+})();
 $("btn-mode-multiplayer").addEventListener("click", openMultiplayerLanding);
 
 document.querySelectorAll("#theme-seg .theme-pill-btn").forEach(btn => {

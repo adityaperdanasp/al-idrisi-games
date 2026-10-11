@@ -1282,3 +1282,8 @@ h1, h2 { margin: 0 0 8px; }
 .mr2-mast { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; } .mr2-mst { text-align: center; background: #f1f4f9; border-radius: 10px; padding: 6px 2px; } .mr2-mst.on { background: #fff3c4; border: 2px solid #f0b429; } .mr2-mst small { display: block; font-size: .62rem; }
 /* comfort */
 html.mr2-calm .mr-shake, html.mr2-calm .mr-zoom { animation: none !important; } html.mr2-big .question-text { font-size: 2.6rem !important; }
+
+/* Audit batch 11: folded race settings */
+.more-settings { margin: 10px 0; text-align: left; }
+.more-settings summary { cursor: pointer; font-weight: 800; padding: 8px 0; text-align: center; }
+.more-settings summary small { display: block; font-weight: 600; font-size: .7rem; opacity: .75; }

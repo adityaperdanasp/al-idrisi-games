@@ -1436,3 +1436,14 @@ button:focus-visible {
   30% { opacity: 1; }
   100% { transform: translateY(260px) scaleY(2.4); opacity: 0; }
 }
+
+/* Audit batch 11: asteroid flight, continue, read aloud */
+.sq-fly { position: fixed; inset: 0; z-index: 90; background: #0b0f2a; display: flex; flex-direction: column; color: #fff; }
+.sq-fly-top { text-align: center; padding: 12px; font-weight: 800; }
+.sq-fly-sky { position: relative; flex: 1; overflow: hidden; background: radial-gradient(#ffffff22 1px, transparent 1px) 0 0 / 22px 22px; touch-action: none; }
+.sq-ship { position: absolute; top: 85%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 2.4rem; transition: left .12s; }
+.sq-ship.bump { animation: sqBump .35s; } @keyframes sqBump { 30% { transform: translate(-50%, -50%) rotate(-45deg) scale(1.2); filter: brightness(2); } }
+.sq-rock { position: absolute; transform: translate(-50%, -50%); font-size: 1.8rem; }
+.sq-fly-ctl { display: flex; gap: 10px; padding: 12px; } .sq-fly-ctl button { flex: 1; font-size: 1.4rem; padding: 14px 0; border: 3px solid #1b1b1b; background: #fff; color: #1b1b1b; font-weight: 800; cursor: pointer; } .sq-fly-ctl #sq-skip { font-size: .85rem; flex: .8; }
+.sq-continue { display: block; margin: 14px auto 0; }
+.sq-say { border: 2px solid #1b1b1b; background: #fff; font-size: 1.1rem; padding: 2px 8px; cursor: pointer; margin-left: 6px; }
