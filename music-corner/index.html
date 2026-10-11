@@ -22,6 +22,10 @@
   .mc-sel{border:2px solid #e2d5f7;background:#fff;border-radius:10px;padding:8px;font:inherit;font-weight:700}
   .mc-song{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #f0e8f7;font-weight:800}
 
+  .mc-chip{border:2px solid #1b1b1b;background:#fff;padding:4px 8px;font-weight:800;font-size:.72rem;cursor:pointer}.mc-chip.on{background:#7a3fc2;color:#fff}
+  .mc-beatrow{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-bottom:10px}.mc-beatrow span{border:2px solid #1b1b1b;padding:4px 6px;font-weight:800;font-size:.8rem;background:#eee}.mc-beatrow span.now{background:#ffe45e}.mc-beatrow span.hit{background:#8be08f}
+  .mc-drum{width:140px;height:140px;font-size:1.6rem;font-weight:800;border:4px solid #1b1b1b;background:#e04b4b;color:#fff;cursor:pointer;margin:0 auto 10px;display:block}
+  .mc-badges{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}.mc-badges span{font-size:.72rem;font-weight:800;border:2px dashed #aaa;padding:2px 6px;opacity:.5}.mc-badges span.on{border:2px solid #b8860b;background:#fff3c4;opacity:1}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="music-corner";</script>
@@ -33,12 +37,13 @@
   <div class="kit-card"><div class="kit-q" style="text-align:left;margin:0 0 6px">Make a memory song</div>
     <div class="kit-sub" style="margin:0 0 8px">Pick what to remember, tap keys to write a tune (up to 16 notes), then press Play — the words light up with each note!</div>
     <div class="mc-row"><select class="mc-sel" id="mc-pack"></select><select class="mc-sel" id="mc-tempo"><option value="600">Slow</option><option value="420" selected>Medium</option><option value="300">Fast</option></select></div>
+    <div id="mc-extra"></div>
     <div class="mc-lyric" id="mc-lyric">🎵</div>
     <div class="mc-keys" id="mc-keys"></div>
     <div class="mc-seq" id="mc-seq"></div>
     <div class="mc-row"><button class="kit-btn" id="mc-play" type="button">▶ Play</button><button class="kit-btn alt" id="mc-undo" type="button">↩ Undo</button><button class="kit-btn alt" id="mc-clear" type="button">🗑 Clear</button></div>
     <div class="mc-row"><input class="mc-sel" id="mc-title" maxlength="24" placeholder="Song name" style="flex:1"><button class="kit-btn" id="mc-save" type="button">💾 Save</button></div><div class="kit-bonus" id="mc-msg"></div></div>
-  <div class="kit-card"><div class="kit-q" style="text-align:left;margin:0 0 6px">My songs</div><div id="mc-songs"></div></div>
+  <div class="kit-card"><div class="kit-q" style="text-align:left;margin:0 0 6px">My songs</div><div class="mc-badges" id="mc-badges"></div><div id="mc-songs"></div></div>
 
 </div>
 <script src="../player.js"></script>
@@ -50,6 +55,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Music Corner',accent:'#7c3aed',bg:'linear-gradient(180deg,#f1e9ff,#ddd0fa)'});</script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

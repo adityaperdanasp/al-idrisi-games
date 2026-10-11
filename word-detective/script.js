@@ -41,7 +41,23 @@ const CASES = [
   { title: "The Sleepy Volcano", emoji: "🌋",
     text: ["At the science fair, Nia's paper volcano would not erupt. Someone had put flour in the jar instead of baking soda.", "Before class, only Kai had cleaned the project table. He said 'all the white powders looked the same' and lined the jars up neatly.", "Nia's sister Rae was in the gym all morning, and Coach Ali was setting up the trophies."],
     q: [["What went into the jar by mistake?", ["Sugar", "Flour", "Salt"], 1], ["Who cleaned the table?", ["Kai", "Rae", "Coach Ali"], 0], ["What did the volcano do?", ["It exploded", "It did not erupt", "It melted"], 1]],
-    suspects: [["Kai", "🧑‍🔬"], ["Rae", "👧"], ["Coach Ali", "🧑‍🏫"]], culprit: 0, why: "Kai mixed up the white powders while tidying — an honest mistake." }
+    suspects: [["Kai", "🧑‍🔬"], ["Rae", "👧"], ["Coach Ali", "🧑‍🏫"]], culprit: 0, why: "Kai mixed up the white powders while tidying — an honest mistake." },
+  { title: "The Muddy Footprints", emoji: "👣",
+    text: ["After the rain, muddy footprints led from the back door to the fridge.", "The prints were small, with round toes, and they stopped right next to a puddle of spilled milk.", "Dad's big boots were clean by the door. Lily had been at her piano lesson all morning. The cat door was swinging."],
+    q: [["Where did the footprints lead?", ["To the fridge", "To the garage", "To the bedroom"], 0], ["What was spilled?", ["Milk", "Juice", "Water"], 0], ["Where was Lily?", ["At her piano lesson", "In the garden", "In the kitchen"], 0]],
+    suspects: [["Dad", "👨"], ["Lily", "👧"], ["Whiskers the cat", "🐱"]], culprit: 2, why: "Small round-toed prints, spilled milk and a swinging cat door point to Whiskers!" },
+  { title: "The Vanishing Ball", emoji: "⚽",
+    text: ["At break time, the class football disappeared from the playground.", "Coach Amir said he locked the shed at 10 am. Nina was helping the librarian stack books during break.", "A tall branch of the oak tree was shaking, and a black-and-white shape was stuck high in the leaves after a big kick by Theo."],
+    q: [["When did the coach lock the shed?", ["At 10 am", "At noon", "After school"], 0], ["Where was Nina?", ["In the library", "On the field", "At home"], 0], ["What was stuck in the tree?", ["A black-and-white shape", "A red kite", "A bird's nest"], 0]],
+    suspects: [["Coach Amir", "🧑‍🏫"], ["Nina", "👧"], ["Theo's big kick", "🦶"]], culprit: 2, why: "Theo's big kick sent the black-and-white ball into the oak tree!" },
+  { title: "The Silent Alarm", emoji: "⏰",
+    text: ["On Monday, Omar's alarm clock did not ring and he was late for school.", "His little sister Zara said she didn't touch it. Mum said she was in the shower when the alarm should have rung.", "The clock's screen was completely dark, and its plug was lying next to the socket where the vacuum cleaner had been plugged in on Sunday night."],
+    q: [["What happened on Monday?", ["Omar was late", "Omar was early", "School was closed"], 0], ["What did the clock's screen look like?", ["Completely dark", "Flashing", "Bright red"], 0], ["What had been plugged in on Sunday night?", ["The vacuum cleaner", "A phone", "A lamp"], 0]],
+    suspects: [["Zara", "👧"], ["Mum", "👩"], ["The vacuum cleaner swap", "🧹"]], culprit: 2, why: "The clock was unplugged so the vacuum could use the socket — no power, no alarm!" },
+  { title: "The Melted Snowman", emoji: "⛄",
+    text: ["The children built a snowman by the garden wall on Friday morning.", "By Saturday afternoon only a carrot and two buttons were left in a puddle.", "No one had touched it. The weather report said the temperature rose to 12 degrees on Saturday and the sun shone all day on that side of the wall."],
+    q: [["When was the snowman built?", ["Friday morning", "Saturday night", "Sunday"], 0], ["What was left?", ["A carrot and two buttons", "A hat and scarf", "Nothing at all"], 0], ["How warm did it get on Saturday?", ["12 degrees", "0 degrees", "minus 5 degrees"], 0]],
+    suspects: [["The neighbour's dog", "🐕"], ["The children", "🧒"], ["The warm sun", "☀️"]], culprit: 2, why: "The temperature rose to 12 degrees and the sun shone on the wall — it melted!" }
 ];
 
 if (!player) {
@@ -50,49 +66,67 @@ if (!player) {
   init();
 }
 
+// Audit batch 5: 4 new cases (12 total), a clue board that fills as you find evidence, a
+// "tap the sentence that proves it" bonus, detective ranks, an optional 90-second case clock,
+// read-aloud for the story, a text-size switch and a CASE CLOSED stamp.
+const RANKS = [[0, "🔍 Rookie"], [3, "🕵️ Detective"], [6, "🎩 Sergeant"], [9, "🏅 Inspector"], [12, "👑 Chief Inspector"]];
+let clock = false, big = false;
 async function init() {
   let solved = {};
   try { const s = await AIGLeaderboard.db.ref(`players/${player.id}/detective`).get(); solved = s.exists() ? s.val() : {}; } catch (e) {}
   menu();
 
   function menu() {
-    $("wd-main").innerHTML = `<div class="kit-card"><div class="kit-sub" style="text-align:center;margin:0 0 10px">Read the case, gather evidence, then name the culprit. ${Object.keys(solved).length}/${CASES.length} solved.</div>
+    const n = Object.keys(solved).length; let rank = RANKS[0][1]; RANKS.forEach(r => { if (n >= r[0]) rank = r[1]; });
+    $("wd-main").innerHTML = `<div class="kit-card"><div class="kit-sub" style="text-align:center;margin:0 0 6px">Rank: <b>${rank}</b> · ${n}/${CASES.length} solved</div>
+      <div class="wd-opts"><label><input type="checkbox" id="wd-clock" ${clock ? "checked" : ""}> ⏱️ 90-second case clock</label><label><input type="checkbox" id="wd-big" ${big ? "checked" : ""}> 🔠 Big text</label></div>
       <div class="wd-cases">${CASES.map((c, i) => `<button class="wd-case ${solved[i] ? "done" : ""}" data-i="${i}"><span class="e">${c.emoji}</span>${c.title}<br><small>${solved[i] ? "✓ Solved" : "Open case"}</small></button>`).join("")}</div></div>`;
     $("wd-main").querySelectorAll(".wd-case").forEach(b => b.onclick = () => play(+b.dataset.i));
+    $("wd-clock").onchange = e => { clock = e.target.checked; }; $("wd-big").onchange = e => { big = e.target.checked; document.body.classList.toggle("wd-bigtext", big); };
   }
 
   function play(i) {
     const c = CASES[i];
-    let evidence = 0, qi = 0;
-    const story = `<div class="wd-story">${c.text.map(p => `<p>${K.esc(p)}</p>`).join("")}</div>`;
+    let evidence = 0, qi = 0, proofs = 0; const clues = []; const end = Date.now() + 90000; let clk = null;
+    if (clock) clk = setInterval(() => { const t = document.getElementById("wd-t"); const left = Math.max(0, end - Date.now()); if (t) t.textContent = `⏱️ ${Math.ceil(left / 1000)}s`; if (!left) { clearInterval(clk); verdict(-1); } }, 500);
+    const story = `<div class="wd-story" id="wd-story">${c.text.map((p, k) => `<p data-p="${k}">${K.esc(p)}</p>`).join("")}</div><button class="kit-btn alt" type="button" id="wd-read" style="padding:5px 10px;font-size:.75rem">🔊 Read the case to me</button>`;
+    const board = () => clues.length ? `<div class="wd-board">${clues.map(x => `<span>📌 ${K.esc(x)}</span>`).join("")}</div>` : "";
     function askNext() {
       if (qi >= c.q.length) return accuse();
       const [text, opts, ans] = c.q[qi];
-      $("wd-main").innerHTML = `<div class="kit-card"><div class="kit-q" style="text-align:left;font-size:1rem">${c.emoji} ${c.title}</div>${story}</div>
+      $("wd-main").innerHTML = `<div class="kit-card"><div class="kit-q" style="text-align:left;font-size:1rem">${c.emoji} ${c.title} <small id="wd-t"></small></div>${story}${board()}</div>
         <div class="kit-card"><div class="kit-sub" style="margin:0 0 4px">Evidence ${qi + 1}/${c.q.length}</div><div class="kit-q">${K.esc(text)}</div><div class="kit-opts" style="grid-template-columns:1fr">${opts.map((o, k) => `<button class="kit-opt" data-k="${k}">${K.esc(o)}</button>`).join("")}</div><div class="kit-sub" id="wd-msg" style="text-align:center;margin:8px 0 0;min-height:1.2em"></div></div>`;
+      $("wd-read").onclick = () => { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(c.text.join(" ")); u.lang = "en-US"; u.rate = 0.92; speechSynthesis.speak(u); } catch (e) {} };
       $("wd-main").querySelectorAll(".kit-opt").forEach(b => b.onclick = () => {
         const ok = +b.dataset.k === ans;
         K.record("word-detective", "reading", ok);
         $("wd-main").querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (+x.dataset.k === ans) x.classList.add("right"); });
-        if (!ok) b.classList.add("wrong"); else evidence++;
+        if (!ok) b.classList.add("wrong"); else { evidence++; clues.push(opts[ans]); }
+        const key = opts[ans].split(" ").filter(w => w.length > 3)[0] || opts[ans], pk = c.text.findIndex(p => p.toLowerCase().includes(key.toLowerCase()));
+        if (ok && pk >= 0) {
+          $("wd-msg").textContent = "🔎 Good catch! Bonus: tap the sentence in the story that proves it.";
+          document.querySelectorAll("#wd-story p").forEach(pp => { pp.classList.add("tap"); pp.onclick = () => { const good = +pp.dataset.p === pk; pp.classList.add(good ? "proof" : "nope"); if (good) proofs++; document.querySelectorAll("#wd-story p").forEach(x => x.onclick = null); setTimeout(() => { qi++; askNext(); }, 900); }; });
+          return;
+        }
         $("wd-msg").textContent = ok ? "🔎 Good catch!" : "Look again — it's in the story!";
         setTimeout(() => { qi++; askNext(); }, 1000);
       });
     }
     function accuse() {
-      $("wd-main").innerHTML = `<div class="kit-card"><div class="kit-q">Who did it?</div><div class="kit-sub" style="text-align:center">You found ${evidence}/${c.q.length} pieces of evidence.</div>
+      $("wd-main").innerHTML = `<div class="kit-card"><div class="kit-q">Who did it? <small id="wd-t"></small></div><div class="kit-sub" style="text-align:center">You found ${evidence}/${c.q.length} pieces of evidence${proofs ? ` and ${proofs} proof${proofs > 1 ? "s" : ""}` : ""}.</div>${board()}
         <div class="wd-sus">${c.suspects.map((s, k) => `<button data-k="${k}"><span class="e">${s[1]}</span>${K.esc(s[0])}</button>`).join("")}</div></div>`;
       $("wd-main").querySelectorAll(".wd-sus button").forEach(b => b.onclick = () => verdict(+b.dataset.k));
     }
     async function verdict(k) {
+      clearInterval(clk);
       const won = k === c.culprit;
       K.record("word-detective", "deduction", won);
       if (won && !solved[i]) { solved[i] = true; try { await AIGLeaderboard.db.ref(`players/${player.id}/detective/${i}`).set(true); } catch (e) {} }
-      $("wd-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${won ? "🎉" : "🤔"}</div><h2>${won ? "Case solved!" : "Not quite…"}</h2>
+      $("wd-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${won ? "🎉" : k === -1 ? "⏰" : "🤔"}</div>${won ? '<div class="wd-stamp">CASE CLOSED</div>' : ""}<h2>${won ? "Case solved!" : k === -1 ? "Time's up!" : "Not quite…"}</h2>
         <p class="kit-sub">${won ? K.esc(c.why) : `Read the clues again. Hint: ${K.esc(c.why.split(" ").slice(0, 4).join(" "))}…`}</p><div class="kit-bonus" id="wd-bonus"></div>
         <button class="kit-btn block" id="wd-next">${won ? "More cases" : "Try again"}</button></div></div>`;
       $("wd-next").onclick = () => { $("wd-overlay").innerHTML = ""; if (won) menu(); else play(i); };
-      if (won) K.finish("word-detective", 6 + evidence * 3, $("wd-bonus"));
+      if (won) K.finish("word-detective", 6 + evidence * 3 + proofs, $("wd-bonus"));
     }
     askNext();
   }

@@ -22,6 +22,11 @@
   .wd-sus button{flex:1 1 90px;border:2px solid rgba(0,0,0,.1);background:#fff;border-radius:14px;padding:12px 6px;font-family:"Baloo 2",sans-serif;font-weight:800;cursor:pointer;color:inherit}
   .wd-sus .e{font-size:2rem;display:block}
 
+  .wd-opts{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;font-weight:800;font-size:.8rem;margin-bottom:8px}
+  .wd-board{display:flex;flex-wrap:wrap;gap:4px;background:#c9a26b;border:3px solid #1b1b1b;padding:6px;margin-top:8px}.wd-board span{background:#fff8d6;font-size:.75rem;font-weight:800;padding:3px 6px;transform:rotate(-1deg)}
+  .wd-story p.tap{cursor:pointer;outline:2px dashed #3b7fc4}.wd-story p.proof{background:#c9f2d3}.wd-story p.nope{background:#ffd0d0}
+  .wd-stamp{display:inline-block;border:4px solid #c0392b;color:#c0392b;font-weight:800;padding:4px 10px;transform:rotate(-8deg);margin-bottom:6px;letter-spacing:2px}
+  body.wd-bigtext .wd-story{font-size:1.15rem}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="word-detective";</script>
@@ -43,6 +48,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Word Detective',accent:'#5b3f9b',bg:'linear-gradient(180deg,#efe9fb,#dccff5)'});</script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

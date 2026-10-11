@@ -23,6 +23,10 @@
   .fk-read{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.6rem;min-width:80px;text-align:left}
   .fk-read small{display:block;font-size:.72rem;color:#8a5a2e;font-weight:700}
 
+  .fk-seg.blind{border-color:transparent !important}
+  .fk-pat{display:flex;gap:6px;align-items:center;margin:0 0 8px;font-weight:800}.fk-pat .kit-bar{flex:1;display:block}
+  .fk-book{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:8px}.fk-book span{font-size:.72rem;font-weight:800;border:2px dashed #aaa;padding:2px 6px}.fk-book span.on{border:2px solid #b8860b;background:#fff3c4}
+  #fk-hold{touch-action:none;user-select:none}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="fractions-kitchen";</script>
@@ -35,7 +39,8 @@
   <div class="kit-card">
     <div class="fk-order"><div class="em" id="fk-em">🥛</div><div class="fk-recipe" id="fk-recipe"></div><div class="fk-hint" id="fk-hint"></div></div>
     <div class="fk-cupwrap"><div class="fk-cup" id="fk-cup"></div><div class="fk-read" id="fk-read"></div></div>
-    <div style="text-align:center"><button class="kit-btn" id="fk-pour">Pour it in! 🫗</button></div>
+    <div class="fk-pat" id="fk-pat" hidden>⏳ <span class="kit-bar"><i id="fk-patb"></i></span></div>
+    <div style="text-align:center;display:flex;gap:8px;justify-content:center"><button class="kit-btn alt" id="fk-hold" type="button">🫗 Hold to pour</button><button class="kit-btn" id="fk-pour">Serve it! 🍽️</button></div>
     <div class="kit-sub" id="fk-msg" style="text-align:center;margin:10px 0 0;min-height:1.2em"></div>
   </div>
   <div id="fk-overlay"></div>
@@ -50,6 +55,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Fractions Kitchen',accent:'#e8632e',bg:'linear-gradient(180deg,#fff4e0,#ffe0b8)'});</script>
-<script src="script.js"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>
