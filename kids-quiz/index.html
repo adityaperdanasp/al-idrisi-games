@@ -54,6 +54,14 @@
   .kq-status-pending { background: #fdf1cf; color: #8a6a1e; }
   .kq-status-approved { background: #e2f3e5; color: #2f6b3a; }
   .kq-status-rejected { background: #fbe3e3; color: #a13a3a; }
+  .kq-pick{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0;font-weight:800;font-size:.8rem}.kq-pick select{font:inherit;padding:5px;border:2px solid #1b1b1b}
+  .kq-after{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+  .kq-mini{border:2px solid #1b1b1b;background:#fff;padding:6px 10px;font-weight:800;font-size:.78rem;cursor:pointer}
+  .kq-hall{margin-top:12px;text-align:left;font-size:.82rem;display:grid;gap:4px;background:#fff8e1;border:2px solid #1b1b1b;padding:8px}
+  .kq-tpl{display:flex;flex-wrap:wrap;gap:6px}
+  .kq-preview{margin:10px 0}.kq-pv-h{font-weight:800;font-size:.8rem;margin-bottom:4px}
+  .kq-creator{background:#fff;border:2px solid #1b1b1b;padding:8px;margin-bottom:8px;font-size:.85rem}
+  .kq-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.kq-badges span{border:2px dashed #bbb;padding:2px 6px;font-size:.72rem;font-weight:800;opacity:.5}.kq-badges span.on{border:2px solid #b8860b;background:#fff3c4;opacity:1}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="kids-quiz";</script>
@@ -75,13 +83,16 @@
   <div class="kq-panel" id="kq-panel-play">
     <div class="kq-card" id="kq-play-intro">
       <div class="kq-empty">Answer quiz questions written by other kids at your school! Approved questions only.</div>
+      <div class="kq-pick"><label>Whose questions? <select id="kq-friend"><option value="">Everyone</option></select></label><label>Topic <select id="kq-cat"><option value="">All topics</option></select></label></div>
       <button class="kq-btn kq-btn-primary" id="kq-start-btn">Start Quiz</button>
+      <div id="kq-hall"></div>
     </div>
     <div class="kq-card" id="kq-play-question" hidden>
       <div class="kq-qnum" id="kq-qnum"></div>
       <div class="kq-author" id="kq-author"></div>
       <div class="kq-prompt" id="kq-prompt"></div>
       <div id="kq-options"></div>
+      <div class="kq-after" id="kq-after" hidden><button class="kq-mini" id="kq-like" type="button">💖 Like this question</button><button class="kq-mini" id="kq-report" type="button">⚑ Something's wrong</button><button class="kq-btn kq-btn-primary" id="kq-next" type="button">Next ▶</button></div>
     </div>
     <div class="kq-card" id="kq-play-result" hidden>
       <div class="kq-result-emoji">🏁</div>
@@ -93,6 +104,8 @@
   <!-- MY QUESTIONS -->
   <div class="kq-panel" id="kq-panel-mine" hidden>
     <div class="kq-card">
+      <div class="kq-field"><label>Need an idea? Tap a template</label><div class="kq-tpl" id="kq-tpl"></div></div>
+      <div class="kq-field"><label>Topic</label><select id="kq-new-cat"><option value="math">➗ Maths</option><option value="words">📖 Words</option><option value="science">🔭 Science</option><option value="animals">🐾 Animals</option><option value="space">🚀 Space</option><option value="games">🎮 Games</option><option value="general">⭐ Anything</option></select></div>
       <div class="kq-field">
         <label>Your question</label>
         <input type="text" id="kq-new-prompt" placeholder="e.g. What is 7 x 8?" maxlength="120">
@@ -101,6 +114,7 @@
         <label>4 answer choices (tap the circle next to the correct one)</label>
         <div id="kq-new-options"></div>
       </div>
+      <div class="kq-preview" id="kq-preview"></div>
       <button class="kq-btn kq-btn-primary" id="kq-submit-btn">Submit for Approval</button>
       <div class="kq-empty" id="kq-submit-msg" style="display:none;"></div>
     </div>
@@ -136,7 +150,18 @@
     // ---- Play ----
     let quizQueue = [];
     let quizIndex = 0;
-    let quizScore = 0;
+    let quizScore = 0, likedThisRound = 0;
+    const CAT_LABEL = { math: "➗ Maths", words: "📖 Words", science: "🔭 Science", animals: "🐾 Animals", space: "🚀 Space", games: "🎮 Games", general: "⭐ Anything" };
+    // Audit batch 3: friend/topic filters + a "most liked" hall, filled once on load.
+    (async () => { try {
+      const pool = await AIGLeaderboard.getApprovedCustomQuestionPool();
+      const authors = {}; pool.forEach(q => { authors[q.authorId] = q.authorName || q.authorId; });
+      document.getElementById("kq-friend").innerHTML = '<option value="">Everyone</option>' + Object.entries(authors).map(([id, n]) => `<option value="${escapeHtml(id)}">${escapeHtml(n)}'s questions</option>`).join("");
+      const cats = [...new Set(pool.map(q => q.category || "general"))];
+      document.getElementById("kq-cat").innerHTML = '<option value="">All topics</option>' + cats.map(c => `<option value="${c}">${CAT_LABEL[c] || c}</option>`).join("");
+      const top = pool.map(q => ({ q, likes: q.likes ? Object.keys(q.likes).length : 0 })).filter(x => x.likes).sort((a, b) => b.likes - a.likes).slice(0, 5);
+      document.getElementById("kq-hall").innerHTML = top.length ? `<div class="kq-hall"><b>🏆 Most liked questions</b>${top.map(x => `<div>💖 ${x.likes} · “${escapeHtml(x.q.prompt)}” <small>by ${escapeHtml(x.q.authorName || "a classmate")}</small></div>`).join("")}</div>` : "";
+    } catch (e) {} })();
 
     document.getElementById("kq-start-btn").addEventListener("click", startQuiz);
     document.getElementById("kq-play-again-btn").addEventListener("click", startQuiz);
@@ -148,7 +173,10 @@
       startBtn.disabled = true;
       startBtn.textContent = "Checking…"; // visible feedback that the tap registered, not just a near-instant no-op
       try {
-        const pool = await AIGLeaderboard.getApprovedCustomQuestionPool();
+        let pool = await AIGLeaderboard.getApprovedCustomQuestionPool();
+        const fr = document.getElementById("kq-friend").value, ct = document.getElementById("kq-cat").value;
+        if (fr) pool = pool.filter(q => q.authorId === fr); if (ct) pool = pool.filter(q => (q.category || "general") === ct);
+        likedThisRound = 0;
         if (!pool.length) {
           document.getElementById("kq-play-intro").hidden = false;
           emptyEl.textContent =
@@ -198,6 +226,7 @@
         btn.addEventListener("click", () => {
           const isCorrect = i === q.correctIndex;
           if (isCorrect) quizScore++;
+          try { AIGLeaderboard.kidsQuizStat(q.authorId, q.id, isCorrect); } catch (e) {}
           // Question Bounty (PM round 9, item 9): first correct classmate
           // takes the author's pot. Best-effort -- never blocks the quiz.
           if (isCorrect && openBounty && AIGLeaderboard.claimQuestionBounty) {
@@ -210,11 +239,15 @@
             if (bi === q.correctIndex) b.classList.add("correct");
             else if (bi === i) b.classList.add("wrong");
           });
-          setTimeout(() => {
-            quizIndex++;
-            if (quizIndex < quizQueue.length) renderQuizStep();
-            else finishQuiz();
-          }, 900);
+          const after = document.getElementById("kq-after"); after.hidden = false;
+          const lk = document.getElementById("kq-like"), rp = document.getElementById("kq-report");
+          lk.disabled = false; lk.textContent = "💖 Like this question"; rp.disabled = false; rp.textContent = "⚑ Something's wrong";
+          lk.onclick = async () => { lk.disabled = true; lk.textContent = "💖 Liked!"; likedThisRound++; try { await AIGLeaderboard.kidsQuizLike(q.authorId, q.id); } catch (e) {} };
+          rp.onclick = async () => { rp.disabled = true; rp.textContent = "⚑ Sent to a parent"; try { await AIGLeaderboard.kidsQuizReport(q.authorId, q.id, "flagged by a player"); } catch (e) {} };
+          document.getElementById("kq-next").onclick = () => {
+            after.hidden = true; quizIndex++;
+            if (quizIndex < quizQueue.length) renderQuizStep(); else finishQuiz();
+          };
         });
         wrap.appendChild(btn);
       });
@@ -223,7 +256,7 @@
     function finishQuiz() {
       document.getElementById("kq-play-question").hidden = true;
       document.getElementById("kq-play-result").hidden = false;
-      document.getElementById("kq-result-title").textContent = `You got ${quizScore}/${quizQueue.length}!`;
+      document.getElementById("kq-result-title").textContent = `You got ${quizScore}/${quizQueue.length}!` + (likedThisRound ? ` You liked ${likedThisRound} question${likedThisRound > 1 ? "s" : ""} — the authors earn a coin for each like!` : "");
     }
 
     // ---- My Questions ----
@@ -277,7 +310,7 @@
       // connection) can never leave this button stuck disabled forever --
       // the exact bug already fixed once on the Start Quiz button above.
       try {
-        const result = await AIGLeaderboard.submitCustomQuestion(prompt, options, correctChoice);
+        const result = await AIGLeaderboard.submitCustomQuestion(prompt, options, correctChoice, document.getElementById("kq-new-cat").value);
         if (!result.ok) {
           msg.textContent = result.reason === "too-many-pending"
             ? "You already have a lot of questions waiting for approval -- wait for a parent to review some first!"
@@ -302,16 +335,27 @@
       const mine = await AIGLeaderboard.getMyCustomQuestions();
       const list = document.getElementById("kq-mylist");
       mine.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      list.innerHTML = mine.map(q => `
-        <div class="kq-myitem">
-          <div class="kq-myitem-prompt">${escapeHtml(q.prompt)}</div>
-          <span class="kq-status kq-status-${q.status}">${q.status}</span>
-        </div>`).join("") || '<div class="kq-empty">You haven\'t written any questions yet.</div>';
+      const approved = mine.filter(q => q.status === "approved").length, plays = mine.reduce((a, q) => a + ((q.stats && q.stats.plays) || 0), 0), likes = mine.reduce((a, q) => a + (q.likes ? Object.keys(q.likes).length : 0), 0);
+      const badges = [[approved >= 1, "✍️ First question"], [approved >= 10, "📚 10 approved"], [plays >= 50, "🎮 50 plays"], [plays >= 100, "🏟️ 100 plays"], [likes >= 10, "💖 10 likes"]];
+      list.innerHTML = `<div class="kq-creator"><b>🎨 Creator stats</b> · ${approved} approved · ${plays} plays · ${likes} likes<div class="kq-badges">${badges.map(([ok, l]) => `<span class="${ok ? "on" : ""}">${l}</span>`).join("")}</div></div>` + (mine.map(q => {
+        const st = q.stats || {}, pct = st.plays ? Math.round((st.correct || 0) / st.plays * 100) : null, lk = q.likes ? Object.keys(q.likes).length : 0;
+        return `<div class="kq-myitem"><div class="kq-myitem-prompt">${escapeHtml(q.prompt)}<br><small>${CAT_LABEL[q.category || "general"] || ""}${st.plays ? ` · 🎮 ${st.plays} plays · ✅ ${pct}% got it right` : ""}${lk ? ` · 💖 ${lk}` : ""}${q.reports ? " · ⚑ flagged — a parent will check" : ""}</small></div><span class="kq-status kq-status-${q.status}">${q.status}</span></div>`;
+      }).join("") || '<div class="kq-empty">You haven\'t written any questions yet.</div>');
     }
     function escapeHtml(s) {
       return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     }
 
+    // templates + live preview
+    const TPL = [["➗", "What is 7 × 8?", ["56", "54", "64", "48"], "math"], ["📖", "Which word means the opposite of HAPPY?", ["Sad", "Glad", "Jolly", "Merry"], "words"], ["🔭", "Which planet is closest to the Sun?", ["Mercury", "Venus", "Earth", "Mars"], "science"], ["🐾", "Which animal is a mammal?", ["Whale", "Shark", "Frog", "Eagle"], "animals"]];
+    document.getElementById("kq-tpl").innerHTML = TPL.map((t, i) => `<button type="button" class="kq-mini" data-tpl="${i}">${t[0]} ${escapeHtml(t[1])}</button>`).join("");
+    document.querySelectorAll("[data-tpl]").forEach(b => b.onclick = () => { const t = TPL[+b.dataset.tpl]; document.getElementById("kq-new-prompt").value = t[1]; document.querySelectorAll("[data-opt-input]").forEach((inp, i) => inp.value = t[2][i]); document.getElementById("kq-new-cat").value = t[3]; correctChoice = 0; const r = document.querySelector('input[name="kq-correct"][value="0"]'); if (r) r.checked = true; preview(); });
+    function preview() {
+      const p = document.getElementById("kq-new-prompt").value.trim(), opts = Array.from(document.querySelectorAll("[data-opt-input]")).map(i => i.value.trim());
+      document.getElementById("kq-preview").innerHTML = p ? `<div class="kq-pv-h">👀 Preview</div><div class="kq-prompt">${escapeHtml(p)}</div>${opts.map((o, i) => `<div class="kq-option ${i === correctChoice ? "correct" : ""}" style="pointer-events:none">${escapeHtml(o || "…")}</div>`).join("")}` : "";
+    }
+    document.getElementById("kq-panel-mine").addEventListener("input", preview);
+    document.getElementById("kq-panel-mine").addEventListener("change", preview);
     renderMyQuestions();
   }
 </script>

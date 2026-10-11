@@ -15,6 +15,14 @@
   @keyframes zmB{0%,100%{transform:scale(.8)}50%{transform:scale(1.15)}}
   .zm-cap{text-align:center;font-weight:700;font-size:.8rem;color:#4b7a63;margin-top:-6px;margin-bottom:8px}
 
+  .zm-garden{display:flex;flex-wrap:wrap;gap:2px;align-items:center;background:linear-gradient(#cfe8b0,#a8d488) !important;min-height:70px;font-size:1.3rem}
+  .zm-garden i{font-style:normal;animation:zmGrow .5s}.zm-garden small{font-size:.75rem;font-weight:700;color:#3b5a2a}
+  .zm-pond{background:#7fc3e8;border:2px solid #1b1b1b;padding:0 6px;margin-right:4px;font-size:1rem}
+  @keyframes zmGrow{from{transform:scale(0) translateY(6px)}to{transform:none}}
+  .zm-tools{margin:0 14px 10px;display:grid;gap:6px}.zm-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-weight:800;font-size:.8rem}
+  .zm-chip{border:2px solid #1b1b1b;background:#fff;padding:4px 8px;font-weight:800;font-size:.75rem;cursor:pointer}.zm-chip.on{background:#3f8f5f;color:#fff}
+  .zm-breath{width:90px;height:90px;margin:10px auto;border-radius:50% !important;background:#a8d488;animation:zmBreath 5s ease-in-out infinite}
+  @keyframes zmBreath{50%{transform:scale(1.5)}}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="zen-mode";</script>
@@ -25,6 +33,8 @@
 
   <div class="zm-breathe"></div><div class="zm-cap">breathe in… and out…</div>
   <div class="kit-hud"><span>🌱 Right: <b id="zm-r">0</b></span><span id="zm-sub"></span></div>
+  <div class="kit-card zm-garden" id="zm-garden"></div>
+  <div class="zm-tools" id="zm-tools"></div>
   <div class="kit-card"><div class="kit-q" id="zm-q"></div><div class="kit-opts" id="zm-opts"></div><div class="kit-sub" id="zm-msg" style="text-align:center;margin:8px 0 0;min-height:1.4em"></div></div>
   <div style="text-align:center"><button class="kit-btn alt" id="zm-done" type="button">I'm done for now</button></div>
   <div id="zm-overlay"></div>
@@ -39,6 +49,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Zen Mode',accent:'#2e8b6a',bg:'linear-gradient(180deg,#e8f8ef,#d0eedd)'});</script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

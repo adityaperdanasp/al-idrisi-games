@@ -2439,6 +2439,7 @@
     return { week: wk, teams };
   }
 
+  async function getTotalCorrect() { const p = perksPlayer(); if (!p) return 0; const s = await aigDb.ref(`players/${p.id}/totalCorrect`).get(); return s.exists() ? (s.val() || 0) : 0; }
   // Audit batch 2: last N weeks of team totals (same hash as getClassTeams) for the board's history strip.
   async function getClassTeamsHistory(n) {
     const all = await readAllPlayers(); const out = [];
@@ -5896,7 +5897,24 @@
   // depth limit.
   const MAX_PENDING_CUSTOM_QUESTIONS = 10;
 
-  async function submitCustomQuestion(prompt, options, correctIndex) {
+  // Audit batch 3 -- Kids' Quiz social layer: per-question play/correct counters, likes (author gets
+  // +1 coin per new like) and reports for parents. All stored on the author's own question node.
+  async function kidsQuizStat(authorId, qId, ok) {
+    try { await aigDb.ref(`players/${authorId}/customQuestions/${qId}/stats`).transaction(c => { c = c || { plays: 0, correct: 0 }; c.plays = (c.plays || 0) + 1; if (ok) c.correct = (c.correct || 0) + 1; return c; }); } catch (e) {}
+  }
+  async function kidsQuizLike(authorId, qId) {
+    const me = perksPlayer(); if (!me) return { ok: false };
+    const ref = aigDb.ref(`players/${authorId}/customQuestions/${qId}/likes/${me.id}`);
+    const snap = await ref.get(); if (snap.exists()) return { ok: true, already: true };
+    await ref.set(true); try { await creditWalletFor(authorId, 1); } catch (e) {}
+    return { ok: true };
+  }
+  async function kidsQuizReport(authorId, qId, reason) {
+    const me = perksPlayer(); if (!me) return { ok: false };
+    await aigDb.ref(`players/${authorId}/customQuestions/${qId}/reports/${me.id}`).set({ reason: String(reason || "").slice(0, 80), at: Date.now() });
+    return { ok: true };
+  }
+  async function submitCustomQuestion(prompt, options, correctIndex, category) {
     const player = window.AIGPlayer && AIGPlayer.getPlayer();
     if (!player || player.role === "parent") return { ok: false };
     const snap = await aigDb.ref(`players/${player.id}/customQuestions`).get();
@@ -5911,6 +5929,7 @@
       prompt,
       options,
       correctIndex,
+      category: category || "general",
       status: "pending",
       createdAt: firebase.database.ServerValue.TIMESTAMP
     });
@@ -7295,7 +7314,7 @@
     getClassGoalProgress,
     getWeeklyLeaderboard, getWeeklyRecap, getMonthlyReport, getBonusHourInfo, getWeekendBonusInfo, isCoinMultiplierActive,
     getTitle, getTitleTiers,
-    submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool,
+    submitCustomQuestion, getMyCustomQuestions, getApprovedCustomQuestionPool, kidsQuizStat, kidsQuizLike, kidsQuizReport,
     getPowerupDefs, getPowerups, buyPowerup, usePowerup,
     getUpgradeDefs, getUpgradeGameLabels, getUpgrades, unlockUpgrade,
     submitSpeedRoundScore, getSpeedRoundLeaderboard,
@@ -7364,7 +7383,7 @@
     listPlayerNames, getWeeklyReport, getWeakTopics, getTutorMastered, markTutorMastered,
     getMegaQuest, startMegaQuest, claimMegaQuest, endMegaQuest, MEGA_DAYS,
     getAdvent, openAdventDay, claimAdventStreak, restartAdvent, adventReward,
-    getWeeklyFocus, recordFocusAnswer, FOCUS_KEYS, getClassTeams, getClassTeamsHistory,
+    getWeeklyFocus, recordFocusAnswer, FOCUS_KEYS, getClassTeams, getClassTeamsHistory, getTotalCorrect,
     getDino, evolveDino, DINO_STAGES, getSeason, getSeasonStatus, claimSeasonGift,
     getRotatingShop, getGachaStatus, rollGacha, GACHA_COST, GACHA_X5_COST,
     getFlashStatus, submitFlash, getFlashBoard, FLASH_MAX_PLAYS,

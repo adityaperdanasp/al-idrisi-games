@@ -28,6 +28,7 @@
   .wbs-tier{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid #f1e6e8;font-weight:800;font-size:.85rem}
   .wbs-tier.got{color:#15803d}
 
+  .wbs-dmg{min-height:1.4em;font-weight:800;color:#c0392b;margin-top:8px}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="weekly-boss";</script>
@@ -37,6 +38,7 @@
   <div class="kit-top"><a href="../" class="kit-back">←</a><div class="kit-title">🐉 Weekly Boss</div></div>
 
   <div class="wbs-box" id="wbs-boss"></div>
+  <div class="wbs-card" id="wbs-raid"></div>
   <div class="wbs-card" id="wbs-me"></div>
   <div class="wbs-card" id="wbs-top"></div>
   <div class="wbs-card" id="wbs-prev" hidden></div>
@@ -51,6 +53,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Weekly Boss',accent:'#b91c1c',bg:'linear-gradient(180deg,#2b0f19,#5b1a2e)'});</script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

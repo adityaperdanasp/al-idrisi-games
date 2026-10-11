@@ -221,6 +221,49 @@ TABS.push({ id: "world", label: "🌍 My World", async render(el) {
     <div class="kit-sub" style="text-align:center;margin:4px 0 0">${w.next ? `${w.toNext} more right answers to grow it further!` : "Your world is fully grown! 🏰"}${w.idle && w.idle < 99 ? ` Last played ${w.idle} day${w.idle === 1 ? "" : "s"} ago.` : ""}</div></div>`;
 }});
 
+/* ---- Care (audit batch 3): Bo has needs, so the house has a purpose ----
+   Food = right answers today (any game), Fun = play hide-and-seek today,
+   Sleep = Bo naps at night. Meeting all three opens a daily care gift. */
+const lsb = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+const lsbw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const bday = () => new Date().toISOString().slice(0, 10);
+TABS.unshift({ id: "care", label: "🍪 Care", async render(el) {
+  const total = await LB.getTotalCorrect();
+  if (lsb("bh_day", "") !== bday()) { lsbw("bh_day", bday()); lsbw("bh_base", String(total)); lsbw("bh_fun", "0"); }
+  const food = Math.max(0, total - Number(lsb("bh_base", String(total)))), fun = lsb("bh_fun", "0") === "1";
+  const h = new Date().getHours(), night = h >= 20 || h < 6, foodPct = Math.min(100, food * 10);
+  const allGood = foodPct >= 100 && fun, giftDone = lsb("bh_gift", "") === bday();
+  const mood = night ? "😴 Zzz… it's night, I'm sleeping. Come back in the morning!" : allGood ? "🥰 I'm so happy! Thank you for taking care of me!" : foodPct < 30 ? "🍪 I'm hungry! Answer questions in any game to feed me." : !fun ? "🙈 Let's play hide-and-seek!" : "😊 Almost full! A few more right answers, please.";
+  el.innerHTML = `<div class="kit-card">${boHeader(mood, allGood)}
+    <div class="bh-need"><span>🍪 Food</span><div class="kit-bar"><i style="width:${foodPct}%;background:#e0952f"></i></div><small>${food}/10 right answers today</small></div>
+    <div class="bh-need"><span>🎈 Fun</span><div class="kit-bar"><i style="width:${fun ? 100 : 0}%;background:#e86fb3"></i></div><small>${fun ? "Played today ✓" : "Play hide-and-seek"}</small></div>
+    <div class="bh-need"><span>🌙 Sleep</span><div class="kit-bar"><i style="width:${night ? 100 : 60}%;background:#6a8fe0"></i></div><small>${night ? "Sleeping now" : "Rested"}</small></div>
+    <button class="kit-btn block" id="bh-hide" type="button" ${night ? "disabled" : ""}>🙈 Play hide-and-seek with Bo</button>
+    <a class="kit-btn alt block" href="../game-room/">🍪 Feed Bo — play a game</a>
+    <button class="kit-btn block" id="bh-cg" type="button" ${allGood && !giftDone ? "" : "disabled"}>${giftDone ? "🎁 Care gift collected today ✓" : allGood ? "🎁 Open today's care gift (🪙6)" : "🎁 Care gift: fill Food and Fun first"}</button><div class="kit-bonus" id="bh-cm"></div></div>`;
+  el.querySelector("#bh-cg").onclick = async () => { lsbw("bh_gift", bday()); try { await LB.creditWallet({ coins: 6 }); } catch (e) {} if (window.AIGSkin) AIGSkin.burst(innerWidth / 2, innerHeight / 3); K.toastAdv("Bo is happy! +6 coins"); this.render(el); };
+  el.querySelector("#bh-hide").onclick = () => hideSeek(el, this);
+}});
+function hideSeek(el, tab) {
+  const SPOTS = ["🛋️", "🪴", "📦", "🛏️", "🚪", "🧺"], bo = K.rand(0, SPOTS.length - 1); let tries = 3, busy = false;
+  const draw = msg => {
+    el.innerHTML = `<div class="kit-card">${boHeader(msg || "I'm hiding! Pick a spot — answer a question right to look behind it. 3 tries!")}<div class="bh-hide">${SPOTS.map((s, i) => `<button class="bh-spot" data-i="${i}" type="button">${s}</button>`).join("")}</div><div class="kit-sub" style="text-align:center">Tries left: ${tries}</div><div id="bh-hq"></div></div>`;
+    el.querySelectorAll(".bh-spot").forEach(b => b.onclick = () => { if (busy) return; busy = true; ask(+b.dataset.i, b); });
+  };
+  const ask = (i, btn) => {
+    const q = K.question({ difficulty: "easy" });
+    $("bh-hq").innerHTML = `<div class="kit-q">${K.esc(q.prompt)}</div><div class="kit-opts">${q.options.map(o => `<button class="kit-opt" data-o="${K.esc(o)}" type="button">${K.esc(o)}</button>`).join("")}</div>`;
+    $("bh-hq").querySelectorAll(".kit-opt").forEach(b => b.onclick = () => {
+      const ok = b.dataset.o === q.correctLabel; K.record("bo-home", q.key, ok, q); tries--;
+      if (ok && i === bo) { lsbw("bh_fun", "1"); el.innerHTML = `<div class="kit-card">${boHeader("You found me! 🎉 That was fun!", true)}<div class="kit-bonus" id="bh-hb"></div><button class="kit-btn block" type="button" id="bh-back">Back</button></div>`; K.finish("bo-home", 3, $("bh-hb")); $("bh-back").onclick = () => tab.render(el); return; }
+      const hint = ok ? (Math.abs(i - bo) <= 1 ? "Warm! I'm close by… 🔥" : "Cold! I'm far away… 🧊") : `Oops, it was ${q.correctLabel} — no peeking this time!`;
+      if (tries <= 0) { lsbw("bh_fun", "1"); el.innerHTML = `<div class="kit-card">${boHeader(`I was behind the ${SPOTS[bo]}! Good try — that still counts as playing! 😄`)}<button class="kit-btn block" type="button" id="bh-back">Back</button></div>`; $("bh-back").onclick = () => tab.render(el); return; }
+      busy = false; draw(hint);
+    });
+  };
+  draw();
+}
+
 /* ---- shell ---- */
 function show(id) {
   current = id;
@@ -230,4 +273,4 @@ function show(id) {
   TABS.find(t => t.id === id).render(el);
 }
 if (!player) $("bh-overlay").innerHTML = K.signedOutHtml("🏠");
-else show(new URLSearchParams(location.search).get("tab") || "home");
+else show(new URLSearchParams(location.search).get("tab") || "care");
