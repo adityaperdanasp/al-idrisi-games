@@ -2228,3 +2228,7 @@ html[data-hub-theme="golden"] .sc-card { background: #fff8dc; }
 #sc-screen-landing .sc-header-right { flex-wrap: nowrap; }
 #sc-screen-landing .sc-more-menu { left: auto; right: 0; }
 #sc-screen-landing .sc-hero { padding: 20px 20px 18px; margin-top: 14px; transform: none; }
+
+/* Header dropdown menu must open above the game cards (which are later in the DOM). */
+.sc-header { z-index: 40; }
+.sc-more-menu { z-index: 45; max-height: 70vh; overflow-y: auto; }
