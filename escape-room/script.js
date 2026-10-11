@@ -1017,6 +1017,13 @@ function initEscapeRoom() {
         if (AIGLeaderboard.touchEscapeRoomDailyBest) AIGLeaderboard.touchEscapeRoomDailyBest(state.elapsed).catch(() => {});
       }
     }
+    if (state.campaign != null) {
+      const ch = state.campaign, stars = escaped ? 1 + (state.secondsLeft >= 60 ? 1 : 0) + (flawless ? 1 : 0) : 0, sv = campaignSave();
+      if (stars > (sv[ch] || 0)) { sv[ch] = stars; try { localStorage.setItem("er_campaign", JSON.stringify(sv)); } catch (e) {} }
+      $("er-end-seed").textContent = escaped ? `🗺️ Chapter ${ch + 1} cleared: ${"★".repeat(stars)}${"☆".repeat(3 - stars)}${ch < CAMPAIGN.length - 1 ? ` · Chapter ${ch + 2} unlocked!` : " · YOU FINISHED THE CAMPAIGN! 👑"}` : `🗺️ Chapter ${ch + 1} — try again to unlock the next heist.`;
+      if (escaped && ch < CAMPAIGN.length - 1) state.campaign = ch + 1;
+      renderCampaign();
+    }
     refreshStartInfo(); renderBoard();
     const show = () => {
       $("er-end-overlay").classList.remove("hidden");
@@ -1026,12 +1033,35 @@ function initEscapeRoom() {
     else { if (escaped) confetti(); else { flashScene(false); shakeDoor(); } show(); }
   }
 
+  // ---- Audit batch 10: Heist Campaign -------------------------------------------------------------------------------------------------------------
+  // 10 hand-ordered vaults told as one story. Each chapter is a classic run on a fixed seed (so the
+  // vault layout is the same every time) with difficulty rising from Easy to Hard. Escaping earns
+  // 1-3 stars (escape / 60s+ left / flawless) and unlocks the next chapter. Saved in this browser.
+  const CAMPAIGN = [
+    "The Rookie Job: a tiny bank in Blockville.", "The Toy Vault: someone stole every teddy bear!", "The Bakery Safe: the secret cookie recipe.",
+    "The Museum Night: a dinosaur egg goes missing.", "The Train Heist: the gold is on the 5 o'clock express.", "The Ice Vault: a frozen bank in the mountains.",
+    "The Pirate Bank: coins that belonged to Captain Bo.", "The Sky Tower: a vault 100 floors up.", "The Volcano Lab: hot, hot, hot locks.", "The Grand Vault: the biggest heist in Blockville!"
+  ];
+  function campaignSave() { return loadJson("er_campaign", {}); }
+  function renderCampaign() {
+    const host = $("er-campaign"); if (!host) return;
+    const sv = campaignSave(), unlocked = i => i === 0 || (sv[i - 1] || 0) > 0;
+    host.innerHTML = `<div class="er-camp-h">🗺️ Heist Campaign · ⭐ ${Object.values(sv).reduce((a, b) => a + b, 0)}/30</div><div class="er-camp-row">${CAMPAIGN.map((t, i) => `<button type="button" class="er-camp-ch ${unlocked(i) ? "" : "locked"} ${sv[i] ? "done" : ""}" data-ch="${i}" title="${t}">${unlocked(i) ? i + 1 : "🔒"}<small>${sv[i] ? "★".repeat(sv[i]) : ""}</small></button>`).join("")}</div>`;
+    host.querySelectorAll("[data-ch]").forEach(b => b.onclick = () => {
+      const i = +b.dataset.ch; if (!unlocked(i)) { boSay("Finish the chapter before it first!"); return; }
+      state.campaign = i; startGame(false);
+    });
+  }
   // ---- start / restart -----------------------------------------------------------------------------------------------------------------------------
   function startGame(sameSeed) {
     state.mode = state.selMode; state.diff = state.selDiff; state.tense = state.selTense;
     const seedVal = ($("er-seed").value || "").trim();
     if (seedVal) { state.seedLabel = seedVal; state.seed = hashStr("er|" + seedVal); }
     else if (!sameSeed) { state.seedLabel = String(rand(1000, 9999)); state.seed = hashStr("er|" + state.seedLabel); }
+    if (state.campaign != null) {
+      state.mode = "classic"; state.diff = state.campaign < 3 ? "easy" : state.campaign < 7 ? "normal" : "hard";
+      state.seedLabel = "HEIST-" + (state.campaign + 1); state.seed = hashStr("er|" + state.seedLabel);
+    }
     state.rng = mulberry32(state.seed); state.locks = []; state._pool = null;
     Object.assign(state, { room: 0, combo: 0, asked: 0, correctInDoor: 0, wrongInDoor: 0, path: "blue", secondsLeft: DIFFS[state.diff].dur, elapsed: 0, paused: false, ended: false, running: true,
       score: 0, scoreAnswers: 0, scoreDoors: 0, scoreExtra: 0, streak: 0, alarm: 0, hintsUsed: 0, nextTrap: null, keyArmed: false, cleanDoors: 0, anyWrongRun: false, secretUsed: false, bossBeaten: false,
@@ -1054,14 +1084,15 @@ function initEscapeRoom() {
       for (const t of ["3", "2", "1", "GO!"]) { bigText(t); sfx.tick(); await new Promise(r => setTimeout(r, motionReduced() ? 180 : 520)); if (state.ended) return; }
       bigText(null); state.hold = false; state.lastTickAt = performance.now();
       state.tickId = setInterval(tick, 50);
-      startTimer(); boSay(state.mode === "endless" ? "How deep can you go?" : state.tense ? "The guard is coming. Move fast!" : "Let's get out of here!");
+      startTimer(); boSay(state.campaign != null ? `Chapter ${state.campaign + 1}: ${CAMPAIGN[state.campaign]}` : state.mode === "endless" ? "How deep can you go?" : state.tense ? "The guard is coming. Move fast!" : "Let's get out of here!");
       setTimeout(askQuestion, 200);
     };
     if (state.tense) showBuffs(go); else go();
   }
 
   // ---- wiring -----------------------------------------------------------------------------------------------------------------------------------------
-  $("er-start-btn").addEventListener("click", () => startGame(false));
+  $("er-start-btn").addEventListener("click", () => { state.campaign = null; startGame(false); });
+  renderCampaign();
   $("er-play-again-btn").addEventListener("click", () => startGame(false));
   $("er-same-seed-btn").addEventListener("click", () => startGame(true));
   $("er-path-red").addEventListener("click", () => choosePath("red"));

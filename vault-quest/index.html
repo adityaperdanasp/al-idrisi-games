@@ -184,6 +184,11 @@
   .vq-seedrow { display: flex; gap: 6px; margin-bottom: 10px; } .vq-seedrow input { flex: 1; min-width: 0; background: #2a2a2a; border: 3px solid #1b1b1b; color: #fff; padding: 8px; font-family: "Nunito", sans-serif; font-weight: 800; } .vq-seedrow button { border: 3px solid #1b1b1b; background: #4a4a4a; color: #fff; font-family: "Press Start 2P", monospace; font-size: .46rem; padding: 0 8px; cursor: pointer; }
   .vq-buffs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; } .vq-buffs button { background: #2a2a2a; border: 3px solid #1b1b1b; color: #fff; padding: 10px 4px; font-weight: 800; font-size: .72rem; cursor: pointer; line-height: 1.25; } .vq-buffs button .e { font-size: 1.8rem; display: block; } .vq-buffs button small { display: block; font-weight: 700; font-size: .62rem; color: #bdb299; margin-top: 3px; } .vq-buffs button small.bad { color: #ff8a7a; } .vq-buffs button:active { border-color: #fcdb05; }
   .vq-rise { animation: vqRiseIn .45s ease backwards; } @keyframes vqRiseIn { from { opacity: 0; transform: translateY(12px); } }
+  .vq-lobby { margin: 8px 12px; padding: 12px; background: linear-gradient(#7ec8ff, #b9e6ff 60%, #6cc04a 60%, #4f9a33); border: 3px solid #1b1b1b; text-align: center; }
+  .vq-lobby-row { display: flex; justify-content: center; align-items: flex-end; gap: 10px; font-size: 2.4rem; min-height: 60px; } .vq-lobby-hero { animation: vqBob 1s infinite alternate; } .vq-lobby-pet { font-size: 1.8rem; animation: vqBob .7s infinite alternate-reverse; } .vq-lobby-gad { font-size: 1.4rem; }
+  @keyframes vqBob { to { transform: translateY(-5px); } }
+  .vq-lobby-last { font-size: .5rem; color: #12324a; margin: 6px 0; } .vq-play { width: 100%; font-size: .75rem !important; padding: 14px 6px !important; }
+  .vq-nav .vq-lo { display: none; } .vq-nav.vq-show-loadout .vq-lo { display: block; }
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="vault-quest";</script>
@@ -195,15 +200,17 @@
   <div id="vq-home">
     <div class="vq-topbar"><a href="../" class="vq-back px">&lt;</a><div class="vq-title px">⛏️ VAULT QUEST</div><button type="button" class="vq-iconbtn" id="vq-settings-btn">⚙️</button></div>
     <div class="vq-chips px"><span class="vq-chip">🪙 <span id="vq-coins">0</span></span><span class="vq-chip">💎 <span id="vq-gems">0</span></span><span class="vq-chip">⭐ <span id="vq-total-stars">0</span></span></div>
+    <div class="vq-lobby px" id="vq-lobby"></div>
     <div class="vq-streak px" id="vq-streak"></div>
     <div class="vq-worlds" id="vq-worlds"></div>
     <div class="vq-world-banner" id="vq-world-banner"></div>
     <div class="vq-levels" id="vq-levels"></div>
     <div class="vq-nav">
       <button type="button" class="vq-btn red" id="vq-endless-btn" style="grid-column: 1 / -1;">♾️ ENDLESS RUN</button>
-      <button type="button" class="vq-btn dark" id="vq-crew-btn">👥 CREW</button>
-      <button type="button" class="vq-btn dark" id="vq-gadget-btn">🎒 GADGETS</button>
-      <button type="button" class="vq-btn dark" id="vq-pet-btn">🐾 PET</button>
+      <button type="button" class="vq-btn dark" id="vq-loadout-btn" style="grid-column: 1 / -1;">🎒 LOADOUT ▼</button>
+      <button type="button" class="vq-btn dark vq-lo" id="vq-crew-btn">👥 CREW</button>
+      <button type="button" class="vq-btn dark vq-lo" id="vq-gadget-btn">🎒 GADGETS</button>
+      <button type="button" class="vq-btn dark vq-lo" id="vq-pet-btn">🐾 PET</button>
       <button type="button" class="vq-btn gold" id="vq-mission-btn">📋 MISSIONS</button>
       <button type="button" class="vq-btn gold" id="vq-daily-btn">🎁 DAILY</button>
       <a href="../" class="vq-btn dark">🏠 HUB</a>
@@ -283,6 +290,6 @@
 <script src="../skin.js"></script>
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
-<script src="script.js?v=7"></script>
+<script src="script.js?v=8"></script>
 </body>
 </html>

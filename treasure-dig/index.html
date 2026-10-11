@@ -270,6 +270,7 @@
   .td-item.shelf { border-color: #f7c548; background: #4a3b1a; }
   .td-shelfrow { background: #3a281a; border-radius: 12px; padding: 7px 8px; margin-bottom: 8px; font-weight: 800; font-size: .76rem; text-align: left; }
   .td-skill { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #4a3220; text-align: left; font-weight: 800; font-size: .8rem; } .td-skill .e { font-size: 1.5rem; } .td-skill small { display: block; color: #cbb593; font-weight: 700; font-size: .68rem; } .td-skill .td-btn { width: 90px; margin: 0; padding: 7px 2px; font-size: .74rem; flex: none; }
+  .td-more { margin: 8px 0; text-align: left; } .td-more summary { cursor: pointer; font-weight: 800; font-size: .8rem; color: #cbb593; padding: 6px 0; text-align: center; }
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="treasure-dig";</script>
@@ -331,12 +332,16 @@
     <div class="td-season hidden" id="td-season"></div>
     <button type="button" class="td-rulebtn" id="td-rule-btn"></button>
     <div class="td-dragon hidden" id="td-dragon"></div>
-    <div class="td-board" id="td-board">Loading this week's top diggers…</div>
+    <!-- Audit batch 10: a calmer start screen -- mode + one big Start first; rival, seed and the
+         weekly board are tucked into "More options" so a new digger isn't faced with everything at once. -->
     <div class="td-seg" id="td-mode"><button data-m="chill">😌 Chill (no timers)</button><button data-m="hard" class="on">🔥 Deg-degan! ×1.3 loot</button></div>
+    <button class="td-btn primary" id="td-start-btn">⛏️ Start Digging</button>
+    <details class="td-more"><summary>⚙️ More options · 🏆 top diggers</summary>
+    <div class="td-board" id="td-board">Loading this week's top diggers…</div>
     <div class="bh" style="font-size:.8rem;margin-bottom:4px;color:#cbb593">Race a rival</div>
     <div class="td-seg" id="td-rival-pick"><button data-r="slow">🐢</button><button data-r="bot" class="on">🤖</button><button data-r="fast">🚀</button><button data-r="ghost">👻 Me</button><button data-r="class">🏆 Class</button></div>
     <div class="td-seedrow"><input id="td-seed" placeholder="Seed code (same code = same tunnel)" maxlength="12"><button id="td-daily-seed" type="button">🎲 Daily</button></div>
-    <button class="td-btn primary" id="td-start-btn">⛏️ Start Digging</button>
+    </details>
     <div class="td-btnrow">
       <button class="td-btn dark" id="td-open-work">🛠️ Workshop</button>
       <button class="td-btn dark" id="td-open-museum">🏺 Museum</button>

@@ -879,8 +879,26 @@ function initBasketball() {
     document.getElementById("bh-question-overlay").classList.remove("hidden");
   }
 
+  // Audit batch 10: "vs Bo-Bot" mode -- after each of your shots Bo-Bot takes one too (a simulated
+  // shot that gets a little better each turn, sometimes going for 3), shown live on the scoreboard;
+  // the end screen says who won and keeps a win/loss record. Also a 🔥 ON FIRE dunk: 3 makes in a row
+  // in this mode turns your next make into a DUNK worth +3 bonus.
+  function botTurn() {
+    if (state.mode !== "bot" || state.qIndex === 0) return;
+    const three = Math.random() < 0.35, chance = (three ? 0.38 : 0.55) + Math.min(0.1, state.qIndex * 0.01);
+    const made = Math.random() < chance, pts = made ? (three ? 3 : 2) : 0;
+    state.botPoints = (state.botPoints || 0) + pts;
+    showSubtoast(`🤖 Bo-Bot ${made ? `makes a ${three ? "3-pointer" : "2"}! (+${pts})` : "misses!"}`);
+    drawBot();
+  }
+  function drawBot() {
+    const el = document.getElementById("bh-bot-score"); if (!el) return;
+    el.classList.toggle("hidden", state.mode !== "bot");
+    el.textContent = `You ${state.made} made · ⭐${state.points}  |  🤖 Bo-Bot ⭐${state.botPoints || 0}`;
+  }
   function askNextQuestion() {
     if (state.ended) return;
+    botTurn();
     if (state.qIndex >= ROUND_SIZE) { finishRound(); return; }
     maybeOfferSteal(() => maybeOfferLightningRound(askNextQuestionReal));
   }
@@ -1395,8 +1413,14 @@ function initBasketball() {
       wagerWon = true;
       state.wagerActive = false;
     }
+    if (state.mode === "bot") {
+      state.dunkStreak = (state.dunkStreak || 0) + 1;
+      if (state.dunkStreak > 3) { gained += 3; showToast("🔥 ON FIRE — SLAM DUNK! +3", false); }
+      else if (state.dunkStreak === 3) showSubtoast("🔥 You're ON FIRE — next make is a DUNK!");
+    }
     state.points += gained;
     if (state.mode === "team") state.teamScores[state.teamTurn] += gained;
+    drawBot();
 
     // Clutch tracker (item 12) -- makes specifically in the final
     // CLUTCH_WINDOW shots of the round.
@@ -1578,6 +1602,7 @@ function initBasketball() {
   }
 
   function handleMiss(isLastShot, launchX) {
+    state.dunkStreak = 0;
     // Buzzer bonus shot (round 3, item 15) -- short-circuit, mirrors
     // handleMake's own guard. A missed bonus shot costs nothing (it was
     // already free upside), just ends the round.
@@ -1737,7 +1762,13 @@ function initBasketball() {
 
     // Team Score result (round 2, item 13)
     const teamEl = document.getElementById("bh-team-result");
-    if (state.mode === "team") {
+    if (state.mode === "bot") {
+      const me = state.points, bot = state.botPoints || 0, won = me > bot;
+      let rec = { w: 0, l: 0 }; try { rec = JSON.parse(localStorage.getItem("aig_bh_bot_record") || '{"w":0,"l":0}'); } catch (e) {}
+      if (me !== bot) { rec[won ? "w" : "l"]++; try { localStorage.setItem("aig_bh_bot_record", JSON.stringify(rec)); } catch (e) {} }
+      teamEl.innerHTML = `<span class="${won ? "bh-team-win" : ""}">You: ${me}</span><span class="${bot > me ? "bh-team-win" : ""}">🤖 Bo-Bot: ${bot}</span><br><small>${won ? "You beat Bo-Bot! 🏆" : me === bot ? "A tie!" : "Bo-Bot wins this time."} Record ${rec.w}W-${rec.l}L</small>`;
+      teamEl.classList.remove("hidden");
+    } else if (state.mode === "team") {
       const p1 = state.teamScores[1], p2 = state.teamScores[2];
       teamEl.innerHTML = `<span class="${p1 >= p2 ? "bh-team-win" : ""}">P1: ${p1}</span><span class="${p2 > p1 ? "bh-team-win" : ""}">P2: ${p2}</span>`;
       teamEl.classList.remove("hidden");
@@ -1859,7 +1890,7 @@ function initBasketball() {
     state.made = 0;
     state.streak = 0;
     state.bestStreakThisRound = 0;
-    state.points = 0;
+    state.points = 0; state.botPoints = 0; state.dunkStreak = 0; drawBot();
     state.ended = false;
     state.comboMult = 1;
     state.lastWasPerfect = false;

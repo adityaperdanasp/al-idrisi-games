@@ -612,6 +612,7 @@
   /* Perfect Round confetti cannon (round 4, item 15) -- no new CSS class,
      reuses .bh-confetti-piece with a bigger burst count from 2 fixed
      corner origins (see script.js). */
+  .bh-bot-score { text-align: center; font-weight: 800; font-size: .8rem; margin: 4px 0; }
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="basketball";</script>
@@ -642,6 +643,8 @@
        on a miss (unlike Hot Hand which only decays via the streak
        counter) -- a distinct, faster-swinging resource. -->
   <div class="bh-momentum-bar hidden" id="bh-momentum-bar"><i id="bh-momentum-fill"></i></div>
+
+  <div class="bh-bot-score hidden" id="bh-bot-score"></div>
 
   <div class="bh-court" id="bh-court" data-lighting="day">
     <!-- Ambient dust motes (round 3) -- always-on, purely decorative. -->
@@ -738,6 +741,7 @@
         <button type="button" class="bh-mode-opt" data-mode="pressure">⏱️ Shot Clock<br><small>faster timer, 1.3× pts</small></button>
         <button type="button" class="bh-mode-opt" data-mode="team">🤝 Team Score<br><small>pass the device</small></button>
         <button type="button" class="bh-mode-opt" data-mode="freethrow">🎯 Free Throw<br><small>same spot, no hazards</small></button>
+        <button type="button" class="bh-mode-opt" data-mode="bot">🤖 vs Bo-Bot<br><small>take turns, most points wins</small></button>
       </div>
       <button type="button" class="bh-tutorial-link" id="bh-tutorial-link">❓ What's the 3-point arc?</button>
       <button class="bh-btn bh-btn-primary" id="bh-start-btn">Start Shootaround</button>
@@ -835,6 +839,6 @@
 <script src="../skin.js"></script>
 <script src="../mathville/generators.js"></script>
 <script src="../game-music.js"></script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

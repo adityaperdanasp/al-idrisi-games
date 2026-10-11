@@ -263,6 +263,10 @@
   .er-seedrow button { border: 2px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: #e8e4f0; border-radius: 10px; padding: 0 10px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .76rem; cursor: pointer; }
   .er-board { background: rgba(255,255,255,.07); border-radius: 12px; padding: 8px 10px; margin-bottom: 8px; font-weight: 800; font-size: .76rem; text-align: left; line-height: 1.6; }
   .er-rise { animation: erRise .45s ease backwards; } @keyframes erRise { from { opacity: 0; transform: translateY(12px); } }
+  .er-steps { display: grid; gap: 6px; margin: 8px 0; text-align: left; } .er-steps div { display: flex; align-items: center; gap: 8px; border: 2px solid #1b1b1b; background: #fff; color: #1b1b1b; padding: 6px; font-size: .78rem; font-weight: 700; } .er-steps b { background: #1b1b1b; color: #fff; padding: 2px 7px; } .er-steps span { font-size: 1.4rem; }
+  .er-more summary { cursor: pointer; font-weight: 800; font-size: .8rem; margin: 6px 0; }
+  .er-campaign { margin: 10px 0 0; } .er-camp-h { font-weight: 800; font-size: .85rem; margin-bottom: 6px; } .er-camp-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  .er-camp-ch { border: 2px solid #1b1b1b; background: #fff; color: #1b1b1b; font-weight: 800; padding: 6px 0; cursor: pointer; } .er-camp-ch small { display: block; font-size: .55rem; color: #c99700; min-height: .7rem; } .er-camp-ch.done { background: #fff5c2; } .er-camp-ch.locked { opacity: .5; }
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="escape-room";</script>
@@ -358,6 +362,7 @@
       <div class="er-swatches" id="er-theme-swatches"></div>
       <div class="er-label">Lock Skin</div>
       <div class="er-swatches" id="er-lock-swatches"></div>
+      <div id="er-campaign" class="er-campaign"></div>
       <button class="er-btn er-btn-primary" id="er-start-btn" style="margin-top:12px;">Start Escaping</button>
       <button class="er-btn er-btn-secondary" id="er-tutorial-link">How to play?</button>
     </div>
@@ -367,7 +372,9 @@
     <div class="er-card">
       <div class="er-modal-emoji">🗝️</div>
       <div class="er-modal-title">How to Escape</div>
-      <p class="er-modal-sub">🔒 <b>Combo</b>: 2 right in a row. ⚡ <b>Rapid</b>: 3 right out of 4 quick questions. 🎰 <b>Dial</b>: 3 right, mistakes cost time. 🚫 <b>No-mistake</b>: 3 in a row. 👹 <b>Boss</b>: 3 bolts, 10s each.<br><br>Right answers add time, wrong ones cost time and raise the 🚨 alarm. Use items in the question box. Hit max alarm and the guards fine you!<br><br>🔥 <b>Deg-degan mode</b>: the guard walks toward you for real, questions have timers, and lasers/lights sweep the room. <b>Tap the top half of the room (or ⬆) to JUMP</b> red lasers, <b>tap the bottom half (or ⬇) to DUCK</b> bright lights!</p>
+      <div class="er-steps"><div><b>1</b><span>🔒</span>Answer questions to open each lock</div><div><b>2</b><span>⏱️</span>Right = more time · wrong = alarm 🚨</div><div><b>3</b><span>🏃</span>Open all doors + beat the boss to escape!</div></div>
+      <details class="er-more"><summary>More details</summary>
+      <p class="er-modal-sub">🔒 <b>Combo</b>: 2 right in a row. ⚡ <b>Rapid</b>: 3 right out of 4 quick questions. 🎰 <b>Dial</b>: 3 right, mistakes cost time. 🚫 <b>No-mistake</b>: 3 in a row. 👹 <b>Boss</b>: 3 bolts, 10s each.<br><br>Right answers add time, wrong ones cost time and raise the 🚨 alarm. Use items in the question box. Hit max alarm and the guards fine you!<br><br>🔥 <b>Deg-degan mode</b>: the guard walks toward you for real, questions have timers, and lasers/lights sweep the room. <b>Tap the top half of the room (or ⬆) to JUMP</b> red lasers, <b>tap the bottom half (or ⬇) to DUCK</b> bright lights!</p></details>
       <button class="er-btn er-btn-primary" id="er-tutorial-close">Got it!</button>
     </div>
   </div>
@@ -488,6 +495,6 @@
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
 <script src="../game-music.js"></script>
-<script src="script.js?v=3"></script>
+<script src="script.js?v=4"></script>
 </body>
 </html>

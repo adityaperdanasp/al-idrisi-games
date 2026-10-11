@@ -173,7 +173,24 @@ function initVaultQuest() {
 
   // ---------------- HOME ----------------
   let selWorld = 1;
+  // Audit batch 10: a bright lobby at the top of the menu (your hero, pet and gadget standing
+  // together, plus your last run), ONE big PLAY button that jumps straight to the next level to
+  // beat, the Crew/Gadgets/Pet buttons folded into a single LOADOUT toggle, and mission progress
+  // shown right on the Missions button.
+  function nextLevelId() { return LEVEL_IDS.find(id => isUnlocked(id) && !starsOf(id)) || null; }
+  function lastRun(text) { if (text) { try { localStorage.setItem("vq_last_run", text); } catch (e) {} } try { return localStorage.getItem("vq_last_run") || ""; } catch (e) { return ""; } }
+  function renderLobby() {
+    const g = GADGETS.find(x => x.id === vq.gadget), hero = HEROES[loadout.hero] || HEROES.miner, nxt = nextLevelId();
+    const lb = $("vq-lobby"); if (!lb) return;
+    lb.innerHTML = `<div class="vq-lobby-row"><span class="vq-lobby-hero">${hero.icon}</span><span class="vq-lobby-pet">${petIcon()}</span>${g ? `<span class="vq-lobby-gad">${g.icon}</span>` : ""}</div>
+      <div class="vq-lobby-last">${lastRun() ? "Last run: " + lastRun() : "Ready for your first heist!"}</div>
+      <button type="button" class="vq-btn green vq-play" id="vq-play">▶ PLAY${nxt ? ` · WORLD ${nxt.match(/^w(\d)/)[1]} LEVEL ${nxt.match(/l(\d)$/)[1]}` : " · ENDLESS"}</button>`;
+    $("vq-play").onclick = () => { if (nxt) { selWorld = +nxt.match(/^w(\d)/)[1]; openIntro(nxt); } else openIntro("endless"); };
+    const ms = (vq.missions && vq.missions.list) || [], done = ms.filter(m => m.prog >= m.target).length;
+    $("vq-mission-btn").textContent = `📋 MISSIONS ${done}/${ms.length || 3}`;
+  }
   function renderHome() {
+    try { renderLobby(); } catch (e) {}
     $("vq-coins").textContent = wallet.coins || 0;
     $("vq-gems").textContent = wallet.gems || 0;
     let total = 0; LEVEL_IDS.forEach(id => total += starsOf(id));
@@ -947,6 +964,7 @@ function initVaultQuest() {
       return;
     }
     save();
+    lastRun(`${G.id.replace(/^w(\d)l(\d)$/, "W$1-L$2")} 🧟 caught at question ${Math.min(G.qi + 1, G.nQ)}/${G.nQ}`);
     setTimeout(() => { $("vq-fail-sub").innerHTML = `You reached question ${Math.min(G.qi + 1, G.nQ)} of ${G.nQ}.<br>Coins grabbed: ${G.coins}<br>Tip: ${G.tense ? "dodge with JUMP/SLIDE and keep answering to push the zombie back!" : "slow down and read the sign!"}`; show("vq-fail"); }, 700);
   }
   async function finishBonus() {
@@ -1012,6 +1030,7 @@ function initVaultQuest() {
     $("vq-win-chest").textContent = `🧰 OPEN ${stars === 3 ? "DIAMOND" : stars === 2 ? "IRON" : "WOODEN"} CHEST`;
     const nextId = LEVEL_IDS[G.idx + 1];
     G.nextId = nextId; G.stars = stars;
+    lastRun(`${G.endless ? "Endless" : G.id.replace(/^w(\d)l(\d)$/, "W$1-L$2")} ${"★".repeat(stars)}${"☆".repeat(3 - stars)} · 🪙${G.coins}`);
     show("vq-win");
   }
 
@@ -1085,6 +1104,7 @@ function initVaultQuest() {
   $("vq-gadget-btn").onclick = openGadgets;
   $("vq-pet-btn").onclick = openPets;
   $("vq-mission-btn").onclick = openMissions;
+  $("vq-loadout-btn").onclick = () => { const on = !document.querySelector(".vq-nav").classList.contains("vq-show-loadout"); document.querySelector(".vq-nav").classList.toggle("vq-show-loadout", on); $("vq-loadout-btn").textContent = on ? "🎒 LOADOUT ▲" : "🎒 LOADOUT ▼"; };
   $("vq-daily-btn").onclick = claimDaily;
   $("vq-settings-btn").onclick = () => show("vq-settings");
   document.querySelectorAll(".vq-close").forEach(b => b.onclick = () => b.closest(".vq-overlay").classList.add("hidden"));

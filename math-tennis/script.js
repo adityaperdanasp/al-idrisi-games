@@ -148,6 +148,26 @@ function initMathTennis() {
   const newBadge = document.getElementById("mt-new-badge");
   const historyRow = document.getElementById("mt-history-row");
 
+  // ============== Audit batch 10: Grand Slam Tour ==============
+  // 4 matches in a row, each on a different surface (grass = faster ball, clay = slower + wider
+  // window, night court = narrower) against a robot with its own lane style; win enough points to
+  // advance. Real tennis-style game score on the HUD (15-30-40 vs the robot), a trophy cabinet of
+  // slams won, and a no-question "Practice rally" mode for warming up the timing.
+  const TOUR = [
+    { name: "Round 1", surface: "grass", label: "🌱 Grass", robot: "classic", need: 5, mult: 0.9, widen: 0 },
+    { name: "Quarter-final", surface: "clay", label: "🟫 Clay", robot: "lefty", need: 6, mult: 1.15, widen: 4 },
+    { name: "Semi-final", surface: "hard", label: "🟦 Hard court", robot: "rightie", need: 7, mult: 1, widen: 0 },
+    { name: "FINAL", surface: "night", label: "🌙 Night court", robot: "classic", need: 8, mult: 0.95, widen: -3 }
+  ];
+  const TOUR_KEY = "aig_mt_tour", SLAMS_KEY = "aig_mt_slams";
+  const TENNIS_CALL = ["0", "15", "30", "40"];
+  // A friendly tennis-style readout of you vs the robot (every 4 points = 1 game).
+  function tennisScore(me, them) {
+    return `🎾 You ${TENNIS_CALL[me % 4]} – ${TENNIS_CALL[them % 4]} 🤖 · games ${Math.floor(me / 4)}-${Math.floor(them / 4)}`;
+  }
+  function drawTennisScore() { const el = document.getElementById("mt-tennis-score"); if (el) el.textContent = tennisScore(state.pointsWon, Math.max(0, state.qIndex - state.pointsWon)); }
+  function tourSurface() { return state.tour ? TOUR[state.tour.round] : null; }
+
   const SOUND_KEY = "aig_mt_sound";
   const HAPTICS_KEY = "aig_mt_haptics";
   function soundOn() { try { return localStorage.getItem(SOUND_KEY) !== "0"; } catch (e) { return true; } }
@@ -591,6 +611,7 @@ function initMathTennis() {
   }
 
   function askQuestion() {
+    drawTennisScore();
     if (state.qIndex >= ROUND_SIZE) { finishMatch(); return; }
     // Doubles (items 13/28) -- whose lane it is gets announced once the
     // serve's lane is rolled (see startRally), not here at question time.
@@ -833,6 +854,7 @@ function initMathTennis() {
     if (state.boss && !state.bossDefeated) baseDuration *= BOSS_DURATION_MULT;
     if (state.weather === "snow") baseDuration *= SNOW_DURATION_MULT;
     if (state.puSlow) { baseDuration *= 1.3; state.puSlow = false; refreshPuChip(); }
+    if (tourSurface()) baseDuration *= tourSurface().mult;
     state.rallyDuration = Math.max(400, Math.round(baseDuration));
     trickBtn.classList.remove("hidden");
 
@@ -1211,6 +1233,7 @@ function initMathTennis() {
       court.classList.remove("rush"); rushTicker.classList.remove("show");
       state.pointsWon++;
       hudPoints.textContent = state.pointsWon;
+      drawTennisScore();
       flipChip(hudPoints);
       state.streak++;
       if (state.streak > state.bestStreakThisMatch) state.bestStreakThisMatch = state.streak;
@@ -1430,6 +1453,20 @@ function initMathTennis() {
   document.getElementById("mt-recap-btn").addEventListener("click", () => { renderRecap(); document.getElementById("mt-recap-overlay").classList.remove("hidden"); });
   document.getElementById("mt-recap-close-btn").addEventListener("click", () => document.getElementById("mt-recap-overlay").classList.add("hidden"));
 
+  function finishTour(points) {
+    const t = state.tour, leg = TOUR[t.round], won = points >= leg.need;
+    const box = document.getElementById("mt-end-team-result");
+    if (!won) { box.textContent = `❌ Knocked out in the ${leg.name} (needed ${leg.need} points). The tour starts over next time.`; try { localStorage.removeItem(TOUR_KEY); } catch (e) {} state.tour = null; }
+    else if (t.round === TOUR.length - 1) {
+      let slams = 0; try { slams = Number(localStorage.getItem(SLAMS_KEY) || 0) + 1; localStorage.setItem(SLAMS_KEY, String(slams)); localStorage.removeItem(TOUR_KEY); } catch (e) {}
+      box.textContent = `🏆 GRAND SLAM CHAMPION! Trophy #${slams} in your cabinet!`; burstConfetti(true); playChampionship(); state.tour = null;
+      if (window.AIGLeaderboard) AIGLeaderboard.creditWallet({ coins: 25, gems: 1 }).catch(() => {});
+    } else {
+      t.round++; try { localStorage.setItem(TOUR_KEY, JSON.stringify(t)); } catch (e) {}
+      box.textContent = `✅ ${leg.name} won! Next: ${TOUR[t.round].name} on ${TOUR[t.round].label}. Tap Play Again.`;
+    }
+    box.classList.remove("hidden");
+  }
   function finishMatch() {
     state.ended = true;
     state.rallyRunning = false;
@@ -1466,6 +1503,7 @@ function initMathTennis() {
     } else {
       teamResultEl.classList.add("hidden");
     }
+    if (state.tour) finishTour(points);
 
     // Clutch tracker (round 2, item 30) -- performance in the final stretch
     if (state.clutchMakes >= 2) {
@@ -1530,6 +1568,9 @@ function initMathTennis() {
   }
 
   function startMatch() {
+    court.classList.remove("surf-grass", "surf-clay", "surf-hard", "surf-night");
+    const leg = tourSurface();
+    if (leg) { court.classList.add("surf-" + leg.surface); applyRobotSkin(leg.robot); setTimeout(() => queueCaption(`🏆 ${leg.name} · ${leg.label} · win ${leg.need}+ points to advance`, false), 500); }
     state.qIndex = 0;
     state.pointsWon = 0;
     state.score = 0;
@@ -1571,6 +1612,7 @@ function initMathTennis() {
     capQueue = []; capBusy = false;
     hudPoints.textContent = 0;
     hudScore.textContent = 0;
+    drawTennisScore();
     hudStreak.classList.add("hidden");
     powerBar.classList.add("hidden", "full");
     powerFill.style.width = "0%";
@@ -1674,7 +1716,30 @@ function initMathTennis() {
     showCaption(`💥 SMASH! +${SMASH_BONUS}`, false);
     playAce(); vib([30, 20, 50]);
   });
-  document.getElementById("mt-start-btn").addEventListener("click", () => { state.daily = false; dailyRng = null; startMatch(); });
+  document.getElementById("mt-start-btn").addEventListener("click", () => { state.daily = false; state.tour = null; dailyRng = null; startMatch(); });
+  (function addTourButtons() {
+    let saved = null; try { saved = JSON.parse(localStorage.getItem(TOUR_KEY) || "null"); } catch (e) {}
+    let slams = 0; try { slams = Number(localStorage.getItem(SLAMS_KEY) || 0); } catch (e) {}
+    const tb = document.createElement("button"); tb.className = "mt-btn mt-btn-secondary"; tb.type = "button";
+    tb.textContent = saved ? `🏆 Grand Slam Tour — continue: ${TOUR[saved.round].name}` : `🏆 Grand Slam Tour (4 matches)${slams ? ` · 🏆×${slams}` : ""}`;
+    tb.onclick = () => { state.daily = false; dailyRng = null; state.mode = "normal"; state.tour = saved || { round: 0 }; startMatch(); };
+    document.getElementById("mt-daily-btn").after(tb);
+    const pb = document.createElement("button"); pb.className = "mt-btn mt-btn-secondary"; pb.type = "button"; pb.textContent = "🎯 Practice rally (no questions)";
+    pb.onclick = practice; tb.after(pb);
+  })();
+  // Practice rally: 10 serves straight to the swing, no question first, nothing recorded or rewarded.
+  function practice() {
+    const o = document.createElement("div"); o.className = "mt-overlay"; o.style.zIndex = 60;
+    o.innerHTML = `<div class="mt-card"><div class="mt-modal-title">🎯 Practice rally</div><p class="mt-modal-sub">Tap SWING when the ball is in the green zone.</p>
+      <div class="mt-prac"><i class="mt-prac-zone"></i><b class="mt-prac-ball">🎾</b></div><button type="button" class="mt-btn mt-btn-primary" id="mt-prac-swing">SWING!</button><p class="mt-modal-sub" id="mt-prac-msg">0 / 10</p><button type="button" class="mt-btn mt-btn-secondary" id="mt-prac-close">Done</button></div>`;
+    document.body.appendChild(o);
+    let n = 0, hits = 0, t0 = 0, raf = 0, dur = 1300;
+    const ballEl = o.querySelector(".mt-prac-ball"), msg = o.querySelector("#mt-prac-msg");
+    const serve = () => { if (n >= 10) { msg.textContent = `Done! ${hits}/10 clean hits.`; return; } t0 = performance.now(); dur = 900 + Math.random() * 700; const tick = now => { const p = (now - t0) / dur; ballEl.style.top = Math.min(100, p * 100) + "%"; if (p < 1.05) raf = requestAnimationFrame(tick); else { n++; msg.textContent = `Missed! ${hits} / ${n}`; setTimeout(serve, 500); } }; raf = requestAnimationFrame(tick); };
+    o.querySelector("#mt-prac-swing").onclick = () => { if (n >= 10) return; cancelAnimationFrame(raf); const p = (performance.now() - t0) / dur * 100; const ok = p >= SWEET_MIN_PCT && p <= SWEET_MAX_PCT; n++; if (ok) { hits++; playThwock(); } msg.textContent = `${ok ? (p >= ACE_MIN_PCT && p <= ACE_MAX_PCT ? "🌟 ACE timing!" : "✅ Good!") : p < SWEET_MIN_PCT ? "Too early!" : "Too late!"} ${hits} / ${n}`; setTimeout(serve, 600); };
+    o.querySelector("#mt-prac-close").onclick = () => { cancelAnimationFrame(raf); n = 99; o.remove(); };
+    serve();
+  }
   document.getElementById("mt-daily-btn").addEventListener("click", () => { state.daily = true; dailyRng = mulberry32(dailySeed()); startMatch(); });
   // Play Again keeps whichever mode the last match used (a daily rerun
   // reseeds so it replays the SAME serve pattern, like Math Hoops').
