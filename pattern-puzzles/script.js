@@ -95,8 +95,30 @@ function menu() {
     <button class="kit-btn block" data-m="classic" type="button">🧩 Classic — 10 puzzles + a boss</button>
     <button class="kit-btn block" data-m="daily" type="button">📅 Daily set — same puzzles for everyone today${best ? ` (your best: ${best}/10)` : ""}</button>
     <button class="kit-btn alt block" data-m="endless" type="button">♾️ Endless — 3 lives, it keeps getting harder (best ${lsp("pp_endless", "0")})</button>
-    <button class="kit-btn alt block" data-m="speed" type="button">⏱️ Speed — as many as you can in 60s</button></div></div>`;
-  $("pp-overlay").querySelectorAll("[data-m]").forEach(b => b.onclick = () => { $("pp-overlay").innerHTML = ""; start(b.dataset.m); });
+    <button class="kit-btn alt block" data-m="speed" type="button">⏱️ Speed — as many as you can in 60s</button>
+    <button class="kit-btn alt block" data-m="lights" type="button">💡 Light Up — turn every lamp on (level ${Math.min(6, Number(lsp("pp_lights", "0")) + 1)}/6)</button></div></div>`;
+  $("pp-overlay").querySelectorAll("[data-m]").forEach(b => b.onclick = () => { $("pp-overlay").innerHTML = ""; b.dataset.m === "lights" ? lights() : start(b.dataset.m); });
+}
+// Audit round 2: 💡 Light Up -- a hands-on logic puzzle. Tapping a lamp flips it AND its up/down/
+// left/right neighbours. Turn every lamp on. 6 levels (3x3 then 4x4), each built by scrambling a
+// solved board so it is always solvable; fewer taps = more stars.
+function lights() {
+  const lvl = Math.min(6, Number(lsp("pp_lights", "0")) + 1), N = lvl <= 3 ? 3 : 4, scr = lvl + 1;
+  let on = Array(N * N).fill(true), taps = 0;
+  const flip = (g, k) => { const r = Math.floor(k / N), c = k % N; [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => { const rr = r + dr, cc = c + dc; if (rr >= 0 && rr < N && cc >= 0 && cc < N) g[rr * N + cc] = !g[rr * N + cc]; }); };
+  const picks = new Set(); while (picks.size < scr) picks.add(Math.floor(Math.random() * N * N)); picks.forEach(k => flip(on, k));
+  if (on.every(Boolean)) flip(on, 0);
+  const draw = () => {
+    const won = on.every(Boolean);
+    $("pp-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-q">💡 Light Up — level ${lvl}/6</div><p class="kit-sub" style="text-align:center">Tapping a lamp flips it and its neighbours. Turn them ALL on! · taps: ${taps} (par ${scr})</p>
+      <div class="pp-lights" style="grid-template-columns:repeat(${N},1fr)">${on.map((v, k) => `<button type="button" class="pp-lamp ${v ? "on" : ""}" data-k="${k}">${v ? "💡" : "⚫"}</button>`).join("")}</div>
+      ${won ? `<div class="kit-q" style="margin-top:10px">${taps <= scr ? "⭐⭐⭐" : taps <= scr + 3 ? "⭐⭐" : "⭐"} All lit!</div><div class="kit-bonus" id="pp-lb"></div><button class="kit-btn block" id="pp-lnext" type="button">${lvl < 6 ? "Next level" : "Play again"}</button>` : `<button class="kit-btn alt block" id="pp-lreset" type="button">🔄 New board</button>`}<button class="kit-btn alt block" id="pp-lback" type="button">Back</button></div></div>`;
+    $("pp-overlay").querySelectorAll(".pp-lamp").forEach(b => b.onclick = () => { if (on.every(Boolean)) return; flip(on, +b.dataset.k); taps++; draw(); });
+    const nb = $("pp-lnext"); if (nb) { if (Number(lsp("pp_lights", "0")) < lvl) { try { localStorage.setItem("pp_lights", String(Math.min(6, lvl))); } catch (e) {} K.record("pattern-puzzles", "lights", true); K.finish("pattern-puzzles", taps <= scr ? 5 : 3, $("pp-lb")); } nb.onclick = () => { if (lvl >= 6) { try { localStorage.setItem("pp_lights", "0"); } catch (e) {} } lights(); }; }
+    const rb = $("pp-lreset"); if (rb) rb.onclick = lights;
+    $("pp-lback").onclick = () => { $("pp-overlay").innerHTML = ""; menu(); };
+  };
+  draw();
 }
 function start(mode) {
   let n = 0, right = 0, cur = null, locked = false, hints = 0, lives = 3, endAt = mode === "speed" ? Date.now() + 60000 : 0, tick = null;

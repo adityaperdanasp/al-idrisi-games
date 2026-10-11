@@ -24,6 +24,7 @@
   .gf-conts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}.gf-conts .kit-btn{font-size:.78rem;padding:8px 4px}
   .gf-fuel{margin:0 14px 8px;font-weight:800;font-size:.8rem;display:flex;gap:6px;align-items:center}.gf-fuel .kit-bar{flex:1;display:block}
   .gf-routes{display:grid;gap:6px}.gf-track.bumpy{animation:gfB .25s infinite}@keyframes gfB{50%{transform:translateY(3px) rotate(.5deg)}}
+  .gf-sky{position:relative;height:300px;overflow:hidden;background:linear-gradient(#7ec8ff,#cfeaff);border:3px solid #1b1b1b;touch-action:none}.gf-plane{position:absolute;top:82%;transform:translate(-50%,-50%) rotate(-45deg);font-size:2rem;transition:left .12s}.gf-plane.bump{animation:gfBump .35s}@keyframes gfBump{40%{filter:brightness(2) drop-shadow(0 0 6px red)}}.gf-storm{position:absolute;transform:translate(-50%,-50%);font-size:1.8rem}.gf-ctl{display:flex;gap:10px;margin-top:8px}.gf-ctl button{flex:1;font-size:1.4rem;padding:12px;border:3px solid #1b1b1b;background:#fff;font-weight:800;cursor:pointer}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=6" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="geo-flight";</script>
@@ -46,6 +47,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Geo Flight',accent:'#0369a1',bg:'linear-gradient(180deg,#dff1fb,#bfe0f3)'});</script>
-<script src="script.js?v=2"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>

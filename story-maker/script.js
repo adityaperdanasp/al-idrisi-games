@@ -16,7 +16,11 @@ const STORIES = [
   { id: "picnic", emoji: "🌧️", title: "The Rainy Picnic", s: ["Sam and his sister [planned|plan|planning] a picnic for Saturday.", "They packed [an|a|the] apple, two sandwiches and some juice.", "Suddenly, it [began|begun|begin] to rain very hard.", "They ran [quickly|quick|quicker] under a big umbrella tree.", "The rain stopped, and [their|there|they're] picnic was the best ever!"] },
   { id: "space", emoji: "🚀", title: "Space Explorers", s: ["Luna and Max [are|is|am] astronauts on a rocket ship.", "They [flew|flied|fly] past the red planet Mars.", "Max [has|have|having] a camera to take pictures of the stars.", "Luna [said|says|saying] that the stars looked like tiny candles.", "Then they [returned|return|returning] home with amazing stories."] },
   { id: "baking", emoji: "🎂", title: "The Baking Contest", s: ["Every year, our town [holds|hold|holding] a big baking contest.", "Grandma made three [cakes|cake|cakeses] for the judges.", "She [was|were|be] very nervous before the results.", "The judges [tasted|taste|tasting] every slice carefully.", "Grandma won first prize, and [we|us|our] cheered loudly!"] },
-  { id: "brush", emoji: "🎨", title: "The Magic Paintbrush", s: ["Ella [found|find|founded] an old paintbrush in the attic.", "When she painted a bird, it [flew|flown|flied] right off the page!", "She painted [some|a|an] flowers, and they smelled wonderful.", "Ella [shared|share|sharing] her magic with the whole class.", "Now everyone paints [together|togethers|to gether] on Fridays."] }
+  { id: "brush", emoji: "🎨", title: "The Magic Paintbrush", s: ["Ella [found|find|founded] an old paintbrush in the attic.", "When she painted a bird, it [flew|flown|flied] right off the page!", "She painted [some|a|an] flowers, and they smelled wonderful.", "Ella [shared|share|sharing] her magic with the whole class.", "Now everyone paints [together|togethers|to gether] on Fridays."] },
+  // Audit round 2: three new genres.
+  { id: "detective", emoji: "🕵️", title: "The Missing Cookie", s: ["Detective Kai [looked|look|looking] at the empty cookie jar.", "There [were|was|is] tiny crumbs on the kitchen floor.", "The crumbs led to [the|a|an] dog's bed.", "But the dog [was|were|be] fast asleep and full of fur, not crumbs.", "Kai [noticed|notice|noticing] a trail of sugar going up the stairs."] },
+  { id: "dino", emoji: "🦕", title: "The Dinosaur Egg", s: ["Rex found a [huge|hugest|huger] egg in his garden.", "He [carried|carry|carryed] it carefully into the house.", "That night, the egg began to [crack|cracks|cracking].", "A baby dinosaur [peeked|peek|peeking] out and said hello.", "It [was|were|are] hungry and wanted pancakes!"] },
+  { id: "pirate", emoji: "🏴‍☠️", title: "Pirate Treasure", s: ["Captain Nia [sailed|sail|sailing] her ship across the stormy sea.", "Her crew [were|was|is] looking for a golden treasure chest.", "They found [an|a|the] old map inside a bottle.", "The map [showed|show|shown] an island shaped like a star.", "Nia [shouted|shout|shouting], “Land ahoy!” and everyone cheered."] }
 ];
 
 // Audit batch 4: you choose the hero's name, a plot choice before the last sentence (two endings per
@@ -28,10 +32,13 @@ const ENDINGS = {
   kitten: [["🦉 Fly with the owl", "Mimi and the owl [flew|flied|fly] above the clouds all night long."], ["🏠 Go home to sleep", "Mimi went home and [dreamed|dream|dreaming] about the moon."]],
   picnic: [["🌈 Look for a rainbow", "They [found|find|founded] a bright rainbow over the hill."], ["🐸 Meet a frog", "A happy frog [jumped|jump|jumping] onto their picnic blanket!"]],
   space: [["👽 Meet an alien", "A friendly alien [waved|wave|waving] at them from a purple moon."], ["🌙 Land on the Moon", "They [landed|land|landing] softly on the Moon and planted a flag."]],
+  detective: [["🍪 Follow the sugar", "Kai found his little brother [eating|ate|eats] cookies under the blanket!"], ["🐱 Check the cat", "The cat [had|has|having] sugar on her whiskers — case closed!"]],
+  dino: [["🥞 Make pancakes", "Rex [made|maked|make] a mountain of pancakes for his new friend."], ["🦖 Find its mum", "Rex and the baby [went|goed|go] to the museum to find its family."]],
+  pirate: [["💰 Dig for gold", "They [dug|digged|dig] a deep hole and found the shining treasure."], ["🐒 Meet a monkey", "A cheeky monkey [stole|stealed|steal] the map and ran into the jungle!"]],
   baking: [["🍰 Share the cake", "Grandma [shared|share|sharing] her prize cake with the whole town."], ["📖 Write a cookbook", "Grandma [wrote|writed|write] a cookbook full of secret recipes."]]
 };
-const HERO = { robot: "Zip", kitten: "Mimi", picnic: "Sam", space: "Luna", baking: "Grandma" };
-const PICS = { robot: ["🤖", "🌳", "🔑", "🚪", "🐿️", "🛝"], kitten: ["🐱", "🌳", "🌿", "🦉", "🌕", "☁️"], picnic: ["🧺", "🍎", "🌧️", "☂️", "☀️", "🌈"], space: ["🚀", "🔴", "📷", "⭐", "🏠", "🌙"], baking: ["🏆", "🎂", "😬", "🍴", "🎉", "📖"] };
+const HERO = { robot: "Zip", kitten: "Mimi", picnic: "Sam", space: "Luna", baking: "Grandma", detective: "Kai", dino: "Rex", pirate: "Nia" };
+const PICS = { robot: ["🤖", "🌳", "🔑", "🚪", "🐿️", "🛝"], kitten: ["🐱", "🌳", "🌿", "🦉", "🌕", "☁️"], picnic: ["🧺", "🍎", "🌧️", "☂️", "☀️", "🌈"], space: ["🚀", "🔴", "📷", "⭐", "🏠", "🌙"], baking: ["🏆", "🎂", "😬", "🍴", "🎉", "📖"], detective: ["🕵️", "🍪", "🐾", "🐶", "✨", "🔎"], dino: ["🥚", "🏠", "🌙", "🦕", "🥞", "🦖"], pirate: ["🏴‍☠️", "🌊", "🍾", "🗺️", "🏝️", "💰"] };
 const COVERS = ["#e86f6f", "#4f86f7", "#58b368", "#e0953a", "#9a6cd6"];
 function tip(opts) {
   const o = opts.map(x => x.toLowerCase());

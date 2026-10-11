@@ -95,7 +95,7 @@ function initDuel() {
         return;
       }
       const q = questions[index]; t0 = performance.now();
-      document.getElementById("dl-q-count").innerHTML = `Question ${index + 1}/${questions.length}${q.t ? ` · 👻 your friend took ${(q.t / 1000).toFixed(1)}s` : ""}${fifty ? ' <button type="button" class="dl-fifty" id="dl-fifty">✂️ 50/50</button>' : ""}`;
+      document.getElementById("dl-q-count").innerHTML = `Question ${index + 1}/${questions.length}${q.t ? ` · 👻 ${document.getElementById("dl-question-overlay").dataset.bot ? "Bo-Bot" : "your friend"} took ${(q.t / 1000).toFixed(1)}s` : ""}${fifty ? ' <button type="button" class="dl-fifty" id="dl-fifty">✂️ 50/50</button>' : ""}`;
       const fb = document.getElementById("dl-fifty"); if (fb) fb.onclick = () => { fifty = false; fb.remove(); shuffle([...document.querySelectorAll(".dl-q-btn")].filter(b => b.textContent !== q.correctLabel)).slice(0, 2).forEach(b => { b.disabled = true; b.style.opacity = ".3"; }); };
       document.getElementById("dl-q-prompt").textContent = q.prompt;
       const grid = document.getElementById("dl-q-grid");
@@ -124,6 +124,26 @@ function initDuel() {
     askNext();
   }
 
+  // Audit round 2: practice duel vs Bo-Bot any time -- same 10 questions format, Bo-Bot's time per
+  // question shows as the ghost, and a win/loss record. No friend needed.
+  function botDuel() {
+    const qs = generateQuestionSet().map(q => ({ ...q, t: 2200 + Math.random() * 4500 }));
+    document.getElementById("dl-question-overlay").dataset.bot = "1";
+    const botScore = 5 + Math.floor(Math.random() * 4);
+    playQuestionSet(qs, (score, times) => {
+      delete document.getElementById("dl-question-overlay").dataset.bot;
+      let rec = { w: 0, l: 0 }; try { rec = JSON.parse(lsd("dl_bot_rec", '{"w":0,"l":0}')) || rec; } catch (e) {}
+      const myT = times.reduce((a, b) => a + b, 0), botT = qs.reduce((a, q) => a + q.t, 0);
+      const win = score > botScore || (score === botScore && myT < botT);
+      rec[win ? "w" : "l"]++; try { localStorage.setItem("dl_bot_rec", JSON.stringify(rec)); } catch (e) {}
+      showResultModal(win ? "🏆" : "🤖", win ? "You beat Bo-Bot!" : "Bo-Bot wins this one", `You ${score} – ${botScore} Bo-Bot${score === botScore ? ` (time: ${(myT / 1000).toFixed(1)}s vs ${(botT / 1000).toFixed(1)}s)` : ""} · record ${rec.w}W-${rec.l}L`);
+    });
+  }
+  (function addBotBtn() {
+    const b = document.createElement("button"); b.className = "dl-btn"; b.type = "button"; b.id = "dl-bot-btn"; b.style.marginTop = "8px";
+    b.textContent = "🤖 Practice duel vs Bo-Bot"; b.onclick = botDuel;
+    document.getElementById("dl-challenge-btn").after(b);
+  })();
   function showResultModal(emoji, title, sub) {
     document.getElementById("dl-result-emoji").textContent = emoji;
     document.getElementById("dl-result-title").textContent = title;

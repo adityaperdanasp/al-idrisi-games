@@ -138,11 +138,14 @@ function start() {
     const total = secs + penalty;
     const stars = mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1;
     const coins = practice ? 0 : (total < 240 ? 20 : total < 480 ? 15 : 10) + (rooms.bonusWon ? 5 : 0);
+    // Audit round 2: key collection -- escaping any day of a theme week adds that theme's key.
+    let keyNew = false;
+    if (!practice) { let keys = {}; try { keys = JSON.parse(lse("ed_keys", "{}")) || {}; } catch (e) {} const kk = theme.name + "|" + wkIndex; if (!keys[kk]) { keys[kk] = theme.emoji; keyNew = true; lsew("ed_keys", JSON.stringify(keys)); } }
     if (!practice) { const bk = "ed_best_" + day; if (!lse(bk, "") || total < Number(lse(bk, "99999"))) lsew(bk, String(total));
       const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10), last = lse("ed_last", ""); if (last !== day) { lsew("ed_streak", String(last === y ? Number(lse("ed_streak", "0")) + 1 : 1)); lsew("ed_last", day); } }
     $("ed-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">🎉</div><h2>You escaped!</h2>
       <div style="font-size:1.6rem">${"⭐".repeat(stars)}${"☆".repeat(3 - stars)}</div>
-      <p class="kit-sub">Time: <b>${fmt(total)}</b> (${theme.name} room) · ${mistakes} mistake${mistakes === 1 ? "" : "s"} · 💎 ${gems}/4 gems${practice ? "<br>Practice replay — no coins, but great training!" : `<br>🔥 ${lse("ed_streak", "1")}-day escape streak`}</p><div class="kit-bonus" id="ed-bonus"></div>
+      <p class="kit-sub">Time: <b>${fmt(total)}</b> (${theme.name} room) · ${mistakes} mistake${mistakes === 1 ? "" : "s"} · 💎 ${gems}/4 gems${practice ? "<br>Practice replay — no coins, but great training!" : `<br>🔥 ${lse("ed_streak", "1")}-day escape streak`}${keyNew ? `<br>🗝️ New key for your collection: ${theme.emoji} ${K.esc(theme.name)}!` : ""}<br><small>🗝️ Key ring: ${(() => { try { return Object.values(JSON.parse(lse("ed_keys", "{}"))).join(" ") || "—"; } catch (e) { return "—"; } })()}</small></p><div class="kit-bonus" id="ed-bonus"></div>
       <a class="kit-btn block" href="../game-room/">Game Room</a></div></div>`;
     if (coins) K.finish("escape-daily", coins, $("ed-bonus"));
   }

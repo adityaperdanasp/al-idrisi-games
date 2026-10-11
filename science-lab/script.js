@@ -58,14 +58,51 @@ function menu() {
   const done = Object.keys(notebook).length, topics = {};
   LAB.forEach(e => { topics[e.topic] = topics[e.topic] || { all: 0, got: 0 }; topics[e.topic].all++; if (notebook[e.i]) topics[e.topic].got++; });
   $("sl-card").innerHTML = `<div class="kit-q">🧪 Welcome to the lab!</div><p class="kit-sub" style="text-align:center">Every experiment has 3 steps: make a <b>hypothesis</b> (guess), run the <b>test</b> yourself, then write the <b>conclusion</b>.</p>
-    <button class="kit-btn block" id="sl-go" type="button">🔬 Start 6 experiments</button><button class="kit-btn alt block" id="sl-var" type="button">🎚️ Slider lab (change it and see)</button><button class="kit-btn alt block" id="sl-nb" type="button">📓 My notebook (${done}/${LAB.length})</button>
+    <button class="kit-btn block" id="sl-go" type="button">🔬 Start 6 experiments</button><button class="kit-btn alt block" id="sl-var" type="button">🎚️ Slider lab (change it and see)</button><button class="kit-btn alt block" id="sl-hyp" type="button">🧪 Hypothesis missions</button><button class="kit-btn alt block" id="sl-nb" type="button">📓 My notebook (${done}/${LAB.length})</button>
     <div class="sl-badges">${Object.entries(topics).map(([t, v]) => `<span class="${v.got >= v.all ? "on" : ""}">${TOPIC_E[t] || "⭐"} ${t} ${v.got}/${v.all}</span>`).join("")}</div>
     <div class="kit-sub" style="text-align:center;margin:8px 0 0">⭐ This week's star experiment: <b>${K.esc(LAB[weekStar].t)}</b> (double coins!)</div>`;
-  $("sl-go").onclick = run; $("sl-nb").onclick = book; $("sl-var").onclick = sliderLab;
+  $("sl-go").onclick = run; $("sl-nb").onclick = book; $("sl-var").onclick = sliderLab; $("sl-hyp").onclick = hypMenu;
 }
 function book() {
   $("sl-card").innerHTML = `<div class="kit-q">📓 Scientist's notebook</div>${LAB.map(e => { const n = notebook[e.i]; return `<div class="sl-note ${n ? "" : "off"}"><b>${TOPIC_E[e.topic] || ""} ${K.esc(e.t)}</b>${n ? `<br><small>${n.ok ? "✅ predicted right" : "🤔 surprise result"} · ${K.esc(e.word)}</small><br><small>${K.esc(e.fact)}</small>` : "<br><small>Not tried yet</small>"}</div>`; }).join("")}<button class="kit-btn block" id="sl-bk" type="button">Back</button>`;
   $("sl-bk").onclick = menu;
+}
+// Audit round 2: hypothesis missions -- predict, run 3 trials yourself with a slider, read the
+// results chart, then decide if your hypothesis was right. Like a real experiment.
+const MISSIONS = [
+  { id: "ramp", em: "🛝", title: "Ramp and ball", ask: "If the ramp is steeper, the ball rolls…", opts: ["farther", "the same", "shorter"], right: 0, unit: "cm", label: "Ramp height", fn: v => Math.round(20 + v * 14 + Math.random() * 6), why: "A steeper ramp gives the ball more speed, so it rolls farther." },
+  { id: "plant", em: "🌱", title: "Plant and sunlight", ask: "With more hours of sunlight each day, a bean plant grows…", opts: ["taller", "the same", "shorter"], right: 0, unit: "mm", label: "Sunlight (hours)", fn: v => Math.round(8 + v * 9 - (v > 8 ? (v - 8) * 6 : 0) + Math.random() * 4), why: "Plants use sunlight to make food (photosynthesis), so more light helps them grow — up to a point." },
+  { id: "ice", em: "🧊", title: "Ice cube melting", ask: "In warmer water, an ice cube melts…", opts: ["faster", "the same", "slower"], right: 0, unit: "s", label: "Water warmth", fn: v => Math.round(240 - v * 20 + Math.random() * 8), why: "Warmer water has more heat energy to give to the ice, so it melts faster (less time)." }
+];
+function hypMenu() {
+  $("sl-card").innerHTML = `<div class="kit-q">🧪 Hypothesis missions</div>${MISSIONS.map((m, i) => `<button class="kit-btn alt block" data-h="${i}" type="button">${m.em} ${m.title}${lsl("sl_hyp_" + m.id, "") ? " ✅" : ""}</button>`).join("")}<button class="kit-btn block" id="sl-bk" type="button">Back</button>`;
+  $("sl-card").querySelectorAll("[data-h]").forEach(b => b.onclick = () => mission(MISSIONS[+b.dataset.h]));
+  $("sl-bk").onclick = menu;
+}
+function mission(m) {
+  $("sl-card").innerHTML = `<div class="kit-q">${m.em} ${m.title}</div><p class="kit-sub" style="text-align:center"><b>Hypothesis:</b> ${m.ask}</p>${m.opts.map((o, i) => `<button class="kit-opt" data-p="${i}" type="button" style="width:100%;margin-top:6px">${o}</button>`).join("")}`;
+  $("sl-card").querySelectorAll("[data-p]").forEach(b => b.onclick = () => trials(m, +b.dataset.p));
+}
+function trials(m, pred) {
+  const results = [];
+  const draw = () => {
+    const max = Math.max(1, ...results.map(r => r[1]));
+    $("sl-card").innerHTML = `<div class="kit-q">${m.em} Run 3 trials</div><p class="kit-sub" style="text-align:center">Set the ${m.label.toLowerCase()} and press Run. Try a LOW, a MIDDLE and a HIGH setting.</p>
+      <div class="sl-var"><b>${m.label}: <span id="sl-hv">5</span></b><input type="range" id="sl-hs" min="1" max="10" value="${[2, 5, 9][results.length] || 5}"></div>
+      <button class="kit-btn block" id="sl-run" type="button" ${results.length >= 3 ? "disabled" : ""}>▶ Run trial ${Math.min(3, results.length + 1)}/3</button>
+      <div class="sl-chart">${results.map(([v, r]) => `<div><i style="height:${Math.round(r / max * 100)}%"></i><b>${r}${m.unit}</b><small>${m.label.split(" ")[0]} ${v}</small></div>`).join("")}</div>
+      ${results.length >= 3 ? `<button class="kit-btn block" id="sl-concl" type="button">📊 What did we find?</button>` : ""}`;
+    $("sl-hv").textContent = $("sl-hs").value; $("sl-hs").oninput = () => { $("sl-hv").textContent = $("sl-hs").value; };
+    $("sl-run").onclick = () => { const v = +$("sl-hs").value; results.push([v, m.fn(v)]); results.sort((a, b) => a[0] - b[0]); tone(300 + results.length * 120); draw(); };
+    const c = $("sl-concl"); if (c) c.onclick = () => {
+      const ok = pred === m.right, first = !lsl("sl_hyp_" + m.id, ""); if (first) lslw("sl_hyp_" + m.id, "1");
+      K.record("science-lab", "hypothesis", ok);
+      $("sl-card").innerHTML = `<div class="kit-big" style="text-align:center">${ok ? "🎉" : "🤔"}</div><div class="kit-q">${ok ? "Your hypothesis was right!" : "Surprise! The data says something else."}</div><p class="kit-sub" style="text-align:center">Result: ${m.opts[m.right]}. ${m.why}</p><div class="kit-bonus" id="sl-hb"></div><button class="kit-btn block" id="sl-bk2" type="button">More missions</button>`;
+      if (first) K.finish("science-lab", ok ? 6 : 3, $("sl-hb"));
+      $("sl-bk2").onclick = hypMenu;
+    };
+  };
+  draw();
 }
 function sliderLab() {
   $("sl-card").innerHTML = `<div class="kit-q">🎚️ Slider lab</div>

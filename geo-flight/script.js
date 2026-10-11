@@ -48,8 +48,9 @@ async function init() {
       <button class="kit-btn block" data-mode="tour" type="button">🌍 World tour (you pick the route)</button>
       <div class="gf-conts">${CONTS.map(ct => `<button class="kit-btn alt" data-cont="${ct}" type="button">${SOUV[ct]} ${ct}</button>`).join("")}</div>
       <button class="kit-btn alt block" data-mode="asean" type="button">🌏 ASEAN challenge</button>
-      <button class="kit-btn alt block" data-mode="flags" type="button">🚩 Flag speed round (30s)</button></div>`;
-    $("gf-main").querySelectorAll("[data-mode]").forEach(b => b.onclick = () => b.dataset.mode === "flags" ? flags() : fly(b.dataset.mode));
+      <button class="kit-btn alt block" data-mode="flags" type="button">🚩 Flag speed round (30s)</button>
+      <button class="kit-btn alt block" data-mode="cargo" type="button">📦 Cargo run — steer through storms, deliver to the right capital</button></div>`;
+    $("gf-main").querySelectorAll("[data-mode]").forEach(b => b.onclick = () => b.dataset.mode === "flags" ? flags() : b.dataset.mode === "cargo" ? cargo() : fly(b.dataset.mode));
     $("gf-main").querySelectorAll("[data-cont]").forEach(b => b.onclick = () => fly("cont", b.dataset.cont));
   }
   function passport() {
@@ -123,4 +124,38 @@ async function init() {
     }
     ask();
   }
+}
+
+// Audit round 2: 📦 Cargo run -- 6 deliveries. Before each landing you steer the plane (◀ ▶ or
+// swipe) through 5 seconds of storm clouds; every storm you hit costs fuel. Then pick the right
+// capital airport for the package's country. Run out of fuel (3) and the run ends.
+function cargo() {
+  const ls2 = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+  let n = 0, fuel = 3, delivered = 0;
+  const box = $("gf-main");
+  const end = () => { const best = Number(ls2("gf_cargo_best", "0")); if (delivered > best) { try { localStorage.setItem("gf_cargo_best", String(delivered)); } catch (e) {} } box.innerHTML = `<div class="kit-card" style="text-align:center"><div class="kit-big">${fuel > 0 ? "📦" : "⛽"}</div><div class="kit-q">${delivered}/6 packages delivered</div><p class="kit-sub">${fuel > 0 ? "Every package found its capital!" : "Out of fuel — the plane had to land."} ${delivered > best ? "🌟 New best!" : `Best: ${best}`}</p><div class="kit-bonus" id="gf-cb"></div><button class="kit-btn block" type="button" onclick="location.reload()">Fly again</button></div>`; K.finish("geo-flight", delivered * 2, $("gf-cb")); };
+  const storm = done => {
+    box.innerHTML = `<div class="kit-card"><div class="kit-sub" style="font-weight:800;text-align:center">✈️ Flight ${n + 1}/6 · ⛽ ${"🟩".repeat(fuel)}${"⬜".repeat(3 - fuel)} · dodge the storms!</div><div class="gf-sky" id="gf-sky"><span class="gf-plane" id="gf-pl">✈️</span></div><div class="gf-ctl"><button type="button" id="gf-l">◀</button><button type="button" id="gf-r">▶</button></div></div>`;
+    let lane = 1, rocks = [], t0 = performance.now(), next = 0, raf = 0; const sky = $("gf-sky"), pl = $("gf-pl");
+    const set = l => { lane = Math.max(0, Math.min(2, l)); pl.style.left = (lane * 33.3 + 16.6) + "%"; }; set(1);
+    $("gf-l").onclick = () => set(lane - 1); $("gf-r").onclick = () => set(lane + 1);
+    let sx = 0; sky.addEventListener("touchstart", e => { sx = e.changedTouches[0].clientX; }, { passive: true }); sky.addEventListener("touchend", e => { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 25) set(lane + (dx > 0 ? 1 : -1)); }, { passive: true });
+    const tick = now => {
+      const t = now - t0;
+      if (t > next && t < 4400) { const el = document.createElement("span"); el.className = "gf-storm"; el.textContent = "⛈️"; const l = Math.floor(Math.random() * 3); el.style.left = (l * 33.3 + 16.6) + "%"; sky.appendChild(el); rocks.push({ el, l, y: -10 }); next = t + 520 + Math.random() * 300; }
+      rocks.forEach(r => { r.y += 1.7; r.el.style.top = r.y + "%"; if (!r.hit && r.y > 74 && r.y < 90 && r.l === lane) { r.hit = true; fuel--; r.el.textContent = "💥"; pl.classList.remove("bump"); void pl.offsetWidth; pl.classList.add("bump"); } });
+      if (t > 5200 || fuel <= 0) { cancelAnimationFrame(raf); return fuel <= 0 ? end() : done(); }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  };
+  const deliver = () => {
+    if (n >= 6) return end();
+    storm(() => {
+      const c = C[K.rand(0, C.length - 1)], opts = K.shuffle([c].concat(K.shuffle(C.filter(x => x[0] !== c[0])).slice(0, 2)));
+      box.innerHTML = `<div class="kit-card"><div class="kit-sub" style="font-weight:800;text-align:center">📦 Package ${n + 1}/6 for ${c[1]} ${K.esc(c[2])}</div><div class="kit-q">Land at the right capital airport!</div>${opts.map(o => `<button class="kit-opt" type="button" data-c="${o[0]}" style="width:100%;margin-top:6px">🛬 ${K.esc(o[3])}</button>`).join("")}</div>`;
+      box.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { const ok = b.dataset.c === c[0]; K.record("geo-flight", "capitals", ok); box.querySelectorAll("[data-c]").forEach(x => { x.disabled = true; if (x.dataset.c === c[0]) x.classList.add("right"); }); if (ok) delivered++; else { b.classList.add("wrong"); fuel--; } n++; setTimeout(() => fuel <= 0 ? end() : deliver(), ok ? 800 : 1500); });
+    });
+  };
+  deliver();
 }

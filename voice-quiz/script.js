@@ -61,11 +61,15 @@ else K.ready().then(intro);
 // jackpot finale, a buzzer race against Bo-Bot (answer before it buzzes for full points), +1 for
 // answering out loud, applause on a 3-streak, a duo mode for two players on one phone, and an
 // average-speed stat at the end.
-let duo = false;
+let duo = false, ears = false;
+// Audit round 2: 🎧 Ears-only mode (the question text stays hidden -- Bo reads it out and you answer
+// from the choices; text appears after you answer) and a best-score record.
 function applause() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), len = a.sampleRate * 0.8, b = a.createBuffer(1, len, a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) * (Math.random() < 0.3 ? 1 : 0.2); const src = a.createBufferSource(), g = a.createGain(); src.buffer = b; g.gain.value = 0.12; src.connect(g); g.connect(a.destination); src.start(); } catch (e) {} }
 function intro() {
   $("vq-q").textContent = "📻 Welcome to Bo's Radio Quiz!";
   $("vq-opts").innerHTML = `<div class="kit-sub" style="grid-column:1/-1;text-align:center">3 rounds + a jackpot question. Beat Bo-Bot to the buzzer! Answering out loud earns a bonus point.</div><button class="kit-btn" id="vq-solo" type="button" style="grid-column:1/-1">🎤 Solo show</button><button class="kit-btn alt" id="vq-duo" type="button" style="grid-column:1/-1">👫 Duo show (take turns on one phone)</button>`;
+  $("vq-opts").insertAdjacentHTML("beforeend", `<label class="vq-ears" style="grid-column:1/-1"><input type="checkbox" id="vq-ears"> 🎧 Ears-only mode — Bo reads, you listen (no question text)</label>`);
+  $("vq-ears").onchange = e => { ears = e.target.checked; };
   $("vq-solo").onclick = () => { duo = false; start(); }; $("vq-duo").onclick = () => { duo = true; start(); };
 }
 
@@ -82,7 +86,8 @@ function start() {
     $("vq-round").textContent = `${ROUND[n - 1]}${duo ? ` · ${n % 2 ? "Player 1" : "Player 2"}'s turn` : ""} · Score ${duo ? `${points[0]} – ${points[1]}` : points[0]}`;
     clearTimeout(botT); const bot = K.bot; botT = setTimeout(() => { if (locked) return; $("vq-heard").textContent = `📻 ${bot.emoji} ${bot.name} buzzed! Answer now for 1 point.`; q.botBuzzed = true; }, Math.max(2500, bot.speedMs * 0.8));
     $("vq-n").textContent = n; $("vq-heard").textContent = Rec ? "Tap the mic and say your answer — or tap an answer." : "Your browser can't listen, so tap your answer (you can still press 🔊).";
-    $("vq-q").textContent = q.prompt;
+    $("vq-q").textContent = ears ? "🎧 Listen…" : q.prompt;
+    if (ears) setTimeout(() => speak(`${q.prompt}. ${q.options.map((o, i) => `${LETTERS[i]}: ${o}`).join(". ")}`), 250);
     $("vq-opts").innerHTML = q.options.map((o, i) => `<button class="kit-opt vq-opt" data-i="${i}"><span class="vq-l">${LETTERS[i]}</span> ${K.esc(o)}</button>`).join("");
     $("vq-opts").querySelectorAll(".kit-opt").forEach(b => b.onclick = () => choose(+b.dataset.i));
   }
@@ -96,6 +101,7 @@ function start() {
     K.record("voice-quiz", q.key, ok, q);
     $("vq-opts").querySelectorAll(".kit-opt").forEach((b, k) => { b.disabled = true; if (q.options[k] === q.correctLabel) b.classList.add("right"); });
     if (!ok) $("vq-opts").querySelectorAll(".kit-opt")[i].classList.add("wrong"); else { right++; $("vq-r").textContent = right; }
+    if (ears) $("vq-q").textContent = q.prompt;
     $("vq-heard").textContent = ok ? "🎉 Yes!" : `It was “${q.correctLabel}”.`;
     setTimeout(next, ok ? 1100 : 2200);
   }
@@ -116,6 +122,8 @@ function start() {
     try { rec.start(); } catch (e) { $("vq-heard").textContent = "Couldn't start the microphone."; }
   };
   async function finish() {
+    let best = 0; try { const bk = ears ? "vq_best_ears" : "vq_best"; best = Number(localStorage.getItem(bk) || 0); if (points[0] > best) localStorage.setItem(bk, String(points[0])); } catch (e) {}
+    setTimeout(() => { const m = document.querySelector("#vq-overlay .kit-sub"); if (m && !duo) m.insertAdjacentHTML("beforeend", `<br>${points[0] > best ? "🌟 New best score!" : `Best: ${best}`}${ears ? " (ears-only)" : ""}`); }, 0);
     $("vq-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">${right >= 6 ? "🌟" : "🗣️"}</div><h2>${duo ? (points[0] === points[1] ? "It's a tie!" : points[0] > points[1] ? "Player 1 wins!" : "Player 2 wins!") : `${right}/8 right`}</h2><p class="kit-sub">${duo ? `Player 1: ${points[0]} · Player 2: ${points[1]} points` : `${points[0]} show points`} · ⏱️ average answer ${(times.reduce((a, b) => a + b, 0) / Math.max(1, times.length) / 1000).toFixed(1)}s<br>Speaking your answers out loud helps your brain remember them!</p><div class="kit-bonus" id="vq-bonus"></div>
       <button class="kit-btn block" onclick="location.reload()">Again</button><a class="kit-btn alt block" href="../game-room/">Game Room</a></div></div>`;
     K.finish("voice-quiz", right * 2, $("vq-bonus"));

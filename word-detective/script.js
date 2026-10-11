@@ -57,7 +57,20 @@ const CASES = [
   { title: "The Melted Snowman", emoji: "⛄",
     text: ["The children built a snowman by the garden wall on Friday morning.", "By Saturday afternoon only a carrot and two buttons were left in a puddle.", "No one had touched it. The weather report said the temperature rose to 12 degrees on Saturday and the sun shone all day on that side of the wall."],
     q: [["When was the snowman built?", ["Friday morning", "Saturday night", "Sunday"], 0], ["What was left?", ["A carrot and two buttons", "A hat and scarf", "Nothing at all"], 0], ["How warm did it get on Saturday?", ["12 degrees", "0 degrees", "minus 5 degrees"], 0]],
-    suspects: [["The neighbour's dog", "🐕"], ["The children", "🧒"], ["The warm sun", "☀️"]], culprit: 2, why: "The temperature rose to 12 degrees and the sun shone on the wall — it melted!" }
+    suspects: [["The neighbour's dog", "🐕"], ["The children", "🧒"], ["The warm sun", "☀️"]], culprit: 2, why: "The temperature rose to 12 degrees and the sun shone on the wall — it melted!" },
+  // Audit round 2: three new cases.
+  { title: "The Muddy Library Book", emoji: "📚",
+    text: ["On Monday the library book was clean. On Tuesday morning it came back with muddy pages and a leaf stuck inside.", "Ava read it on her bed all Monday evening. Josh read it at the park on Tuesday, sitting under a tree after the rain.", "Mr. Kim, the librarian, never takes books outside."],
+    q: [["When was the book still clean?", ["Monday", "Tuesday", "Wednesday"], 0], ["Where did Josh read the book?", ["On his bed", "At the park", "In the library"], 1], ["What was stuck inside the book?", ["A feather", "A leaf", "A ticket"], 1]],
+    suspects: [["Ava", "👧"], ["Josh", "🧒"], ["Mr. Kim", "👨‍🏫"]], culprit: 1, why: "Rain, mud and a leaf from the tree: Josh read it at the park after the rain!" },
+  { title: "The Vanishing Paint", emoji: "🎨",
+    text: ["The art room's blue paint pot was full on Friday. By Monday it was almost empty.", "Leo painted a red fire truck on Friday. Maya painted the sea and the sky for her ocean project over the weekend at the art club.", "The janitor only cleans the floors and never opens the paint pots."],
+    q: [["Which paint went missing?", ["Red", "Blue", "Yellow"], 1], ["What did Leo paint?", ["A fire truck", "The sea", "A flower"], 0], ["When did Maya paint her project?", ["On Friday", "At the weekend", "On Monday"], 1]],
+    suspects: [["Leo", "🧒"], ["Maya", "👧"], ["The janitor", "🧹"]], culprit: 1, why: "The sea and the sky need lots of blue — Maya used it at the weekend art club." },
+  { title: "The Noisy Night", emoji: "🌙",
+    text: ["At midnight the whole house heard a loud CRASH in the kitchen.", "Everyone was in bed. In the morning, a pan was on the floor and there were small wet footprints next to the fish bowl.", "Goldie the goldfish was swimming happily. The kitten's water bowl was empty and its fur was damp."],
+    q: [["What time was the crash?", ["At noon", "At midnight", "At sunrise"], 1], ["What was on the floor?", ["A pan", "A cup", "A book"], 0], ["What was next to the fish bowl?", ["Big boots", "Small wet footprints", "Sand"], 1]],
+    suspects: [["Dad", "👨"], ["Goldie the goldfish", "🐟"], ["The kitten", "🐱"]], culprit: 2, why: "Small wet footprints and damp fur — the kitten tried to catch Goldie and knocked over the pan!" }
 ];
 
 if (!player) {

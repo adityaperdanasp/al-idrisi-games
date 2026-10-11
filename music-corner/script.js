@@ -16,7 +16,11 @@ const PACKS = {
   planets: { name: "Planets", words: ["Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"] },
   months: { name: "Months of the year", words: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] },
   days: { name: "Days of the week", words: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] },
-  colors: { name: "Rainbow colours", words: ["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet"] }
+  colors: { name: "Rainbow colours", words: ["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet"] },
+  // Audit round 2: more memory packs.
+  continents: { name: "Continents", words: ["Africa", "Antarctica", "Asia", "Australia", "Europe", "North America", "South America"] },
+  shapes: { name: "Shapes & sides", words: ["Triangle 3", "Square 4", "Pentagon 5", "Hexagon 6", "Heptagon 7", "Octagon 8"] },
+  t11: { name: "11 times table", words: table(11) }, t12: { name: "12 times table", words: table(12) }
 };
 const MAX_NOTES = 16, MAX_SONGS = 8;
 // Audit batch 5: instruments, ready-made tunes, a demo on arrival, a "fill the missing word" memory
@@ -90,7 +94,7 @@ async function init() {
   // ---- audit batch 5 extras ----
   $("mc-extra").innerHTML = `<div class="mc-row" style="flex-wrap:wrap"><span style="font-weight:800">Sound:</span>${Object.entries(INSTR).map(([k, l]) => `<button type="button" class="mc-chip ${k === instrument ? "on" : ""}" data-in="${k}">${l}</button>`).join("")}</div>
     <div class="mc-row" style="flex-wrap:wrap"><span style="font-weight:800">Tunes:</span>${TUNES.map((t, i) => `<button type="button" class="mc-chip" data-tu="${i}">${t[0]}</button>`).join("")}</div>
-    <div class="mc-row"><button class="kit-btn" id="mc-memo" type="button">🧠 Memory game</button><button class="kit-btn alt" id="mc-beat" type="button">🥁 Tap the beat</button></div>`;
+    <div class="mc-row"><button class="kit-btn" id="mc-memo" type="button">🧠 Memory game</button><button class="kit-btn alt" id="mc-beat" type="button">🥁 Tap the beat</button><button class="kit-btn alt" id="mc-name" type="button">🎧 Name that tune</button></div>`;
   $("mc-extra").querySelectorAll("[data-in]").forEach(b => b.onclick = () => { instrument = b.dataset.in; $("mc-extra").querySelectorAll("[data-in]").forEach(x => x.classList.toggle("on", x === b)); tone(4, 300); });
   $("mc-extra").querySelectorAll("[data-tu]").forEach(b => b.onclick = () => { if (playing) return; seq = TUNES[+b.dataset.tu][1].slice(0, MAX_NOTES); drawSeq(-1); play(seq, $("mc-pack").value, +$("mc-tempo").value); });
   function overlay(html) { const o = document.createElement("div"); o.className = "kit-overlay"; o.innerHTML = `<div class="kit-modal">${html}</div>`; document.body.appendChild(o); return o; }
@@ -107,6 +111,21 @@ async function init() {
       tone(tune[k % tune.length], 600);
       o.querySelector("#mm-o").innerHTML = opts.map(x => `<button class="kit-opt" type="button" data-o="${K.esc(x)}">${K.esc(x)}</button>`).join("");
       o.querySelectorAll(".kit-opt").forEach(b => b.onclick = () => { const ok = b.dataset.o === w[k]; K.record("music-corner", pack, ok); if (ok) right++; o.querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (x.dataset.o === w[k]) x.classList.add("right"); }); if (!ok) b.classList.add("wrong"); round++; setTimeout(ask, ok ? 700 : 1500); });
+    };
+    ask();
+  };
+  // Audit round 2: Name that tune -- Bo plays the first notes of a ready-made tune, you pick which.
+  $("mc-name").onclick = () => {
+    let round = 0, right = 0;
+    const o = overlay(`<h2>🎧 Name that tune</h2><p class="kit-sub" id="nt-t"></p><button class="kit-btn block" id="nt-play" type="button">▶ Play it again</button><div class="kit-opts" id="nt-o"></div>`);
+    const ask = () => {
+      if (round >= 5) { o.querySelector(".kit-modal").innerHTML = `<div class="kit-big">${right >= 4 ? "🌟" : "🎵"}</div><h2>${right}/5 tunes named!</h2><div class="kit-bonus" id="nt-b"></div><button class="kit-btn block" id="nt-x" type="button">Done</button>`; o.querySelector("#nt-x").onclick = () => o.remove(); K.finish("music-corner", right, o.querySelector("#nt-b")); return; }
+      const idx = K.rand(0, TUNES.length - 1), notes = TUNES[idx][1].slice(0, 6), opts = K.shuffle([idx].concat(K.shuffle(TUNES.map((_, i) => i).filter(i => i !== idx)).slice(0, 2)));
+      const playIt = async () => { for (const n of notes) { tone(n, 380); await new Promise(r => setTimeout(r, 360)); } };
+      o.querySelector("#nt-t").textContent = `Tune ${round + 1}/5 — which one is it?`;
+      o.querySelector("#nt-play").onclick = playIt; playIt();
+      o.querySelector("#nt-o").innerHTML = opts.map(i => `<button class="kit-opt" type="button" data-i="${i}">${TUNES[i][0]}</button>`).join("");
+      o.querySelectorAll(".kit-opt").forEach(b => b.onclick = () => { const ok = +b.dataset.i === idx; if (ok) right++; o.querySelectorAll(".kit-opt").forEach(x => { x.disabled = true; if (+x.dataset.i === idx) x.classList.add("right"); }); if (!ok) b.classList.add("wrong"); round++; setTimeout(ask, ok ? 900 : 1500); });
     };
     ask();
   };

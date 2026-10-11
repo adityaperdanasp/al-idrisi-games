@@ -31,6 +31,12 @@ function scoreSpeech(target, heard) {
 // practise" list, and a no-microphone "listen & tap" mode.
 const STORY = [["🪁", "Mia had a bright red kite."], ["💨", "The wind lifted it up into the sky."], ["🌳", "Oh no, the kite got stuck in a tree!"], ["🧗", "Her brother climbed up very carefully."], ["🎉", "They flew the kite together until sunset."]];
 const TWISTERS = ["She sells sea shells by the sea shore.", "Red lorry, yellow lorry.", "Six slippery snails slid slowly.", "Fred fed Ted bread.", "Big black bugs bleed blue blood."];
+// Audit round 2: topic packs (🐾 Animals, 🚀 Space) and 👂 Listen & pick -- Bo reads one sentence
+// and you tap which of three it was (works with no microphone at all).
+const PACKS = {
+  animals: ["The tiger has orange fur and black stripes.", "A baby kangaroo lives in its mother's pouch.", "Owls can turn their heads very far.", "Penguins cannot fly but they swim fast.", "The giraffe eats leaves from tall trees."],
+  space: ["The moon goes around the Earth.", "Mars is called the red planet.", "The sun is a very big star.", "Astronauts float inside the space station.", "Saturn has beautiful rings of ice."]
+};
 const lss = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
 const lssw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 const speak = (t, rate, onWord, onEnd) => { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = "en-US"; u.rate = rate || 0.85; if (onWord) u.onboundary = e => { if (e.name === "word" || e.charIndex !== undefined) onWord(e.charIndex); }; if (onEnd) u.onend = onEnd; speechSynthesis.speak(u); } catch (e) {} };
@@ -39,15 +45,30 @@ else pickMode();
 function pickMode() {
   const saved = JSON.parse(lss("sp_words", "[]") || "[]");
   $("sp-sent").innerHTML = `<div class="kit-q" style="margin:0 0 8px">Choose a reading mode</div>
-    <div class="sp-modes"><button class="kit-btn" data-m="short" type="button">🐣 Short sentences</button><button class="kit-btn" data-m="long" type="button">🦉 Longer sentences</button><button class="kit-btn" data-m="story" type="button">🪁 Story: The Red Kite</button><button class="kit-btn" data-m="twist" type="button">👅 Tongue twisters</button>${saved.length ? `<button class="kit-btn alt" data-m="words" type="button">📝 My tricky words (${saved.length})</button>` : ""}</div>`;
+    <div class="sp-modes"><button class="kit-btn" data-m="short" type="button">🐣 Short sentences</button><button class="kit-btn" data-m="long" type="button">🦉 Longer sentences</button><button class="kit-btn" data-m="story" type="button">🪁 Story: The Red Kite</button><button class="kit-btn" data-m="twist" type="button">👅 Tongue twisters</button><button class="kit-btn" data-m="animals" type="button">🐾 Animals</button><button class="kit-btn" data-m="space" type="button">🚀 Space</button><button class="kit-btn" data-m="listen" type="button">👂 Listen &amp; pick (no mic)</button>${saved.length ? `<button class="kit-btn alt" data-m="words" type="button">📝 My tricky words (${saved.length})</button>` : ""}</div>`;
   $("sp-heard").textContent = ""; $("sp-next").hidden = true;
   document.querySelectorAll("[data-m]").forEach(b => b.onclick = () => start(b.dataset.m));
 }
 
+function listenPick() {
+  const pool = K.shuffle(SENTENCES.concat(PACKS.animals, PACKS.space));
+  let i = 0, right = 0;
+  const ask = () => {
+    if (i >= 5) { $("sp-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">👂</div><h2>${right}/5 heard right!</h2><p class="kit-sub">Good listening helps good reading.</p><div class="kit-bonus" id="sp-bonus"></div><button class="kit-btn block" onclick="location.reload()">More</button></div></div>`; K.finish("speak-with-bo", right * 2, $("sp-bonus")); return; }
+    const target = pool[i * 3], opts = K.shuffle([pool[i * 3], pool[i * 3 + 1], pool[i * 3 + 2]]);
+    $("sp-n").textContent = i + 1;
+    $("sp-sent").innerHTML = `<div class="kit-q" style="margin:0 0 6px">👂 Listen, then tap the sentence Bo said</div><button class="kit-btn block" id="sp-hear" type="button">🔊 Play it (again)</button>${opts.map(o => `<button class="kit-opt sp-pick" type="button" data-o="${K.esc(o)}">${K.esc(o)}</button>`).join("")}`;
+    $("sp-heard").textContent = ""; $("sp-next").hidden = true;
+    const play = () => speak(target, 0.85); $("sp-hear").onclick = play; setTimeout(play, 300);
+    document.querySelectorAll(".sp-pick").forEach(b => b.onclick = () => { const ok = b.dataset.o === target; K.record("speak-with-bo", "listening", ok); document.querySelectorAll(".sp-pick").forEach(x => { x.disabled = true; if (x.dataset.o === target) x.classList.add("right"); }); if (ok) right++; else b.classList.add("wrong"); i++; setTimeout(ask, ok ? 900 : 1800); });
+  };
+  ask();
+}
 function start(mode) {
   const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   const saved = JSON.parse(lss("sp_words", "[]") || "[]");
-  const set = mode === "story" ? STORY.map(x => x[1]) : mode === "twist" ? K.shuffle(TWISTERS).slice(0, 5) : mode === "words" ? saved.slice(0, 5).map(w => `${w[0].toUpperCase()}${w.slice(1)}.`)
+  if (mode === "listen") return listenPick();
+  const set = PACKS[mode] ? K.shuffle(PACKS[mode]).slice(0, 5) : mode === "story" ? STORY.map(x => x[1]) : mode === "twist" ? K.shuffle(TWISTERS).slice(0, 5) : mode === "words" ? saved.slice(0, 5).map(w => `${w[0].toUpperCase()}${w.slice(1)}.`)
     : K.shuffle(SENTENCES.filter(x => mode === "long" ? x.split(" ").length > 6 : x.split(" ").length <= 6)).slice(0, 5);
   while (set.length < 5) set.push(K.shuffle(SENTENCES)[0]);
   let stars = 0;

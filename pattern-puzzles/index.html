@@ -21,6 +21,7 @@
   .pp-cell.drop{animation:ppDrop .35s}.pp-cell.ok{background:#c9f2d3 !important}.pp-cell.bad{background:#ffd0d0 !important}
   @keyframes ppDrop{from{transform:translateY(-30px);opacity:.2}}
   .pp-dials{display:flex;gap:12px;justify-content:center;align-items:center}.pp-dials div{display:grid;gap:4px;text-align:center}.pp-dials b{font-size:2rem;background:#2b2b2b;color:#7dff8a;padding:4px 12px;border:3px solid #1b1b1b}.pp-dials button{border:2px solid #1b1b1b;background:#fff;font-weight:800;cursor:pointer}
+  .pp-lights{display:grid;gap:6px;max-width:300px;margin:10px auto}.pp-lamp{aspect-ratio:1;font-size:1.8rem;border:3px solid #1b1b1b;background:#2b2b3a;cursor:pointer}.pp-lamp.on{background:#fff6b0;box-shadow:0 0 14px #ffd84a inset}
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=6" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="pattern-puzzles";</script>
@@ -45,6 +46,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../gamekit.js?v=4"></script>
 <script>AIGKit.mount({title:'Pattern Puzzles',accent:'#7c3aed',bg:'linear-gradient(180deg,#f1e9ff,#ddd0fa)'});</script>
-<script src="script.js?v=2"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>
