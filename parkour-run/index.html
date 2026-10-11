@@ -59,6 +59,7 @@
   .pk-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
   .pk-btn-primary { background: #5FE1C7; color: #0e1a26; }
   .pk-btn-secondary { background: rgba(255,255,255,.1); color: #e6f3ff; }
+  .pk-tip { font-size: .78rem; margin: 6px 0; opacity: .85; } .pk-lane { touch-action: none; }
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="parkour-run";</script>
@@ -73,7 +74,8 @@
 
   <div class="pk-hud">
     <span>❤️ <span id="pk-lives">3</span></span>
-    <span>🏁 Obstacle <span id="pk-obstacle-count">1</span> / 15</span>
+    <span>🏁 Obstacle <span id="pk-obstacle-count">1</span><span id="pk-total"> / 15</span></span>
+    <span id="pk-score">⭐ 0 · 🏅 0</span>
   </div>
 
   <div class="pk-lane" id="pk-lane">
@@ -131,6 +133,6 @@
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
 <script src="../game-music.js"></script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

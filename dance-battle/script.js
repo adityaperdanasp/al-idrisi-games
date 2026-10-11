@@ -20,6 +20,21 @@ const TOTAL_SEGMENTS = 5;
 const BEATS_PER_SEGMENT = 6;
 const PERFECT_WINDOW_MS = 150;
 const GOOD_WINDOW_MS = 350;
+// Audit batch 9: a real beat you can HEAR (synth kick + hi-hat), ⬅️⬆️➡️ arrow mode (tap the arrow
+// shown, like a dance mat) next to the classic one-button mode, a dancer who strikes a new pose on
+// every hit, a Bo-Bot rival dancing against you, FEVER at 10 combo (x2 points), and best score per mode.
+const ARROWS = ["⬅️", "⬆️", "➡️"], POSES = ["🕺", "💃", "🤸", "🙆", "🙌"];
+let actx = null;
+function beatSound(atMs, accent) {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = actx.currentTime + Math.max(0, atMs) / 1000, o = actx.createOscillator(), g = actx.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(accent ? 150 : 110, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.15);
+    g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18); o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + 0.2);
+    const n = actx.createOscillator(), ng = actx.createGain(); n.type = "square"; n.frequency.value = 6000; ng.gain.setValueAtTime(0.025, t + 0.0); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.04); n.connect(ng); ng.connect(actx.destination); n.start(t); n.stop(t + 0.05);
+  } catch (e) {}
+}
+const lsd = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
 
 const player = window.AIGPlayer && AIGPlayer.getPlayer();
 if (!player || player.role === "parent") {
@@ -31,7 +46,7 @@ if (!player || player.role === "parent") {
 
 function initDanceBattle() {
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
-  const state = { segmentIndex: 0, tierIndex: 0, beatIndex: 0, score: 0, combo: 0, beatDueAt: 0, beatResolved: false, missTimer: null };
+  const state = { segmentIndex: 0, tierIndex: 0, beatIndex: 0, score: 0, combo: 0, beatDueAt: 0, beatResolved: false, missTimer: null, arrows: lsd("db_mode", "arrows") === "arrows", dir: 0, rival: 0 };
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
   function shuffle(arr) {
@@ -77,7 +92,9 @@ function initDanceBattle() {
   function renderHud() {
     document.getElementById("db-score").textContent = state.score;
     document.getElementById("db-combo").textContent = state.combo;
-    document.getElementById("db-segment-label").textContent = `Segment ${state.segmentIndex + 1} / ${TOTAL_SEGMENTS} · 🎵 ${TIERS[state.tierIndex].name}`;
+    document.getElementById("db-segment-label").textContent = `Segment ${state.segmentIndex + 1} / ${TOTAL_SEGMENTS} · 🎵 ${TIERS[state.tierIndex].name}${state.combo >= 10 ? " · 🔥 FEVER x2!" : ""}`;
+    document.getElementById("db-rival").textContent = `🤖 Bo-Bot: ${state.rival}`;
+    document.getElementById("db-page").classList.toggle("db-fever", state.combo >= 10);
   }
 
   // ---------------------------------------------------------------
@@ -93,22 +110,28 @@ function initDanceBattle() {
 
     document.getElementById("db-feedback").textContent = "";
     document.getElementById("db-tap-btn").disabled = false;
+    document.querySelectorAll("#db-arrows button").forEach(b => b.disabled = false);
+    state.dir = rand(0, 2);
+    document.getElementById("db-arrow-cue").textContent = state.arrows ? ARROWS[state.dir] : "";
+    beatSound(interval, state.beatIndex % 2 === 0);
     state.beatDueAt = performance.now() + interval;
     state.beatResolved = false;
 
     state.missTimer = setTimeout(() => resolveBeat(null), interval + GOOD_WINDOW_MS + 60);
   }
 
-  function resolveBeat(tapNow) {
+  function resolveBeat(tapNow, dir) {
     if (state.beatResolved) return;
     state.beatResolved = true;
     clearTimeout(state.missTimer);
     document.getElementById("db-tap-btn").disabled = true;
+    document.querySelectorAll("#db-arrows button").forEach(b => b.disabled = true);
+    const wrongArrow = tapNow !== null && state.arrows && dir !== state.dir;
     document.getElementById("db-beat-pulse").classList.remove("animating");
 
     let category, points;
-    if (tapNow === null) {
-      category = "Miss"; points = 0;
+    if (tapNow === null || wrongArrow) {
+      category = wrongArrow ? "Wrong arrow!" : "Miss"; points = 0;
     } else {
       const delta = Math.abs(tapNow - state.beatDueAt);
       if (delta <= PERFECT_WINDOW_MS) { category = "Perfect!"; points = 100; }
@@ -119,10 +142,16 @@ function initDanceBattle() {
     if (points > 0) {
       state.combo++;
       if (state.combo >= 3) points = Math.round(points * 1.5);
+      if (state.combo >= 10) points *= 2;
+      if (state.arrows) points = Math.round(points * 1.2);
+      const d = document.getElementById("db-dancer"); d.textContent = POSES[state.combo % POSES.length]; d.classList.remove("pose"); void d.offsetWidth; d.classList.add("pose");
     } else {
       state.combo = 0;
     }
     state.score += points;
+    // Bo-Bot rival: steady, gets sloppier as the tempo rises.
+    const r = Math.random(), skill = 0.85 - state.tierIndex * 0.08;
+    state.rival += r < skill * 0.5 ? 150 : r < skill ? 75 : 0;
     document.getElementById("db-feedback").textContent = category;
     renderHud();
 
@@ -137,12 +166,17 @@ function initDanceBattle() {
   }
 
   document.getElementById("db-tap-btn").addEventListener("click", () => resolveBeat(performance.now()));
+  document.querySelectorAll("#db-arrows button").forEach(b => b.addEventListener("click", () => resolveBeat(performance.now(), Number(b.dataset.d))));
+  function showControls(on) {
+    document.getElementById("db-tap-btn").classList.toggle("hidden", !on || state.arrows);
+    document.getElementById("db-arrows").classList.toggle("hidden", !on || !state.arrows);
+  }
 
   // ---------------------------------------------------------------
   // BETWEEN-SEGMENT QUESTION
   // ---------------------------------------------------------------
   function askTempoQuestion() {
-    document.getElementById("db-tap-btn").classList.add("hidden");
+    showControls(false);
     document.getElementById("db-q-label").classList.remove("hidden");
     const q = rollQuestion(difficultyForSegment(state.segmentIndex));
     document.getElementById("db-q-prompt").textContent = q.prompt;
@@ -173,7 +207,7 @@ function initDanceBattle() {
     setTimeout(() => {
       document.getElementById("db-q-card").classList.add("hidden");
       document.getElementById("db-q-label").classList.add("hidden");
-      document.getElementById("db-tap-btn").classList.remove("hidden");
+      showControls(true);
       state.segmentIndex++;
       if (state.segmentIndex >= TOTAL_SEGMENTS) {
         finishGame();
@@ -186,10 +220,14 @@ function initDanceBattle() {
   }
 
   function finishGame() {
-    const emoji = state.score >= 2500 ? "🌟" : state.score >= 1500 ? "🎉" : "💪";
+    showControls(false);
+    document.getElementById("db-page").classList.remove("db-fever");
+    const won = state.score > state.rival, bk = "db_best_" + (state.arrows ? "arrows" : "tap"), best = Number(lsd(bk, "0"));
+    if (state.score > best) { try { localStorage.setItem(bk, String(state.score)); } catch (e) {} }
+    const emoji = won ? "🏆" : state.score >= 1500 ? "🎉" : "💪";
     document.getElementById("db-end-emoji").textContent = emoji;
-    document.getElementById("db-end-title").textContent = "Dance Complete!";
-    document.getElementById("db-end-sub").textContent = `Final score ${state.score}, reached ${TIERS[state.tierIndex].name} tempo!`;
+    document.getElementById("db-end-title").textContent = won ? "You won the dance battle!" : "Bo-Bot wins this one!";
+    document.getElementById("db-end-sub").textContent = `You ${state.score} – ${state.rival} Bo-Bot · reached ${TIERS[state.tierIndex].name} tempo.${state.score > best ? " 🌟 New best!" : ` Best: ${best}.`}`;
     const bonusEl = document.getElementById("db-end-bonus");
     bonusEl.textContent = "";
     if (window.AIGLeaderboard) {
@@ -207,14 +245,20 @@ function initDanceBattle() {
     state.tierIndex = 0;
     state.beatIndex = 0;
     state.score = 0;
-    state.combo = 0;
+    state.combo = 0; state.rival = 0;
     document.getElementById("db-start-overlay").classList.add("hidden");
     document.getElementById("db-end-overlay").classList.add("hidden");
-    document.getElementById("db-tap-btn").classList.remove("hidden");
+    showControls(true);
     renderHud();
     startBeat();
   }
 
+  function drawModes() {
+    let box = document.getElementById("db-modes"); if (!box) { box = document.createElement("div"); box.id = "db-modes"; box.className = "db-modes"; document.getElementById("db-start-btn").before(box); }
+    box.innerHTML = [["arrows", "⬅️⬆️➡️ Arrows"], ["tap", "👆 One button"]].map(([k, l]) => `<button type="button" data-m="${k}" class="${(k === "arrows") === state.arrows ? "on" : ""}">${l}<small>${Number(lsd("db_best_" + k, "0")) ? " best " + lsd("db_best_" + k, "0") : ""}</small></button>`).join("");
+    box.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { state.arrows = b.dataset.m === "arrows"; try { localStorage.setItem("db_mode", b.dataset.m); } catch (e) {} drawModes(); });
+  }
+  drawModes();
   document.getElementById("db-start-btn").addEventListener("click", startGame);
-  document.getElementById("db-play-again-btn").addEventListener("click", startGame);
+  document.getElementById("db-play-again-btn").addEventListener("click", () => { document.getElementById("db-end-overlay").classList.add("hidden"); document.getElementById("db-start-overlay").classList.remove("hidden"); drawModes(); });
 }

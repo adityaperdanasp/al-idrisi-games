@@ -20,12 +20,28 @@ function initMonsterBattle() {
   const CATCH_ROUNDS = 5;
   const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
   const WILD_MONSTERS = ["🐲", "🦖", "🐉", "🦕", "🐊", "🦎", "🐸", "🐙", "🦑", "🐍"];
+  // Audit batch 9: elemental types (🔥 beats 🌿, 🌿 beats 💧, 💧 beats 🔥: x1.5 / x0.75), named species
+  // and a Monsterdex kept between visits, ✨ shiny monsters (5%, +3 attack), a rare ⭐ monster that flees
+  // unless you answer within 6 seconds, a charge meter (3 right in a row = SUPER move x2), tap the bench
+  // to switch monsters, evolution after a knockout, and 3 rival trainers (Rookie / Ace / Champion).
+  const SPECIES = { "🐲": ["Drako", "fire"], "🦖": ["Rexo", "grass"], "🐉": ["Wyrm", "fire"], "🦕": ["Longneck", "grass"], "🐊": ["Snapjaw", "water"], "🦎": ["Zippy", "grass"], "🐸": ["Hopper", "water"], "🐙": ["Inky", "water"], "🦑": ["Squirt", "water"], "🐍": ["Hiss", "fire"], "🦄": ["Starhorn", "fire"] };
+  const TYPE_EMOJI = { fire: "🔥", water: "💧", grass: "🌿" }, BEATS = { fire: "grass", grass: "water", water: "fire" };
+  const RIVALS = [
+    { name: "Rookie Rae", team: [{ emoji: "👹", name: "Grump", hp: 18, atk: 7, type: "fire" }, { emoji: "👺", name: "Trickster", hp: 22, atk: 8, type: "water" }, { emoji: "💀", name: "Bonecrusher", hp: 28, atk: 10, type: "grass" }] },
+    { name: "Ace Arlo", team: [{ emoji: "🦂", name: "Stinger", hp: 24, atk: 9, type: "grass" }, { emoji: "🦈", name: "Chomp", hp: 28, atk: 10, type: "water" }, { emoji: "🔥", name: "Blaze", hp: 32, atk: 11, type: "fire" }] },
+    { name: "Champion Cleo", team: [{ emoji: "🐺", name: "Howl", hp: 28, atk: 10, type: "water" }, { emoji: "🦅", name: "Talon", hp: 32, atk: 11, type: "grass" }, { emoji: "🐉", name: "Elder Wyrm", hp: 40, atk: 13, type: "fire" }] }
+  ];
+  let rivalIdx = 0, charge = 0, rareTimer = null;
+  const lsm = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+  const lsmw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  const dex = () => { try { return JSON.parse(lsm("mb_dex", "{}")) || {}; } catch (e) { return {}; } };
+  const mult = (a, d) => BEATS[a] === d ? 1.5 : BEATS[d] === a ? 0.75 : 1;
   const CATCH_TIERS = [
     { maxMs: 4000, label: "🌟 Excellent Catch!", hp: 30, atk: 12 },
     { maxMs: 8000, label: "✨ Good Catch!", hp: 22, atk: 8 },
     { maxMs: Infinity, label: "✅ Catch!", hp: 15, atk: 5 }
   ];
-  const STARTER = { emoji: "🐣", name: "Sparky", hp: 10, atk: 3 };
+  const STARTER = { emoji: "🐣", name: "Sparky", hp: 10, atk: 3, type: "fire" };
   const RIVAL_TEAM = [
     { emoji: "👹", name: "Grump", hp: 20, atk: 8 },
     { emoji: "👺", name: "Trickster", hp: 26, atk: 9 },
@@ -106,10 +122,16 @@ function initMonsterBattle() {
     document.getElementById("mb-catch-counter").textContent = `Monster ${state.catchIndex + 1} / ${CATCH_ROUNDS}`;
     document.getElementById("mb-catch-banner").textContent = "";
     const emojiEl = document.getElementById("mb-wild-emoji");
-    emojiEl.textContent = WILD_MONSTERS[rand(0, WILD_MONSTERS.length - 1)];
-    emojiEl.className = "mb-wild-emoji";
+    const rare = Math.random() < 0.15, shiny = Math.random() < 0.05;
+    emojiEl.textContent = rare ? "🦄" : WILD_MONSTERS[rand(0, WILD_MONSTERS.length - 1)];
+    emojiEl.className = "mb-wild-emoji" + (shiny ? " mb-shiny" : "");
+    emojiEl.dataset.shiny = shiny ? "1" : ""; emojiEl.dataset.rare = rare ? "1" : "";
+    const sp = SPECIES[emojiEl.textContent] || ["Monster", "fire"];
+    document.getElementById("mb-catch-banner").textContent = `${rare ? "⭐ RARE! Answer in 6 seconds or it flees! " : "A wild "}${shiny ? "✨ shiny " : ""}${sp[0]} ${TYPE_EMOJI[sp[1]]} appeared!`;
     const q = rollQuestion(difficultyForIndex(state.catchIndex));
-    showQuestion(q, (btn, opt) => handleCatchAnswer(btn, opt, q, emojiEl));
+    showQuestion(q, (btn, opt) => { clearTimeout(rareTimer); handleCatchAnswer(btn, opt, q, emojiEl); });
+    clearTimeout(rareTimer);
+    if (rare) rareTimer = setTimeout(() => handleCatchAnswer(null, "__fled__", q, emojiEl), 6000);
   }
 
   function handleCatchAnswer(btn, opt, q, emojiEl) {
@@ -120,13 +142,15 @@ function initMonsterBattle() {
 
     if (isCorrect) {
       const tier = CATCH_TIERS.find(t => elapsed <= t.maxMs);
-      const mon = { emoji: emojiEl.textContent, name: `Monster ${state.team.length + 1}`, hp: tier.hp, maxHp: tier.hp, atk: tier.atk };
+      const sp = SPECIES[emojiEl.textContent] || ["Monster", "fire"], shiny = emojiEl.dataset.shiny === "1", rare = emojiEl.dataset.rare === "1";
+      const mon = { emoji: emojiEl.textContent, name: (shiny ? "✨" : "") + sp[0], type: sp[1], shiny, hp: tier.hp + (rare ? 8 : 0), maxHp: tier.hp + (rare ? 8 : 0), atk: tier.atk + (shiny ? 3 : 0) + (rare ? 3 : 0) };
       state.team.push(mon);
+      const d = dex(), isNew = !d[mon.emoji]; d[mon.emoji] = { n: ((d[mon.emoji] || {}).n || 0) + 1, shiny: (d[mon.emoji] || {}).shiny || shiny }; lsmw("mb_dex", JSON.stringify(d));
       emojiEl.classList.add("caught");
-      document.getElementById("mb-catch-banner").textContent = tier.label;
+      document.getElementById("mb-catch-banner").textContent = `${tier.label} ${mon.name} ${TYPE_EMOJI[mon.type]}${isNew ? " · 📘 NEW in your Monsterdex!" : ""}`;
     } else {
       emojiEl.classList.add("fled");
-      document.getElementById("mb-catch-banner").textContent = "It got away!";
+      document.getElementById("mb-catch-banner").textContent = opt === "__fled__" ? "⭐ Too slow — the rare one ran away!" : "It got away!";
     }
 
     setTimeout(() => {
@@ -145,7 +169,7 @@ function initMonsterBattle() {
   // ---------------------------------------------------------------
   function startBattlePhase() {
     if (state.team.length === 0) state.team.push({ ...STARTER, maxHp: STARTER.hp });
-    state.rivalTeam = RIVAL_TEAM.map(m => ({ ...m, maxHp: m.hp }));
+    state.rivalTeam = RIVALS[rivalIdx].team.map(m => ({ ...m, maxHp: m.hp })); charge = 0;
     state.playerActiveIdx = 0;
     state.rivalActiveIdx = 0;
 
@@ -153,7 +177,7 @@ function initMonsterBattle() {
     document.getElementById("mb-catch-stage").classList.add("hidden");
     document.getElementById("mb-catch-banner").textContent = "";
     document.getElementById("mb-battle-stage").classList.remove("hidden");
-    document.getElementById("mb-log").textContent = "A rival trainer appears!";
+    document.getElementById("mb-log").textContent = `${RIVALS[rivalIdx].name} wants to battle! Tip: 🔥 beats 🌿, 🌿 beats 💧, 💧 beats 🔥. Tap your bench to switch.`;
     renderBattle();
     setTimeout(startBattleRound, 900);
   }
@@ -163,7 +187,7 @@ function initMonsterBattle() {
     const playerMon = state.team[state.playerActiveIdx];
 
     document.getElementById("mb-rival-emoji").textContent = rival.emoji;
-    document.getElementById("mb-rival-name").textContent = rival.name;
+    document.getElementById("mb-rival-name").textContent = `${rival.name} ${TYPE_EMOJI[rival.type] || ""}`;
     const rivalPct = Math.max(0, Math.round((rival.hp / rival.maxHp) * 100));
     const rivalFill = document.getElementById("mb-rival-hp-fill");
     rivalFill.style.width = rivalPct + "%";
@@ -171,7 +195,7 @@ function initMonsterBattle() {
     document.getElementById("mb-rival-hp-text").textContent = `${Math.max(0, rival.hp)} / ${rival.maxHp} HP`;
 
     document.getElementById("mb-player-emoji").textContent = playerMon.emoji;
-    document.getElementById("mb-player-name").textContent = playerMon.name;
+    document.getElementById("mb-player-name").textContent = `${playerMon.name} ${TYPE_EMOJI[playerMon.type] || ""} · ⚡${"■".repeat(charge)}${"□".repeat(3 - charge)}`;
     const playerPct = Math.max(0, Math.round((playerMon.hp / playerMon.maxHp) * 100));
     const playerFill = document.getElementById("mb-player-hp-fill");
     playerFill.style.width = playerPct + "%";
@@ -183,7 +207,8 @@ function initMonsterBattle() {
     state.team.forEach((m, i) => {
       const span = document.createElement("span");
       span.className = "mb-bench-mon" + (m.hp > 0 ? " alive" : "") + (i === state.playerActiveIdx ? " active" : "");
-      span.textContent = m.emoji;
+      span.textContent = m.emoji + (TYPE_EMOJI[m.type] || "");
+      if (m.hp > 0 && i !== state.playerActiveIdx) { span.style.cursor = "pointer"; span.onclick = () => { if (state.busy) return; state.playerActiveIdx = i; document.getElementById("mb-log").textContent = `Go, ${m.name}!`; renderBattle(); }; }
       bench.appendChild(span);
     });
   }
@@ -194,6 +219,7 @@ function initMonsterBattle() {
   }
 
   function handleBattleAnswer(btn, opt, q) {
+    state.busy = true;
     const isCorrect = opt === q.correctLabel;
     lockQuestion(q, btn, isCorrect);
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("monster-battle", q.key, isCorrect);
@@ -202,12 +228,16 @@ function initMonsterBattle() {
     const rival = state.rivalTeam[state.rivalActiveIdx];
 
     if (isCorrect) {
-      rival.hp -= playerMon.atk;
-      document.getElementById("mb-log").textContent = `${playerMon.name} hit ${rival.name} for ${playerMon.atk}!`;
+      charge++; const sup = charge >= 3; if (sup) charge = 0;
+      const m = mult(playerMon.type, rival.type), dmg = Math.round(playerMon.atk * m * (sup ? 2 : 1));
+      rival.hp -= dmg;
+      document.getElementById("mb-log").textContent = `${sup ? "⚡ SUPER MOVE! " : ""}${playerMon.name} hit ${rival.name} for ${dmg}!${m > 1 ? " It's super effective!" : m < 1 ? " Not very effective…" : ""}`;
       document.getElementById("mb-rival-emoji").classList.add("hit");
     } else {
-      playerMon.hp -= rival.atk;
-      document.getElementById("mb-log").textContent = `${rival.name} struck back for ${rival.atk}!`;
+      charge = 0;
+      const m = mult(rival.type, playerMon.type), dmg = Math.round(rival.atk * m);
+      playerMon.hp -= dmg;
+      document.getElementById("mb-log").textContent = `${rival.name} struck back for ${dmg}!${m > 1 ? " Super effective!" : ""}`;
       document.getElementById("mb-player-emoji").classList.add("hit");
     }
 
@@ -215,11 +245,13 @@ function initMonsterBattle() {
       document.getElementById("mb-rival-emoji").classList.remove("hit");
       document.getElementById("mb-player-emoji").classList.remove("hit");
       document.getElementById("mb-q-card").classList.add("hidden");
+      state.busy = false;
 
       if (rival.hp <= 0) {
         state.rivalActiveIdx++;
+        const evolve = !playerMon.evolved && playerMon.hp > 0; if (evolve) { playerMon.evolved = true; playerMon.atk += 3; playerMon.maxHp += 6; playerMon.hp += 6; playerMon.name += "+"; }
         if (state.rivalActiveIdx >= state.rivalTeam.length) { finishGame(true); return; }
-        document.getElementById("mb-log").textContent = `You defeated ${rival.name}! A new rival monster appears!`;
+        document.getElementById("mb-log").textContent = `You defeated ${rival.name}!${evolve ? ` 🌟 ${playerMon.name} EVOLVED! (+3 attack)` : ""} A new rival monster appears!`;
         renderBattle();
         setTimeout(startBattleRound, 1100);
         return;
@@ -241,13 +273,15 @@ function initMonsterBattle() {
   }
 
   function finishGame(won) {
+    clearTimeout(rareTimer);
+    if (won && rivalIdx === Number(lsm("mb_rival", "0")) && rivalIdx < 2) lsmw("mb_rival", String(rivalIdx + 1));
     document.getElementById("mb-q-card").classList.add("hidden");
     const caught = state.team.length;
     const emoji = won ? "🏆" : caught >= 3 ? "🙂" : "💪";
     document.getElementById("mb-end-emoji").textContent = emoji;
     document.getElementById("mb-end-title").textContent = won ? "You Won the Battle!" : "Battle Lost!";
     document.getElementById("mb-end-sub").textContent = won
-      ? `You caught ${caught} monster${caught === 1 ? "" : "s"} and defeated the rival's whole team!`
+      ? `You caught ${caught} monster${caught === 1 ? "" : "s"} and beat ${RIVALS[rivalIdx].name}'s whole team!${rivalIdx < 2 ? ` ${RIVALS[rivalIdx + 1].name} is unlocked!` : " You are the CHAMPION! 👑"}`
       : `You caught ${caught} monster${caught === 1 ? "" : "s"}, but the rival's team was too strong this time. Try again!`;
     const bonusEl = document.getElementById("mb-end-bonus");
     bonusEl.textContent = "";
@@ -261,6 +295,15 @@ function initMonsterBattle() {
     document.getElementById("mb-end-overlay").classList.remove("hidden");
   }
 
+  function drawStart() {
+    const d = dex(), got = Object.keys(SPECIES).filter(k => d[k]), unlocked = Number(lsm("mb_rival", "0"));
+    let box = document.getElementById("mb-extra"); if (!box) { box = document.createElement("div"); box.id = "mb-extra"; box.className = "mb-extra"; document.getElementById("mb-start-btn").before(box); }
+    box.innerHTML = `<div><b>📘 Monsterdex ${got.length}/11</b><div class="mb-dex">${Object.keys(SPECIES).map(k => `<span class="${d[k] ? "" : "no"}">${d[k] ? k + (d[k].shiny ? "✨" : "") : "❔"}</span>`).join("")}</div></div>
+      <div><b>Rival</b> ${RIVALS.map((r, i) => `<button type="button" data-r="${i}" class="${i === rivalIdx ? "on" : ""}" ${i > unlocked ? "disabled" : ""}>${i > unlocked ? "🔒 " : ""}${r.name}</button>`).join("")}</div>`;
+    box.querySelectorAll("[data-r]").forEach(b => b.onclick = () => { rivalIdx = +b.dataset.r; drawStart(); });
+  }
+  rivalIdx = Number(lsm("mb_rival", "0"));
+  drawStart();
   function startGame() {
     state.catchIndex = 0;
     state.team = [];
@@ -277,5 +320,5 @@ function initMonsterBattle() {
   }
 
   document.getElementById("mb-start-btn").addEventListener("click", startGame);
-  document.getElementById("mb-play-again-btn").addEventListener("click", startGame);
+  document.getElementById("mb-play-again-btn").addEventListener("click", () => { document.getElementById("mb-end-overlay").classList.add("hidden"); document.getElementById("mb-start-overlay").classList.remove("hidden"); drawStart(); });
 }

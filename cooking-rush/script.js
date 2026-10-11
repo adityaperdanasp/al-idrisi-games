@@ -15,6 +15,15 @@ const ROUND_DURATION_SEC = 60;
 const MIN_PATIENCE_SEC = 10;
 const MAX_PATIENCE_SEC = 15;
 const TICK_MS = 100;
+// Audit batch 9: tips that actually add up (faster = bigger tip), a dish order per customer, 👑 VIP
+// customers (double tips, less patience), restaurant DAYS with a tip goal (each day a bit busier),
+// a kitchen upgrade shop paid with your tips (comfy chairs = more patience, bell = more time, fancy
+// menu = +25% tips), a 1-3 star rating and the best day's tips. All kept in this browser.
+const DISHES = ["🍔", "🍕", "🍜", "🍰", "🌮", "🍣", "🥗", "🍩"];
+const UPGRADES = { chairs: { name: "🪑 Comfy chairs", desc: "+2s customer patience", cost: 60 }, bell: { name: "🔔 Kitchen bell", desc: "+10s every day", cost: 80 }, menu: { name: "⭐ Fancy menu", desc: "+25% tips", cost: 120 } };
+const lsc = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+const lscw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+function crSave() { let o = {}; try { o = JSON.parse(lsc("cr_save", "{}")) || {}; } catch (e) {} return Object.assign({ day: 1, bank: 0, up: {}, best: 0 }, o); }
 
 const player = window.AIGPlayer && AIGPlayer.getPlayer();
 if (!player || player.role === "parent") {
@@ -26,7 +35,9 @@ if (!player || player.role === "parent") {
 
 function initCookingRush() {
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
-  const state = { timeLeftMs: 0, served: 0, missed: 0, combo: 0, slots: [], tickHandle: null, running: false };
+  const state = { timeLeftMs: 0, served: 0, missed: 0, combo: 0, slots: [], tickHandle: null, running: false, tips: 0 };
+  let save = crSave();
+  const goalFor = d => 60 + (d - 1) * 30;
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
   function shuffle(arr) {
@@ -73,22 +84,25 @@ function initCookingRush() {
     document.getElementById("cr-served").textContent = state.served;
     document.getElementById("cr-missed").textContent = state.missed;
     document.getElementById("cr-combo").textContent = state.combo;
+    document.getElementById("cr-tips").textContent = `🪙 ${state.tips} / ${goalFor(save.day)} · Day ${save.day}`;
   }
 
   function newCustomer() {
-    const patienceMax = rand(MIN_PATIENCE_SEC, MAX_PATIENCE_SEC) * 1000;
-    return { emoji: CUSTOMER_EMOJIS[rand(0, CUSTOMER_EMOJIS.length - 1)], q: rollQuestion(), patienceLeft: patienceMax, patienceMax, resolved: false };
+    const vip = Math.random() < 0.15;
+    const base = rand(MIN_PATIENCE_SEC, MAX_PATIENCE_SEC) - Math.min(4, save.day - 1) + (save.up.chairs ? 2 : 0) - (vip ? 3 : 0);
+    const patienceMax = Math.max(6, base) * 1000;
+    return { emoji: vip ? "🤴" : CUSTOMER_EMOJIS[rand(0, CUSTOMER_EMOJIS.length - 1)], vip, dish: DISHES[rand(0, DISHES.length - 1)], q: rollQuestion(), patienceLeft: patienceMax, patienceMax, resolved: false };
   }
 
   function renderSlot(i) {
     const slot = state.slots[i];
     const el = document.getElementById(`cr-slot-${i}`);
     if (!slot) { el.className = "cr-slot empty"; el.innerHTML = ""; return; }
-    el.className = "cr-slot";
+    el.className = "cr-slot" + (slot.vip ? " vip" : "");
     const pct = Math.max(0, Math.round((slot.patienceLeft / slot.patienceMax) * 100));
     el.innerHTML = `
       <div class="cr-slot-top">
-        <div class="cr-slot-emoji">${slot.emoji}</div>
+        <div class="cr-slot-emoji">${slot.emoji}<span class="cr-order">${slot.dish}</span></div>${slot.vip ? '<span class="cr-vip">👑 VIP ×2</span>' : ""}
         <div class="cr-slot-patience-wrap">
           <div class="cr-slot-patience-bar"><div class="cr-slot-patience-fill${pct <= 30 ? " low" : ""}" style="width:${pct}%"></div></div>
         </div>
@@ -136,8 +150,10 @@ function initCookingRush() {
     if (isCorrect) {
       state.served++;
       state.combo++;
-      const points = 10 + Math.min(20, state.combo * 2);
-      statusEl.textContent = `Served! +${points}`;
+      const speed = Math.round(10 * slot.patienceLeft / slot.patienceMax);
+      const points = Math.round((5 + speed + Math.min(10, state.combo)) * (slot.vip ? 2 : 1) * (save.up.menu ? 1.25 : 1));
+      state.tips += points;
+      statusEl.textContent = `${slot.dish} Served! +🪙${points}${speed >= 7 ? " ⚡ fast tip!" : ""}`;
       statusEl.style.color = "#3F8F5F";
     } else {
       state.missed++;
@@ -200,10 +216,14 @@ function initCookingRush() {
 
     const total = state.served + state.missed;
     const accuracy = total > 0 ? state.served / total : 0;
-    const emoji = state.served >= 12 ? "🌟" : state.served >= 6 ? "🎉" : "💪";
-    document.getElementById("cr-end-emoji").textContent = emoji;
-    document.getElementById("cr-end-title").textContent = "Rush Complete!";
-    document.getElementById("cr-end-sub").textContent = `You served ${state.served} customer${state.served === 1 ? "" : "s"} (${Math.round(accuracy * 100)}% happy) and missed ${state.missed}.`;
+    const goal = goalFor(save.day), passed = state.tips >= goal, stars = state.tips >= goal * 1.5 ? 3 : passed ? 2 : state.tips >= goal / 2 ? 1 : 0;
+    const dayPlayed = save.day, newBest = state.tips > save.best;
+    save.bank += state.tips; if (newBest) save.best = state.tips; if (passed) save.day++;
+    lscw("cr_save", JSON.stringify(save));
+    document.getElementById("cr-end-emoji").textContent = "⭐".repeat(stars) || "💪";
+    document.getElementById("cr-end-title").textContent = passed ? `Day ${dayPlayed} complete!` : `Day ${dayPlayed}: so close!`;
+    document.getElementById("cr-end-sub").textContent = `Tips: 🪙${state.tips} (goal ${goal}). Served ${state.served} (${Math.round(accuracy * 100)}% happy), missed ${state.missed}.${passed ? ` Day ${save.day} unlocked!` : " Try the day again!"}${newBest ? " 🌟 Best day ever!" : ""}`;
+    drawShop(document.getElementById("cr-end-bonus").parentNode);
     const bonusEl = document.getElementById("cr-end-bonus");
     bonusEl.textContent = "";
     if (window.AIGLeaderboard) {
@@ -216,8 +236,21 @@ function initCookingRush() {
     document.getElementById("cr-end-overlay").classList.remove("hidden");
   }
 
+  function drawShop(parent) {
+    let box = parent.querySelector(".cr-shop"); if (!box) { box = document.createElement("div"); box.className = "cr-shop"; parent.querySelector(".cr-btn-primary").before(box); }
+    box.innerHTML = `<b>🏪 Kitchen upgrades · tip jar 🪙${save.bank}</b>${Object.entries(UPGRADES).map(([k, u]) => `<button type="button" data-u="${k}" ${save.up[k] || save.bank < u.cost ? "disabled" : ""}>${u.name} — ${save.up[k] ? "owned ✔" : "🪙" + u.cost}<small>${u.desc}</small></button>`).join("")}`;
+    box.querySelectorAll("[data-u]").forEach(b => b.onclick = () => { const u = UPGRADES[b.dataset.u]; if (save.bank < u.cost) return; save.bank -= u.cost; save.up[b.dataset.u] = true; lscw("cr_save", JSON.stringify(save)); drawShop(parent); });
+  }
+  function drawStart() {
+    const ov = document.getElementById("cr-start-overlay");
+    let d = ov.querySelector(".cr-dayinfo"); if (!d) { d = document.createElement("div"); d.className = "cr-dayinfo"; document.getElementById("cr-start-btn").before(d); }
+    d.textContent = `📅 Day ${save.day} · tip goal 🪙${goalFor(save.day)}${save.best ? ` · best day 🪙${save.best}` : ""}`;
+    drawShop(ov);
+  }
+  drawStart();
   function startGame() {
-    state.timeLeftMs = ROUND_DURATION_SEC * 1000;
+    save = crSave(); state.tips = 0;
+    state.timeLeftMs = (ROUND_DURATION_SEC + (save.up.bell ? 10 : 0)) * 1000;
     state.served = 0;
     state.missed = 0;
     state.combo = 0;
@@ -235,5 +268,5 @@ function initCookingRush() {
   }
 
   document.getElementById("cr-start-btn").addEventListener("click", startGame);
-  document.getElementById("cr-play-again-btn").addEventListener("click", startGame);
+  document.getElementById("cr-play-again-btn").addEventListener("click", () => { document.getElementById("cr-end-overlay").classList.add("hidden"); document.getElementById("cr-start-overlay").classList.remove("hidden"); drawStart(); });
 }

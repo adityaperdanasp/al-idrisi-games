@@ -24,6 +24,16 @@ function initNumberLineJump() {
   // question gets a 0-1000 line) instead of one fixed scale for everything.
   const BOUND_OPTIONS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
   const HIT_TOLERANCE_FRACTION = 0.06; // within 6% of the line's bound counts as a hit
+  // Audit batch 9: 3 modes (🐣 Easy: live number readout + 10 ticks + 10% tolerance; 🏃 Normal; 🏅 Pro:
+  // only the 0 and end labels, 3% tolerance), jump grades (PERFECT ≤2% = 3 pts, GREAT = 2, OK = 1),
+  // a streak bonus, 4 jumpers to pick, a best score per mode, and math-only numeric questions (the
+  // mixed pool used to hand this game language/science questions with no number to jump to).
+  const MODES = { easy: { tol: 0.10, ticks: 10, live: true, label: "🐣 Easy" }, normal: { tol: HIT_TOLERANCE_FRACTION, ticks: 4, live: false, label: "🏃 Normal" }, pro: { tol: 0.03, ticks: 1, live: false, label: "🏅 Pro" } };
+  const JUMPERS = ["🐇", "🐸", "🦘", "🐿️"];
+  const lsn = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+  const lsnw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  let mode = lsn("nlj_mode", "normal"), jumper = lsn("nlj_jumper", "🐇"), points = 0, streak = 0;
+  if (!MODES[mode]) mode = "normal";
 
   const hudHits = document.getElementById("nlj-hud-hits");
   const hudCoins = document.getElementById("nlj-hud-coins");
@@ -58,8 +68,9 @@ function initNumberLineJump() {
 
   function renderTicks(bound) {
     clearTicks();
-    for (let i = 0; i <= 4; i++) {
-      const pct = i * 25;
+    const n = MODES[mode].ticks === 1 ? 4 : MODES[mode].ticks;
+    for (let i = 0; i <= n; i++) {
+      const pct = i * 100 / n;
       const val = Math.round((bound * pct) / 100);
       const tick = document.createElement("div");
       tick.className = "nlj-tick";
@@ -68,7 +79,7 @@ function initNumberLineJump() {
       const label = document.createElement("div");
       label.className = "nlj-tick-label";
       label.style.left = pct + "%";
-      label.textContent = val.toLocaleString("en-US");
+      label.textContent = MODES[mode].ticks === 1 && i > 0 && i < n ? "" : n === 10 && i % 2 ? "" : val.toLocaleString("en-US");
       trackWrap.insertBefore(label, runner);
     }
   }
@@ -81,7 +92,8 @@ function initNumberLineJump() {
   }
 
   function rollQuestion() {
-    return window.AIGQuestionPools ? window.AIGQuestionPools.rollMixed(() => rollMathQuestion()) : rollMathQuestion();
+    for (let i = 0; i < 20; i++) { const q = rollMathQuestion(); if (Number.isFinite(q.answer) && q.answer >= 0) return q; }
+    const a = rand(5, 95); return { key: "addition-subtraction-add", prompt: `${a - 3} + 3 = ?`, answer: a };
   }
 
   function resetTrackVisuals() {
@@ -126,7 +138,7 @@ function initNumberLineJump() {
     const dx = e.clientX - state.dragStartX;
     const pct = Math.max(0, Math.min(100, (dx / rect.width) * 130));
     pullFill.style.width = pct + "%";
-    pullHint.textContent = pct < 5 ? "👉 Drag right to power up your jump, then let go!" : "Let go to jump!";
+    pullHint.textContent = pct < 5 ? "👉 Drag right to power up your jump, then let go!" : MODES[mode].live ? `Aiming at ${Math.round(pct / 100 * state.bound).toLocaleString("en-US")} — let go!` : "Let go to jump!";
   }
 
   function onDragEnd(e) {
@@ -150,7 +162,9 @@ function initNumberLineJump() {
       runner.classList.remove("jumping");
       const landingValue = Math.round((landingPct / 100) * state.bound);
       const targetPct = Math.max(0, Math.min(100, (state.answer / state.bound) * 100));
-      const isHit = Math.abs(landingPct - targetPct) <= HIT_TOLERANCE_FRACTION * 100;
+      const off = Math.abs(landingPct - targetPct), isHit = off <= MODES[mode].tol * 100;
+      const grade = off <= 2 ? 3 : off <= MODES[mode].tol * 50 ? 2 : isHit ? 1 : 0;
+      if (isHit) { streak++; points += grade + (streak >= 3 ? 1 : 0); } else streak = 0;
 
       targetFlag.style.left = targetPct + "%";
       targetFlag.classList.add("show");
@@ -163,7 +177,7 @@ function initNumberLineJump() {
       if (isHit) {
         state.hits++;
         hudHits.textContent = state.hits;
-        resultBanner.textContent = `🎯 Landed on ${landingValue} -- the answer was ${state.answer}!`;
+        resultBanner.textContent = `${grade === 3 ? "🌟 PERFECT" : grade === 2 ? "🎯 GREAT" : "👍 OK"} — landed on ${landingValue}, the answer was ${state.answer}! +${grade}${streak >= 3 ? ` (+1 streak 🔥${streak})` : ""}`;
         resultBanner.classList.remove("miss");
       } else {
         resultBanner.textContent = `You landed on ${landingValue}, the answer was ${state.answer}.`;
@@ -181,7 +195,8 @@ function initNumberLineJump() {
     const title = hits >= 9 ? "Incredible jumps!" : hits >= 6 ? "Great jumping!" : hits >= 3 ? "Nice try!" : "Keep practicing!";
     document.getElementById("nlj-end-emoji").textContent = emoji;
     document.getElementById("nlj-end-title").textContent = title;
-    document.getElementById("nlj-end-sub").textContent = `You landed exactly ${hits}/${ROUND_SIZE} times.`;
+    const bk = "nlj_best_" + mode, best = Number(lsn(bk, "0")); if (points > best) lsnw(bk, String(points));
+    document.getElementById("nlj-end-sub").textContent = `${MODES[mode].label}: you landed ${hits}/${ROUND_SIZE} jumps for ${points} points.${points > best ? " 🌟 New best!" : ` Best: ${best}.`}`;
     const bonusEl = document.getElementById("nlj-end-bonus");
     bonusEl.textContent = "";
     if (window.AIGLeaderboard) {
@@ -196,13 +211,22 @@ function initNumberLineJump() {
 
   function startRound() {
     state.qIndex = 0;
-    state.hits = 0;
+    state.hits = 0; points = 0; streak = 0;
     hudHits.textContent = 0;
+    runner.textContent = jumper;
     document.getElementById("nlj-end-overlay").classList.add("hidden");
     document.getElementById("nlj-start-overlay").classList.add("hidden");
     askQuestion();
   }
 
+  function drawPicker() {
+    let box = document.getElementById("nlj-pick"); if (!box) { box = document.createElement("div"); box.id = "nlj-pick"; box.className = "nlj-pick"; document.getElementById("nlj-start-btn").before(box); }
+    box.innerHTML = `<div>${Object.entries(MODES).map(([k, m]) => `<button type="button" data-m="${k}" class="${k === mode ? "on" : ""}">${m.label}<small>${Number(lsn("nlj_best_" + k, "0")) ? ` best ${lsn("nlj_best_" + k, "0")}` : ""}</small></button>`).join("")}</div>
+      <div>${JUMPERS.map(j => `<button type="button" data-j="${j}" class="${j === jumper ? "on" : ""}">${j}</button>`).join("")}</div>`;
+    box.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { mode = b.dataset.m; lsnw("nlj_mode", mode); drawPicker(); });
+    box.querySelectorAll("[data-j]").forEach(b => b.onclick = () => { jumper = b.dataset.j; lsnw("nlj_jumper", jumper); drawPicker(); });
+  }
+  drawPicker();
   document.getElementById("nlj-start-btn").addEventListener("click", startRound);
-  document.getElementById("nlj-play-again-btn").addEventListener("click", startRound);
+  document.getElementById("nlj-play-again-btn").addEventListener("click", () => { document.getElementById("nlj-end-overlay").classList.add("hidden"); document.getElementById("nlj-start-overlay").classList.remove("hidden"); drawPicker(); });
 }

@@ -29,6 +29,17 @@ function initFortressMath() {
   const TOWER_RANGE_PCT = 15;
   const FORTRESS_X = 8; // an enemy at or past this % has "reached" the fortress
   const SPAWN_X = 97;
+  // Audit batch 9: 3 tower types (🏹 Archer fast, 💣 Cannon splash, ❄️ Frost slows), enemy variety
+  // (🐺 fast, 🐗 armoured, 🐉 boss on the last wave), a question between waves that earns a choice
+  // (upgrade a tower / repair the wall / ⚡ lightning charge), a live ⚡ button to zap every monster
+  // during a wave, tower firing flashes, and a best-waves record.
+  const TOWER_TYPES = {
+    archer: { emoji: "🏹", name: "Archer", every: 4, dmg: 1, range: 15 },
+    cannon: { emoji: "💣", name: "Cannon", every: 8, dmg: 2, range: 13, splash: 6 },
+    frost: { emoji: "❄️", name: "Frost", every: 5, dmg: 1, range: 15, slow: 15 }
+  };
+  let zaps = 0;
+  const lsf = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
 
   const hudHp = document.getElementById("fm-hud-hp");
   const hudWave = document.getElementById("fm-hud-wave");
@@ -116,9 +127,10 @@ function initFortressMath() {
   }
 
   // ---- Build phase ------------------------------------------------------
-  function askBuildQuestion() {
-    if (state.buildIndex >= BUILD_QUESTIONS) { startDefendPhase(); return; }
-    const q = rollQuestion();
+  function drawZap() { const z = document.getElementById("fm-zap"); if (z) { z.textContent = `⚡ Zap all (${zaps})`; z.disabled = !zaps || !state.enemies.length; } }
+  function askBuildQuestion(customCb) {
+    if (!customCb && state.buildIndex >= BUILD_QUESTIONS) { startDefendPhase(); return; }
+    const q = rollQuestion(); q.cb = customCb;
     document.getElementById("fm-q-prompt").textContent = q.prompt;
     const grid = document.getElementById("fm-q-grid");
     grid.innerHTML = "";
@@ -141,13 +153,13 @@ function initFortressMath() {
       else if (b === btn) b.classList.add("wrong");
     });
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("fortress-math", q.key, isCorrect);
+    if (q.cb) { setTimeout(() => { document.getElementById("fm-question-overlay").classList.add("hidden"); q.cb(isCorrect); }, 700); return; }
     state.buildIndex++;
 
     setTimeout(() => {
       document.getElementById("fm-question-overlay").classList.add("hidden");
       if (isCorrect) {
-        phaseBanner.textContent = "Tap an empty ring to place your tower!";
-        awaitTowerPlacement();
+        pickTowerType(() => { phaseBanner.textContent = `Tap an empty ring to place your ${TOWER_TYPES[state.nextType].name}!`; awaitTowerPlacement(); });
       } else {
         phaseBanner.textContent = "No tower earned that round.";
         setTimeout(askBuildQuestion, 900);
@@ -177,10 +189,36 @@ function initFortressMath() {
     });
   }
 
+  function pickTowerType(done) {
+    phaseBanner.innerHTML = `Pick a tower: ${Object.entries(TOWER_TYPES).map(([k, t]) => `<button type="button" class="fm-pick" data-t="${k}">${t.emoji} ${t.name}</button>`).join("")}`;
+    phaseBanner.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { state.nextType = b.dataset.t; done(); });
+  }
   function placeTower(slotEl) {
+    const type = state.nextType || "archer";
     slotEl.classList.add("filled");
-    slotEl.textContent = "🗼";
-    state.towers.push({ x: Number(slotEl.dataset.x), el: slotEl });
+    slotEl.textContent = TOWER_TYPES[type].emoji;
+    state.towers.push({ x: Number(slotEl.dataset.x), el: slotEl, type, lvl: 1 });
+  }
+  // Between waves: one question; a right answer lets you choose a reward.
+  function betweenWaves(next) {
+    phaseBanner.textContent = `Wave ${state.wave} cleared! Answer to earn a reward…`;
+    setTimeout(() => askBuildQuestion(ok => {
+      if (!ok) { phaseBanner.textContent = "No reward this time — here comes the next wave!"; setTimeout(next, 1100); return; }
+      const canUp = state.towers.some(t => t.lvl < 2);
+      phaseBanner.innerHTML = `Reward: ${canUp ? '<button type="button" class="fm-pick" data-r="up">⬆️ Upgrade a tower</button>' : ""}<button type="button" class="fm-pick" data-r="hp">🧱 Repair +1 ❤️</button><button type="button" class="fm-pick" data-r="zap">⚡ +1 Zap</button>`;
+      phaseBanner.querySelectorAll("[data-r]").forEach(b => b.onclick = () => {
+        const r = b.dataset.r;
+        if (r === "hp") { state.hp = Math.min(FORTRESS_HP_MAX, state.hp + 1); updateHud(); }
+        if (r === "zap") { zaps++; drawZap(); }
+        if (r === "up") {
+          phaseBanner.textContent = "Tap a tower to upgrade it (faster + longer range)!";
+          const ups = state.towers.filter(t => t.lvl < 2);
+          ups.forEach(t => { t.el.classList.add("fm-glow"); t.el.onclick = () => { t.lvl = 2; t.el.classList.add("fm-lv2"); ups.forEach(u => { u.el.onclick = null; u.el.classList.remove("fm-glow"); }); phaseBanner.textContent = `${TOWER_TYPES[t.type].name} upgraded!`; setTimeout(next, 800); }; });
+          return;
+        }
+        phaseBanner.textContent = r === "hp" ? "Wall repaired!" : "⚡ Zap charged!"; setTimeout(next, 800);
+      });
+    }), 700);
   }
 
   // ---- Defend phase -------------------------------------------------------
@@ -200,18 +238,21 @@ function initFortressMath() {
     const enemyCount = 2 + waveNum;
     const enemyHp = 2 + Math.floor(waveNum / 2);
     const traverseMs = Math.max(3500, 7000 - waveNum * 500);
-    state.remainingInWave = enemyCount;
+    const boss = waveNum === WAVE_COUNT;
+    state.remainingInWave = enemyCount + (boss ? 1 : 0);
     for (let i = 0; i < enemyCount; i++) {
-      setTimeout(() => spawnEnemy(enemyHp, traverseMs), i * 800);
+      const r = Math.random(), kind = waveNum >= 3 && r < 0.25 ? "armor" : waveNum >= 2 && r < 0.5 ? "fast" : "normal";
+      setTimeout(() => spawnEnemy(enemyHp + (kind === "armor" ? 2 : kind === "fast" ? -1 : 0), traverseMs * (kind === "fast" ? 0.6 : kind === "armor" ? 1.3 : 1), kind), i * 800);
     }
+    if (boss) { setTimeout(() => { phaseBanner.textContent = "🐉 BOSS INCOMING!"; spawnEnemy(14, traverseMs * 1.8, "boss"); }, enemyCount * 800 + 600); }
     if (!state.intervalId) state.intervalId = setInterval(tick, TICK_MS);
   }
 
-  function spawnEnemy(hp, traverseMs) {
+  function spawnEnemy(hp, traverseMs, kind) {
     if (state.ended) return;
     const el = document.createElement("div");
-    el.className = "fm-enemy";
-    el.textContent = "👹";
+    el.className = "fm-enemy" + (kind === "boss" ? " fm-boss" : "");
+    el.textContent = { fast: "🐺", armor: "🐗", boss: "🐉" }[kind] || "👹";
     el.style.left = SPAWN_X + "%";
     battlefield.appendChild(el);
     state.enemies.push({
@@ -219,17 +260,19 @@ function initFortressMath() {
       x: SPAWN_X,
       pos: 0,
       hp, maxHp: hp,
-      el,
-      progressPerTick: (TICK_MS / traverseMs)
+      el, kind,
+      progressPerTick: (TICK_MS / traverseMs), slowUntil: 0
     });
+    drawZap();
   }
 
   function removeEnemy(enemy, reachedFortress) {
     enemy.el.remove();
     state.enemies = state.enemies.filter(e => e !== enemy);
     state.remainingInWave--;
+    drawZap();
     if (reachedFortress) {
-      state.hp = Math.max(0, state.hp - 1);
+      state.hp = Math.max(0, state.hp - (enemy.kind === "boss" ? 3 : 1));
       updateHud();
       if (state.hp <= 0) { endBattle(false); return; }
     } else {
@@ -239,8 +282,8 @@ function initFortressMath() {
       if (state.wave >= WAVE_COUNT) {
         endBattle(true);
       } else {
-        phaseBanner.textContent = `Wave ${state.wave} cleared!`;
-        setTimeout(() => startWave(state.wave + 1), 1400);
+        const nextWave = state.wave + 1;
+        betweenWaves(() => startWave(nextWave));
       }
     }
   }
@@ -250,7 +293,8 @@ function initFortressMath() {
     state.tickCount++;
     // Move enemies.
     state.enemies.slice().forEach(enemy => {
-      enemy.pos += enemy.progressPerTick;
+      enemy.pos += enemy.progressPerTick * (enemy.slowUntil > state.tickCount ? 0.5 : 1);
+      enemy.el.classList.toggle("fm-slow", enemy.slowUntil > state.tickCount);
       enemy.x = SPAWN_X - enemy.pos * (SPAWN_X - FORTRESS_X);
       if (enemy.x <= FORTRESS_X) {
         removeEnemy(enemy, true);
@@ -258,19 +302,25 @@ function initFortressMath() {
       }
       enemy.el.style.left = enemy.x + "%";
     });
-    // Towers fire on a slower cadence than the movement tick.
-    if (state.tickCount % TOWER_FIRE_EVERY_TICKS === 0) {
-      state.towers.forEach(tower => {
-        const inRange = state.enemies.filter(e => Math.abs(e.x - tower.x) <= TOWER_RANGE_PCT);
-        if (!inRange.length) return;
-        inRange.sort((a, b) => b.pos - a.pos); // most advanced (closest to fortress) first
-        const target = inRange[0];
-        target.hp--;
-        target.el.classList.add("hit");
-        setTimeout(() => target.el && target.el.classList.remove("hit"), 150);
-        if (target.hp <= 0) removeEnemy(target, false);
+    // Each tower type fires on its own cadence (level 2 = 1 tick faster, +3% range).
+    state.towers.forEach(tower => {
+      const T = TOWER_TYPES[tower.type] || TOWER_TYPES.archer, every = T.every - (tower.lvl - 1), range = T.range + (tower.lvl - 1) * 3;
+      if (state.tickCount % every !== 0) return;
+      const inRange = state.enemies.filter(e => Math.abs(e.x - tower.x) <= range);
+      if (!inRange.length) return;
+      inRange.sort((a, b) => b.pos - a.pos); // most advanced (closest to fortress) first
+      const target = inRange[0];
+      tower.el.classList.remove("fm-fire"); void tower.el.offsetWidth; tower.el.classList.add("fm-fire");
+      const hits = [[target, T.dmg]];
+      if (T.splash) state.enemies.forEach(e => { if (e !== target && Math.abs(e.x - target.x) <= T.splash) hits.push([e, 1]); });
+      hits.forEach(([e, d]) => {
+        e.hp -= d;
+        if (T.slow) e.slowUntil = state.tickCount + T.slow;
+        e.el.classList.add("hit");
+        setTimeout(() => e.el && e.el.classList.remove("hit"), 150);
+        if (e.hp <= 0 && state.enemies.includes(e)) removeEnemy(e, false);
       });
-    }
+    });
   }
 
   function endBattle(survived) {
@@ -280,11 +330,13 @@ function initFortressMath() {
     state.enemies = [];
 
     const wavesCleared = survived ? WAVE_COUNT : state.wave - 1;
+    const best = Number(lsf("fm_best", "0")), isBest = wavesCleared > best || (survived && state.hp > Number(lsf("fm_best_hp", "0")));
+    if (isBest) { try { localStorage.setItem("fm_best", String(Math.max(best, wavesCleared))); if (survived) localStorage.setItem("fm_best_hp", String(state.hp)); } catch (e) {} }
     const emoji = state.hp >= 4 ? "🏆" : state.hp >= 2 ? "🥳" : state.hp >= 1 ? "🙂" : "💪";
     const title = survived ? (state.hp >= 4 ? "Flawless defense!" : "Fortress held!") : "The fortress fell...";
     document.getElementById("fm-end-emoji").textContent = emoji;
     document.getElementById("fm-end-title").textContent = title;
-    document.getElementById("fm-end-sub").textContent = `Survived ${wavesCleared}/${WAVE_COUNT} waves, defeated ${state.defeated} monsters, ${state.hp}/${FORTRESS_HP_MAX} HP left.`;
+    document.getElementById("fm-end-sub").textContent = `Survived ${wavesCleared}/${WAVE_COUNT} waves, defeated ${state.defeated} monsters, ${state.hp}/${FORTRESS_HP_MAX} HP left.${isBest ? " 🌟 New best!" : ` (Best: ${best} waves)`}`;
     phaseBanner.textContent = "";
     const bonusEl = document.getElementById("fm-end-bonus");
     bonusEl.textContent = "";
@@ -308,6 +360,7 @@ function initFortressMath() {
     state.defeated = 0;
     state.ended = false;
     state.buildIndex = 0;
+    zaps = 1; drawZap();
     if (state.intervalId) { clearInterval(state.intervalId); state.intervalId = null; }
     updateHud();
     renderSlots();
@@ -317,6 +370,12 @@ function initFortressMath() {
     askBuildQuestion();
   }
 
+  document.getElementById("fm-zap").onclick = () => {
+    if (!zaps || !state.enemies.length) return; zaps--;
+    battlefield.classList.remove("fm-zapping"); void battlefield.offsetWidth; battlefield.classList.add("fm-zapping");
+    state.enemies.slice().forEach(e => { e.hp -= 2; if (e.hp <= 0) removeEnemy(e, false); });
+    drawZap();
+  };
   document.getElementById("fm-start-btn").addEventListener("click", startGame);
   document.getElementById("fm-play-again-btn").addEventListener("click", startGame);
 }

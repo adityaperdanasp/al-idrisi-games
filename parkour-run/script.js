@@ -18,6 +18,11 @@ const ACTION_DURATION_MS = 550;
 const FIRST_OBSTACLE_DELAY_MS = 700;
 const GAP_MS = 500;
 const START_LIVES = 3;
+// Audit batch 9: the course speeds up as you go, ⭐ stars float over some obstacles (clear them to
+// collect), PERFECT style for a last-moment move, swipe controls (up = jump, down = slide, right =
+// wall-run) plus arrow keys, a correct gate answer heals a lost life, an ENDLESS mode that keeps
+// going until you run out of lives, and a best score per mode.
+const lsp = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
 
 const player = window.AIGPlayer && AIGPlayer.getPlayer();
 if (!player || player.role === "parent") {
@@ -29,7 +34,8 @@ if (!player || player.role === "parent") {
 
 function initParkourRun() {
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
-  const state = { obstacleIndex: 0, lives: START_LIVES, cleared: 0, gateCount: 0, lastActionType: null, lastActionAt: 0, resolveTimer: null, running: false };
+  const state = { obstacleIndex: 0, lives: START_LIVES, cleared: 0, gateCount: 0, lastActionType: null, lastActionAt: 0, resolveTimer: null, running: false, endless: false, score: 0, stars: 0, star: false };
+  const obsMs = () => Math.max(950, OBSTACLE_MS - state.obstacleIndex * 30);
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
   function shuffle(arr) {
@@ -74,7 +80,9 @@ function initParkourRun() {
 
   function renderHud() {
     document.getElementById("pk-lives").textContent = state.lives;
-    document.getElementById("pk-obstacle-count").textContent = Math.min(state.obstacleIndex + 1, TOTAL_OBSTACLES);
+    document.getElementById("pk-obstacle-count").textContent = state.endless ? state.obstacleIndex + 1 : Math.min(state.obstacleIndex + 1, TOTAL_OBSTACLES);
+    document.getElementById("pk-total").textContent = state.endless ? " · ♾️" : ` / ${TOTAL_OBSTACLES}`;
+    document.getElementById("pk-score").textContent = `⭐ ${state.stars} · 🏅 ${state.score}`;
   }
 
   function isGateIndex(i) { return (i + 1) % 4 === 0; }
@@ -101,20 +109,28 @@ function initParkourRun() {
   document.getElementById("pk-jump-btn").addEventListener("click", () => doAction("jump"));
   document.getElementById("pk-wallrun-btn").addEventListener("click", () => doAction("wallrun"));
   document.getElementById("pk-slide-btn").addEventListener("click", () => doAction("slide"));
+  // Swipe + keyboard controls on the lane.
+  let sx = 0, sy = 0;
+  const lane = document.getElementById("pk-lane");
+  lane.addEventListener("touchstart", e => { const t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; }, { passive: true });
+  lane.addEventListener("touchend", e => { const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; if (Math.max(Math.abs(dx), Math.abs(dy)) < 25) return; doAction(Math.abs(dy) > Math.abs(dx) ? (dy < 0 ? "jump" : "slide") : "wallrun"); }, { passive: true });
+  document.addEventListener("keydown", e => { const m = { ArrowUp: "jump", ArrowDown: "slide", ArrowRight: "wallrun" }[e.key]; if (m && state.running) { e.preventDefault(); doAction(m); } });
 
   function spawnMovementObstacle(type, delayMs) {
     const el = document.getElementById("pk-obstacle");
     el.className = "pk-obstacle";
     el.style.opacity = "1";
-    el.textContent = OBSTACLE_EMOJI[type];
+    state.star = Math.random() < 0.35;
+    el.textContent = OBSTACLE_EMOJI[type] + (state.star ? "⭐" : "");
     el.style.transition = "none";
     el.style.left = "92%";
     void el.offsetWidth;
 
     setTimeout(() => {
-      el.style.transition = `left ${OBSTACLE_MS}ms linear`;
+      const ms = obsMs();
+      el.style.transition = `left ${ms}ms linear`;
       el.style.left = "16%";
-      state.resolveTimer = setTimeout(() => resolveMovementObstacle(type), OBSTACLE_MS);
+      state.resolveTimer = setTimeout(() => resolveMovementObstacle(type), ms);
     }, delayMs || 0);
   }
 
@@ -127,7 +143,9 @@ function initParkourRun() {
     const runner = document.getElementById("pk-runner");
     if (ok) {
       state.cleared++;
-      document.getElementById("pk-feedback").textContent = `${ACTION_LABEL[type]}! Nice!`;
+      const perfect = now - state.lastActionAt <= 260;
+      state.score += perfect ? 30 : 15; if (state.star) { state.stars++; state.score += 20; }
+      document.getElementById("pk-feedback").textContent = `${perfect ? "✨ PERFECT " : ""}${ACTION_LABEL[type]}!${state.star ? " +⭐" : ""}`;
     } else {
       state.lives--;
       runner.classList.add("hit");
@@ -154,7 +172,7 @@ function initParkourRun() {
       el.style.transition = "none";
       el.style.left = "92%";
       void el.offsetWidth;
-      el.style.transition = `left ${OBSTACLE_MS}ms linear`;
+      el.style.transition = `left ${obsMs()}ms linear`;
       el.style.left = "16%";
     }
 
@@ -187,8 +205,9 @@ function initParkourRun() {
     const wallEl = document.getElementById("pk-obstacle");
 
     if (isCorrect) {
-      state.cleared++;
-      document.getElementById("pk-feedback").textContent = "Gate opened!";
+      state.cleared++; state.score += 25;
+      const heal = state.lives < START_LIVES; if (heal) state.lives++;
+      document.getElementById("pk-feedback").textContent = `Gate opened!${heal ? " +1 ❤️" : ""}`;
       setTimeout(() => {
         document.getElementById("pk-gate-card").classList.add("hidden");
         clearRunnerPose();
@@ -223,7 +242,7 @@ function initParkourRun() {
     renderHud();
     if (state.lives <= 0) { finishGame(false); return; }
     state.obstacleIndex++;
-    if (state.obstacleIndex >= TOTAL_OBSTACLES) { finishGame(true); return; }
+    if (!state.endless && state.obstacleIndex >= TOTAL_OBSTACLES) { finishGame(true); return; }
     renderHud();
     setTimeout(spawnNextObstacle, GAP_MS);
   }
@@ -241,12 +260,15 @@ function initParkourRun() {
   function finishGame(completedAll) {
     state.running = false;
     clearTimeout(state.resolveTimer);
+    const bk = state.endless ? "pk_best_endless" : "pk_best", best = Number(lsp(bk, "0")), isBest = state.score > best;
+    if (isBest) { try { localStorage.setItem(bk, String(state.score)); } catch (e) {} }
     const emoji = completedAll ? "🏆" : state.cleared >= 8 ? "🙂" : "💪";
     document.getElementById("pk-end-emoji").textContent = emoji;
     document.getElementById("pk-end-title").textContent = completedAll ? "Run Complete!" : "Out of Lives!";
     document.getElementById("pk-end-sub").textContent = completedAll
       ? `You cleared all ${TOTAL_OBSTACLES} obstacles with ${state.lives} ${state.lives === 1 ? "life" : "lives"} left!`
-      : `You cleared ${state.cleared} of ${TOTAL_OBSTACLES} obstacles before running out of lives. Try again!`;
+      : state.endless ? `Endless run: ${state.cleared} obstacles cleared!` : `You cleared ${state.cleared} of ${TOTAL_OBSTACLES} obstacles before running out of lives. Try again!`;
+    document.getElementById("pk-end-sub").textContent += ` Score 🏅${state.score} (⭐${state.stars}).${isBest ? " 🌟 New best!" : ` Best: ${best}.`}`;
     const bonusEl = document.getElementById("pk-end-bonus");
     bonusEl.textContent = "";
     if (window.AIGLeaderboard) {
@@ -259,7 +281,8 @@ function initParkourRun() {
     document.getElementById("pk-end-overlay").classList.remove("hidden");
   }
 
-  function startGame() {
+  function startGame(endless) {
+    state.endless = endless === true; state.score = 0; state.stars = 0;
     state.obstacleIndex = 0;
     state.lives = START_LIVES;
     state.cleared = 0;
@@ -281,6 +304,13 @@ function initParkourRun() {
     spawnMovementObstacle(types[rand(0, types.length - 1)], FIRST_OBSTACLE_DELAY_MS);
   }
 
-  document.getElementById("pk-start-btn").addEventListener("click", startGame);
-  document.getElementById("pk-play-again-btn").addEventListener("click", startGame);
+  document.getElementById("pk-start-btn").addEventListener("click", () => startGame(false));
+  document.getElementById("pk-play-again-btn").addEventListener("click", () => startGame(state.endless));
+  ["pk-start-btn", "pk-play-again-btn"].forEach(id => {
+    const b = document.createElement("button"); b.className = "pk-btn"; b.type = "button"; b.style.marginTop = "8px";
+    b.textContent = `♾️ Endless run${Number(lsp("pk_best_endless", "0")) ? ` (best ${lsp("pk_best_endless", "0")})` : ""}`;
+    b.onclick = () => startGame(true); document.getElementById(id).after(b);
+  });
+  const tip = document.createElement("div"); tip.className = "pk-tip"; tip.textContent = "Tip: swipe on the track — up = jump, down = slide, right = wall-run.";
+  document.getElementById("pk-start-btn").before(tip);
 }

@@ -48,6 +48,21 @@ function initBossRush() {
   const COMBO_SPECIAL_EVERY = 3;
   const SPECIAL_BONUS_DAMAGE = 15;
   const HEAL_PER_BOSS_WIN = 8;
+  // Audit batch 9: a question timer (timeout = the boss hits), boss RAGE under 30% HP (hits 50% harder),
+  // one gimmick per boss (Werewolf can dodge, Zombie King regenerates, Dragon Lord breathes fire every
+  // 4th turn that you must "block" with a fast answer, Phantom hides the answer buttons for a moment,
+  // Demon King's hits drain your combo), one 🧪 potion per run, a power-up pick between bosses, and a
+  // personal best (most bosses / fastest clear).
+  const GIMMICK = { Werewolf: "Can DODGE your hits!", "Zombie King": "Regenerates when you miss.", "Dragon Lord": "Breathes FIRE every 4th turn — answer fast to block!", Phantom: "Turns invisible — the answers flicker.", "Demon King": "Rage from the start!" };
+  let qTimer = null, turn = 0, bonusDmg = 0, potion = true, runStart = 0;
+  const lsb = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+  const lsbw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  function rage() { return state.boss && (state.boss.name === "Demon King" || state.boss.hp <= state.boss.maxHp * 0.3); }
+  function startTimer(secs, onOut) {
+    clearInterval(qTimer); const bar = document.getElementById("br-qt"); if (!bar) return;
+    const t0 = Date.now(); bar.style.width = "100%";
+    qTimer = setInterval(() => { const left = Math.max(0, 1 - (Date.now() - t0) / (secs * 1000)); bar.style.width = (left * 100) + "%"; bar.classList.toggle("low", left < 0.3); if (!left) { clearInterval(qTimer); onOut(); } }, 100);
+  }
 
   const state = { bossIndex: 0, playerHp: PLAYER_HP_MAX, boss: null, combo: 0, bossesDefeated: 0 };
   // Cosmetic only -- bought/equipped via the hub's Customize > Game FX tab
@@ -113,7 +128,9 @@ function initBossRush() {
     playerFill.classList.toggle("low", playerPct <= 30);
     document.getElementById("br-player-hp-text").textContent = `${Math.max(0, state.playerHp)} / ${PLAYER_HP_MAX} HP`;
 
-    document.getElementById("br-combo").textContent = state.combo > 0 ? `🔥 Combo x${state.combo}` : "";
+    document.getElementById("br-combo").textContent = (state.combo > 0 ? `🔥 Combo x${state.combo}` : "") + (rage() ? "  😡 RAGE!" : "");
+    document.getElementById("br-boss-emoji").classList.toggle("br-rage", !!rage());
+    const pb = document.getElementById("br-potion"); if (pb) { pb.disabled = !potion; pb.textContent = potion ? "🧪 Potion +15 HP" : "🧪 used"; }
   }
 
   function showQuestion(q, onAnswer) {
@@ -144,14 +161,22 @@ function initBossRush() {
     const base = BOSSES[index];
     state.boss = { ...base, maxHp: base.hp };
     state.combo = 0;
-    document.getElementById("br-log").textContent = `${base.name} appears!`;
+    turn = 0;
+    document.getElementById("br-log").textContent = `${base.name} appears!${GIMMICK[base.name] ? " " + GIMMICK[base.name] : ""}`;
     renderArena();
     setTimeout(startRound, 900);
   }
 
   function startRound() {
+    turn++;
     const q = rollQuestion(difficultyForBoss(state.bossIndex));
-    showQuestion(q, (btn, opt) => handleAnswer(btn, opt, q));
+    const fire = state.boss.name === "Dragon Lord" && turn % 4 === 0;
+    q.fire = fire;
+    showQuestion(q, (btn, opt) => { clearInterval(qTimer); handleAnswer(btn, opt, q); });
+    if (fire) document.getElementById("br-log").textContent = "🔥 FIRE BREATH incoming — answer fast to block it!";
+    if (state.boss.name === "Phantom") { const g = document.getElementById("br-q-grid"); g.classList.add("br-ghost"); setTimeout(() => g.classList.remove("br-ghost"), 1500); }
+    const secs = fire ? 7 : difficultyForBoss(state.bossIndex) === "hard" ? 15 : 18;
+    startTimer(secs, () => handleAnswer(null, "__timeout__", q));
   }
 
   // Flash + arena shake on a landed hit, escalating with the boss index
@@ -179,8 +204,11 @@ function initBossRush() {
     if (isCorrect) {
       state.combo++;
       const isSpecial = state.combo % COMBO_SPECIAL_EVERY === 0;
-      const damage = BASE_DAMAGE + (state.combo - 1) + (isSpecial ? SPECIAL_BONUS_DAMAGE : 0);
-      state.boss.hp -= damage;
+      const damage = BASE_DAMAGE + bonusDmg + (state.combo - 1) + (isSpecial ? SPECIAL_BONUS_DAMAGE : 0);
+      const dodged = state.boss.name === "Werewolf" && !isSpecial && Math.random() < 0.2;
+      if (dodged) {
+        document.getElementById("br-log").textContent = `💨 ${state.boss.name} dodged! Keep the combo going.`;
+      } else state.boss.hp -= damage;
       document.getElementById("br-boss-emoji").classList.add(isSpecial ? "special" : "hit");
       impactFx(isSpecial);
       if (isSpecial) {
@@ -190,18 +218,20 @@ function initBossRush() {
         void fx.offsetWidth;
         fx.classList.add("firing");
       }
-      document.getElementById("br-log").textContent = isSpecial
+      if (!dodged) document.getElementById("br-log").textContent = (q.fire ? "🛡️ Fire blocked! " : "") + (isSpecial
         ? `⭐ SPECIAL MOVE! ${damage} damage to ${state.boss.name}!`
-        : `You hit ${state.boss.name} for ${damage}!`;
+        : `You hit ${state.boss.name} for ${damage}!`);
     } else {
       state.combo = 0;
       if (state.loadoutShield) {
         state.loadoutShield = false;
         document.getElementById("br-log").textContent = `🛡️ Shield blocked ${state.boss.name}'s strike!`;
       } else {
-        state.playerHp -= state.boss.atk;
+        const hit = Math.round(state.boss.atk * (rage() ? 1.5 : 1) * (q.fire ? 2 : 1));
+        state.playerHp -= hit;
         document.getElementById("br-player-emoji").classList.add("hit");
-        document.getElementById("br-log").textContent = `${state.boss.name} struck back for ${state.boss.atk}!`;
+        document.getElementById("br-log").textContent = `${opt === "__timeout__" ? "⏰ Too slow! " : ""}${q.fire ? "🔥 FIRE BREATH! " : ""}${state.boss.name} struck back for ${hit}!`;
+        if (state.boss.name === "Zombie King") { state.boss.hp = Math.min(state.boss.maxHp, state.boss.hp + 4); document.getElementById("br-log").textContent += " 🧟 It regenerates +4."; }
       }
     }
 
@@ -216,7 +246,8 @@ function initBossRush() {
         if (state.bossesDefeated >= BOSSES.length) { finishGame(true); return; }
         state.playerHp = Math.min(PLAYER_HP_MAX, state.playerHp + HEAL_PER_BOSS_WIN);
         document.getElementById("br-log").textContent = `${state.boss.name} defeated! +${HEAL_PER_BOSS_WIN} HP`;
-        setTimeout(() => startBoss(state.bossIndex + 1), 1300);
+        renderArena();
+        setTimeout(() => pickPower(() => startBoss(state.bossIndex + 1)), 900);
         return;
       }
 
@@ -226,15 +257,33 @@ function initBossRush() {
     }, 900);
   }
 
+  function pickPower(next) {
+    const o = document.createElement("div"); o.className = "br-overlay";
+    o.innerHTML = `<div class="br-modal"><div class="br-modal-emoji">🎁</div><div class="br-modal-title">Pick a power-up</div><div class="br-modal-sub">Next up: ${BOSSES[state.bossIndex + 1].emoji} ${BOSSES[state.bossIndex + 1].name}</div>
+      <button class="br-btn br-btn-primary" data-p="hp">❤️ +12 HP</button><button class="br-btn br-btn-primary" data-p="dmg" style="margin-top:6px">⚔️ +3 damage per hit</button><button class="br-btn br-btn-primary" data-p="shield" style="margin-top:6px">🛡️ Shield (blocks 1 hit)</button></div>`;
+    document.body.appendChild(o);
+    o.querySelectorAll("[data-p]").forEach(b => b.onclick = () => {
+      const p = b.dataset.p;
+      if (p === "hp") state.playerHp = Math.min(PLAYER_HP_MAX, state.playerHp + 12); else if (p === "dmg") bonusDmg += 3; else state.loadoutShield = true;
+      o.remove(); renderArena(); next();
+    });
+  }
   function finishGame(won) {
+    clearInterval(qTimer);
     document.getElementById("br-q-card").classList.add("hidden");
     const defeated = state.bossesDefeated;
+    const secs = Math.round((Date.now() - runStart) / 1000), mk = state.nightmare ? "br_best_nm" : "br_best";
+    let best = {}; try { best = JSON.parse(lsb(mk, "{}")) || {}; } catch (e) {}
+    const newBest = defeated > (best.bosses || 0) || (won && (!best.time || secs < best.time));
+    if (newBest) lsbw(mk, JSON.stringify({ bosses: Math.max(defeated, best.bosses || 0), time: won ? Math.min(secs, best.time || 1e9) : best.time }));
     const emoji = won ? "🏆" : defeated >= 2 ? "🙂" : "💪";
     document.getElementById("br-end-emoji").textContent = emoji;
     document.getElementById("br-end-title").textContent = won ? "Arena Cleared!" : "Knocked Out!";
     document.getElementById("br-end-sub").textContent = won
       ? `You defeated all ${BOSSES.length} bosses with ${Math.max(0, state.playerHp)} HP to spare!`
       : `You defeated ${defeated} boss${defeated === 1 ? "" : "es"} before falling. Try again!`;
+    document.getElementById("br-end-sub").textContent += won ? ` Time: ${secs}s.` : "";
+    if (newBest) document.getElementById("br-end-sub").textContent += " 🌟 New personal best!";
     const bonusEl = document.getElementById("br-end-bonus");
     const dailyEl = document.getElementById("br-daily-bonus-note");
     bonusEl.textContent = "";
@@ -291,6 +340,7 @@ function initBossRush() {
     state.playerHp = PLAYER_HP_MAX;
     state.bossesDefeated = 0;
     state.loadoutShield = false;
+    bonusDmg = 0; potion = true; runStart = Date.now();
     // Round Loadout (PM round 9, item 3) -- see leaderboard.js's
     // consumeArmedLoadout(). life = +8 HP (can exceed the normal cap for
     // this run only), shield = blocks the first boss strike.
@@ -306,6 +356,14 @@ function initBossRush() {
     startBoss(0);
   }
 
+  (function bestNote() {
+    let b = {}; try { b = JSON.parse(lsb("br_best", "{}")) || {}; } catch (e) {}
+    if (b.bosses) document.getElementById("br-start-btn").insertAdjacentHTML("beforebegin", `<div class="br-modal-sub">🏅 Your best: ${b.bosses}/4 bosses${b.time ? ` · fastest clear ${b.time}s` : ""}</div>`);
+  })();
+  document.getElementById("br-potion").onclick = () => {
+    if (!potion || state.playerHp <= 0) return; potion = false;
+    state.playerHp = Math.min(PLAYER_HP_MAX, state.playerHp + 15); document.getElementById("br-log").textContent = "🧪 Glug glug! +15 HP"; renderArena();
+  };
   document.getElementById("br-start-btn").addEventListener("click", () => startGame(false));
   document.getElementById("br-play-again-btn").addEventListener("click", () => startGame(state.nightmare));
   const nmBtn = document.getElementById("br-nightmare-btn");

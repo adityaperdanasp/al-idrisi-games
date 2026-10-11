@@ -68,6 +68,10 @@
   .mb-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
   .mb-btn-primary { background: #F7A63C; color: #0f2419; }
   .mb-btn-secondary { background: rgba(255,255,255,.1); color: #eafff0; }
+  .mb-extra { display: grid; gap: 8px; margin: 8px 0; font-size: .8rem; text-align: center; }
+  .mb-dex { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 4px; font-size: 1.3rem; } .mb-dex .no { opacity: .35; }
+  .mb-extra button { border: 2px solid #1b1b1b; background: #fff; padding: 4px 8px; margin: 2px; font-weight: 800; cursor: pointer; } .mb-extra button.on { background: #6cc04a; color: #fff; } .mb-extra button:disabled { opacity: .5; }
+  .mb-shiny { filter: drop-shadow(0 0 12px gold) saturate(1.6); }
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="monster-battle";</script>
@@ -151,6 +155,6 @@
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
 <script src="../game-music.js"></script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

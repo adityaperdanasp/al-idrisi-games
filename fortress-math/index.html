@@ -47,6 +47,12 @@
   .fm-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
   .fm-btn-primary { background: #6B7A8F; color: #fff; }
   .fm-btn-secondary { background: #f1ede6; color: #3d2e22; }
+  .fm-pick { border: 2px solid #1b1b1b; background: #fff; font-weight: 800; padding: 5px 9px; margin: 3px; cursor: pointer; font-size: .8rem; }
+  .fm-zapbar { text-align: center; margin: 4px 0; } #fm-zap { border: 2px solid #1b1b1b; background: #ffd23f; font-weight: 800; padding: 5px 12px; cursor: pointer; } #fm-zap:disabled { opacity: .45; }
+  .fm-slot.fm-fire { animation: fmFire .25s; } @keyframes fmFire { 50% { transform: translate(-50%, -150%) scale(1.25); filter: brightness(1.5); } }
+  .fm-slot.fm-lv2 { border-color: gold; box-shadow: 0 0 8px gold; } .fm-slot.fm-glow { animation: fmGlow .6s infinite alternate; cursor: pointer; } @keyframes fmGlow { to { box-shadow: 0 0 14px #6cc04a; } }
+  .fm-enemy.fm-slow { filter: hue-rotate(180deg) saturate(1.5); } .fm-enemy.fm-boss { font-size: 2.2rem; }
+  .fm-battlefield.fm-zapping { animation: fmZap .4s; } @keyframes fmZap { 30% { background-color: #fff6a8; } }
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="fortress-math";</script>
@@ -64,6 +70,7 @@
     <span class="fm-hud-chip">🪙 <span id="fm-hud-coins">0</span> 💎 <span id="fm-hud-gems">0</span></span>
   </div>
   <div class="fm-phase-banner" id="fm-phase-banner"></div>
+  <div class="fm-zapbar"><button type="button" id="fm-zap" disabled>⚡ Zap all (0)</button></div>
 
   <div class="fm-battlefield" id="fm-battlefield">
     <div class="fm-path"></div>
@@ -113,6 +120,6 @@
 <script src="../mathville/generators.js"></script>
 <script src="../question-pools.js?v=2"></script>
 <script src="../game-music.js"></script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

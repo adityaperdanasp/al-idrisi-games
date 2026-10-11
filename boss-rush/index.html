@@ -79,6 +79,10 @@
 
   .br-daily-banner { background: rgba(255,209,102,.14); border: 1.5px solid rgba(255,209,102,.4); border-radius: 14px; padding: 10px 12px; font-weight: 800; font-size: .82rem; color: #FFD166; margin-bottom: 16px; line-height: 1.4; }
   .br-daily-bonus-note { font-weight: 800; color: #FFD166; margin-bottom: 4px; min-height: 1.2em; font-size: .9rem; }
+  .br-tools { text-align: center; margin: 6px 0; } .br-tools .br-btn { display: inline-block; width: auto; padding: 6px 14px; font-size: .8rem; }
+  .br-qt-wrap { height: 8px; background: #2b2b2b; border: 2px solid #1b1b1b; margin-bottom: 8px; } .br-qt-wrap i { display: block; height: 100%; background: #6cc04a; transition: width .1s linear; } .br-qt-wrap i.low { background: #e0483a; }
+  .br-rage { filter: drop-shadow(0 0 10px #ff2a2a); animation: brRage .5s infinite alternate; } @keyframes brRage { to { transform: scale(1.08); } }
+  .br-ghost .br-q-btn { animation: brGhost .3s infinite alternate; } @keyframes brGhost { to { opacity: .08; } }
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="boss-rush";</script>
@@ -117,7 +121,9 @@
   <div class="br-combo" id="br-combo"></div>
   <div class="br-log" id="br-log"></div>
 
+  <div class="br-tools"><button type="button" class="br-btn" id="br-potion">🧪 Potion +15 HP</button></div>
   <div class="br-q-card hidden" id="br-q-card">
+    <div class="br-qt-wrap"><i id="br-qt"></i></div>
     <div class="br-q-prompt" id="br-q-prompt"></div>
     <div class="br-q-grid" id="br-q-grid"></div>
   </div>
@@ -164,6 +170,6 @@
 <script src="../question-pools.js?v=2"></script>
 <script src="../share-card.js?v=1"></script>
 <script src="../game-music.js"></script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>

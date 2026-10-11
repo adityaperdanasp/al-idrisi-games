@@ -53,6 +53,12 @@
   .mm-btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 13px; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
   .mm-btn-primary { background: #9B59D0; color: #fff; }
   .mm-btn-secondary { background: #f1ede6; color: #3d2e22; }
+  .mm-turn { text-align: center; font-weight: 800; font-size: .85rem; margin: 0 14px 8px; min-height: 1.1em; }
+  .mm-tools { text-align: center; margin: 10px; } .mm-tools button { border: 2px solid #1b1b1b; background: #fff; font-weight: 800; padding: 6px 12px; cursor: pointer; }
+  .mm-modes { display: grid; gap: 6px; margin: 8px 0; font-size: .8rem; } .mm-modes button { border: 2px solid #1b1b1b; background: #fff; padding: 4px 8px; margin: 2px; font-weight: 800; cursor: pointer; } .mm-modes button.on { background: #9B59D0; color: #fff; }
+  .mm-card.matched.bot .mm-card-front { background: #dfe7ff; }
+  .mm-flash { position: fixed; top: 35%; left: 50%; transform: translateX(-50%); font-weight: 800; font-size: 1.4rem; opacity: 0; pointer-events: none; z-index: 50; }
+  .mm-flash.on { animation: mmF 1.2s; } @keyframes mmF { 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -30px); } }
 </style>
 <link rel="stylesheet" href="/blockworld-games.css?v=5" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="memory-match";</script>
@@ -65,12 +71,12 @@
     <div class="mm-title">🧠 Memory Match</div>
   </div>
   <div class="mm-hud">
-    <span class="mm-hud-chip">✅ <span id="mm-hud-pairs">0</span>/8</span>
+    <span class="mm-hud-chip">✅ <span id="mm-hud-pairs">0</span>/<span id="mm-hud-total">8</span></span>
     <span class="mm-hud-chip">🔁 <span id="mm-hud-moves">0</span> moves</span>
     <span class="mm-hud-chip">🪙 <span id="mm-hud-coins">0</span> 💎 <span id="mm-hud-gems">0</span></span>
   </div>
 
-  <div class="mm-grid" id="mm-grid"></div>
+  <div class="mm-turn" id="mm-turn"></div><div class="mm-grid" id="mm-grid"></div><div class="mm-tools"><button type="button" id="mm-peek">👀 Peek (once)</button></div><div class="mm-flash" id="mm-flash"></div>
 
   <div class="mm-overlay" id="mm-start-overlay">
     <div class="mm-card-modal">
@@ -107,6 +113,6 @@
 <script src="../skin.js"></script>
 <script src="../question-pools.js?v=2"></script>
 <script src="../game-music.js"></script>
-<script src="script.js"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>
