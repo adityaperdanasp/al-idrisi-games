@@ -2709,3 +2709,7 @@ button { font-family: inherit; }
 
 /* Audit round 2: each Town Map stop shows a building that grows with that chapter's stars. */
 .map-stop-build { font-size: 1.3rem; line-height: 1; margin-top: 2px; filter: drop-shadow(0 2px 0 rgba(0,0,0,.25)); }
+
+/* Plane Mode opened as its own game from the hub (?plane=1): only 🏠 stays in the top bar. */
+body.plane-only .topbar .icon-btn:not(#btn-home) { display: none !important; }
+body.plane-only #mv-modes { display: none; }

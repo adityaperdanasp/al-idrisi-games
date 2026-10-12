@@ -139,7 +139,7 @@
   BW.emeraldize = emeraldize;
 
   // ---------------- hub enhancement ----------------
-  const MAIN = [["multipleazka/", "Math Race"], ["mathville/", "MathVille"], ["azkacraft/", "Language & Arts"], ["azkauniverse/", "SolarQuest"], ["ninja-runner/", "Ninja Runner"]];
+  const MAIN = [["multipleazka/", "Math Race"], ["dinorace/", "Dino Race"], ["plane/", "Plane Mode"], ["ninja-runner/", "Ninja Runner"], ["treasure-dig/", "Treasure Dig"]];
   function build() {
     const landing = $("sc-screen-landing"); if (!landing || landing.dataset.bwBuilt) return; landing.dataset.bwBuilt = "1";
     // pixel Bo logo
@@ -169,7 +169,7 @@
     const bar = document.createElement("nav"); bar.className = "bw-hotbar"; bar.id = "bw-hotbar";
     bar.innerHTML = `
       <button class="bw-slot active" id="bw-slot-main" type="button"><span class="bw-slot-ico">${BW.svg_grass()}</span><span class="bw-slot-lbl">Main</span></button>
-      <a class="bw-slot" href="bo-home/?tab=world"><span class="bw-slot-ico">${BW.svg_globe()}</span><span class="bw-slot-lbl">Dunia</span></a>
+
       <button class="bw-slot" id="bw-slot-rewards" type="button"><span class="bw-slot-ico">${BW.svg_chest()}</span><span class="bw-slot-lbl">Hadiah</span><span class="bw-slot-dot" id="bw-slot-dot" hidden></span></button>
       <a class="bw-slot" href="profile/"><span class="bw-slot-ico" id="bw-slot-me-ico"></span><span class="bw-slot-lbl">Aku</span></a>`;
     landing.appendChild(bar);

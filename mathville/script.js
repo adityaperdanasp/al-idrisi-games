@@ -9368,6 +9368,13 @@ if (new URLSearchParams(location.search).get("ninja") === "1") {
   launchNinjaRunner();
 }
 
+// Plane Mode as its own hub game (plane/ redirects here with ?plane=1): skip the car/plane picker and
+// hide the other MathVille icons in the top bar so the kid stays in Plane Mode; 🏠 still goes home.
+if (new URLSearchParams(location.search).get("plane") === "1") {
+  document.body.classList.add("plane-only");
+  playPlaneModePicker(mode => { if (mode === "2p") launchPlane2P(); else launchPlaneMode(); });
+}
+
 // Deep link from azka-pr/index.html's redirect (?azkapr=1) -- same
 // pattern as ?ninja=1 above, and placed here for the exact same reason:
 // launchAzkaPrRound() calls renderStep(), which touches several `let`-

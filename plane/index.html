@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>BrainBox — Plane Mode</title>
+<!-- Plane Mode has its own hub card (one of the 5 hub games). Same trick as ninja-runner/: a thin
+     redirect into MathVille's ?plane=1 deep link, which owns the real shmup engine. -->
+<script>location.replace("../mathville/index.html?plane=1");</script>
+<link rel="stylesheet" href="/blockworld-games.css?v=6" />
+<script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="plane";</script>
+</head>
+<body>
+  <p>Loading Plane Mode… if nothing happens, <a href="../mathville/index.html?plane=1">tap here</a>.</p>
+</body>
+</html>

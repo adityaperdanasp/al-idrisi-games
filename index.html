@@ -16,12 +16,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="blockworld.css?v=6">
+<link rel="stylesheet" href="blockworld.css?v=7">
 
 <!-- Hub's own Firebase project: shared leaderboard/player data + Analytics -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  /* Five-game hub (2026-10-12): only Math Race, Dino Race, Plane Mode, Ninja Runner and Treasure Dig
+     are shown. Every other game still exists (and keeps its progress) -- it's just not listed here.
+     To bring one back, add its card class to the :not() list below. */
+  .sc-game-card:not(.math):not(.dino):not(.plane):not(.ninja):not(.dig) { display: none !important; }
+  .sc-search-link, #sc-diagnostic-card, #sc-smart-practice-card { display: none !important; }
+  .sc-game-card.dino { --card: #f6dfb8; } .sc-game-card.plane { --card: #cfe6ff; }
+  .sc-game-card.plane .sc-game-icon { font-size: 2rem; display: grid; place-items: center; }
+</style>
 </head>
 <body>
 
@@ -45,7 +54,7 @@
       </svg>
     </div>
   </div>
-  <a id="roam-car" class="roam-car" href="mathville/?drive=1" title="Drive!">
+  <a id="roam-car" class="roam-car" href="plane/" title="Fly!">
     <svg viewBox="0 0 26 40" width="23" height="36">
       <rect x="3" y="1" width="20" height="38" rx="8" fill="#E4572E" stroke="#C6431F" stroke-width="1.5" />
       <rect x="6" y="7" width="14" height="10" rx="2.5" fill="#BFE3F0" />
@@ -388,6 +397,21 @@
           <span class="sc-game-txt">
             <span class="sc-game-title">Math Race</span>
             <span class="sc-game-sub">Pick who's playing, then race!</span>
+          </span>
+        </a>
+        <!-- Five-game hub (2026-10-12): DinoRace and Plane Mode now have their own cards. -->
+        <a class="sc-game-card dino" href="dinorace/">
+          <span class="sc-game-icon"><img src="dinorace/icon-512.png" alt=""></span>
+          <span class="sc-game-txt">
+            <span class="sc-game-title">Dino Race</span>
+            <span class="sc-game-sub">Race a friend on your dinos!</span>
+          </span>
+        </a>
+        <a class="sc-game-card plane" href="plane/">
+          <span class="sc-game-icon">✈️</span>
+          <span class="sc-game-txt">
+            <span class="sc-game-title">Plane Mode</span>
+            <span class="sc-game-sub">Fly, dodge, blast — answer for bombs!</span>
           </span>
         </a>
         <a class="sc-game-card lang" href="azkacraft/">
@@ -3656,6 +3680,6 @@
 </script>
 
 <script src="tour.js"></script>
-<script src="blockworld.js?v=2"></script>
+<script src="blockworld.js?v=3"></script>
 </body>
 </html>
