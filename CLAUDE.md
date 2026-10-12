@@ -9,6 +9,14 @@ Hub berisi game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green M
 - **mathville** — Grade 4 math (9 curriculum chapters + 1 capstone "Word Problems" review chapter = 10 total, town-map + alternate Drive Mode free-roam driving game)
 - **dinorace** — 2-Player Dino Racing. **Full-merge diputuskan 2026-08-03**: dulu snapshot manual dari project terpisah (`~/Documents/games/dinorace`, domain `dinorace.lol`, Firebase project sendiri `dinorace-d9b8c`), sekarang Firebase-nya udah disatuin ke project hub (`al-idrisi-games`) — lihat detail lengkap di bagian "DinoRace merge" di bawah. GitHub repo asli (`~/Documents/games/dinorace`) & Vercel project `dinorace.lol` MASIH ada & masih di-maintain manual (dual-deploy, lihat bawah), cuma Firebase-nya doang yang udah jadi satu.
 
+### ⚠️ Hub sekarang cuma 5 game (keputusan user 2026-10-12)
+
+User: "55 game buat apaaa, bikin 5 aja". Hub (`index.html`) sekarang cuma nampilin **Math Race** (`multipleazka/`), **Dino Race** (`dinorace/`), **Plane Mode** (`plane/` → redirect ke `mathville/index.html?plane=1`), **Ninja Runner** (`ninja-runner/`), **Treasure Dig** (`treasure-dig/`). Ninja Runner + Treasure Dig dipilih karena 3 game wajib berat ke matematika (DinoRace bahkan gak ada soalnya) -- dua ini nutup Bahasa & Sains.
+- Game lain **disembunyikan, BUKAN dihapus**: whitelist CSS di `<style>` dekat `</head>` di `index.html` (`.sc-game-card:not(.math):not(.dino):not(.plane):not(.ninja):not(.dig)`). Mau munculin lagi = tambah class kartunya ke `:not()` itu. Kode + progres anak tetap utuh, halaman masih bisa dibuka via URL langsung.
+- Ikut disembunyikan: link Search, kartu Smart Practice/diagnostic, tombol "More games", slot hotbar "Dunia" (`blockworld.js`). Tombol "Lanjut Petualangan" (`MAIN` di `blockworld.js`) muter di antara 5 game ini.
+- DinoRace **sekarang punya kartu di hub** atas permintaan eksplisit -- catatan "easter egg, jangan tambah card" di bawah sudah tidak berlaku.
+- `?plane=1` di MathVille langsung buka pemilih solo/2P dan nambah `body.plane-only` (sembunyiin semua ikon topbar kecuali 🏠).
+
 ### Daftar lengkap game & mode interaktif (2026-08-05)
 
 **Game utama, ada card di landing page hub** (`index.html`'s `.sc-game-list`):
