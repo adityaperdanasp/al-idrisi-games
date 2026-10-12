@@ -28,6 +28,11 @@
      To bring one back, add its card class to the :not() list below. */
   .sc-game-card:not(.math):not(.dino):not(.plane):not(.ninja):not(.dig) { display: none !important; }
   .sc-search-link, #sc-diagnostic-card, #sc-smart-practice-card { display: none !important; }
+  /* With only five games there is nothing to fold away: drop "More games" and show Treasure Dig
+     as a full-width fifth card. */
+  #sc-more-games-btn { display: none !important; }
+  #sc-more-games { display: contents !important; }
+  .sc-game-card.dig { grid-column: 1 / -1; }
   .sc-game-card.dino { --card: #f6dfb8; } .sc-game-card.plane { --card: #cfe6ff; }
   .sc-game-card.plane .sc-game-icon { font-size: 2rem; display: grid; place-items: center; }
 </style>
