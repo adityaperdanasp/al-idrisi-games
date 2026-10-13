@@ -75,13 +75,13 @@
         return `<details class="lib-sec" data-cl="${id}" ${i < 2 ? "open" : ""}><summary class="lib-h" style="--c:${color}">${label} <small>${games.length} game</small><b class="lib-chev">▾</b></summary><div class="lib-grid">${inner}</div></details>`;
       }).join("")}
       <p class="lib-legend">🔥 sering kamu mainkan · 👀 belum pernah dicoba · ✨ baru · 📌 sematkan ke Favorit</p>`;
-    list.hidden = true; list.after(lib);
+    list.style.display = "none"; list.after(lib);
     lib.addEventListener("click", e => {
       const b = e.target.closest("[data-pin]"); if (!b) return;
       e.preventDefault(); e.stopPropagation();
       const p = pins(), d = b.dataset.pin, i = p.indexOf(d); if (i >= 0) p.splice(i, 1); else p.unshift(d);
       try { localStorage.setItem("hub_pins", JSON.stringify(p.slice(0, 6))); } catch (er) {}
-      lib.remove(); list.hidden = false; build();
+      lib.remove(); build();
     });
     lib.querySelector("#lib-q").addEventListener("input", e => {
       const q = e.target.value.trim().toLowerCase();
