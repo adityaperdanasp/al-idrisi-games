@@ -1235,7 +1235,7 @@ function renderFill(stage, q) {
     ${questionImageHtml(q)}
     <p class="question-text">${q.question}</p>
     <div class="fill-form">
-      <input type="text" class="fill-input" id="fill-input" autocomplete="off" placeholder="Type your answer" />
+      <input type="text" class="fill-input" id="fill-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Type your answer" />
       <button class="btn btn-primary" id="fill-submit">Check</button>
     </div>
   `;

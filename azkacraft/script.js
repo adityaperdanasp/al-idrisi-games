@@ -601,7 +601,7 @@ function renderFill(q, area) {
     ${beeBadge}
     <div class="question-prompt">${q.prompt}</div>
     <form class="fill-form" id="fill-form">
-      <input class="fill-input" id="fill-input" type="text" autocomplete="off" placeholder="Type your answer...">
+      <input class="fill-input" id="fill-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Type your answer...">
       <button type="submit" class="btn btn-primary">Check Answer</button>
       <div id="fill-correction"></div>
     </form>
