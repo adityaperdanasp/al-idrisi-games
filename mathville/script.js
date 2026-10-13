@@ -79,7 +79,7 @@ if (window.AIGLeaderboard) {
 // the harvest festival" arc. Purely cosmetic text shown above the normal
 // intro copy (goToIntro) -- no gameplay/logic ties to it at all, so it can
 // never affect scoring, progress, or the round flow.
-const CHAPTER_POS = [[80, 70], [340, 240], [80, 410], [340, 580], [80, 750], [340, 920], [80, 1090], [340, 1260], [80, 1430], [340, 1600]];
+const CHAPTER_POS = [[80, 70], [340, 240], [80, 410], [340, 580], [80, 750], [340, 920], [80, 1090], [340, 1260], [80, 1430], [340, 1600], [80, 1770]];
 // Term 2 (2026-10-13): the 10 chapters + their town-stop flavour live in generators.js (MATHVILLE_T2.chapters).
 const CHAPTER_META = Object.assign({}, ...MATHVILLE_T2.chapters.map((c, i) => ({ [c.id]: { location: c.location, icon: c.icon, mapX: CHAPTER_POS[i][0], mapY: CHAPTER_POS[i][1], story: c.story } })), {
   // Synthetic chapterIds (never in MATHVILLE_BANK.chapters, same pattern as Plane Mode's "plane-mode")
@@ -88,7 +88,10 @@ const CHAPTER_META = Object.assign({}, ...MATHVILLE_T2.chapters.map((c, i) => ({
   "focus-round": { location: "Focus Round", icon: "🎯" },
   "azka-pr": { location: "Azka's Weekly PR", icon: "🎯" }
 });
-const MAP_HEIGHT = 1690;
+const MAP_HEIGHT = 1870;
+// "Fokus Azka" (child-side switch on the hub, localStorage azka_focus): only the Story Problems chapter stays open.
+const mvFocusOn = () => { try { return localStorage.getItem("azka_focus") === "1"; } catch (e) { return false; } };
+if (mvFocusOn()) document.documentElement.classList.add("focus-azka");
 
 // Decorative scenery scattered along the road — purely cosmetic, recolored
 // to the Blockville wood/gold/cherry/taupe palette.
@@ -552,7 +555,7 @@ function renderTownMap() {
 
   // Nothing is ever locked — but the first not-yet-completed stop still
   // gets a gentle pulse as a "start here" suggestion.
-  const nextIdx = chapters.findIndex(ch => !(PROGRESS.chapters[ch.id] || {}).completed);
+  const nextIdx = mvFocusOn() ? chapters.findIndex(ch => ch.id === "story-problems") : chapters.findIndex(ch => !(PROGRESS.chapters[ch.id] || {}).completed);
 
   drawMapPathSvg(wrap, chapters);
 
@@ -592,7 +595,12 @@ function renderTownMap() {
       <div class="map-stop-build" title="Your building grows with stars">${["🏗️", "🏚️", "🏠", "🏰"][prog.completed ? Math.max(1, Math.min(3, prog.stars || 1)) : 0]}</div>
       ${prog.completed ? `<div class="map-stop-stars${starTierClass(prog.stars, prog.perfectCount) ? " " + starTierClass(prog.stars, prog.perfectCount) : ""}">${"★".repeat(prog.stars)}${"☆".repeat(3 - prog.stars)}</div>` : ""}
     `;
-    stop.addEventListener("click", () => mvWalkTo(i, () => goToIntro(ch.id, false)));
+    if (mvFocusOn() && ch.id !== "story-problems") {
+      stop.classList.add("focus-locked");
+      stop.addEventListener("click", () => showAdaptiveToast("🔒 Fokus Azka is ON: only Story Problems is open. Turn Fokus off on the home screen to visit this stop."));
+    } else {
+      stop.addEventListener("click", () => mvWalkTo(i, () => goToIntro(ch.id, false)));
+    }
     wrap.appendChild(stop);
   });
 
@@ -963,7 +971,8 @@ const DRIVE_CITY_POS = [
   { x: 15, y: 12 }, { x: 50, y: 9 }, { x: 85, y: 14 },
   { x: 12, y: 38 }, { x: 50, y: 40 }, { x: 88, y: 36 },
   { x: 18, y: 64 }, { x: 50, y: 66 }, { x: 82, y: 62 },
-  { x: 50, y: 82 } // 10th chapter (Word Problems) -- bottom-center, clear of both corner joysticks
+  { x: 50, y: 82 }, // 10th chapter -- bottom-center, clear of both corner joysticks
+  { x: 32, y: 52 }  // 11th chapter (Story Problems)
 ];
 const DRIVE_QUICK_GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
 // Drive Mode city markers use topic icons (not the town-map's whimsical building icons).

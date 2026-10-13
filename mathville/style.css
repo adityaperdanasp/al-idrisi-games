@@ -2711,5 +2711,6 @@ button { font-family: inherit; }
 .map-stop-build { font-size: 1.3rem; line-height: 1; margin-top: 2px; filter: drop-shadow(0 2px 0 rgba(0,0,0,.25)); }
 
 /* Plane Mode opened as its own game from the hub (?plane=1): only 🏠 stays in the top bar. */
-body.plane-only .topbar .icon-btn:not(#btn-home), body.drive-only .topbar .icon-btn:not(#btn-home) { display: none !important; }
-body.plane-only #mv-modes, body.drive-only #mv-modes { display: none; }
+body.plane-only .topbar .icon-btn:not(#btn-home), body.drive-only .topbar .icon-btn:not(#btn-home), html.focus-azka .topbar .icon-btn:not(#btn-home) { display: none !important; }
+body.plane-only #mv-modes, body.drive-only #mv-modes, html.focus-azka #mv-modes { display: none; }
+.map-stop.focus-locked { opacity: .35; filter: grayscale(1); cursor: not-allowed; }

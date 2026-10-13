@@ -10542,6 +10542,16 @@
      "answer": "Look at the new line and who spoke before"
     }
    ]
+  },
+  {
+   "id": 10,
+   "title": "Spell It Right",
+   "topic": "Spelling Words",
+   "snippet": "Ocean, not \"oshun\"! Some English words do not spell the way they sound - let's learn the tricky ones.",
+   "stickerId": "sticker-spelling-t2",
+   "dynamic": "spelling",
+   "alwaysOpen": true,
+   "questions": []
   }
  ]
 }

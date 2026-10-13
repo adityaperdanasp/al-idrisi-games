@@ -31,7 +31,7 @@
   const MATHVILLE_CHAPTER_TITLES = {
     "basic-ops": "Basic Math Operations", "pictograph": "Pictograph", "bar-graph": "Bar Graph", "line-graph": "Line Graph",
     "angles": "Measuring Angles", "perimeter": "Perimeter", "area": "Area", "square-numbers": "Square Numbers",
-    "factors-primes": "Factors & Prime Numbers", "multiples-lcm-gcf": "Multiples, LCM & GCF"
+    "factors-primes": "Factors & Prime Numbers", "multiples-lcm-gcf": "Multiples, LCM & GCF", "story-problems": "Story Problems"
   };
 
   function escapeHtml(str) {

@@ -160,7 +160,10 @@
       const scene = document.createElement("div"); scene.className = "bw-scene";
       scene.innerHTML = `<div class="bw-season">Season 1 · Term 4</div><div class="bw-ground"><div class="bw-sun" aria-hidden="true"></div><div class="bw-cloud c1"></div><div class="bw-cloud c2"></div><div id="bw-avatar-big" class="bw-avatar-big"></div><div class="bw-bo-walk" id="bw-bo-walk">${BW.svg_bo()}</div><div class="bw-tree">🌳</div></div>`;
       hero.appendChild(scene);
-      const day = Math.floor(Date.now() / 86400000) % MAIN.length, pick = MAIN[day];
+      // "Fokus Azka" ON: the daily Play button only picks from the games that stay open.
+      let focusOnNow = false; try { focusOnNow = localStorage.getItem("azka_focus") === "1"; } catch (e) {}
+      const PLAYLIST = focusOnNow ? [["mathville/", "MathVille"], ["azkacraft/", "Language & Arts"], ["treasure-dig/", "Treasure Dig"], ["math-tennis/", "Math Tennis"], ["quiz-show/", "Quiz Show"]] : MAIN;
+      const day = Math.floor(Date.now() / 86400000) % PLAYLIST.length, pick = PLAYLIST[day];
       const play = document.createElement("a"); play.className = "bw-play"; play.href = pick[0]; play.id = "bw-play";
       play.innerHTML = `<span class="bw-play-big">▶ LANJUT PETUALANGAN</span><span class="bw-play-sub">Hari ini: ${pick[1]}</span>`;
       hero.appendChild(play);

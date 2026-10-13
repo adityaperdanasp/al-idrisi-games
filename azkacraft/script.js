@@ -25,8 +25,12 @@ const STICKER_EMOJI = {
   "sticker-capitals": "🔠",
   "sticker-speech": "💬",
   "sticker-reading": "📖",
-  "sticker-dialogue": "🗣️"
+  "sticker-dialogue": "🗣️",
+  "sticker-spelling-t2": "✏️"
 };
+
+// "Fokus Azka" (child-side switch on the hub, localStorage key azka_focus): while ON, only the spelling chapter is open.
+const focusOn = () => { try { return localStorage.getItem("azka_focus") === "1"; } catch (e) { return false; } };
 
 const QUESTIONS_PER_SESSION = 5;
 
@@ -288,6 +292,7 @@ const TOPIC_STYLE = {
   "Direct Speech":        { icon: "💬", color: "#22B573", colorDark: "#158A54" },
   "Reading Comprehension": { icon: "📖", color: "#8E5BD0", colorDark: "#6E3FB0" },
   "Dialogue":             { icon: "🗣️", color: "#F2B705", colorDark: "#C99700" },
+  "Spelling Words":       { icon: "✏️", color: "#E4572E", colorDark: "#C1431F" },
   "Grammar":              { icon: "📐", color: "#2F6FED", colorDark: "#1E56C4" }
 };
 const CHAPTER_DECO = ["⭐", "✨", "🍃", "🌟", "🎈", "📎", "💫"];
@@ -298,7 +303,7 @@ function renderBookshelf() {
   shelf.innerHTML = "";
 
   QUESTION_BANK.chapters.forEach((chapter, i) => {
-    const unlocked = chapter.id <= PROGRESS.unlockedChapter;
+    const unlocked = focusOn() ? chapter.dynamic === "spelling" : (chapter.alwaysOpen || chapter.id <= PROGRESS.unlockedChapter);
     const chStats = PROGRESS.chapters[chapter.id] || { stars: 0 };
     const style = TOPIC_STYLE[chapter.topic] || TOPIC_STYLE.Grammar;
     const justify = i % 2 === 0 ? "flex-start" : "flex-end";
@@ -350,7 +355,7 @@ function updateHomeStats() {
 function renderMultiplayerChapterOptions() {
   const hostSelect = document.getElementById("mp-host-chapter");
   hostSelect.innerHTML = QUESTION_BANK.chapters
-    .filter(c => c.id <= PROGRESS.unlockedChapter)
+    .filter(c => c.id <= PROGRESS.unlockedChapter && !c.dynamic)
     .map(c => `<option value="${c.id}">Ch. ${c.id}: ${c.title}</option>`)
     .join("");
 }
@@ -451,7 +456,10 @@ function pickSessionQuestions(pool, count) {
 
 function startChapter(chapterId, mpInfo = null) {
   const chapter = QUESTION_BANK.chapters.find(c => c.id === chapterId);
-  const sessionQuestions = pickSessionQuestions(chapter.questions, QUESTIONS_PER_SESSION);
+  // Spell It Right builds a fresh session each time from the shared spelling bank (weak words first).
+  const sessionQuestions = chapter.dynamic === "spelling" && window.AIGSpelling
+    ? AIGSpelling.buildSession(QUESTIONS_PER_SESSION)
+    : pickSessionQuestions(chapter.questions, QUESTIONS_PER_SESSION);
   startChapterWithQuestions(chapterId, sessionQuestions, mpInfo);
 }
 
@@ -557,6 +565,7 @@ function handleMCAnswer(selected, q, grid) {
   const buttons = [...grid.querySelectorAll(".option-btn")];
   buttons.forEach(b => (b.disabled = true));
   const isCorrect = selected === q.answer;
+  if (q.spellWord && window.AIGSpelling) AIGSpelling.record(q.spellWord, isCorrect);
   if (window.AIGJuice) AIGJuice.answer(isCorrect, session.correctCount); // haptic + rising blip (juice.js)
 
   if (isCorrect) {
@@ -613,6 +622,7 @@ function handleFillAnswer(q) {
   const given = isCapitalizationChapter ? input.value.trim() : input.value.trim().toLowerCase();
   const correct = isCapitalizationChapter ? q.answer.trim() : q.answer.trim().toLowerCase();
   const isCorrect = given === correct;
+  if (q.spellWord && window.AIGSpelling) AIGSpelling.record(q.spellWord, isCorrect);
 
   if (isCorrect) {
     input.classList.add("correct");

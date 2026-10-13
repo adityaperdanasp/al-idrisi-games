@@ -20,6 +20,13 @@
     ["home", "🏠 Bo & Barang", "#8b5a2b", [["bo-home", "Bo's World", "🏠"], ["garage", "Garage", "🔧"], ["workshop", "Crafting Table", "⚒️"], ["class-board", "Class Teams", "🏆"], ["world-map", "World Map", "🧭"]]]
   ];
   const NEW = { dinorace: 1, plane: 1, drive: 1 };
+  // "Fokus Azka": child-side switch. ON = only the games below stay open and every question is a story problem or a
+  // spelling word (see generators.js + question-pools.js + azkacraft/spelling.js). OFF = everything as usual.
+  const FOCUS_KEY = "azka_focus";
+  const FOCUS_GAMES = new Set(["mathville", "azkacraft", "math-tennis", "treasure-dig", "treasure-map", "quiz-show", "monster-battle", "boss-rush", "space-race", "escape-room", "cooking-rush", "fortress-math"]);
+  const FOCUS_DEFAULT_FAV = ["mathville", "azkacraft", "treasure-dig", "math-tennis", "quiz-show", "monster-battle"];
+  const focusOn = () => { try { return localStorage.getItem(FOCUS_KEY) === "1"; } catch (e) { return false; } };
+  const setFocus = v => { try { localStorage.setItem(FOCUS_KEY, v ? "1" : "0"); } catch (e) {} };
   const TOPIC2DIR = { "plane-mode": "plane", "drive-mode": "drive" };
   const ID2DIR = { mathrace: "multipleazka", mathville: "mathville", "language-arts": "azkacraft", solarquest: "azkauniverse" };
 
@@ -42,7 +49,8 @@
   }
   function tile(g, counts, big) {
     const pinned = pins().includes(g.dir);
-    return `<a class="lib-tile ${big ? "big" : ""}" href="${g.dir}/" data-name="${g.name.toLowerCase()}" style="--c:${g.color}">
+    const locked = focusOn() && !FOCUS_GAMES.has(g.dir);
+    return `<a class="lib-tile ${big ? "big" : ""}${locked ? " lib-locked" : ""}" ${locked ? 'data-locked="1" ' : ""}href="${g.dir}/" data-name="${g.name.toLowerCase()}" style="--c:${g.color}">
       ${badge(g, counts)}<button type="button" class="lib-pin ${pinned ? "on" : ""}" data-pin="${g.dir}" aria-label="Pin ${g.name}">📌</button>
       <span class="lib-ico">${iconFor(g)}</span><span class="lib-name">${g.name}</span></a>`;
   }
@@ -70,21 +78,33 @@
     const oldSearch = document.querySelector(".sc-search-link"); if (oldSearch) oldSearch.style.display = "none";
     const c = await counts();
     const ranked = Object.entries(c).filter(([d, n]) => n > 0 && byDir[d] && d !== "drive").sort((a, b) => b[1] - a[1]).map(([d]) => d);
-    const favDirs = [...new Set(pins().concat(ranked))].slice(0, 5);
-    // Drive Mode always has a Favorites slot (user's request 2026-10-13), even with few plays.
-    if (!favDirs.includes("drive")) favDirs.splice(Math.min(2, favDirs.length), 0, "drive");
-    ["multipleazka", "plane", "azkacraft", "mathville", "ninja-runner", "dinorace"].forEach(d => { if (favDirs.length < 6 && !favDirs.includes(d)) favDirs.push(d); });
+    const FOCUS = focusOn();
+    let favDirs;
+    if (FOCUS) {
+      // Fokus Azka: Favorites only shows games that stay open.
+      favDirs = [...new Set(pins().filter(d => FOCUS_GAMES.has(d)).concat(ranked.filter(d => FOCUS_GAMES.has(d)), FOCUS_DEFAULT_FAV))].slice(0, 6);
+    } else {
+      favDirs = [...new Set(pins().concat(ranked))].slice(0, 5);
+      // Drive Mode always has a Favorites slot (user's request 2026-10-13), even with few plays.
+      if (!favDirs.includes("drive")) favDirs.splice(Math.min(2, favDirs.length), 0, "drive");
+      ["multipleazka", "plane", "azkacraft", "mathville", "ninja-runner", "dinorace"].forEach(d => { if (favDirs.length < 6 && !favDirs.includes(d)) favDirs.push(d); });
+    }
+    const roam = document.getElementById("roam-car"); if (roam) roam.setAttribute("href", FOCUS ? "mathville/" : "plane/");
     const lib = document.createElement("div"); lib.className = `lib lib-b`; lib.id = "hub-library";
     lib.innerHTML = `
+      <button id="lib-focus" type="button" class="lib-focus ${FOCUS ? "on" : ""}" aria-pressed="${FOCUS}"><span class="lib-focus-star">⭐</span><span><b>Fokus Azka: ${FOCUS ? "HIDUP" : "MATI"}</b><small>${FOCUS ? "Soal cerita math + mengeja. Game lain terkunci 🔒 — tekan lagi untuk mematikan." : "Tekan untuk latihan soal cerita math + mengeja kata."}</small></span></button>
       <div class="lib-search"><input id="lib-q" type="search" placeholder="🔍 Cari game… (mis. dino, pecahan, boss)" autocomplete="off"></div>
       <section class="lib-fav"><h3 class="lib-h">⭐ Favorit kamu</h3><div class="lib-favgrid">${favDirs.map(d => tile(byDir[d], c, true)).join("")}</div></section>
       ${CLUSTERS.map(([id, label, color, games], i) => {
         const inner = games.map(g => tile(byDir[g[0]], c, false)).join("");
-        return `<details class="lib-sec" data-cl="${id}" ${i < 2 ? "open" : ""}><summary class="lib-h" style="--c:${color}">${label} <small>${games.length} game</small><b class="lib-chev">▾</b></summary><div class="lib-grid">${inner}</div></details>`;
+        return `<details class="lib-sec" data-cl="${id}" ${(FOCUS ? games.some(g => FOCUS_GAMES.has(g[0])) : i < 2) ? "open" : ""}><summary class="lib-h" style="--c:${color}">${label} <small>${games.length} game</small><b class="lib-chev">▾</b></summary><div class="lib-grid">${inner}</div></details>`;
       }).join("")}
-      <p class="lib-legend">🔥 sering kamu mainkan · 👀 belum pernah dicoba · ✨ baru · 📌 sematkan ke Favorit</p>`;
+      <p class="lib-legend">${FOCUS ? "🔒 terkunci selama Fokus Azka HIDUP · " : ""}🔥 sering kamu mainkan · 👀 belum pernah dicoba · ✨ baru · 📌 sematkan ke Favorit</p>`;
     list.style.display = "none"; list.after(lib);
     lib.addEventListener("click", e => {
+      if (e.target.closest("#lib-focus")) { e.preventDefault(); setFocus(!focusOn()); lib.remove(); build(); const top = document.getElementById("hub-library"); if (top) top.scrollIntoView({ block: "start" }); return; }
+      const lockedTile = e.target.closest("[data-locked]");
+      if (lockedTile) { e.preventDefault(); e.stopPropagation(); const hint = lib.querySelector(".lib-focus small"); if (hint) { hint.textContent = "🔒 Game ini aktif lagi kalau Fokus Azka dimatikan."; lib.querySelector(".lib-focus").classList.add("shake"); setTimeout(() => lib.querySelector(".lib-focus") && lib.querySelector(".lib-focus").classList.remove("shake"), 600); } return; }
       const b = e.target.closest("[data-pin]"); if (!b) return;
       e.preventDefault(); e.stopPropagation();
       const p = pins(), d = b.dataset.pin, i = p.indexOf(d); if (i >= 0) p.splice(i, 1); else p.unshift(d);
@@ -101,6 +121,14 @@
 
   const css = document.createElement("style");
   css.textContent = `
+    .lib-focus { display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; text-align: left; padding: 12px 14px; border: 4px solid #1b1b1b; background: #6b6b6b; color: #fff; cursor: pointer; font: inherit; box-shadow: inset 4px 4px 0 rgba(255,255,255,.25), inset -4px -4px 0 rgba(0,0,0,.3); }
+    .lib-focus.on { background: #e0953a; }
+    .lib-focus-star { font-size: 1.8rem; }
+    .lib-focus b { display: block; font-family: var(--bw-font-h, monospace); font-size: .8rem; text-shadow: 2px 2px 0 rgba(0,0,0,.5); }
+    .lib-focus small { display: block; margin-top: 3px; font-family: var(--bw-font, sans-serif); font-size: .64rem; font-weight: 700; opacity: .95; }
+    .lib-focus.shake { animation: libshake .5s; } @keyframes libshake { 20%,60% { transform: translateX(-5px); } 40%,80% { transform: translateX(5px); } }
+    .lib-locked { filter: grayscale(1); opacity: .38; position: relative; cursor: not-allowed; }
+    .lib-locked::after { content: "🔒"; position: absolute; bottom: 4px; right: 6px; font-size: .9rem; }
     .lib { padding: 10px 12px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; max-width: 100%; overflow-x: hidden; } .lib > * { min-width: 0; }
     .lib-search input { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 4px solid #1b1b1b; background: #fffdf2; font: 700 .9rem var(--bw-font, sans-serif); box-shadow: inset 3px 3px 0 rgba(0,0,0,.12); }
     .lib-h { margin: 0 0 8px; font-family: var(--bw-font-h, monospace); font-size: .72rem; color: #fff; text-shadow: 2px 2px 0 rgba(0,0,0,.6); display: flex; align-items: baseline; gap: 8px; }

@@ -114,6 +114,7 @@
     // Shield spell (PM round 13, item 3): the next wrong answer isn't counted against you.
     if (!ok && shieldArmed) { shieldArmed = false; toast("🛡️ Shield! That one doesn't count against you."); return; }
     try {
+      const sq = q || lastQ; if (sq && sq.spellWord && window.AIGSpelling) AIGSpelling.record(sq.spellWord, ok); // Fokus Azka: weak words come back sooner
       const qq = q || (lastQ && lastQ.key === key ? lastQ : null);
       if (!ok && qq && qq.options && qq.correctLabel && window.AIGLeaderboard && AIGLeaderboard.srsAdd) AIGLeaderboard.srsAdd(qq, qq.subject);
     } catch (e) {}

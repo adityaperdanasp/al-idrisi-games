@@ -92,8 +92,11 @@
     return { prompt: q.prompt, options: shuffle([...q.options]), correctLabel: q.correctLabel };
   }
 
-  function pickLanguage() { return pickFrom(languagePool); }
-  function pickScience() { return pickFrom(sciencePool); }
+  // "Fokus Azka" (child-side switch, localStorage azka_focus): while ON, "language" and "science" slots become
+  // spelling questions (the math slot becomes a story problem via MATHVILLE_GENERATORS, see generators.js).
+  const focusOn = () => { try { return localStorage.getItem("azka_focus") === "1" && !!window.AIGSpelling; } catch (e) { return false; } };
+  function pickLanguage() { return focusOn() ? AIGSpelling.quickMc() : pickFrom(languagePool); }
+  function pickScience() { return focusOn() ? AIGSpelling.quickMc() : pickFrom(sciencePool); }
 
   // Same as pickFrom, but only from entries short enough to fit a small
   // fixed-size tile (Memory Match's cards) -- most Language/Science MC
@@ -111,8 +114,8 @@
     return null;
   }
 
-  function pickShortLanguage(maxPromptLen, maxAnswerLen) { return pickShortFrom(languagePool, maxPromptLen, maxAnswerLen); }
-  function pickShortScience(maxPromptLen, maxAnswerLen) { return pickShortFrom(sciencePool, maxPromptLen, maxAnswerLen); }
+  function pickShortLanguage(maxPromptLen, maxAnswerLen) { return focusOn() ? AIGSpelling.shortPair(maxPromptLen, maxAnswerLen) : pickShortFrom(languagePool, maxPromptLen, maxAnswerLen); }
+  function pickShortScience(maxPromptLen, maxAnswerLen) { return focusOn() ? AIGSpelling.shortPair(maxPromptLen, maxAnswerLen) : pickShortFrom(sciencePool, maxPromptLen, maxAnswerLen); }
 
   // Rolls a mixed-subject MC question: 50% math (via the caller's own
   // difficulty-aware generator -- every game already has one tuned to
@@ -122,6 +125,7 @@
   // fetch never blocks a round.
   function rollMixed(mathQuestionFn) {
     const r = Math.random();
+    if (focusOn()) return r < 0.5 ? { subject: "math", ...mathQuestionFn() } : { subject: "lang", key: "spelling", ...AIGSpelling.quickMc() };
     if (r < 0.5) return { subject: "math", ...mathQuestionFn() };
     if (r < 0.75) {
       const q = pickLanguage();

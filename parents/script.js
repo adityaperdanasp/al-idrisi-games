@@ -24,7 +24,7 @@
   const MATHVILLE_CHAPTER_TITLES = {
     "basic-ops": "Basic Math Operations", "pictograph": "Pictograph", "bar-graph": "Bar Graph", "line-graph": "Line Graph",
     "angles": "Measuring Angles", "perimeter": "Perimeter", "area": "Area", "square-numbers": "Square Numbers",
-    "factors-primes": "Factors & Prime Numbers", "multiples-lcm-gcf": "Multiples, LCM & GCF"
+    "factors-primes": "Factors & Prime Numbers", "multiples-lcm-gcf": "Multiples, LCM & GCF", "story-problems": "Story Problems"
   };
 
   // Same 7 tiers as leaderboard.js's TITLE_TIERS -- duplicated here (this
