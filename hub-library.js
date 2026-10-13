@@ -1,19 +1,13 @@
 /* =====================================================================
-   Hub game library (MOCKUP -- only active with ?layout=a or ?layout=b).
-   Every game is back on the hub, organised as:
+   Hub game library. Every game is on the hub, organised as:
      ⭐ Favorites   -- the kid's most-played games (from their own topicStats),
                        plus anything they pinned with 📌, as big tiles on top.
-     Clusters        -- 8 groups of games by kind.
-   Layout A: each cluster is a row you swipe sideways.
-   Layout B: each cluster is a section you open/close.
+     Clusters        -- 8 collapsible sections of games by kind (first two open).
    Tiles carry small labels: 🔥 played a lot, 👀 never tried, ✨ new card.
-   ?demo=azka fills Favorites from Azka's real play counts (read 2026-10-13)
-   so the mockup can be judged without signing in as him.
+   Replaces the old flat .sc-game-list (kept in the DOM, hidden).
    ===================================================================== */
 (function () {
   "use strict";
-  const params = new URLSearchParams(location.search), LAYOUT = params.get("layout");
-  if (LAYOUT !== "a" && LAYOUT !== "b") return;
 
   const CLUSTERS = [
     ["race", "🏎️ Balapan & Aksi", "#4f86f7", [["multipleazka", "Math Race", "🏎️"], ["dinorace", "Dino Race", "🦖"], ["plane", "Plane Mode", "✈️"], ["ninja-runner", "Ninja Runner", "🥷"], ["parkour-run", "Parkour", "🧗"], ["space-race", "Space Race", "🚀"], ["dino-rider", "Dino Rider", "🦕"], ["sea-mission", "Sea Mission", "⛵"], ["zombie-defense", "Zombie Defense", "🧟"]]],
@@ -27,7 +21,6 @@
   ];
   const NEW = { dinorace: 1, plane: 1 };
   const ID2DIR = { mathrace: "multipleazka", mathville: "mathville", "language-arts": "azkacraft", solarquest: "azkauniverse" };
-  const DEMO_AZKA = { multipleazka: 1539, mathville: 1328, azkacraft: 205, "treasure-map": 72, azkauniverse: 71, "treasure-dig": 37, "quiz-show": 28, "math-tennis": 25, basketball: 23, "escape-room": 15, "parkour-run": 13, "times-rhythm": 12, "city-builder": 10, duel: 10, "monster-battle": 10, "boss-rush": 9, "memory-match": 8, "number-line-jump": 6, "dance-battle": 5, "fortress-math": 4, "cooking-rush": 2, "space-race": 2, "zen-mode": 1 };
 
   const ls = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
   const pins = () => { try { return JSON.parse(ls("hub_pins", "[]")) || []; } catch (e) { return []; } };
@@ -54,7 +47,6 @@
   }
 
   async function counts() {
-    if (params.get("demo") === "azka") return DEMO_AZKA;
     const out = {};
     try {
       const p = window.AIGPlayer && AIGPlayer.getPlayer();
@@ -70,19 +62,17 @@
 
   async function build() {
     const list = document.querySelector(".sc-game-list"); if (!list) return;
-    const five = document.getElementById("five-games-style"); if (five) five.remove();
+    const oldSearch = document.querySelector(".sc-search-link"); if (oldSearch) oldSearch.style.display = "none";
     const c = await counts();
     const favDirs = [...new Set(pins().concat(Object.entries(c).filter(([d, n]) => n > 0 && byDir[d]).sort((a, b) => b[1] - a[1]).map(([d]) => d)))].slice(0, 6);
-    ["multipleazka", "mathville", "azkacraft", "ninja-runner"].forEach(d => { if (favDirs.length < 4 && !favDirs.includes(d)) favDirs.push(d); });
-    const lib = document.createElement("div"); lib.className = `lib lib-${LAYOUT}`; lib.id = "hub-library";
+    ["multipleazka", "mathville", "azkacraft", "ninja-runner", "dinorace", "plane"].forEach(d => { if (favDirs.length < 6 && !favDirs.includes(d)) favDirs.push(d); });
+    const lib = document.createElement("div"); lib.className = `lib lib-b`; lib.id = "hub-library";
     lib.innerHTML = `
       <div class="lib-search"><input id="lib-q" type="search" placeholder="🔍 Cari game… (mis. dino, pecahan, boss)" autocomplete="off"></div>
       <section class="lib-fav"><h3 class="lib-h">⭐ Favorit kamu</h3><div class="lib-favgrid">${favDirs.map(d => tile(byDir[d], c, true)).join("")}</div></section>
       ${CLUSTERS.map(([id, label, color, games], i) => {
         const inner = games.map(g => tile(byDir[g[0]], c, false)).join("");
-        return LAYOUT === "a"
-          ? `<section class="lib-shelf" data-cl="${id}"><h3 class="lib-h">${label} <small>${games.length} game · geser ➜</small></h3><div class="lib-row">${inner}</div></section>`
-          : `<details class="lib-sec" data-cl="${id}" ${i < 2 ? "open" : ""}><summary class="lib-h" style="--c:${color}">${label} <small>${games.length} game</small><b class="lib-chev">▾</b></summary><div class="lib-grid">${inner}</div></details>`;
+        return `<details class="lib-sec" data-cl="${id}" ${i < 2 ? "open" : ""}><summary class="lib-h" style="--c:${color}">${label} <small>${games.length} game</small><b class="lib-chev">▾</b></summary><div class="lib-grid">${inner}</div></details>`;
       }).join("")}
       <p class="lib-legend">🔥 sering kamu mainkan · 👀 belum pernah dicoba · ✨ baru · 📌 sematkan ke Favorit</p>`;
     list.hidden = true; list.after(lib);
@@ -95,8 +85,8 @@
     });
     lib.querySelector("#lib-q").addEventListener("input", e => {
       const q = e.target.value.trim().toLowerCase();
-      lib.querySelectorAll(".lib-shelf .lib-tile, .lib-sec .lib-tile").forEach(t => { t.hidden = !!q && !t.dataset.name.includes(q); });
-      lib.querySelectorAll(".lib-shelf, .lib-sec").forEach(s => { const any = [...s.querySelectorAll(".lib-tile")].some(t => !t.hidden); s.hidden = !any; if (q && any && s.tagName === "DETAILS") s.open = true; });
+      lib.querySelectorAll(".lib-sec .lib-tile").forEach(t => { t.hidden = !!q && !t.dataset.name.includes(q); });
+      lib.querySelectorAll(".lib-sec").forEach(s => { const any = [...s.querySelectorAll(".lib-tile")].some(t => !t.hidden); s.hidden = !any; if (q && any && s.tagName === "DETAILS") s.open = true; });
       lib.querySelector(".lib-fav").hidden = !!q;
     });
   }
@@ -121,9 +111,7 @@
     .lib-badge.new { background: #f5c542; } .lib-badge.never { background: #e8f1ff; }
     .lib-pin { position: absolute; top: 2px; right: 2px; border: 0; background: none; font-size: .8rem; padding: 2px; opacity: .3; cursor: pointer; }
     .lib-pin.on { opacity: 1; }
-    .lib-row { display: grid; grid-auto-flow: column; grid-auto-columns: 30%; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; scrollbar-width: none; }
-    .lib-row::-webkit-scrollbar { display: none; } .lib-row > .lib-tile { scroll-snap-align: start; }
-    .lib-row > .lib-tile[hidden], .lib-grid > .lib-tile[hidden] { display: none; }
+    .lib-grid > .lib-tile[hidden] { display: none; }
     .lib-sec { border: 4px solid #1b1b1b; background: rgba(0,0,0,.18); }
     .lib-sec > summary { list-style: none; cursor: pointer; margin: 0; padding: 12px 10px; background: var(--c); box-shadow: inset 4px 4px 0 rgba(255,255,255,.3), inset -4px -4px 0 rgba(0,0,0,.25); }
     .lib-sec > summary::-webkit-details-marker { display: none; }
