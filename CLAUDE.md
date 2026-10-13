@@ -9,13 +9,12 @@ Hub berisi game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green M
 - **mathville** — Grade 4 math (9 curriculum chapters + 1 capstone "Word Problems" review chapter = 10 total, town-map + alternate Drive Mode free-roam driving game)
 - **dinorace** — 2-Player Dino Racing. **Full-merge diputuskan 2026-08-03**: dulu snapshot manual dari project terpisah (`~/Documents/games/dinorace`, domain `dinorace.lol`, Firebase project sendiri `dinorace-d9b8c`), sekarang Firebase-nya udah disatuin ke project hub (`al-idrisi-games`) — lihat detail lengkap di bagian "DinoRace merge" di bawah. GitHub repo asli (`~/Documents/games/dinorace`) & Vercel project `dinorace.lol` MASIH ada & masih di-maintain manual (dual-deploy, lihat bawah), cuma Firebase-nya doang yang udah jadi satu.
 
-### ⚠️ Hub sekarang cuma 5 game (keputusan user 2026-10-12)
+### Hub = perpustakaan game ter-cluster (keputusan user 2026-10-13, menggantikan "5 game" 2026-10-12)
 
-User: "55 game buat apaaa, bikin 5 aja". Hub (`index.html`) sekarang cuma nampilin **Math Race** (`multipleazka/`), **Dino Race** (`dinorace/`), **Plane Mode** (`plane/` → redirect ke `mathville/index.html?plane=1`), **Ninja Runner** (`ninja-runner/`), **Treasure Dig** (`treasure-dig/`). Ninja Runner + Treasure Dig dipilih karena 3 game wajib berat ke matematika (DinoRace bahkan gak ada soalnya) -- dua ini nutup Bahasa & Sains.
-- Game lain **disembunyikan, BUKAN dihapus**: whitelist CSS di `<style>` dekat `</head>` di `index.html` (`.sc-game-card:not(.math):not(.dino):not(.plane):not(.ninja):not(.dig)`). Mau munculin lagi = tambah class kartunya ke `:not()` itu. Kode + progres anak tetap utuh, halaman masih bisa dibuka via URL langsung.
-- Ikut disembunyikan: link Search, kartu Smart Practice/diagnostic, tombol "More games", slot hotbar "Dunia" (`blockworld.js`). Tombol "Lanjut Petualangan" (`MAIN` di `blockworld.js`) muter di antara 5 game ini.
-- DinoRace **sekarang punya kartu di hub** atas permintaan eksplisit -- catatan "easter egg, jangan tambah card" di bawah sudah tidak berlaku.
-- `?plane=1` di MathVille langsung buka pemilih solo/2P dan nambah `body.plane-only` (sembunyiin semua ikon topbar kecuali 🏠).
+Anak complain game banyak yang hilang → SEMUA game (61 tile) balik di hub, tapi diatur oleh `hub-library.js` (layout B, buka-tutup): ⭐ **Favorit kamu** (6 game paling sering dimainkan dari `players/{id}/topicStats` + pin 📌 di `localStorage hub_pins`; fallback Math Race/MathVille/Language&Arts/Ninja/Dino/Plane), lalu 8 section cluster (Balapan, Petualangan, Battle, Olahraga, Teka-teki, Bangun, Belajar, Bo & Barang; 2 pertama kebuka), search, badge ✨/🔥/👀. List lama `.sc-game-list` tetap ada di DOM tapi di-`display:none` oleh script.
+- Game baru = tambahin ke array `CLUSTERS` di `hub-library.js` (bump `?v=N` di index.html). Ikon diambil dari kartu lama `.sc-game-card[href="dir/"]` kalau ada, kalau nggak emoji.
+- Whitelist CSS 5-game dihapus; slot hotbar "Dunia" + rotasi tombol Play (`MAIN` di `blockworld.js`) balik. Dino Race & Plane Mode (`plane/` → `mathville/?plane=1`) tetap punya kartu/tile.
+- Catatan "DinoRace easter egg, jangan tambah card" di bawah sudah tidak berlaku.
 
 ### Daftar lengkap game & mode interaktif (2026-08-05)
 
