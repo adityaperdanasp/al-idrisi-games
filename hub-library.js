@@ -103,7 +103,7 @@
 
   const css = document.createElement("style");
   css.textContent = `
-    .lib { padding: 10px 12px 16px; display: grid; gap: 14px; }
+    .lib { padding: 10px 12px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; max-width: 100%; overflow-x: hidden; } .lib > * { min-width: 0; }
     .lib-search input { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 4px solid #1b1b1b; background: #fffdf2; font: 700 .9rem var(--bw-font, sans-serif); box-shadow: inset 3px 3px 0 rgba(0,0,0,.12); }
     .lib-h { margin: 0 0 8px; font-family: var(--bw-font-h, monospace); font-size: .72rem; color: #fff; text-shadow: 2px 2px 0 rgba(0,0,0,.6); display: flex; align-items: baseline; gap: 8px; }
     .lib-h small { font-family: var(--bw-font, sans-serif); font-size: .6rem; opacity: .85; text-shadow: none; color: #f3e6c4; }
