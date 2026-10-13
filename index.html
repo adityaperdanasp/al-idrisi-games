@@ -1218,7 +1218,7 @@
 <script src="player.js"></script>
 <script src="players.js"></script>
 <script src="firebase.js"></script>
-<script src="leaderboard.js"></script>
+<script src="leaderboard.js?v=3"></script>
 <script src="skin.js"></script>
 <script src="hub-bgm.js"></script>
 <script>
@@ -1927,10 +1927,9 @@
   }
 
   const SC_MATHVILLE_CHAPTER_TITLES = {
-    "place-value": "Place Value", "addition-subtraction": "Addition & Subtraction",
-    "prime-numbers": "Prime Numbers", "gcf-lcm": "GCF & LCM", "multiplication": "Multiplication",
-    "division": "Division", "mixed-operation": "Mixed Operation", "measurement": "Measurement",
-    "rounding": "Rounding", "word-problems": "Word Problems"
+    "basic-ops": "Basic Math Operations", "pictograph": "Pictograph", "bar-graph": "Bar Graph", "line-graph": "Line Graph",
+    "angles": "Measuring Angles", "perimeter": "Perimeter", "area": "Area", "square-numbers": "Square Numbers",
+    "factors-primes": "Factors & Prime Numbers", "multiples-lcm-gcf": "Multiples, LCM & GCF"
   };
   function scPrettifyTopic(topicKey) {
     const [source, id] = topicKey.split(":");

@@ -21,13 +21,12 @@ function fractionQ() {
 // Audit batch 2: each topic is a gate with a guardian (HP 5). Questions climb easy -> hard,
 // stars 1-3 are remembered per topic, a failed check offers a 3-question warm-up and an instant
 // retry, Bo gives one clue per check, and checks passed over a week ago get a "re-check" badge.
-const GUARD = { multiplication: "🗿", division: "🐉", fractions: "🧙", measurement: "🤖", rounding: "🦂", words: "🦉", science: "👽" };
+const GUARD = { "t2-add": "🗿", "t2-div": "🐉", "t2-angle": "🧙", "t2-perimeter": "🤖", "t2-area": "🦂", "t2-factors": "🐲", "t2-lcm": "🦅", words: "🦉", science: "👽" };
 const lsr = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
 const lsrw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 function questionFor(id, diff) {
   const G = window.MATHVILLE_GENERATORS || {};
-  if (["multiplication", "division", "measurement", "rounding"].includes(id) && G[id]) { try { return { subject: "math", key: id, ...K.buildMc(G[id](diff || "medium")) }; } catch (e) {} }
-  if (id === "fractions") return fractionQ();
+  if (/^t2-/.test(id) && G[id]) { try { return { subject: "math", key: id, ...K.buildMc(G[id](diff || "medium")) }; } catch (e) {} }
   if (id === "words") return K.question({ subject: "lang" });
   if (id === "science") return K.question({ subject: "sci" });
   return K.question({ subject: "math" });

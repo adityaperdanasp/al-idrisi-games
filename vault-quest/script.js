@@ -25,7 +25,7 @@ function initVaultQuest() {
   const LANE_X = [22, 50, 78];
   const HERO_Y = 0.82;
   const SPACING = 0.5;          // y-units between spawned events
-  const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
   const WORLDS = [
     { id: 1, name: "Dirt Mine", icon: "⛏️", boss: "Zombie King", bossEm: "🧟", color: "#6b4a2a",
       story: "The Great Vault of Blockville was robbed! Follow the tunnels and get the treasure back.",

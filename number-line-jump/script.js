@@ -17,7 +17,7 @@ if (!player || player.role === "parent") {
 function initNumberLineJump() {
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const ROUND_SIZE = 10;
-  const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "rounding"];
+  const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
   // Bounds the number line can use -- picked per-question as the smallest
   // one comfortably above the answer, so the line's scale always suits
   // the number in play (a "37" question gets a 0-50 line, a "683"

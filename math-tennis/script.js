@@ -26,7 +26,7 @@ if (!player || player.role === "parent") {
 function initMathTennis() {
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const ROUND_SIZE = 10;
-  const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
   const BASE_DURATION_MS = 1500;
   const MIN_DURATION_MS = 750;
   const DURATION_STEP_MS = 60; // ball gets this much faster per point won

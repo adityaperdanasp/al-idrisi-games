@@ -27,7 +27,7 @@ function initTreasureDig() {
 
   // ---------------- config ----------------
   const ROW = 64, CAM_OFFSET = 36, LANE_PX = 48, DRAGON_GOAL = 150;
-  const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
   const TIERS = ["easy", "medium", "hard"];
   const BIOMES = [
     { name: "Topsoil", emoji: "🟫", deco: ["🦴", "🐚", "🌱"], story: "Soft earth and old bones. The lava is coming!" },

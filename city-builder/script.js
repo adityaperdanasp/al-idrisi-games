@@ -9,7 +9,7 @@
 
 const PLOT_COUNT = 20;
 const ROUND_SIZE = 10;
-const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
 const BUILDING_TYPES = [
   { id: "house", emoji: "🏠", name: "House", unlockAt: 0, cost: 5 },
   { id: "shop", emoji: "🏪", name: "Shop", unlockAt: 25, cost: 10 },

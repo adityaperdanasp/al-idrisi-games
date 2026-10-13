@@ -11,31 +11,56 @@ const player = K.signedIn();
 const rep = (e, n) => Array.from({ length: n }, () => e);
 
 const LESSONS = [
-  { id: "multiplication", emoji: "✖️", title: "Multiplication = groups", slides: [
-    { vis: [...rep("🍎", 4)], text: "Here is 1 group of 4 apples." },
-    { vis: [...rep("🍎", 4), "|", ...rep("🍎", 4), "|", ...rep("🍎", 4)], text: "Now there are 3 groups of 4 apples." },
-    { vis: ["3", "×", "4", "=", "12"], text: "Adding 4 + 4 + 4 is the same as 3 × 4 = 12. Multiplication is a fast way to add equal groups!" }],
-    quiz: [["What is 2 × 5?", ["7", "10", "12"], 1], ["4 groups of 3 stars is…", ["12", "7", "9"], 0], ["Which is the same as 6 + 6 + 6?", ["3 × 6", "6 × 6", "3 + 6"], 0]] },
-  { id: "fractions", emoji: "🍕", title: "What is a fraction?", slides: [
-    { vis: ["🍕"], text: "One whole pizza." },
-    { vis: ["🍕", "|", "1", "/", "4"], text: "Cut it into 4 EQUAL slices. Each slice is 1/4 (one quarter)." },
-    { vis: ["🍕", "🍕", "🍕", "⬜", "|", "3", "/", "4"], text: "Eat 3 slices and you have eaten 3/4. The bottom number is how many equal parts; the top is how many you have." }],
-    quiz: [["A pizza is cut into 8 equal slices. You eat 2. What fraction did you eat?", ["2/8", "8/2", "2/6"], 0], ["Which is bigger: 1/2 or 1/4?", ["1/4", "1/2", "They're the same"], 1], ["In 3/5, what does the 5 tell you?", ["How many parts in the whole", "How many you have", "Nothing"], 0]] },
-  { id: "place-value", emoji: "🔢", title: "Place value", slides: [
-    { vis: ["3", "4", "2"], text: "In 342, every digit has a job depending on its place." },
-    { vis: ["3", "|", "4", "|", "2", "|", "💯", "🔟", "1️⃣"], text: "3 is in the hundreds place (300), 4 in the tens place (40) and 2 in the ones place (2)." },
-    { vis: ["300", "+", "40", "+", "2", "=", "342"], text: "342 = 300 + 40 + 2. Moving a digit left makes it 10 times bigger!" }],
-    quiz: [["In 582, what is the value of the 8?", ["8", "80", "800"], 1], ["What is 700 + 30 + 4?", ["734", "743", "7,304"], 0], ["Which digit is in the hundreds place of 913?", ["9", "1", "3"], 0]] },
-  { id: "rounding", emoji: "🎯", title: "Rounding numbers", slides: [
-    { vis: ["0", "…", "5", "…", "10"], text: "Picture a number line. Rounding to the nearest 10 means: which multiple of 10 is closer?" },
-    { vis: ["🧍", "3", "→", "0", "|", "🧍", "8", "→", "10"], text: "3 is closer to 0, so it rounds down. 8 is closer to 10, so it rounds up." },
-    { vis: ["5", "→", "⬆️", "10"], text: "The magic rule: 5 or more rounds UP, 4 or less rounds DOWN. So 47 rounds to 50, and 42 rounds to 40." }],
-    quiz: [["Round 63 to the nearest 10.", ["60", "70", "63"], 0], ["Round 75 to the nearest 10.", ["70", "80", "75"], 1], ["Round 349 to the nearest 100.", ["300", "400", "350"], 0]] },
-  { id: "perimeter", emoji: "📐", title: "Perimeter", slides: [
+  { id: "basic-ops", emoji: "🧮", title: "Big numbers & long division", slides: [
+    { vis: ["5", "6", "8", ",", "3", "3", "7"], text: "A 6-digit number like 568,337 has hundred-thousands, ten-thousands, thousands, hundreds, tens and ones. Line the digits up in columns." },
+    { vis: ["7", "+", "3", "=", "10", "→", "carry", "1"], text: "Add (or subtract) column by column, starting from the right. If a column makes 10 or more, write the ones digit and carry the 1 to the next column." },
+    { vis: ["12,456", "÷", "12", "=", "1,038"], text: "Long division: divide, multiply, subtract, bring down. Check it: 1,038 × 12 = 12,456." }],
+    quiz: [["What is 250,000 + 150,000?", ["400,000", "300,000", "410,000"], 0], ["In 700 − 258, the top ones digit is smaller. What do you do?", ["Borrow from the next column", "Add instead", "Skip it"], 0], ["32,456 ÷ 2 = ?", ["16,228", "16,208", "15,228"], 0]] },
+  { id: "pictograph", emoji: "🖼️", title: "Pictographs", slides: [
+    { vis: ["🍎", "🍎", "🍎", "🍎"], text: "A pictograph uses little pictures to show numbers." },
+    { vis: ["🍎", "=", "20", "apples"], text: "Always read the KEY first! It tells you what ONE picture is worth. A half picture is worth half as much." },
+    { vis: ["🍎", "🍎", "🍎", "+", "½🍎", "=", "70"], text: "If 🍎 = 20, then 3 whole pictures are 3 × 20 = 60, and half a picture is 10. The row shows 60 + 10 = 70 apples." }],
+    quiz: [["If 🍎 = 10 and a row has 4 whole 🍎, how many apples is that?", ["40", "14", "4"], 0], ["If one picture = 20 and a row has 2 whole pictures and 1 half picture, the total is…", ["50", "40", "22"], 0], ["Why do we need a key?", ["To know what one picture is worth", "To colour the chart", "To count the rows"], 0]] },
+  { id: "bar-graph", emoji: "📊", title: "Bar graphs", slides: [
+    { vis: ["📊"], text: "A bar graph uses bars. The HEIGHT of a bar shows how many." },
+    { vis: ["10", "|", "8", "|", "6", "|", "4", "|", "2"], text: "Look at the scale up the side. Follow the top of the bar across to the number. If the scale goes up in 2s, a bar halfway between 6 and 8 is 7." },
+    { vis: ["tallest", "=", "most", "|", "shortest", "=", "fewest"], text: "The tallest bar is the biggest amount; the shortest bar is the smallest. To compare two bars, subtract their values." }],
+    quiz: [["Which bar shows the most popular choice?", ["The tallest", "The shortest", "The widest"], 0], ["On a scale that goes up in 2s, a bar halfway between 6 and 8 shows…", ["7", "6.5", "14"], 0], ["One bar is 12 and another is 5. How much taller is the first?", ["7", "17", "6"], 0]] },
+  { id: "line-graph", emoji: "📈", title: "Line graphs", slides: [
+    { vis: ["📈"], text: "A line graph shows how something CHANGES over time, like minutes played each day." },
+    { vis: ["⬆️", "increase", "|", "⬇️", "decrease", "|", "➡️", "same"], text: "Line going UP means the value increased. Going DOWN means it decreased. Flat means it did not change." },
+    { vis: ["40", "→", "65", "=", "+25"], text: "To find the change, subtract: Day 1 is 40 minutes and Day 2 is 65 minutes, so Day 2 is 65 − 40 = 25 minutes more." }],
+    quiz: [["The line goes DOWN between two points. The value…", ["Decreased", "Increased", "Stayed the same"], 0], ["Day 1: 40 minutes, Day 2: 65 minutes. How many more minutes on Day 2?", ["25", "105", "15"], 0], ["A flat line between two points means…", ["No change", "A big increase", "A mistake"], 0]] },
+  { id: "angles", emoji: "📐", title: "Measuring angles", slides: [
+    { vis: ["acute", "<", "90°", "|", "right", "=", "90°", "|", "obtuse", "90°–180°", "|", "reflex", ">", "180°"], text: "We name angles by their size: acute is less than 90°, right is exactly 90°, obtuse is between 90° and 180°, and reflex is more than 180°." },
+    { vis: ["0", "→", "protractor", "→", "read the scale"], text: "Use a protractor: put the centre on the vertex, line one side up with the 0, then read the number where the other side crosses the scale." },
+    { vis: ["88°", "−", "58°", "=", "30°"], text: "Missing angle: whole angle minus the known part. A straight line is 180° and a full turn is 360°." }],
+    quiz: [["An angle of 120° is…", ["Obtuse", "Acute", "Right"], 0], ["A reflex angle is…", ["More than 180°", "Less than 90°", "Exactly 90°"], 0], ["The whole angle is 88° and one part is 58°. The other part is…", ["30°", "146°", "40°"], 0]] },
+  { id: "perimeter", emoji: "🧵", title: "Perimeter", slides: [
     { vis: ["🟦"], text: "Perimeter is the distance AROUND the edge of a shape." },
-    { vis: ["4", "|", "2", "|", "4", "|", "2"], text: "A rectangle 4 long and 2 wide has sides 4, 2, 4 and 2." },
-    { vis: ["4", "+", "2", "+", "4", "+", "2", "=", "12"], text: "Add all the sides: the perimeter is 12. Like walking all the way around the garden fence!" }],
-    quiz: [["A square has sides of 5. What is its perimeter?", ["10", "20", "25"], 1], ["A rectangle is 6 long and 3 wide. Perimeter?", ["18", "9", "12"], 0], ["Perimeter means…", ["The distance around a shape", "The space inside a shape", "The tallest side"], 0]] },
+    { vis: ["9", "+", "4", "+", "9", "+", "4"], text: "A rectangle 9 cm long and 4 cm wide has sides 9, 4, 9 and 4. Add all the sides." },
+    { vis: ["2", "×", "(", "9", "+", "4", ")", "=", "26"], text: "A shortcut for a rectangle: 2 × (length + width) = 26 cm. For a square, 4 × one side." }],
+    quiz: [["A square has sides of 5 cm. What is its perimeter?", ["20 cm", "10 cm", "25 cm"], 0], ["A rectangle is 9 cm long and 4 cm wide. Perimeter?", ["26 cm", "13 cm", "36 cm"], 0], ["A triangle has sides 7, 8 and 6 cm. Perimeter?", ["21 cm", "15 cm", "42 cm"], 0]] },
+  { id: "area", emoji: "🟩", title: "Area", slides: [
+    { vis: ["🟩", "🟩", "🟩", "|", "🟩", "🟩", "🟩"], text: "Area is the space INSIDE a shape, counted in square units (cm²). A rectangle 3 wide and 2 tall has 6 squares." },
+    { vis: ["length", "×", "width", "|", "½", "×", "base", "×", "height"], text: "Rectangle: length × width. Triangle: half of base × height. Parallelogram: base × height." },
+    { vis: ["½", "×", "d₁", "×", "d₂", "|", "rhombus"], text: "A rhombus has two diagonals. Its area is half of one diagonal times the other: ½ × d₁ × d₂." }],
+    quiz: [["A rectangle is 8 cm by 5 cm. Area?", ["40 cm²", "26 cm²", "13 cm²"], 0], ["A triangle has base 10 cm and height 6 cm. Area?", ["30 cm²", "60 cm²", "16 cm²"], 0], ["A rhombus has diagonals 8 cm and 6 cm. Area?", ["24 cm²", "48 cm²", "14 cm²"], 0]] },
+  { id: "square-numbers", emoji: "🔲", title: "Square numbers", slides: [
+    { vis: ["🟦", "🟦", "|", "🟦", "🟦"], text: "2 rows of 2 tiles make a square with 4 tiles. So 2² = 2 × 2 = 4." },
+    { vis: ["1", "4", "9", "16", "25", "36", "49", "64", "81", "100"], text: "The first square numbers: 1, 4, 9, 16, 25, 36, 49, 64, 81, 100. They come from 1², 2², 3² … 10²." },
+    { vis: ["3²", "+", "4²", "=", "9", "+", "16", "=", "25"], text: "Square first, then add: 3² + 4² = 9 + 16 = 25." }],
+    quiz: [["5² = ?", ["25", "10", "52"], 0], ["Which is a square number?", ["49", "48", "50"], 0], ["3² + 4² = ?", ["25", "14", "49"], 0]] },
+  { id: "factors-primes", emoji: "🌳", title: "Factors & prime numbers", slides: [
+    { vis: ["18", "=", "1×18", "|", "2×9", "|", "3×6"], text: "Factors divide a number exactly with nothing left over. The factors of 18 are 1, 2, 3, 6, 9 and 18." },
+    { vis: ["2", "3", "5", "7", "11", "13"], text: "A PRIME number has exactly two factors: 1 and itself. 2, 3, 5, 7, 11 and 13 are prime. 1 is not prime." },
+    { vis: ["24", "→", "2×12", "→", "2×2×6", "→", "2×2×2×3"], text: "A factor tree splits a number again and again until only primes are left: 24 = 2 × 2 × 2 × 3." }],
+    quiz: [["Which number is a factor of 18?", ["6", "5", "7"], 0], ["Which is a prime number?", ["13", "15", "21"], 0], ["24 written as prime factors is…", ["2 × 2 × 2 × 3", "2 × 3 × 4", "2 × 12"], 0]] },
+  { id: "multiples-lcm-gcf", emoji: "🧩", title: "Multiples, LCM & GCF", slides: [
+    { vis: ["4", "8", "12", "16", "20"], text: "Multiples are the numbers in a times table. The first five multiples of 4 are 4, 8, 12, 16 and 20." },
+    { vis: ["4,8,12", "|", "6,12,18", "→", "LCM", "=", "12"], text: "The LCM (lowest common multiple) is the smallest multiple two numbers share. Multiples of 4: 4, 8, 12. Multiples of 6: 6, 12. The LCM is 12." },
+    { vis: ["12", "→", "1,2,3,4,6,12", "|", "18", "→", "1,2,3,6,9,18", "→", "GCF", "=", "6"], text: "The GCF (greatest common factor) is the biggest factor two numbers share. For 12 and 18 it is 6." }],
+    quiz: [["What are the first three multiples of 4?", ["4, 8, 12", "1, 2, 4", "4, 6, 8"], 0], ["What is the LCM of 4 and 6?", ["12", "24", "2"], 0], ["What is the GCF of 12 and 18?", ["6", "3", "36"], 0]] },
   { id: "adjectives", emoji: "🎨", title: "Adjectives", slides: [
     { vis: ["🐶"], text: "A dog." },
     { vis: ["🐶", "|", "big", "fluffy", "brown"], text: "Words that describe a noun are adjectives: a BIG, FLUFFY, BROWN dog." },
@@ -51,12 +76,7 @@ const LESSONS = [
     { vis: ["♨️", "→", "☁️"], text: "High up it is cold, so the vapour turns back into tiny drops that make clouds. This is condensation." },
     { vis: ["☁️", "→", "🌧️", "→", "⛰️", "→", "🌊"], text: "When clouds get heavy, rain falls (precipitation) and rivers carry it back to the sea. Then it starts again!" }],
     quiz: [["Evaporation is when water…", ["Turns into vapour", "Turns into ice", "Falls as rain"], 0], ["Clouds are made when vapour…", ["Cools and condenses", "Freezes into rocks", "Gets hotter"], 0], ["Rain falling from clouds is called…", ["Precipitation", "Evaporation", "Erosion"], 0]] },
-  // Audit batch 4: four more lessons
-  { id: "division", emoji: "➗", title: "Division = sharing", slides: [
-    { vis: [...rep("🍪", 12)], text: "We have 12 cookies to share." },
-    { vis: [...rep("🍪", 4), "|", ...rep("🍪", 4), "|", ...rep("🍪", 4)], text: "Share them between 3 friends: each friend gets 4." },
-    { vis: ["12", "÷", "3", "=", "4"], text: "12 ÷ 3 = 4. Division shares into equal groups — it's multiplication backwards (3 × 4 = 12)." }],
-    quiz: [["What is 10 ÷ 2?", ["5", "8", "12"], 0], ["15 sweets shared by 3 kids — each gets…", ["5", "3", "12"], 0], ["Which fact helps with 20 ÷ 4?", ["4 × 5 = 20", "4 + 5 = 9", "20 − 4 = 16"], 0]] },
+  // Audit batch 4: four more lessons,
   { id: "nouns-verbs", emoji: "📝", title: "Nouns and verbs", slides: [
     { vis: ["🐶", "🏠", "🍎"], text: "A noun is a person, place or thing: dog, house, apple." },
     { vis: ["🏃", "🍽️", "😴"], text: "A verb is an action word: run, eat, sleep." },
@@ -67,16 +87,11 @@ const LESSONS = [
     { vis: ["☀️", "·", "🪨", "🌍", "🔴", "🪐"], text: "Eight planets travel around (orbit) the Sun. Earth is the third one." },
     { vis: ["🌍", "↻", "🌙"], text: "The Moon orbits the Earth. One orbit takes about a month." }],
     quiz: [["What is at the centre of the solar system?", ["The Sun", "The Earth", "The Moon"], 0], ["How many planets orbit the Sun?", ["8", "3", "12"], 0], ["What orbits the Earth?", ["The Moon", "Mars", "The Sun"], 0]] },
-  { id: "time", emoji: "⏰", title: "Telling time", slides: [
-    { vis: ["🕐", "🕑", "🕒"], text: "The short hand shows the hour." },
-    { vis: ["🕧"], text: "The long hand shows minutes. When it points down at 6, it's half past." },
-    { vis: ["60", "minutes", "=", "1", "hour"], text: "There are 60 minutes in an hour and 24 hours in a day." }],
-    quiz: [["How many minutes are in an hour?", ["60", "100", "24"], 0], ["Which hand shows the hour?", ["The short hand", "The long hand", "Both"], 0], ["How many hours are in a day?", ["24", "12", "60"], 0]] }
 ];
 // Audit batch 4: checkpoint question mid-lesson, tap-to-count on busy slides, Bo reads each slide,
 // a "show me again" branch after a wrong answer, skip-to-quiz, lesson of the day + streak,
 // a link to a game that uses the topic, a summary card, and a graduation certificate.
-const GAME_FOR = { multiplication: ["../multipleazka/", "Math Race"], division: ["../multipleazka/", "Math Race"], fractions: ["../fractions-kitchen/", "Fractions Kitchen"], "place-value": ["../mathville/", "MathVille"], rounding: ["../mathville/", "MathVille"], perimeter: ["../mathville/", "MathVille"], adjectives: ["../story-maker/", "Story Maker"], "nouns-verbs": ["../story-maker/", "Story Maker"], photosynthesis: ["../science-lab/", "Science Lab"], "water-cycle": ["../science-lab/", "Science Lab"], "solar-system": ["../azkauniverse/", "SolarQuest"], time: ["../mathville/", "MathVille"] };
+const GAME_FOR = { "basic-ops": ["../mathville/", "MathVille"], "pictograph": ["../mathville/", "MathVille"], "bar-graph": ["../mathville/", "MathVille"], "line-graph": ["../mathville/", "MathVille"], "angles": ["../mathville/", "MathVille"], "perimeter": ["../mathville/", "MathVille"], "area": ["../mathville/", "MathVille"], "square-numbers": ["../mathville/", "MathVille"], "factors-primes": ["../mathville/", "MathVille"], "multiples-lcm-gcf": ["../mathville/", "MathVille"], adjectives: ["../story-maker/", "Story Maker"], "nouns-verbs": ["../story-maker/", "Story Maker"], photosynthesis: ["../science-lab/", "Science Lab"], "water-cycle": ["../science-lab/", "Science Lab"], "solar-system": ["../azkauniverse/", "SolarQuest"] };
 const lsc = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
 const lscw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 const cday = o => new Date(Date.now() - (o || 0) * 86400000).toISOString().slice(0, 10);

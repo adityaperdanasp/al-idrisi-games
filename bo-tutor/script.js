@@ -46,7 +46,9 @@ function makeQuestion(t, diff) {
       const raw = tm ? { prompt: `${f} × ${mm} = ?`, answer: String(f * mm) } : { prompt: `${f * mm} ÷ ${f} = ?`, answer: String(mm) };
       return { subject: "math", key: t.topic, ...K.buildMc(raw) };
     }
-    if (key === "addition-subtraction") key = Math.random() < 0.5 ? "addition-subtraction-add" : "addition-subtraction-sub";
+    // MathVille chapter ids (Term 2) -> the text-only quick generators that practise them.
+    const CH2KEY = { "basic-ops": ["t2-add", "t2-sub", "t2-div", "t2-twostep", "t2-muldiv"], angles: ["t2-angle"], perimeter: ["t2-perimeter"], area: ["t2-area"], "square-numbers": ["t2-square"], "factors-primes": ["t2-factors"], "multiples-lcm-gcf": ["t2-multiple", "t2-lcm", "t2-gcf"] };
+    if (CH2KEY[key]) key = CH2KEY[key][K.rand(0, CH2KEY[key].length - 1)];
     if (G[key]) { try { return { subject: "math", key: t.topic, ...K.buildMc(G[key](diff || "medium")) }; } catch (e) { /* fall through */ } }
     return K.question({ subject: "math" });
   }
@@ -64,7 +66,7 @@ async function init() {
   }
   $("bt-say").textContent = "I looked at your practice. These are the topics we can make stronger together — pick one!";
   const due = t => { const d = lst("bt_recheck_" + t, ""); return d && d <= new Date().toISOString().slice(0, 10); };
-  const extra = ["times-6", "times-7", "times-8", "times-9", "times-12", "divby-6", "divby-7", "divby-8", "division", "multiplication", "rounding", "measurement"].filter(x => !weak.some(w => w.topic === x));
+  const extra = ["times-6", "times-7", "times-8", "times-9", "times-12", "divby-6", "divby-7", "divby-8", "basic-ops", "angles", "perimeter", "area", "square-numbers", "factors-primes", "multiples-lcm-gcf"].filter(x => !weak.some(w => w.topic === x));
   let cards = []; try { cards = JSON.parse(lst("bt_cards", "[]")) || []; } catch (e) {}
   $("bt-body").innerHTML = (cards.length ? `<div class="bt-cards">📇 Bo's notes: ${cards.map(c => `<span title="${K.esc(pretty(c))}">🗒️</span>`).join("")} <small>${cards.length} topic${cards.length === 1 ? "" : "s"} mastered</small></div>` : "") + weak.map((t, i) => `<button class="bt-topic" data-i="${i}"><span style="flex:1">${mastered[t.topic] ? "⭐ " : ""}${K.esc(pretty(t.topic))}${due(t.topic) ? " <b style='color:#c0392b'>· re-check due!</b>" : ""}<br><small>${K.esc(t.game.replace("-", " "))} · ${Math.round(t.acc * 100)}% right so far</small><span class="bt-acc"><i style="width:${Math.round(t.acc * 100)}%"></i></span></span><span>▶</span></button>`).join("")
     + `<details class="bt-more"><summary>📚 Pick any topic</summary>${extra.map(x => `<button class="bt-topic" data-x="${x}"><span>${mastered[x] ? "⭐ " : ""}${K.esc(pretty(x))}</span><span>▶</span></button>`).join("")}</details>`;

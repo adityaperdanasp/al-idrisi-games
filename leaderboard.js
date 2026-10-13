@@ -2336,6 +2336,9 @@
   }
 
   // ---- 12. Bo tutor -- weakest topics (>= 3 attempts, lowest accuracy first).
+  // Term 1 MathVille chapter ids (retired 2026-10-13 when the app moved to the Term 2 workbook).
+  // Their old stats stay in the database but must never be recommended as "weak topics" to practise.
+  const RETIRED_MATHVILLE_TOPICS = ["place-value", "addition-subtraction", "prime-numbers", "gcf-lcm", "multiplication", "division", "mixed-operation", "measurement", "rounding", "word-problems"];
   async function getWeakTopics(limit) {
     const me = perksPlayer();
     if (!me) return [];
@@ -2343,7 +2346,7 @@
     const rows = [];
     Object.entries(ts).forEach(([game, topics]) => Object.entries(topics || {}).forEach(([topic, v]) => {
       const c = (v && v.correct) || 0, x = (v && v.wrong) || 0, n = c + x;
-      if (n >= 3 && x > 0 && !["drive-mode", "plane-mode", "ninja-runner", "speed-round", "focus-round", "azka-pr", "weekly-boss-rush", "perk-test"].includes(topic)) rows.push({ game, topic, acc: c / n, n });
+      if (n >= 3 && x > 0 && !(game === "mathville" && RETIRED_MATHVILLE_TOPICS.includes(topic)) && !["drive-mode", "plane-mode", "ninja-runner", "speed-round", "focus-round", "azka-pr", "weekly-boss-rush", "perk-test"].includes(topic)) rows.push({ game, topic, acc: c / n, n });
     }));
     return rows.sort((a, b) => a.acc - b.acc).slice(0, limit || 3);
   }
@@ -2453,7 +2456,7 @@
   }
 
   // ---- 17. Parent focus -- topics a parent picked in the Parent Portal.
-  const FOCUS_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const FOCUS_KEYS = ["t2-add", "t2-sub", "t2-div", "t2-twostep", "t2-muldiv", "t2-angle", "t2-perimeter", "t2-area", "t2-square", "t2-factors", "t2-multiple", "t2-lcm", "t2-gcf"];
   async function getWeeklyFocus() {
     const me = perksPlayer();
     if (!me) return null;
@@ -2865,11 +2868,13 @@
   // ---- 15. Level-up readiness -- a topic path where each topic lists what to
   // know first. A passed 5-question check is remembered (players/{id}/ready).
   const READY_PATH = [
-    { id: "multiplication", name: "Multiplication", after: null },
-    { id: "division", name: "Division", after: "multiplication" },
-    { id: "fractions", name: "Fractions", after: "division" },
-    { id: "measurement", name: "Measurement", after: "multiplication" },
-    { id: "rounding", name: "Rounding", after: null },
+    { id: "t2-add", name: "Big-Number Add & Subtract", after: null },
+    { id: "t2-div", name: "Long Division", after: "t2-add" },
+    { id: "t2-angle", name: "Angles", after: null },
+    { id: "t2-perimeter", name: "Perimeter", after: "t2-angle" },
+    { id: "t2-area", name: "Area", after: "t2-perimeter" },
+    { id: "t2-factors", name: "Factors & Primes", after: "t2-div" },
+    { id: "t2-lcm", name: "Multiples, LCM & GCF", after: "t2-factors" },
     { id: "words", name: "Spelling & Grammar", after: null },
     { id: "science", name: "Science Basics", after: null }
   ];
@@ -6261,6 +6266,7 @@
       const prefix = SMART_PRACTICE_PREFIX[gameId];
       if (!prefix) return;
       Object.entries(topics).forEach(([topic, data]) => {
+        if (gameId === "mathville" && RETIRED_MATHVILLE_TOPICS.includes(topic)) return; // Term 1 chapter, no longer in the app
         const correct = data.correct || 0, wrong = data.wrong || 0, total = correct + wrong;
         if (total < WEAK_MIN_ATTEMPTS) return;
         const accuracy = correct / total;

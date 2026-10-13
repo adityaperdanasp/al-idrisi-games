@@ -19,13 +19,13 @@ if (!player || player.role === "parent") {
 function initQuizShow() {
   const PRIZE_LADDER = [10, 20, 30, 50, 75, 100, 150, 200, 300, 500];
   const CHECKPOINT_INDICES = [4]; // 0-indexed -- rung 5 (index 4) is the only mid-game safe haven
-  const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const GEN_KEYS = ["t2-add", "t2-div", "t2-angle", "t2-area", "t2-factors", "t2-lcm"]; // 6 math wheel slices + lang + sci
   // The wheel has 2 extra slices (Language, Science) beyond the 6 math
   // GEN_KEYS, so it spins the SAME way it always did but can now land on
   // a mixed-subject question too -- SLICE_KEYS (not GEN_KEYS) is what
   // renderWheel/spinWheelTo iterate over.
   const SLICE_KEYS = [...GEN_KEYS, "lang", "sci"];
-  const CATEGORY_LABELS = { "addition-subtraction-add": "Addition", "addition-subtraction-sub": "Subtract", multiplication: "Multiply", division: "Division", measurement: "Measure", rounding: "Rounding", lang: "Language", sci: "Science" };
+  const CATEGORY_LABELS = { "t2-add": "Addition", "t2-sub": "Subtract", "t2-div": "Division", "t2-angle": "Angles", "t2-area": "Area", "t2-factors": "Factors", "t2-lcm": "LCM", "t2-gcf": "GCF", "t2-perimeter": "Perimeter", "t2-square": "Squares", "t2-multiple": "Multiples", "t2-twostep": "2-Step", "t2-muldiv": "Word Problem", lang: "Language", sci: "Science" };
   const WHEEL_COLORS = ["#8c2f6b", "#2f4c8c", "#3f7a4e", "#a85a1f", "#6b3f9b", "#b8342f", "#1f6b5e", "#2f8ca8"];
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
 
