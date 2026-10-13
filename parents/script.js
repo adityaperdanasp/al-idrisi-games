@@ -112,9 +112,15 @@
     return 0; // Math Race has no XP system, sticker badges only
   }
 
+  // Term 1 topics (retired 2026-10-13) -- their old stats stay in the database but are hidden here.
+  const RETIRED_TOPICS = [
+    "place-value", "addition-subtraction", "prime-numbers", "gcf-lcm", "multiplication", "division", "mixed-operation", "measurement", "rounding", "word-problems",
+    "star-lifecycle", "atom-structure", "earth-rotation", "globes-maps", "time-system", "Spelling", "Vocabulary", "Grammar", "Creative Writing"
+  ];
   function weakTopicsFor(gameId, topicStats) {
     if (!topicStats) return [];
     return Object.entries(topicStats)
+      .filter(([topic]) => !RETIRED_TOPICS.includes(topic))
       .map(([topic, data]) => {
         const correct = (data && data.correct) || 0;
         const wrong = (data && data.wrong) || 0;

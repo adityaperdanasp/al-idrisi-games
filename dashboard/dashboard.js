@@ -70,9 +70,15 @@
   const MIN_ATTEMPTS = 3;
   const WEAK_ACCURACY = 0.7;
 
+  // Term 1 topics (retired 2026-10-13) -- their old stats stay in the database but are hidden here.
+  const RETIRED_TOPICS = [
+    "place-value", "addition-subtraction", "prime-numbers", "gcf-lcm", "multiplication", "division", "mixed-operation", "measurement", "rounding", "word-problems",
+    "star-lifecycle", "atom-structure", "earth-rotation", "globes-maps", "time-system", "Spelling", "Vocabulary", "Grammar", "Creative Writing"
+  ];
   function weakTopics(topicStatsForGame, n) {
     if (!topicStatsForGame) return [];
     return Object.entries(topicStatsForGame)
+      .filter(([topic]) => !RETIRED_TOPICS.includes(topic))
       .map(([topic, data]) => {
         const correct = (data && data.correct) || 0;
         const wrong = (data && data.wrong) || 0;
