@@ -9894,7 +9894,6 @@
      "type": "mc",
      "prompt": "<i>At the Pet Shop</i><br><b>Nora:</b> “Look at those rabbits!”<br><b>Sam:</b> “They are very cute.”<br><b>Nora:</b> “I like the white one.”<br><b>Sam:</b> “I like the brown one.”<br><b>Nora:</b> “What would you name it?”<br><b>Sam:</b> “I would call it Coco.”<br><br>Who said: “Look at those rabbits!”?",
      "options": [
-      "Nobody",
       "Sam",
       "Nora"
      ],
@@ -9904,9 +9903,8 @@
      "type": "mc",
      "prompt": "<i>At the Pet Shop</i><br><b>Nora:</b> “Look at those rabbits!”<br><b>Sam:</b> “They are very cute.”<br><b>Nora:</b> “I like the white one.”<br><b>Sam:</b> “I like the brown one.”<br><b>Nora:</b> “What would you name it?”<br><b>Sam:</b> “I would call it Coco.”<br><br>Who said: “They are very cute.”?",
      "options": [
-      "Nobody",
-      "Nora",
-      "Sam"
+      "Sam",
+      "Nora"
      ],
      "answer": "Sam"
     },
@@ -9915,7 +9913,6 @@
      "prompt": "<i>At the Pet Shop</i><br><b>Nora:</b> “Look at those rabbits!”<br><b>Sam:</b> “They are very cute.”<br><b>Nora:</b> “I like the white one.”<br><b>Sam:</b> “I like the brown one.”<br><b>Nora:</b> “What would you name it?”<br><b>Sam:</b> “I would call it Coco.”<br><br>Who said: “I like the brown one.”?",
      "options": [
       "Nora",
-      "Nobody",
       "Sam"
      ],
      "answer": "Sam"
@@ -9924,9 +9921,8 @@
      "type": "mc",
      "prompt": "<i>At the Pet Shop</i><br><b>Nora:</b> “Look at those rabbits!”<br><b>Sam:</b> “They are very cute.”<br><b>Nora:</b> “I like the white one.”<br><b>Sam:</b> “I like the brown one.”<br><b>Nora:</b> “What would you name it?”<br><b>Sam:</b> “I would call it Coco.”<br><br>Who said: “I would call it Coco.”?",
      "options": [
-      "Nora",
-      "Nobody",
-      "Sam"
+      "Sam",
+      "Nora"
      ],
      "answer": "Sam"
     },
@@ -9961,9 +9957,9 @@
      "type": "mc",
      "prompt": "<i>A Busy Morning</i><br><b>Teacher:</b> “Good morning, everyone.”<br><b>Maya:</b> “Good morning, Miss!”<br><b>Teacher:</b> “Please take out your English books.”<br><b>Maya:</b> “I forgot my book at home.”<br><b>Teacher:</b> “That is okay. You can share with Daniel.”<br><b>Daniel:</b> “You can use my book, Maya.”<br><b>Maya:</b> “Thank you, Daniel!”<br><br>Who said: “Good morning, everyone.”?",
      "options": [
-      "Teacher",
+      "Maya",
       "Daniel",
-      "Maya"
+      "Teacher"
      ],
      "answer": "Teacher"
     },
@@ -9971,9 +9967,9 @@
      "type": "mc",
      "prompt": "<i>A Busy Morning</i><br><b>Teacher:</b> “Good morning, everyone.”<br><b>Maya:</b> “Good morning, Miss!”<br><b>Teacher:</b> “Please take out your English books.”<br><b>Maya:</b> “I forgot my book at home.”<br><b>Teacher:</b> “That is okay. You can share with Daniel.”<br><b>Daniel:</b> “You can use my book, Maya.”<br><b>Maya:</b> “Thank you, Daniel!”<br><br>Who said: “Good morning, Miss!”?",
      "options": [
-      "Maya",
+      "Teacher",
       "Daniel",
-      "Teacher"
+      "Maya"
      ],
      "answer": "Maya"
     },
@@ -9981,9 +9977,9 @@
      "type": "mc",
      "prompt": "<i>A Busy Morning</i><br><b>Teacher:</b> “Good morning, everyone.”<br><b>Maya:</b> “Good morning, Miss!”<br><b>Teacher:</b> “Please take out your English books.”<br><b>Maya:</b> “I forgot my book at home.”<br><b>Teacher:</b> “That is okay. You can share with Daniel.”<br><b>Daniel:</b> “You can use my book, Maya.”<br><b>Maya:</b> “Thank you, Daniel!”<br><br>Who said: “I forgot my book at home.”?",
      "options": [
+      "Maya",
       "Daniel",
-      "Teacher",
-      "Maya"
+      "Teacher"
      ],
      "answer": "Maya"
     },
@@ -10028,9 +10024,9 @@
      "type": "mc",
      "prompt": "<i>The Missing Lunchbox</i><br><b>Aisha:</b> “Has anyone seen my lunchbox?”<br><b>Ryan:</b> “What does it look like?”<br><b>Aisha:</b> “It is blue with a yellow star.”<br><b>Luca:</b> “I saw a blue lunchbox near the library.”<br><b>Aisha:</b> “Really? Let's go and look for it.”<br><b>Ryan:</b> “I will come with you.”<br><b>Luca:</b> “I hope you find it!”<br><br>Who said: “Has anyone seen my lunchbox?”?",
      "options": [
+      "Luca",
       "Ryan",
-      "Aisha",
-      "Luca"
+      "Aisha"
      ],
      "answer": "Aisha"
     },
@@ -10038,9 +10034,9 @@
      "type": "mc",
      "prompt": "<i>The Missing Lunchbox</i><br><b>Aisha:</b> “Has anyone seen my lunchbox?”<br><b>Ryan:</b> “What does it look like?”<br><b>Aisha:</b> “It is blue with a yellow star.”<br><b>Luca:</b> “I saw a blue lunchbox near the library.”<br><b>Aisha:</b> “Really? Let's go and look for it.”<br><b>Ryan:</b> “I will come with you.”<br><b>Luca:</b> “I hope you find it!”<br><br>Who said: “What does it look like?”?",
      "options": [
-      "Aisha",
+      "Ryan",
       "Luca",
-      "Ryan"
+      "Aisha"
      ],
      "answer": "Ryan"
     },
@@ -10048,8 +10044,8 @@
      "type": "mc",
      "prompt": "<i>The Missing Lunchbox</i><br><b>Aisha:</b> “Has anyone seen my lunchbox?”<br><b>Ryan:</b> “What does it look like?”<br><b>Aisha:</b> “It is blue with a yellow star.”<br><b>Luca:</b> “I saw a blue lunchbox near the library.”<br><b>Aisha:</b> “Really? Let's go and look for it.”<br><b>Ryan:</b> “I will come with you.”<br><b>Luca:</b> “I hope you find it!”<br><br>Who said: “I saw a blue lunchbox near the library.”?",
      "options": [
-      "Luca",
       "Aisha",
+      "Luca",
       "Ryan"
      ],
      "answer": "Luca"
@@ -10095,9 +10091,8 @@
      "type": "mc",
      "prompt": "<i>Orange Juice</i><br><b>Emma:</b> “Would you like some orange juice?”<br><b>Leo:</b> “Yes, please. Thank you!”<br><b>Emma:</b> “Here you are.”<br><b>Leo:</b> “Thanks!”<br><br>Who said: “Would you like some orange juice?”?",
      "options": [
-      "Nobody",
-      "Leo",
-      "Emma"
+      "Emma",
+      "Leo"
      ],
      "answer": "Emma"
     },
@@ -10106,7 +10101,6 @@
      "prompt": "<i>Orange Juice</i><br><b>Emma:</b> “Would you like some orange juice?”<br><b>Leo:</b> “Yes, please. Thank you!”<br><b>Emma:</b> “Here you are.”<br><b>Leo:</b> “Thanks!”<br><br>Who said: “Yes, please. Thank you!”?",
      "options": [
       "Emma",
-      "Nobody",
       "Leo"
      ],
      "answer": "Leo"
@@ -10115,9 +10109,8 @@
      "type": "mc",
      "prompt": "<i>Orange Juice</i><br><b>Emma:</b> “Would you like some orange juice?”<br><b>Leo:</b> “Yes, please. Thank you!”<br><b>Emma:</b> “Here you are.”<br><b>Leo:</b> “Thanks!”<br><br>Who said: “Here you are.”?",
      "options": [
-      "Emma",
       "Leo",
-      "Nobody"
+      "Emma"
      ],
      "answer": "Emma"
     },
@@ -10125,9 +10118,8 @@
      "type": "mc",
      "prompt": "<i>Orange Juice</i><br><b>Emma:</b> “Would you like some orange juice?”<br><b>Leo:</b> “Yes, please. Thank you!”<br><b>Emma:</b> “Here you are.”<br><b>Leo:</b> “Thanks!”<br><br>Who said: “Thanks!”?",
      "options": [
-      "Leo",
       "Emma",
-      "Nobody"
+      "Leo"
      ],
      "answer": "Leo"
     },
@@ -10162,9 +10154,9 @@
      "type": "mc",
      "prompt": "<i>Football Practice</i><br><b>Coach:</b> “Warm up with two laps, everyone.”<br><b>Rafi:</b> “Can I be the goalkeeper today?”<br><b>Coach:</b> “Yes, Rafi. Dimas, you play in defence.”<br><b>Dimas:</b> “Okay, Coach!”<br><b>Rafi:</b> “I'll save every shot.”<br><br>Who said: “Warm up with two laps, everyone.”?",
      "options": [
-      "Dimas",
       "Coach",
-      "Rafi"
+      "Rafi",
+      "Dimas"
      ],
      "answer": "Coach"
     },
@@ -10172,9 +10164,9 @@
      "type": "mc",
      "prompt": "<i>Football Practice</i><br><b>Coach:</b> “Warm up with two laps, everyone.”<br><b>Rafi:</b> “Can I be the goalkeeper today?”<br><b>Coach:</b> “Yes, Rafi. Dimas, you play in defence.”<br><b>Dimas:</b> “Okay, Coach!”<br><b>Rafi:</b> “I'll save every shot.”<br><br>Who said: “Can I be the goalkeeper today?”?",
      "options": [
-      "Rafi",
       "Coach",
-      "Dimas"
+      "Dimas",
+      "Rafi"
      ],
      "answer": "Rafi"
     },
@@ -10182,9 +10174,9 @@
      "type": "mc",
      "prompt": "<i>Football Practice</i><br><b>Coach:</b> “Warm up with two laps, everyone.”<br><b>Rafi:</b> “Can I be the goalkeeper today?”<br><b>Coach:</b> “Yes, Rafi. Dimas, you play in defence.”<br><b>Dimas:</b> “Okay, Coach!”<br><b>Rafi:</b> “I'll save every shot.”<br><br>Who said: “Okay, Coach!”?",
      "options": [
-      "Rafi",
+      "Dimas",
       "Coach",
-      "Dimas"
+      "Rafi"
      ],
      "answer": "Dimas"
     },
@@ -10192,9 +10184,9 @@
      "type": "mc",
      "prompt": "<i>Football Practice</i><br><b>Coach:</b> “Warm up with two laps, everyone.”<br><b>Rafi:</b> “Can I be the goalkeeper today?”<br><b>Coach:</b> “Yes, Rafi. Dimas, you play in defence.”<br><b>Dimas:</b> “Okay, Coach!”<br><b>Rafi:</b> “I'll save every shot.”<br><br>Who said: “I'll save every shot.”?",
      "options": [
+      "Rafi",
       "Coach",
-      "Dimas",
-      "Rafi"
+      "Dimas"
      ],
      "answer": "Rafi"
     },
@@ -10239,9 +10231,9 @@
      "type": "mc",
      "prompt": "<i>At the Library</i><br><b>Zara:</b> “Do you have a book about space?”<br><b>Librarian:</b> “Yes, it is on the third shelf.”<br><b>Omar:</b> “Can I borrow it after Zara?”<br><b>Zara:</b> “Of course, I will return it on Friday.”<br><b>Librarian:</b> “Please remember to bring your card.”<br><br>Who said: “Yes, it is on the third shelf.”?",
      "options": [
-      "Omar",
       "Librarian",
-      "Zara"
+      "Zara",
+      "Omar"
      ],
      "answer": "Librarian"
     },
@@ -10249,9 +10241,9 @@
      "type": "mc",
      "prompt": "<i>At the Library</i><br><b>Zara:</b> “Do you have a book about space?”<br><b>Librarian:</b> “Yes, it is on the third shelf.”<br><b>Omar:</b> “Can I borrow it after Zara?”<br><b>Zara:</b> “Of course, I will return it on Friday.”<br><b>Librarian:</b> “Please remember to bring your card.”<br><br>Who said: “Of course, I will return it on Friday.”?",
      "options": [
-      "Zara",
       "Omar",
-      "Librarian"
+      "Librarian",
+      "Zara"
      ],
      "answer": "Zara"
     },
@@ -10259,9 +10251,9 @@
      "type": "mc",
      "prompt": "<i>At the Library</i><br><b>Zara:</b> “Do you have a book about space?”<br><b>Librarian:</b> “Yes, it is on the third shelf.”<br><b>Omar:</b> “Can I borrow it after Zara?”<br><b>Zara:</b> “Of course, I will return it on Friday.”<br><b>Librarian:</b> “Please remember to bring your card.”<br><br>Who said: “Please remember to bring your card.”?",
      "options": [
-      "Librarian",
+      "Zara",
       "Omar",
-      "Zara"
+      "Librarian"
      ],
      "answer": "Librarian"
     },
@@ -10296,8 +10288,8 @@
      "type": "mc",
      "prompt": "<i>The Picnic</i><br><b>Mum:</b> “Who wants a sandwich?”<br><b>Anya:</b> “Me, please!”<br><b>Kai:</b> “Can I have the cheese one?”<br><b>Mum:</b> “Here you go, Kai.”<br><b>Anya:</b> “Look, a butterfly!”<br><br>Who said: “Who wants a sandwich?”?",
      "options": [
-      "Mum",
       "Kai",
+      "Mum",
       "Anya"
      ],
      "answer": "Mum"
@@ -10306,9 +10298,9 @@
      "type": "mc",
      "prompt": "<i>The Picnic</i><br><b>Mum:</b> “Who wants a sandwich?”<br><b>Anya:</b> “Me, please!”<br><b>Kai:</b> “Can I have the cheese one?”<br><b>Mum:</b> “Here you go, Kai.”<br><b>Anya:</b> “Look, a butterfly!”<br><br>Who said: “Me, please!”?",
      "options": [
-      "Mum",
       "Kai",
-      "Anya"
+      "Anya",
+      "Mum"
      ],
      "answer": "Anya"
     },
@@ -10316,8 +10308,8 @@
      "type": "mc",
      "prompt": "<i>The Picnic</i><br><b>Mum:</b> “Who wants a sandwich?”<br><b>Anya:</b> “Me, please!”<br><b>Kai:</b> “Can I have the cheese one?”<br><b>Mum:</b> “Here you go, Kai.”<br><b>Anya:</b> “Look, a butterfly!”<br><br>Who said: “Here you go, Kai.”?",
      "options": [
-      "Kai",
       "Mum",
+      "Kai",
       "Anya"
      ],
      "answer": "Mum"
@@ -10326,9 +10318,9 @@
      "type": "mc",
      "prompt": "<i>The Picnic</i><br><b>Mum:</b> “Who wants a sandwich?”<br><b>Anya:</b> “Me, please!”<br><b>Kai:</b> “Can I have the cheese one?”<br><b>Mum:</b> “Here you go, Kai.”<br><b>Anya:</b> “Look, a butterfly!”<br><br>Who said: “Look, a butterfly!”?",
      "options": [
-      "Mum",
+      "Anya",
       "Kai",
-      "Anya"
+      "Mum"
      ],
      "answer": "Anya"
     },
@@ -10363,8 +10355,8 @@
      "type": "mc",
      "prompt": "<i>The Lost Key</i><br>“We need to find it before Mum comes home,” said Ben, looking under the sofa.<br>Sara opened the drawer. “Maybe it is in here.”<br>“It isn't there! Check the kitchen!”<br><br>Who says line 1: “We need to find it before Mum comes home,”?",
      "options": [
-      "Sara",
-      "Ben"
+      "Ben",
+      "Sara"
      ],
      "answer": "Ben"
     },
@@ -10381,8 +10373,8 @@
      "type": "mc",
      "prompt": "<i>The Lost Key</i><br>“We need to find it before Mum comes home,” said Ben, looking under the sofa.<br>Sara opened the drawer. “Maybe it is in here.”<br>“It isn't there! Check the kitchen!”<br><br>Who says line 3: “It isn't there! Check the kitchen!”?",
      "options": [
-      "Ben",
-      "Sara"
+      "Sara",
+      "Ben"
      ],
      "answer": "Ben"
     },
@@ -10390,10 +10382,10 @@
      "type": "mc",
      "prompt": "<i>The Lost Key</i><br>“We need to find it before Mum comes home,” said Ben, looking under the sofa.<br>Sara opened the drawer. “Maybe it is in here.”<br>“It isn't there! Check the kitchen!”<br><br>How do you know who says line 3?",
      "options": [
+      "The speaker is the one who spoke last in the story",
       "It is a new line, so the speaker switches back to Ben, and the urgent tone matches his earlier worry",
       "It is a question, so it must be the teacher",
-      "Its name is written right after the quote",
-      "The speaker is the one who spoke last in the story"
+      "Its name is written right after the quote"
      ],
      "answer": "It is a new line, so the speaker switches back to Ben, and the urgent tone matches his earlier worry"
     },
@@ -10401,8 +10393,8 @@
      "type": "mc",
      "prompt": "<i>The Strange Noise</i><br>“Did you hear that?” whispered Noah.<br>Ella looked toward the window. “Yes. What was it?”<br>“I'm not sure. Let's take a look.”<br>“Wait! Don't open the door yet.”<br><br>Who says line 1: “Did you hear that?”?",
      "options": [
-      "Noah",
-      "Ella"
+      "Ella",
+      "Noah"
      ],
      "answer": "Noah"
     },
@@ -10437,10 +10429,10 @@
      "type": "mc",
      "prompt": "<i>The Strange Noise</i><br>“Did you hear that?” whispered Noah.<br>Ella looked toward the window. “Yes. What was it?”<br>“I'm not sure. Let's take a look.”<br>“Wait! Don't open the door yet.”<br><br>How do you know who says line 3?",
      "options": [
-      "The speaker is the one who spoke last in the story",
-      "Its name is written right after the quote",
       "A new line switches back to Noah, who spoke first",
-      "It is a question, so it must be the teacher"
+      "It is a question, so it must be the teacher",
+      "Its name is written right after the quote",
+      "The speaker is the one who spoke last in the story"
      ],
      "answer": "A new line switches back to Noah, who spoke first"
     },
@@ -10457,8 +10449,8 @@
      "type": "mc",
      "prompt": "<i>Catching the Bus</i><br>“Hurry! The bus is leaving!” called Sam.<br>Ella grabbed her coat. “I'm ready!”<br>“Did you bring your lunch?”<br>“Oh no! I left it on the table.”<br><br>Who says line 2: “I'm ready!”?",
      "options": [
-      "Sam",
-      "Ella"
+      "Ella",
+      "Sam"
      ],
      "answer": "Ella"
     },
@@ -10475,8 +10467,8 @@
      "type": "mc",
      "prompt": "<i>Catching the Bus</i><br>“Hurry! The bus is leaving!” called Sam.<br>Ella grabbed her coat. “I'm ready!”<br>“Did you bring your lunch?”<br>“Oh no! I left it on the table.”<br><br>Who says line 4: “Oh no! I left it on the table.”?",
      "options": [
-      "Ella",
-      "Sam"
+      "Sam",
+      "Ella"
      ],
      "answer": "Ella"
     },
@@ -10485,9 +10477,9 @@
      "prompt": "<i>Catching the Bus</i><br>“Hurry! The bus is leaving!” called Sam.<br>Ella grabbed her coat. “I'm ready!”<br>“Did you bring your lunch?”<br>“Oh no! I left it on the table.”<br><br>How do you know who says line 3?",
      "options": [
       "The speaker is the one who spoke last in the story",
-      "It is a question, so it must be the teacher",
       "A new line switches back to Sam, who asked the first question",
-      "Its name is written right after the quote"
+      "Its name is written right after the quote",
+      "It is a question, so it must be the teacher"
      ],
      "answer": "A new line switches back to Sam, who asked the first question"
     },
@@ -10531,10 +10523,10 @@
      "type": "mc",
      "prompt": "In <i>Mia shook her head. “But we haven't found the map yet!”</i> who says 'But we haven't found the map yet!'?",
      "options": [
-      "Mia",
-      "We",
       "Nobody",
-      "The map"
+      "Mia",
+      "The map",
+      "We"
      ],
      "answer": "Mia"
     },
@@ -10542,10 +10534,10 @@
      "type": "mc",
      "prompt": "What is a good detective clue for finding who is speaking when no name is given?",
      "options": [
-      "Look at the new line and who spoke before",
-      "Look at the page number",
       "Guess",
-      "Count the letters in the quote"
+      "Count the letters in the quote",
+      "Look at the page number",
+      "Look at the new line and who spoke before"
      ],
      "answer": "Look at the new line and who spoke before"
     }

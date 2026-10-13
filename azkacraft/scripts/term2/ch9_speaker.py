@@ -29,7 +29,7 @@ def build():
         text = lines(*["<b>%s:</b> “%s”" % (s, l) for s, l in ds])
         for i, (s, l) in enumerate(ds):
             if i in (0, 1, 3, len(ds) - 1) or len(ds) <= 4:
-                Q.append(mc("<i>%s</i><br>%s<br><br>Who said: “%s”?" % (title, text, l), s, [n for n in names if n != s] if len(names) > 2 else [n for n in names if n != s] + ["Nobody"], minwrong=1))
+                Q.append(mc("<i>%s</i><br>%s<br><br>Who said: “%s”?" % (title, text, l), s, [n for n in names if n != s], minwrong=1))
         pairs = []
         seen = set()
         for s, l in ds:
