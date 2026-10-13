@@ -101,27 +101,51 @@ const LESSONS = [
     { vis: ["4,8,12", "|", "6,12,18", "→", "LCM", "=", "12"], text: "The LCM (lowest common multiple) is the smallest multiple two numbers share. Multiples of 4: 4, 8, 12. Multiples of 6: 6, 12. The LCM is 12." },
     { vis: ["12", "→", "1,2,3,4,6,12", "|", "18", "→", "1,2,3,6,9,18", "→", "GCF", "=", "6"], text: "The GCF (greatest common factor) is the biggest factor two numbers share. For 12 and 18 it is 6." }],
     quiz: [["What are the first three multiples of 4?", ["4, 8, 12", "1, 2, 4", "4, 6, 8"], 0], ["What is the LCM of 4 and 6?", ["12", "24", "2"], 0], ["What is the GCF of 12 and 18?", ["6", "3", "36"], 0]] },
-  { id: "photosynthesis", emoji: "🌱", title: "How plants make food", slides: [
-    { vis: ["☀️", "→", "🌿"], text: "Plants catch sunlight with their green leaves." },
-    { vis: ["💧", "+", "🌬️", "+", "☀️", "→", "🍬"], text: "They mix water from the roots and air (carbon dioxide) using sunlight to make sugar — their food!" },
-    { vis: ["🌿", "→", "🫧", "O₂"], text: "This is called photosynthesis, and the plant also gives out oxygen, which we breathe. Thank you, plants!" }],
-    quiz: [["What do plants need to make food?", ["Sunlight, water and air", "Only soil", "Only sugar"], 0], ["What gas do plants give out?", ["Oxygen", "Smoke", "Helium"], 0], ["Where does a plant catch sunlight?", ["Leaves", "Roots", "Seeds"], 0]] },
-  { id: "water-cycle", emoji: "🌧️", title: "The water cycle", slides: [
-    { vis: ["☀️", "🌊", "→", "♨️"], text: "The sun heats the sea and water turns into invisible vapour. This is evaporation." },
-    { vis: ["♨️", "→", "☁️"], text: "High up it is cold, so the vapour turns back into tiny drops that make clouds. This is condensation." },
-    { vis: ["☁️", "→", "🌧️", "→", "⛰️", "→", "🌊"], text: "When clouds get heavy, rain falls (precipitation) and rivers carry it back to the sea. Then it starts again!" }],
-    quiz: [["Evaporation is when water…", ["Turns into vapour", "Turns into ice", "Falls as rain"], 0], ["Clouds are made when vapour…", ["Cools and condenses", "Freezes into rocks", "Gets hotter"], 0], ["Rain falling from clouds is called…", ["Precipitation", "Evaporation", "Erosion"], 0]] },
-  // Audit batch 4: four more lessons,
-  { id: "solar-system", emoji: "🪐", title: "Our solar system", slides: [
-    { vis: ["☀️"], text: "The Sun is a star at the centre of our solar system." },
-    { vis: ["☀️", "·", "🪨", "🌍", "🔴", "🪐"], text: "Eight planets travel around (orbit) the Sun. Earth is the third one." },
-    { vis: ["🌍", "↻", "🌙"], text: "The Moon orbits the Earth. One orbit takes about a month." }],
-    quiz: [["What is at the centre of the solar system?", ["The Sun", "The Earth", "The Moon"], 0], ["How many planets orbit the Sun?", ["8", "3", "12"], 0], ["What orbits the Earth?", ["The Moon", "Mars", "The Sun"], 0]] },
+  { id: "energy", emoji: "⚡", title: "Energy transformation", slides: [
+    { vis: ["💡", "🔊", "🔥", "⚡", "🍎", "🏃"], text: "Energy is the ability to make things happen. It has forms: light, sound, heat, electrical, chemical and movement." },
+    { vis: ["🔌", "→", "💡", "+", "🔥"], text: "Energy transformation is when energy changes form. A lamp changes electrical energy into light and heat." },
+    { vis: ["☀️", "→", "🔆", "→", "⚡", "→", "💡"], text: "An energy chain shows the steps: Sun → solar panel → electrical energy → light bulb → light and heat. Energy is never lost, only changed!" }],
+    quiz: [["Which energy is stored in food?", ["Chemical", "Sound", "Light"], 0], ["A solar panel changes…", ["Light into electricity", "Sound into light", "Heat into sound"], 0], ["A lamp changes electrical energy mainly into…", ["Light and heat", "Sound and movement", "Food"], 0]] },
+  { id: "light-eye", emoji: "👁️", title: "Light and the eye", slides: [
+    { vis: ["🔦", "→", "➡️", "➡️", "➡️"], text: "Light travels in straight lines from a source. We see things because light bounces off them and enters our eyes." },
+    { vis: ["transparent", "|", "translucent", "|", "opaque"], text: "Transparent materials (clear glass) let light through. Translucent ones (tissue paper) let some through. Opaque ones (wood) block it and make shadows." },
+    { vis: ["cornea", "pupil", "iris", "lens", "retina", "nerve"], text: "Light enters the eye through the cornea and pupil, the lens focuses it, and the retina sends signals along the optic nerve to the brain." }],
+    quiz: [["Which material is opaque?", ["Wood", "Clear glass", "Tissue paper"], 0], ["The opening that lets light into the eye is the…", ["Pupil", "Retina", "Optic nerve"], 0], ["A shadow forms when…", ["An opaque object blocks light", "Light bends", "The Sun is hot"], 0]] },
+  { id: "moon-phases", emoji: "🌙", title: "Phases of the Moon", slides: [
+    { vis: ["☀️", "→", "🌙", "→", "🌍"], text: "The Moon does not make light. We see it because sunlight shines on it, and we only see the lit part." },
+    { vis: ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"], text: "As the Moon orbits Earth, the lit part we see changes. The eight phases are new moon, waxing crescent, first quarter, waxing gibbous, full moon, waning gibbous, third quarter and waning crescent." },
+    { vis: ["29½", "days", "=", "one cycle"], text: "Waxing means growing and waning means shrinking. The whole cycle takes about 29 and a half days." }],
+    quiz: [["How many main phases of the Moon are there?", ["8", "4", "12"], 0], ["What causes the Moon's phases?", ["Sunlight lighting different parts we can see", "Earth's shadow", "The Moon spinning fast"], 0], ["Waning means the lit part is…", ["Getting smaller", "Getting bigger", "Red"], 0]] },
+  { id: "eclipses", emoji: "🌑", title: "Solar and lunar eclipses", slides: [
+    { vis: ["☀️", "🌙", "🌍"], text: "In a solar eclipse the Moon is between the Sun and Earth and blocks the Sun's light. It happens at new moon." },
+    { vis: ["☀️", "🌍", "🌙"], text: "In a lunar eclipse the Earth is between the Sun and Moon, so Earth's shadow falls on the Moon. It happens at full moon, and the Moon can look red." },
+    { vis: ["😎", "❌", "👓", "✅"], text: "NEVER look straight at the Sun. Use special eclipse glasses or a solar viewer - ordinary sunglasses are not safe. A lunar eclipse is safe to watch." }],
+    quiz: [["In a solar eclipse, what is in the middle?", ["The Moon", "The Earth", "The Sun"], 0], ["A lunar eclipse happens at…", ["Full moon", "New moon", "Half moon only"], 0], ["Which is safe for watching a solar eclipse?", ["Eclipse glasses", "Sunglasses", "Binoculars"], 0]] },
+  { id: "landforms", emoji: "🏞️", title: "Lakes, deserts and rivers", slides: [
+    { vis: ["🏞️", "💧", "🏜️", "🌊"], text: "A lake is water with land all around. A river is a long stream flowing to the sea. A desert is a place with very little rain - hot or cold!" },
+    { vis: ["Caspian Sea", "Baikal", "Victoria"], text: "The Caspian Sea is the largest lake, Lake Baikal in Russia is the deepest, and Lake Victoria is the largest in Africa." },
+    { vis: ["Sahara", "Antarctic", "Nile", "Amazon"], text: "The Sahara is the biggest hot desert and Antarctica the biggest desert of all. The Nile flows through Africa and the Amazon carries the most water." }],
+    quiz: [["What is a desert?", ["A place with very little rain", "A very deep lake", "A long river"], 0], ["The Amazon River is in…", ["South America", "Asia", "Europe"], 0], ["Which is the largest lake in the world?", ["Caspian Sea", "Lake Victoria", "Lake Michigan"], 0]] },
+  { id: "ethnic-groups", emoji: "🎭", title: "Ethnic groups in Indonesia", slides: [
+    { vis: ["Sumatra", "Java", "Kalimantan", "Sulawesi", "Papua"], text: "Indonesia has five main islands and 38 provinces. Each region is home to different ethnic groups with their own cultures." },
+    { vis: ["Batak", "Minangkabau", "Javanese", "Sundanese", "Balinese", "Asmat"], text: "A culture includes language, clothing, food, music and dances, and houses. For example the Batak are from North Sumatra, the Minangkabau from West Sumatra, and the Asmat from Papua." },
+    { vis: ["Bhinneka", "Tunggal", "Ika"], text: "Our motto, Bhinneka Tunggal Ika, means Unity in Diversity. It is written on the Garuda Pancasila. We are different, but one nation!" }],
+    quiz: [["What does Bhinneka Tunggal Ika mean?", ["Unity in Diversity", "Long live Indonesia", "One island"], 0], ["The Asmat people come from…", ["Papua", "Bali", "Aceh"], 0], ["How many provinces does Indonesia have?", ["38", "5", "100"], 0]] },
+  { id: "jakarta-history", emoji: "🏙️", title: "History of Jakarta", slides: [
+    { vis: ["Betawi"], text: "The Betawi people are the original inhabitants of Jakarta. Their culture is a blend of Malay, Sundanese, Javanese, Chinese, Arab, Indian and European influences." },
+    { vis: ["Sunda Kelapa", "→", "Jayakarta", "→", "Batavia", "→", "Jakarta"], text: "The city was once the port Sunda Kelapa, then Jayakarta in 1527, Batavia under Dutch rule from 1619, and Jakarta since 1942." },
+    { vis: ["🎎", "🍲", "🎭"], text: "Betawi culture includes ondel-ondel giant puppets, lenong theatre, gambang kromong music, and food like soto Betawi, ketoprak and nasi uduk." }],
+    quiz: [["Who are the original inhabitants of Jakarta?", ["The Betawi", "The Bugis", "The Batak"], 0], ["What did the Dutch call Jakarta?", ["Batavia", "Jayakarta", "Sunda Kelapa"], 0], ["Nasi uduk is rice cooked in…", ["Coconut milk", "Soup", "Peanut sauce"], 0]] },
+  { id: "jakarta-landmarks", emoji: "🗼", title: "Jakarta landmarks", slides: [
+    { vis: ["🗼", "132 m", "🔥"], text: "Monas, the National Monument, is 132 metres tall with a golden flame on top. It stands for Indonesia's struggle for independence, with a museum at its base." },
+    { vis: ["🧍", "Jalan Jenderal Sudirman"], text: "The General Sudirman Statue is made of bronze. It honours a hero who fought colonial rule even though he was ill with tuberculosis." },
+    { vis: ["🏟️", "1962", "Asian Games"], text: "Gelora Bung Karno (GBK) is a sports complex named after Sukarno. Its stadium was built for the 1962 Asian Games. A landmark is a place that is easy to remember!" }],
+    quiz: [["How tall is Monas?", ["132 metres", "32 metres", "1,320 metres"], 0], ["GBK is named after…", ["Sukarno", "Sudirman", "Fatahillah"], 0], ["A statue or building that remembers a person or time is a…", ["Monument", "Stadium", "Market"], 0]] }
 ];
 // Audit batch 4: checkpoint question mid-lesson, tap-to-count on busy slides, Bo reads each slide,
 // a "show me again" branch after a wrong answer, skip-to-quiz, lesson of the day + streak,
 // a link to a game that uses the topic, a summary card, and a graduation certificate.
-const GAME_FOR = { "basic-ops": ["../mathville/", "MathVille"], "pictograph": ["../mathville/", "MathVille"], "bar-graph": ["../mathville/", "MathVille"], "line-graph": ["../mathville/", "MathVille"], "angles": ["../mathville/", "MathVille"], "perimeter": ["../mathville/", "MathVille"], "area": ["../mathville/", "MathVille"], "square-numbers": ["../mathville/", "MathVille"], "factors-primes": ["../mathville/", "MathVille"], "multiples-lcm-gcf": ["../mathville/", "MathVille"], poem: ["../azkacraft/", "Language & Arts"], letter: ["../azkacraft/", "Language & Arts"], "noun-types": ["../azkacraft/", "Language & Arts"], synonyms: ["../azkacraft/", "Language & Arts"], homophones: ["../azkacraft/", "Language & Arts"], capitals: ["../azkacraft/", "Language & Arts"], "direct-speech": ["../azkacraft/", "Language & Arts"], speaker: ["../azkacraft/", "Language & Arts"], photosynthesis: ["../science-lab/", "Science Lab"], "water-cycle": ["../science-lab/", "Science Lab"], "solar-system": ["../azkauniverse/", "SolarQuest"] };
+const GAME_FOR = { "basic-ops": ["../mathville/", "MathVille"], "pictograph": ["../mathville/", "MathVille"], "bar-graph": ["../mathville/", "MathVille"], "line-graph": ["../mathville/", "MathVille"], "angles": ["../mathville/", "MathVille"], "perimeter": ["../mathville/", "MathVille"], "area": ["../mathville/", "MathVille"], "square-numbers": ["../mathville/", "MathVille"], "factors-primes": ["../mathville/", "MathVille"], "multiples-lcm-gcf": ["../mathville/", "MathVille"], poem: ["../azkacraft/", "Language & Arts"], letter: ["../azkacraft/", "Language & Arts"], "noun-types": ["../azkacraft/", "Language & Arts"], synonyms: ["../azkacraft/", "Language & Arts"], homophones: ["../azkacraft/", "Language & Arts"], capitals: ["../azkacraft/", "Language & Arts"], "direct-speech": ["../azkacraft/", "Language & Arts"], speaker: ["../azkacraft/", "Language & Arts"], energy: ["../azkauniverse/", "SolarQuest"], "light-eye": ["../azkauniverse/", "SolarQuest"], "moon-phases": ["../azkauniverse/", "SolarQuest"], eclipses: ["../azkauniverse/", "SolarQuest"], landforms: ["../azkauniverse/", "SolarQuest"], "ethnic-groups": ["../azkauniverse/", "SolarQuest"], "jakarta-history": ["../azkauniverse/", "SolarQuest"], "jakarta-landmarks": ["../azkauniverse/", "SolarQuest"] };
 const lsc = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
 const lscw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 const cday = o => new Date(Date.now() - (o || 0) * 86400000).toISOString().slice(0, 10);

@@ -471,7 +471,7 @@ button:focus-visible {
   position: relative;
   max-width: 480px;
   margin: 10px auto 0;
-  height: 1180px;
+  height: 1900px;
 }
 
 .path-field { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }

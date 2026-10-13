@@ -504,21 +504,27 @@ async function openSoloMap() {
 /* =================================================================
    6b. QUEST PATH MAP (Solo mode v2) — winding path + parallax stars
    -----------------------------------------------------------------
-   Node/segment coordinates are fixed for exactly 5 topics (matches
-   questionsData.levels' order: sun, mercury, earth, mars, jupiter).
+   Node/segment coordinates are fixed for exactly 8 topics (Term 2, matches
+   questionsData.levels' order: sun, mercury, moon, eclipse, earth, mars, jupiter, saturn).
    ================================================================= */
 const PATH_NODE_POS = [
   { x: 50, y: 90, side: "right" },
   { x: 28, y: 320, side: "left" },
   { x: 72, y: 560, side: "right" },
   { x: 28, y: 800, side: "left" },
-  { x: 72, y: 1040, side: "right" }
+  { x: 72, y: 1040, side: "right" },
+  { x: 28, y: 1280, side: "left" },
+  { x: 72, y: 1520, side: "right" },
+  { x: 28, y: 1760, side: "left" }
 ];
 const PATH_SEGMENTS = [
   "M200,90 C260,180 260,230 110,320",
   "M110,320 C-10,390 -10,470 290,560",
   "M290,560 C480,630 480,720 110,800",
-  "M110,800 C-10,860 -10,940 290,1040"
+  "M110,800 C-10,860 -10,940 290,1040",
+  "M290,1040 C480,1110 480,1200 110,1280",
+  "M110,1280 C-10,1340 -10,1420 290,1520",
+  "M290,1520 C480,1590 480,1680 110,1760"
 ];
 
 // Hand-drawn planet illustrations, one per topic theme (questions.json's
@@ -583,6 +589,31 @@ function planetSVG(theme) {
       <circle cx="50" cy="50" r="28" fill="none" stroke="#fff" stroke-width="1.4" opacity="0.5"/>
       <path d="M50 36 v14 l9 5" stroke="#7a4f1e" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>`;
   }
+  if (theme === "moon") {
+    return `<svg viewBox="0 0 100 100"><defs>
+        <radialGradient id="moonG" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#ffffff"/><stop offset="55%" stop-color="#cfd3e6"/><stop offset="100%" stop-color="#8c92b0"/>
+        </radialGradient></defs>
+      <circle cx="50" cy="50" r="28" fill="url(#moonG)"/>
+      <circle cx="40" cy="42" r="5" fill="#8c92b0" opacity="0.55"/><circle cx="60" cy="56" r="7" fill="#8c92b0" opacity="0.45"/><circle cx="45" cy="64" r="3.5" fill="#8c92b0" opacity="0.5"/></svg>`;
+  }
+  if (theme === "eclipse") {
+    return `<svg viewBox="0 0 100 100"><defs>
+        <radialGradient id="eclG" cx="50%" cy="50%" r="50%">
+          <stop offset="60%" stop-color="#ffe9a8"/><stop offset="100%" stop-color="#ffb347" stop-opacity="0"/>
+        </radialGradient></defs>
+      <circle cx="50" cy="50" r="40" fill="url(#eclG)"/>
+      <circle cx="50" cy="50" r="26" fill="#ffd27a"/>
+      <circle cx="56" cy="50" r="24" fill="#1d1a3a"/></svg>`;
+  }
+  if (theme === "saturn") {
+    return `<svg viewBox="0 0 100 100"><defs>
+        <radialGradient id="satG" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#fff3d6"/><stop offset="50%" stop-color="#e8c47a"/><stop offset="100%" stop-color="#b7873a"/>
+        </radialGradient></defs>
+      <ellipse cx="50" cy="52" rx="44" ry="12" fill="none" stroke="#d9b36a" stroke-width="4" opacity="0.85" transform="rotate(-18 50 52)"/>
+      <circle cx="50" cy="50" r="22" fill="url(#satG)"/></svg>`;
+  }
   return `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="28" fill="#c9cdea"/></svg>`;
 }
 
@@ -614,7 +645,7 @@ async function renderQuestPathMap(container) {
 
   container.insertAdjacentHTML("beforeend", `
     <div class="path-field" id="path-field"></div>
-    <svg class="path-map-svg" viewBox="0 0 400 1180" preserveAspectRatio="none">
+    <svg class="path-map-svg" viewBox="0 0 400 1900" preserveAspectRatio="none">
       <defs>
         <linearGradient id="pathLit" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="var(--accent-yellow)"/>
@@ -708,7 +739,7 @@ async function renderQuestPathMap(container) {
     bonus.className = "dino-bonus-fab";
     bonus.title = "Bonus: DinoRace!";
     bonus.style.left = "22%";
-    bonus.style.top = "1080px";
+    bonus.style.top = "1840px";
     bonus.innerHTML = `<img src="../dinorace/assets/astro-dino-icon.png" alt="DinoRace" />`;
     bonus.addEventListener("click", () => { window.location.href = "../dinorace/"; });
     container.appendChild(bonus);
