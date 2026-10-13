@@ -1,10 +1,12 @@
 # AzkaSocial — Storybook Language & Arts Quest
 
-A storybook-themed quiz game built for Azka (Grade 4). The 7 chapters follow
-the table of contents of *GMS Workbook: Language Arts, Upper Elementary,
-Grade 4 Term 1* (Green Montessori School): Spelling, Antonyms, Prefixes and
-Suffixes, Contractions, Capitalization and Punctuation, Reading
-Comprehension, and Creative Writing.
+A storybook-themed quiz game built for Azka (Grade 4). Since 2026-10-13 the 9 chapters follow the table of
+contents of *GMS Workbook: Language Arts, Upper Elementary, Grade 4 Term 2* (Green Montessori School): Poem,
+Writing a Letter, Types of Noun, Synonyms, Homophones, Capital Letters, Direct Speech, Reading Comprehension and
+Identifying the Speaker in Dialogue. (Term 1's 7 chapters were replaced; they live on in git history.)
+
+`questions.json` is GENERATED: edit the Python sources in `scripts/term2/` (one file per chapter) and run
+`cd scripts/term2 && python3 build.py` -- it rewrites `questions.json` and validates every question.
 
 ## File structure
 

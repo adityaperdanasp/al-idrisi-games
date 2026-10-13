@@ -533,9 +533,9 @@
   // file's chapter list ever changes (no shared source between the two
   // right now since the dashboard doesn't load the game's question bank).
   const CHAPTER_NAMES = [
-    "Correct the Spelling Mistake", "Antonyms Are Opposites", "Prefixes and Suffixes",
-    "Contractions", "Capitalization and Punctuation", "Reading Comprehension",
-    "Creative Writing: The Ocean & The Bicycle"
+    "Poem", "Writing a Letter", "Types of Noun", "Synonyms", "Homophones",
+    "Capital Letters & Full Stops", "Writing with Direct Speech", "Reading Comprehension",
+    "Identifying the Speaker in Dialogue"
   ];
   const MATHRACE_STICKER_TOTAL = 6; // multipleazka/badges.js BADGES.length
 

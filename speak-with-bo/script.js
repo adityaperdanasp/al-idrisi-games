@@ -11,12 +11,12 @@ const K = window.AIGKit;
 const player = K.signedIn();
 
 const SENTENCES = [
-  "The cat sat on the mat.", "I like to eat red apples.", "My friend has a small dog.", "We play in the park after school.",
-  "The sun is bright and warm today.", "She reads a book every night.", "Birds can fly high in the sky.", "Our teacher gives us fun homework.",
-  "The rainbow has seven beautiful colors.", "He rides his bicycle to the library.", "Can you help me carry these boxes?", "Fish swim in the deep blue ocean.",
-  "Yesterday we visited my grandmother's house.", "The astronauts traveled to the moon in a rocket.", "Please put your shoes near the front door.",
-  "I would like a glass of cold water.", "The children are painting a big picture together.", "Elephants are the largest animals on land.",
-  "It rained heavily, so we stayed inside and played games.", "Learning new words makes my brain stronger."
+  "A poem uses words to share ideas and feelings.", "The wind whispered through the trees.", "The snow is as white as cotton.", "Rhyming words end with the same sound.",
+  "A noun is the name of a person, place or thing.", "Lucy lives in London with her family.", "Anger and love are abstract nouns.", "A herd of cattle crossed the field.",
+  "Quick is a synonym for fast.", "Their coats are over there.", "They're going to the beach too.", "Every sentence starts with a capital letter.",
+  "Dear Aunty Susie, thank you for the lovely present.", "I hope you are well and I can't wait to see you again soon.", "The rock cycle never stops changing rocks.",
+  "Camouflage helps animals hide from predators.", "Who said that? Look for the speaker's name.", "\u201cHurry up!\u201d called Sam to his friend.",
+  "Plants and animals have clever ways to survive.", "Reading every day makes my brain stronger."
 ];
 const norm = s => s.toLowerCase().replace(/[^a-z' ]/g, " ").split(/\s+/).filter(Boolean);
 // Marks each target word as heard or not (order-insensitive count match, so a repeated word needs to be said twice).
@@ -34,8 +34,8 @@ const TWISTERS = ["She sells sea shells by the sea shore.", "Red lorry, yellow l
 // Audit round 2: topic packs (🐾 Animals, 🚀 Space) and 👂 Listen & pick -- Bo reads one sentence
 // and you tap which of three it was (works with no microphone at all).
 const PACKS = {
-  animals: ["The tiger has orange fur and black stripes.", "A baby kangaroo lives in its mother's pouch.", "Owls can turn their heads very far.", "Penguins cannot fly but they swim fast.", "The giraffe eats leaves from tall trees."],
-  space: ["The moon goes around the Earth.", "Mars is called the red planet.", "The sun is a very big star.", "Astronauts float inside the space station.", "Saturn has beautiful rings of ice."]
+  poems: ["The morning sun begins to rise,", "Golden light fills up the skies.", "A little boat sails out to sea,", "The moon is a lantern, hung up high,", "The rain taps softly on my door."],
+  letters: ["Dear Grandma, thank you for the lovely scarf.", "I hope you are well.", "Lots of love, Ella.", "I am writing to tell you about my holiday.", "See you soon and talk soon!"]
 };
 const lss = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
 const lssw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -45,13 +45,13 @@ else pickMode();
 function pickMode() {
   const saved = JSON.parse(lss("sp_words", "[]") || "[]");
   $("sp-sent").innerHTML = `<div class="kit-q" style="margin:0 0 8px">Choose a reading mode</div>
-    <div class="sp-modes"><button class="kit-btn" data-m="short" type="button">🐣 Short sentences</button><button class="kit-btn" data-m="long" type="button">🦉 Longer sentences</button><button class="kit-btn" data-m="story" type="button">🪁 Story: The Red Kite</button><button class="kit-btn" data-m="twist" type="button">👅 Tongue twisters</button><button class="kit-btn" data-m="animals" type="button">🐾 Animals</button><button class="kit-btn" data-m="space" type="button">🚀 Space</button><button class="kit-btn" data-m="listen" type="button">👂 Listen &amp; pick (no mic)</button>${saved.length ? `<button class="kit-btn alt" data-m="words" type="button">📝 My tricky words (${saved.length})</button>` : ""}</div>`;
+    <div class="sp-modes"><button class="kit-btn" data-m="short" type="button">🐣 Short sentences</button><button class="kit-btn" data-m="long" type="button">🦉 Longer sentences</button><button class="kit-btn" data-m="story" type="button">🪁 Story: The Red Kite</button><button class="kit-btn" data-m="twist" type="button">👅 Tongue twisters</button><button class="kit-btn" data-m="poems" type="button">🎶 Poems</button><button class="kit-btn" data-m="letters" type="button">✉️ Letters</button><button class="kit-btn" data-m="listen" type="button">👂 Listen &amp; pick (no mic)</button>${saved.length ? `<button class="kit-btn alt" data-m="words" type="button">📝 My tricky words (${saved.length})</button>` : ""}</div>`;
   $("sp-heard").textContent = ""; $("sp-next").hidden = true;
   document.querySelectorAll("[data-m]").forEach(b => b.onclick = () => start(b.dataset.m));
 }
 
 function listenPick() {
-  const pool = K.shuffle(SENTENCES.concat(PACKS.animals, PACKS.space));
+  const pool = K.shuffle(SENTENCES.concat(PACKS.poems, PACKS.letters));
   let i = 0, right = 0;
   const ask = () => {
     if (i >= 5) { $("sp-overlay").innerHTML = `<div class="kit-overlay"><div class="kit-modal"><div class="kit-big">👂</div><h2>${right}/5 heard right!</h2><p class="kit-sub">Good listening helps good reading.</p><div class="kit-bonus" id="sp-bonus"></div><button class="kit-btn block" onclick="location.reload()">More</button></div></div>`; K.finish("speak-with-bo", right * 2, $("sp-bonus")); return; }

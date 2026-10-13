@@ -11,6 +11,46 @@ const player = K.signedIn();
 const rep = (e, n) => Array.from({ length: n }, () => e);
 
 const LESSONS = [
+  { id: "poem", emoji: "🎶", title: "Poems, rhyme & similes", slides: [
+    { vis: ["🐦", "🌳", "|", "A little bird sits in a tree,"], text: "A poem uses words in a creative way to share ideas, feelings or stories. Each line is a row of words, and a group of lines is a stanza." },
+    { vis: ["moon", "|", "spoon", "|", "tree", "|", "bee"], text: "Rhyming words end with the same sound: moon and spoon, tree and bee. Rhythm is the beat you hear when you read aloud." },
+    { vis: ["as white as", "|", "cotton", "|", "like a", "|", "cheetah"], text: "A simile compares two things using 'like' or 'as'. Personification gives human actions to things that are not human: 'The wind whispered.'" }],
+    quiz: [["Which word rhymes with 'light'?", ["night", "moon", "tree"], 0], ["'The snow is as white as cotton' is a…", ["Simile", "Stanza", "Haiku"], 0], ["'The sun smiled down on us' uses…", ["Personification", "A simile", "Rhyme only"], 0]] },
+  { id: "letter", emoji: "✉️", title: "Writing a letter", slides: [
+    { vis: ["📍", "Address", "|", "📅", "Date"], text: "A letter starts with the sender's address and the date at the top." },
+    { vis: ["Dear", "Aunty", "Susie,", "|", "💬", "message"], text: "Then the greeting (Dear Aunty Susie,) and your message. A friendly letter sounds chatty and kind." },
+    { vis: ["Lots of love,", "|", "Ella"], text: "End with a complimentary close, like 'Lots of love,' and then your signature - your name." }],
+    quiz: [["Which is a greeting?", ["Dear Aunty Susie,", "Lots of love,", "99 Toytown Avenue"], 0], ["Which closing is friendly (informal)?", ["See you soon,", "Yours faithfully,", "To whom it may concern,"], 0], ["Your name at the end of a letter is the…", ["Signature", "Greeting", "Address"], 0]] },
+  { id: "noun-types", emoji: "🏷️", title: "Types of noun", slides: [
+    { vis: ["Lucy", "London", "Spain"], text: "A proper noun is the special name of a person, place or thing, and it starts with a capital letter." },
+    { vis: ["cat", "book", "love", "trust"], text: "A common noun is a general name (cat, book). An abstract noun is something you cannot touch, like love, anger or trust." },
+    { vis: ["a pack of wolves", "|", "farmhouse"], text: "A collective noun names a group (a pack of wolves, a hive of bees). A compound noun is two words joined: farm + house = farmhouse." }],
+    quiz: [["Which is a proper noun?", ["London", "city", "happiness"], 0], ["'Trust' is an…", ["Abstract noun", "Proper noun", "Compound noun"], 0], ["A 'flock' of birds uses a…", ["Collective noun", "Compound noun", "Proper noun"], 0]] },
+  { id: "synonyms", emoji: "🔀", title: "Synonyms", slides: [
+    { vis: ["happy", "=", "joyful"], text: "Synonyms are words with the same or nearly the same meaning: happy and joyful." },
+    { vis: ["big", "large", "huge", "enormous"], text: "One idea can have many synonyms. Picking a stronger word makes your writing more exciting." },
+    { vis: ["small", "≠", "huge"], text: "Careful! Words with OPPOSITE meanings (small / huge) are antonyms, not synonyms." }],
+    quiz: [["Which word means the same as 'quick'?", ["fast", "slow", "quiet"], 0], ["A synonym for 'beautiful' is…", ["pretty", "ugly", "noisy"], 0], ["Synonyms have…", ["Similar meanings", "Opposite meanings", "The same spelling"], 0]] },
+  { id: "homophones", emoji: "👂", title: "Homophones", slides: [
+    { vis: ["their", "there", "they're"], text: "Homophones sound the same but are spelled differently and mean different things." },
+    { vis: ["their", "=", "belonging to them", "|", "there", "=", "in that place"], text: "Their = belonging to them. There = in that place. They're = they are." },
+    { vis: ["to", "too", "two"], text: "To = towards. Too = also or very. Two = the number 2. Check the meaning to choose the right spelling!" }],
+    quiz: [["'The dog was ___ tired to walk.'", ["too", "to", "two"], 0], ["'___ going to the beach.' (they are)", ["They're", "Their", "There"], 0], ["Which word means 'belonging to them'?", ["their", "there", "they're"], 0]] },
+  { id: "capitals", emoji: "🔠", title: "Capital letters & full stops", slides: [
+    { vis: ["Mia", "likes", "Jakarta", "."], text: "Start every sentence with a capital letter and end it with a full stop (or ? or !)." },
+    { vis: ["Monday", "Ramadan", "Lily", "Indonesia"], text: "Names of people, places, days and months always get a capital letter." },
+    { vis: ["I", "am", "here"], text: "The word 'I' is ALWAYS a capital letter, even in the middle of a sentence." }],
+    quiz: [["Which sentence is written correctly?", ["We went to Jakarta on Friday.", "we went to jakarta on friday.", "We went to jakarta on friday."], 0], ["Which needs a capital letter?", ["Monday", "morning", "house"], 0], ["A question ends with a…", ["Question mark", "Comma", "Full stop"], 0]] },
+  { id: "direct-speech", emoji: "💬", title: "Direct speech", slides: [
+    { vis: ["Mia said", "“Hello!”"], text: "Direct speech shows the exact words someone says, inside speech marks." },
+    { vis: ["“We need to go,”", "whispered Leo."], text: "Put the spoken words in speech marks. Punctuation (, ? !) goes INSIDE the closing mark. Then say who spoke." },
+    { vis: ["New speaker", "=", "new line"], text: "Reported speech has no speech marks: Leo whispered that they needed to go. Start a new line for each new speaker." }],
+    quiz: [["Which uses direct speech?", ["“Hurry up!” called Sam.", "Sam called that we must hurry.", "Sam hurry up called."], 0], ["Speech marks go around…", ["The exact words spoken", "The speaker's name", "The whole page"], 0], ["When a new person speaks you…", ["Start a new line", "Keep going on the same line", "Use capital letters only"], 0]] },
+  { id: "speaker", emoji: "🗣️", title: "Who is speaking?", slides: [
+    { vis: ["Mia:", "“Good morning!”"], text: "In a play script, the name before the colon tells you who is speaking." },
+    { vis: ["said Ben", "|", "whispered Leo"], text: "In a story, look for the speaker's name in the reporting clause, like 'said Ben' or 'whispered Leo'." },
+    { vis: ["new line", "→", "new speaker"], text: "No name? A new line means the speaker switched. Use the story clues to work out who it is - be a speaker detective!" }],
+    quiz: [["In 'Mia: Hello!' who is speaking?", ["Mia", "Hello", "Nobody"], 0], ["In '“Look!” said Sara.' who speaks?", ["Sara", "Look", "Said"], 0], ["A new line in a dialogue usually means…", ["A different person speaks", "The story ends", "The speaker is tired"], 0]] },
   { id: "basic-ops", emoji: "🧮", title: "Big numbers & long division", slides: [
     { vis: ["5", "6", "8", ",", "3", "3", "7"], text: "A 6-digit number like 568,337 has hundred-thousands, ten-thousands, thousands, hundreds, tens and ones. Line the digits up in columns." },
     { vis: ["7", "+", "3", "=", "10", "→", "carry", "1"], text: "Add (or subtract) column by column, starting from the right. If a column makes 10 or more, write the ones digit and carry the 1 to the next column." },
@@ -61,11 +101,6 @@ const LESSONS = [
     { vis: ["4,8,12", "|", "6,12,18", "→", "LCM", "=", "12"], text: "The LCM (lowest common multiple) is the smallest multiple two numbers share. Multiples of 4: 4, 8, 12. Multiples of 6: 6, 12. The LCM is 12." },
     { vis: ["12", "→", "1,2,3,4,6,12", "|", "18", "→", "1,2,3,6,9,18", "→", "GCF", "=", "6"], text: "The GCF (greatest common factor) is the biggest factor two numbers share. For 12 and 18 it is 6." }],
     quiz: [["What are the first three multiples of 4?", ["4, 8, 12", "1, 2, 4", "4, 6, 8"], 0], ["What is the LCM of 4 and 6?", ["12", "24", "2"], 0], ["What is the GCF of 12 and 18?", ["6", "3", "36"], 0]] },
-  { id: "adjectives", emoji: "🎨", title: "Adjectives", slides: [
-    { vis: ["🐶"], text: "A dog." },
-    { vis: ["🐶", "|", "big", "fluffy", "brown"], text: "Words that describe a noun are adjectives: a BIG, FLUFFY, BROWN dog." },
-    { vis: ["The", "🌞", "sunny", "day"], text: "Adjectives answer questions like: What kind? How many? Which one? “A sunny day.”" }],
-    quiz: [["Which word is an adjective? “The tall tree”", ["tall", "tree", "The"], 0], ["Which is an adjective?", ["quickly", "happy", "run"], 1], ["“She has three red balloons.” Which is NOT an adjective?", ["red", "three", "has"], 2]] },
   { id: "photosynthesis", emoji: "🌱", title: "How plants make food", slides: [
     { vis: ["☀️", "→", "🌿"], text: "Plants catch sunlight with their green leaves." },
     { vis: ["💧", "+", "🌬️", "+", "☀️", "→", "🍬"], text: "They mix water from the roots and air (carbon dioxide) using sunlight to make sugar — their food!" },
@@ -77,11 +112,6 @@ const LESSONS = [
     { vis: ["☁️", "→", "🌧️", "→", "⛰️", "→", "🌊"], text: "When clouds get heavy, rain falls (precipitation) and rivers carry it back to the sea. Then it starts again!" }],
     quiz: [["Evaporation is when water…", ["Turns into vapour", "Turns into ice", "Falls as rain"], 0], ["Clouds are made when vapour…", ["Cools and condenses", "Freezes into rocks", "Gets hotter"], 0], ["Rain falling from clouds is called…", ["Precipitation", "Evaporation", "Erosion"], 0]] },
   // Audit batch 4: four more lessons,
-  { id: "nouns-verbs", emoji: "📝", title: "Nouns and verbs", slides: [
-    { vis: ["🐶", "🏠", "🍎"], text: "A noun is a person, place or thing: dog, house, apple." },
-    { vis: ["🏃", "🍽️", "😴"], text: "A verb is an action word: run, eat, sleep." },
-    { vis: ["The", "dog", "runs", "."], text: "In “The dog runs.”, dog is the noun and runs is the verb!" }],
-    quiz: [["Which word is a noun?", ["Table", "Jump", "Quickly"], 0], ["Which word is a verb?", ["Swim", "Chair", "Blue"], 0], ["In “Cats sleep.”, the verb is…", ["sleep", "Cats", "."], 0]] },
   { id: "solar-system", emoji: "🪐", title: "Our solar system", slides: [
     { vis: ["☀️"], text: "The Sun is a star at the centre of our solar system." },
     { vis: ["☀️", "·", "🪨", "🌍", "🔴", "🪐"], text: "Eight planets travel around (orbit) the Sun. Earth is the third one." },
@@ -91,7 +121,7 @@ const LESSONS = [
 // Audit batch 4: checkpoint question mid-lesson, tap-to-count on busy slides, Bo reads each slide,
 // a "show me again" branch after a wrong answer, skip-to-quiz, lesson of the day + streak,
 // a link to a game that uses the topic, a summary card, and a graduation certificate.
-const GAME_FOR = { "basic-ops": ["../mathville/", "MathVille"], "pictograph": ["../mathville/", "MathVille"], "bar-graph": ["../mathville/", "MathVille"], "line-graph": ["../mathville/", "MathVille"], "angles": ["../mathville/", "MathVille"], "perimeter": ["../mathville/", "MathVille"], "area": ["../mathville/", "MathVille"], "square-numbers": ["../mathville/", "MathVille"], "factors-primes": ["../mathville/", "MathVille"], "multiples-lcm-gcf": ["../mathville/", "MathVille"], adjectives: ["../story-maker/", "Story Maker"], "nouns-verbs": ["../story-maker/", "Story Maker"], photosynthesis: ["../science-lab/", "Science Lab"], "water-cycle": ["../science-lab/", "Science Lab"], "solar-system": ["../azkauniverse/", "SolarQuest"] };
+const GAME_FOR = { "basic-ops": ["../mathville/", "MathVille"], "pictograph": ["../mathville/", "MathVille"], "bar-graph": ["../mathville/", "MathVille"], "line-graph": ["../mathville/", "MathVille"], "angles": ["../mathville/", "MathVille"], "perimeter": ["../mathville/", "MathVille"], "area": ["../mathville/", "MathVille"], "square-numbers": ["../mathville/", "MathVille"], "factors-primes": ["../mathville/", "MathVille"], "multiples-lcm-gcf": ["../mathville/", "MathVille"], poem: ["../azkacraft/", "Language & Arts"], letter: ["../azkacraft/", "Language & Arts"], "noun-types": ["../azkacraft/", "Language & Arts"], synonyms: ["../azkacraft/", "Language & Arts"], homophones: ["../azkacraft/", "Language & Arts"], capitals: ["../azkacraft/", "Language & Arts"], "direct-speech": ["../azkacraft/", "Language & Arts"], speaker: ["../azkacraft/", "Language & Arts"], photosynthesis: ["../science-lab/", "Science Lab"], "water-cycle": ["../science-lab/", "Science Lab"], "solar-system": ["../azkauniverse/", "SolarQuest"] };
 const lsc = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
 const lscw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 const cday = o => new Date(Date.now() - (o || 0) * 86400000).toISOString().slice(0, 10);

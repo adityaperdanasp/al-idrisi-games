@@ -45,7 +45,7 @@
   document.addEventListener("visibilitychange", () => { if (!document.hidden) paint(); });
 })();
 
-/* Audit round 2: 📅 Daily Word Challenge -- 3 multiple-choice questions from chapters 1-5, the same
+/* Audit round 2: 📅 Daily Word Challenge -- 3 multiple-choice questions from the Term 2 word chapters (nouns, synonyms, homophones, capital letters), the same
    set for everyone on a given day (seeded by the date), +3 coins the first time each day. */
 (function dailyWords() {
   const grid = document.querySelector("#screen-landing .mode-grid");
@@ -60,7 +60,8 @@
     let bank; try { bank = (typeof QUESTION_BANK !== "undefined" && QUESTION_BANK) || await fetch("questions.json").then(r => r.json()); } catch (e) { return; }
     let seed = Number(day.replace(/-/g, ""));
     const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-    const pool = bank.chapters.filter(c => c.id <= 5).flatMap(c => c.questions.filter(q => q.type === "mc" && Array.isArray(q.options)));
+    const plain = t => String(t).replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+    const pool = bank.chapters.filter(c => [3, 4, 5, 6].includes(c.id)).flatMap(c => c.questions.filter(q => q.type === "mc" && Array.isArray(q.options) && plain(q.prompt).length <= 140));
     const qs = []; while (qs.length < 3 && pool.length) qs.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
     const o = document.createElement("div");
     o.style.cssText = "position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px";
@@ -74,7 +75,7 @@
         o.querySelector("#la-dx").onclick = () => { o.remove(); paint(); }; return;
       }
       const q = qs[i], opts = q.options.slice().sort(() => Math.random() - 0.5);
-      card(`<div style="font-weight:800;opacity:.7">📅 Daily Word Challenge · ${i + 1}/3</div><p style="font-weight:800;font-size:1.05rem">${q.prompt.replace(/</g, "&lt;")}</p>${opts.map(x => `<button type="button" data-o="${String(x).replace(/"/g, "&quot;")}" style="display:block;width:100%;margin:6px 0;padding:10px;border:2px solid #1b1b1b;background:#fff;font-weight:700;text-align:left">${String(x).replace(/</g, "&lt;")}</button>`).join("")}<p id="la-dm" style="min-height:1.2em;font-weight:800"></p>`);
+      card(`<div style="font-weight:800;opacity:.7">📅 Daily Word Challenge · ${i + 1}/3</div><p style="font-weight:800;font-size:1.05rem">${plain(q.prompt).replace(/</g, "&lt;")}</p>${opts.map(x => `<button type="button" data-o="${String(x).replace(/"/g, "&quot;")}" style="display:block;width:100%;margin:6px 0;padding:10px;border:2px solid #1b1b1b;background:#fff;font-weight:700;text-align:left">${String(x).replace(/</g, "&lt;")}</button>`).join("")}<p id="la-dm" style="min-height:1.2em;font-weight:800"></p>`);
       o.querySelectorAll("[data-o]").forEach(btn => btn.onclick = () => {
         const ok = btn.dataset.o === String(q.answer);
         if (window.AIGLeaderboard && AIGLeaderboard.recordTopicAttempt) AIGLeaderboard.recordTopicAttempt("language-arts", "daily-words", ok);

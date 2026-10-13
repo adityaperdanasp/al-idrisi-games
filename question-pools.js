@@ -28,6 +28,11 @@
   let sciencePool = null;
   let pending = null;
 
+  // Term 2 Language Arts prompts may carry light HTML (<br>, <b>, <i>) for azkacraft's own UI; every other
+  // game shows prompts as plain text, so flatten it (<br> -> " / ") and keep only prompts short enough for a tile.
+  function plain(s) { return String(s).replace(/<br\s*\/?>/gi, " / ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim(); }
+  const MAX_LANG_PROMPT = 150;
+
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
   function shuffle(arr) {
     const a = arr.slice();
@@ -46,11 +51,9 @@
         ]);
         const langPool = [];
         (lang.chapters || []).forEach(ch => {
-          // Reading Comprehension (6) and Creative Writing (7) both assume
-          // a "passage" was just read ("According to the text...") that's
-          // never shown here -- excluded by chapter id, same fix already
-          // applied to Focus Round / Plane Mode's pools for the same reason.
-          if (ch.id === 6 || ch.id === 7) return;
+          // Reading Comprehension (Term 2 chapter 8) assumes a "passage" was just read that's
+          // never shown here -- excluded by chapter id, same as Focus Round / Plane Mode's pools.
+          if (ch.id === 8) return; // Term 2 ch 8 = Reading Comprehension (needs its passage on screen)
           (ch.questions || []).forEach(q => {
             // Some Antonyms-chapter entries (and one Capitalization one)
             // only have 3 options instead of the usual 4 -- fine in
@@ -59,7 +62,8 @@
             // a 3-option pick leaves a visibly broken empty cell. Filtered
             // out here rather than patched per-game.
             if (q.type === "mc" && q.options && q.options.length === 4) {
-              langPool.push({ prompt: q.prompt, options: q.options, correctLabel: q.answer });
+              const text = plain(q.prompt);
+              if (text.length <= MAX_LANG_PROMPT) langPool.push({ prompt: text, options: q.options, correctLabel: q.answer });
             }
           });
         });
