@@ -23,6 +23,7 @@ function structural(ch, d, st) {
 }
 function semantic(ch, st) {
   const m = st.meta || {}, a = st.answer;
+  if (m.expr !== undefined) return null; // story problems are verified by scripts/qa-azka-focus.js
   if (m.op === "add") return num(a) === m.a + m.b;
   if (m.op === "sub") return num(a) === m.a - m.b && m.a > m.b;
   if (m.op === "div") return m.divisor * num(a) === m.dividend;
