@@ -505,13 +505,19 @@
   /* =================================================================
      10. MULTIPLES, LCM & GCF
      ================================================================= */
+  // Mostly pairs that DO share a factor bigger than 1 (like the workbook's 24 & 36, 5 & 30, 39 & 21).
+  function gcfPair(mx) {
+    if (Math.random() < 0.15) { let a, b; do { a = rand(4, mx); b = rand(4, mx); } while (a === b); return [a, b]; }
+    for (let t = 0; t < 60; t++) { const g = rand(2, Math.max(2, Math.floor(mx / 3))), x = rand(1, Math.floor(mx / g)), y = rand(1, Math.floor(mx / g)); if (x !== y && g * x >= 4 && g * y >= 4) return [g * x, g * y]; }
+    return [12, 18];
+  }
   function genMultiples(d) {
     const kind = weighted([["list", 1], ["lcm2", 1.3], ["lcm3", tier(d) === "hard" ? 0.7 : 0], ["gcf", 1.3], ["lcmword", 1.2], ["gcfword", 0.8], ["other", 0.5]]);
     const mx = byTier(d, 10, 15, 20);
     if (kind === "list") { const n = rand(2, mx); return typein(`List the first 5 multiples of ${n}. (Example: the first five multiples of 2 are 2, 4, 6, 8, 10)`, [1, 2, 3, 4, 5].map(i => n * i).join(", "), "", { n }); }
     if (kind === "lcm2") { let a, b; do { a = rand(2, mx); b = rand(2, mx); } while (a === b || lcm(a, b) > byTier(d, 60, 120, 240)); return typein(`Find the lowest common multiple (LCM) of ${a} and ${b}.`, lcm(a, b), "", { a, b }); }
     if (kind === "lcm3") { const sets = [[2, 3, 5], [5, 6, 10], [3, 6, 11], [10, 15, 6], [4, 6, 9], [2, 5, 8], [3, 4, 10], [6, 8, 12]]; const s = choice(sets); return typein(`Find the lowest common multiple (LCM) of ${s[0]}, ${s[1]} and ${s[2]}.`, lcm(lcm(s[0], s[1]), s[2]), "", { s }); }
-    if (kind === "gcf") { let a, b; do { a = rand(4, byTier(d, 30, 50, 100)); b = rand(4, byTier(d, 30, 50, 100)); } while (a === b); return typein(`Find the greatest common factor (GCF) of ${a} and ${b}.`, gcd(a, b), "", { a, b }); }
+    if (kind === "gcf") { const [a, b] = gcfPair(byTier(d, 30, 50, 100)); return typein(`Find the greatest common factor (GCF) of ${a} and ${b}.`, gcd(a, b), "", { a, b }); }
     if (kind === "lcmword") {
       const t = rand(0, 3);
       if (t === 0) { const a = choice([12, 15, 18, 20, 30]), b = choice([8, 9, 10, 12, 18]); if (a === b) return genMultiples(d); return typein(`A smoke alarm beeps every ${a} minutes and an oven timer beeps every ${b} minutes. They beep together now. After how many minutes will they beep together again?`, lcm(a, b), "", { a, b, w: 1 }); }
@@ -623,7 +629,7 @@
     },
     "t2-multiple": d => { const n = rand(2, byTier(d, 9, 12, 20)), k = rand(3, byTier(d, 8, 10, 12)); return q(`What is the ${k}th multiple of ${n}?`, n * k); },
     "t2-lcm": d => { let a, b; do { a = rand(2, byTier(d, 10, 15, 20)); b = rand(2, byTier(d, 10, 15, 20)); } while (a === b || lcm(a, b) > byTier(d, 60, 120, 240)); return q(`Find the LCM of ${a} and ${b}.`, lcm(a, b)); },
-    "t2-gcf": d => { let a, b; do { a = rand(4, byTier(d, 30, 50, 100)); b = rand(4, byTier(d, 30, 50, 100)); } while (a === b); return q(`Find the GCF of ${a} and ${b}.`, gcd(a, b)); }
+    "t2-gcf": d => { const [a, b] = gcfPair(byTier(d, 30, 50, 100)); return q(`Find the GCF of ${a} and ${b}.`, gcd(a, b)); }
   };
   const QUICK_KEYS = Object.keys(QUICK);
 
