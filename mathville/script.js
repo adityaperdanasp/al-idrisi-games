@@ -4388,6 +4388,8 @@ if (new URLSearchParams(location.search).get("drive") === "1") {
   document.body.classList.add("drive-only");
   state.mode = "solo";
   launchDriveMode();
+  // skip the car/plane step -- plane has its own hub game
+  const carBtn = document.querySelector('#vehicle-step-category [data-vehicle="car"]'); if (carBtn) carBtn.click();
 }
 
 // Deep link from focus-round/index.html's redirect (?focus=1) -- open
