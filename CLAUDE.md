@@ -13,7 +13,7 @@ Hub berisi game edukasi buatan Adit buat kelas anaknya Azka (Grade 4 SD, Green M
 
 Anak complain game banyak yang hilang → SEMUA game (61 tile) balik di hub, tapi diatur oleh `hub-library.js` (layout B, buka-tutup): ⭐ **Favorit kamu** (6 game paling sering dimainkan dari `players/{id}/topicStats` + pin 📌 di `localStorage hub_pins`; fallback Math Race/MathVille/Language&Arts/Ninja/Dino/Plane), lalu 8 section cluster (Balapan, Petualangan, Battle, Olahraga, Teka-teki, Bangun, Belajar, Bo & Barang; 2 pertama kebuka), search, badge ✨/🔥/👀. List lama `.sc-game-list` tetap ada di DOM tapi di-`display:none` oleh script.
 - Game baru = tambahin ke array `CLUSTERS` di `hub-library.js` (bump `?v=N` di index.html). Ikon diambil dari kartu lama `.sc-game-card[href="dir/"]` kalau ada, kalau nggak emoji.
-- Whitelist CSS 5-game dihapus; slot hotbar "Dunia" + rotasi tombol Play (`MAIN` di `blockworld.js`) balik. Dino Race & Plane Mode (`plane/` → `mathville/?plane=1`) tetap punya kartu/tile.
+- Whitelist CSS 5-game dihapus; slot hotbar "Dunia" + rotasi tombol Play (`MAIN` di `blockworld.js`) balik. Dino Race, Plane Mode (`plane/` → `mathville/?plane=1`) dan Drive Mode (`drive/` → `mathville/?drive=1`, lompat langsung ke pilihan skin mobil; body class `drive-only`/`plane-only`) punya tile sendiri. Hitungan main hub-library dipisah per topik: `mathville/plane-mode`→Plane, `mathville/drive-mode`→Drive, sisanya MathVille (Azka: 1128 dari 1328 soal MathVille = Plane Mode). Drive Mode selalu dapat 1 slot di ⭐ Favorit.
 - Catatan "DinoRace easter egg, jangan tambah card" di bawah sudah tidak berlaku.
 
 ### Daftar lengkap game & mode interaktif (2026-08-05)
