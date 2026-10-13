@@ -1,9 +1,12 @@
 # SolarQuest — Azka's Science Adventure
 
-A playful quiz game for a Year 4 student, built around the topics in
-*Y4-T1-Science & Social Studies*: **Life Cycle of a Star**, **Basic
-Structure of an Atom**, **Earth Rotation**, **Globes and Maps**, and
-**Time System**.
+A playful quiz game for a Year 4 student. Since 2026-10-13 it follows *GMS Workbook: Science & Social Studies,
+Grade 4 Term 2* (Green Montessori School): **Energy Transformation**, **Light & the Eye**, **Phases of the Moon**,
+**Solar & Lunar Eclipses**, **Lakes, Deserts & Rivers**, **Ethnic Groups in Indonesia**, **History of Jakarta** and
+**Jakarta Landmarks** (8 planets on the quest map; Term 1's 5 topics live on in git history).
+
+`questions.json` is GENERATED: edit the Python sources in `scripts/term2/` (one file per level, plus `common.py` for the
+SVG diagram helpers) and run `cd scripts/term2 && python3 build.py` -- it rewrites `questions.json` and validates it.
 
 ## File structure
 
