@@ -10,7 +10,7 @@
   "use strict";
 
   const CLUSTERS = [
-    ["race", "🏎️ Balapan & Aksi", "#4f86f7", [["multipleazka", "Math Race", "🏎️"], ["dinorace", "Dino Race", "🦖"], ["plane", "Plane Mode", "✈️"], ["ninja-runner", "Ninja Runner", "🥷"], ["parkour-run", "Parkour", "🧗"], ["space-race", "Space Race", "🚀"], ["dino-rider", "Dino Rider", "🦕"], ["sea-mission", "Sea Mission", "⛵"], ["zombie-defense", "Zombie Defense", "🧟"]]],
+    ["race", "🏎️ Balapan & Aksi", "#4f86f7", [["multipleazka", "Math Race", "🏎️"], ["dinorace", "Dino Race", "🦖"], ["plane", "Plane Mode", "✈️"], ["drive", "Drive Mode", "🚗"], ["ninja-runner", "Ninja Runner", "🥷"], ["parkour-run", "Parkour", "🧗"], ["space-race", "Space Race", "🚀"], ["dino-rider", "Dino Rider", "🦕"], ["sea-mission", "Sea Mission", "⛵"], ["zombie-defense", "Zombie Defense", "🧟"]]],
     ["adv", "🗺️ Petualangan", "#e0953a", [["mathville", "MathVille", "🏙️"], ["azkacraft", "Language & Arts", "📖"], ["azkauniverse", "SolarQuest", "🪐"], ["treasure-dig", "Treasure Dig", "⛏️"], ["vault-quest", "Vault Quest", "💰"], ["island-adventure", "Island Adventure", "🏝️"]]],
     ["battle", "⚔️ Battle & Boss", "#c0392b", [["boss-rush", "Boss Rush", "🥊"], ["monster-battle", "Monster Catch", "🐲"], ["fortress-math", "Fortress Math", "🏰"], ["dungeon", "Dungeon", "🗡️"], ["duel", "Duel Arena", "⚔️"], ["card-race", "Card Race", "🃏"], ["weekly-boss", "Weekly Boss", "🐉"]]],
     ["sport", "⚽ Olahraga & Irama", "#d06a2a", [["math-tennis", "Math Tennis", "🎾"], ["basketball", "Math Hoops", "🏀"], ["number-line-jump", "Number Jump", "🐇"], ["dance-battle", "Dance Battle", "💃"], ["times-rhythm", "Times Rhythm", "🎵"]]],
@@ -19,7 +19,8 @@
     ["learn", "📚 Belajar", "#59607a", [["quick-review", "Quick Review", "🔁"], ["word-book", "Word Book", "📕"], ["bo-class", "Bo's Classroom", "🎓"], ["bo-tutor", "Bo's Tutor", "🧑‍🏫"], ["ready-check", "Level-Up Check", "✅"], ["focus-round", "Focus Round", "🎯"], ["science-lab", "Science Lab", "🧪"], ["speak-with-bo", "Speak with Bo", "🎙️"], ["voice-quiz", "Voice Quiz", "🗣️"], ["zen-mode", "Zen Mode", "🍃"]]],
     ["home", "🏠 Bo & Barang", "#8b5a2b", [["bo-home", "Bo's World", "🏠"], ["garage", "Garage", "🔧"], ["workshop", "Crafting Table", "⚒️"], ["class-board", "Class Teams", "🏆"], ["world-map", "World Map", "🧭"]]]
   ];
-  const NEW = { dinorace: 1, plane: 1 };
+  const NEW = { dinorace: 1, plane: 1, drive: 1 };
+  const TOPIC2DIR = { "plane-mode": "plane", "drive-mode": "drive" };
   const ID2DIR = { mathrace: "multipleazka", mathville: "mathville", "language-arts": "azkacraft", solarquest: "azkauniverse" };
 
   const ls = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
@@ -53,8 +54,12 @@
       if (!p) return out;
       const snap = await firebase.app("aig").database().ref(`players/${p.id}/topicStats`).once("value");
       Object.entries(snap.val() || {}).forEach(([gid, topics]) => {
-        let n = 0; Object.values(topics || {}).forEach(v => { if (v && typeof v === "object") n += (v.correct || 0) + (v.wrong || 0); });
-        out[ID2DIR[gid] || gid] = (out[ID2DIR[gid] || gid] || 0) + n;
+        Object.entries(topics || {}).forEach(([topic, v]) => {
+          if (!v || typeof v !== "object") return;
+          // MathVille hosts Plane Mode and Drive Mode; count them as their own games.
+          const dir = gid === "mathville" && TOPIC2DIR[topic] ? TOPIC2DIR[topic] : (ID2DIR[gid] || gid);
+          out[dir] = (out[dir] || 0) + (v.correct || 0) + (v.wrong || 0);
+        });
       });
     } catch (e) {}
     return out;
@@ -64,8 +69,11 @@
     const list = document.querySelector(".sc-game-list"); if (!list) return;
     const oldSearch = document.querySelector(".sc-search-link"); if (oldSearch) oldSearch.style.display = "none";
     const c = await counts();
-    const favDirs = [...new Set(pins().concat(Object.entries(c).filter(([d, n]) => n > 0 && byDir[d]).sort((a, b) => b[1] - a[1]).map(([d]) => d)))].slice(0, 6);
-    ["multipleazka", "mathville", "azkacraft", "ninja-runner", "dinorace", "plane"].forEach(d => { if (favDirs.length < 6 && !favDirs.includes(d)) favDirs.push(d); });
+    const ranked = Object.entries(c).filter(([d, n]) => n > 0 && byDir[d] && d !== "drive").sort((a, b) => b[1] - a[1]).map(([d]) => d);
+    const favDirs = [...new Set(pins().concat(ranked))].slice(0, 5);
+    // Drive Mode always has a Favorites slot (user's request 2026-10-13), even with few plays.
+    if (!favDirs.includes("drive")) favDirs.splice(Math.min(2, favDirs.length), 0, "drive");
+    ["multipleazka", "plane", "azkacraft", "mathville", "ninja-runner", "dinorace"].forEach(d => { if (favDirs.length < 6 && !favDirs.includes(d)) favDirs.push(d); });
     const lib = document.createElement("div"); lib.className = `lib lib-b`; lib.id = "hub-library";
     lib.innerHTML = `
       <div class="lib-search"><input id="lib-q" type="search" placeholder="🔍 Cari game… (mis. dino, pecahan, boss)" autocomplete="off"></div>

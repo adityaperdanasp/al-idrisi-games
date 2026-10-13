@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>BrainBox — Drive Mode</title>
+<!-- Drive Mode has its own hub tile. Same trick as plane/ and ninja-runner/: a thin redirect into
+     MathVille's ?drive=1 deep link, which owns the real driving engine. -->
+<script>location.replace("../mathville/index.html?drive=1");</script>
+<link rel="stylesheet" href="/blockworld-games.css?v=6" />
+<script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="drive";</script>
+</head>
+<body>
+  <p>Loading Drive Mode… if nothing happens, <a href="../mathville/index.html?drive=1">tap here</a>.</p>
+</body>
+</html>
