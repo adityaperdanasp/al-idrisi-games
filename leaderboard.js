@@ -2338,7 +2338,12 @@
   // ---- 12. Bo tutor -- weakest topics (>= 3 attempts, lowest accuracy first).
   // Term 1 MathVille chapter ids (retired 2026-10-13 when the app moved to the Term 2 workbook).
   // Their old stats stay in the database but must never be recommended as "weak topics" to practise.
+  const RETIRED_TOPICS = {
+    solarquest: ["star-lifecycle", "atom-structure", "earth-rotation", "globes-maps", "time-system"],
+    "language-arts": ["Spelling", "Vocabulary", "Grammar", "Creative Writing"]
+  };
   const RETIRED_MATHVILLE_TOPICS = ["place-value", "addition-subtraction", "prime-numbers", "gcf-lcm", "multiplication", "division", "mixed-operation", "measurement", "rounding", "word-problems"];
+  const isRetiredTopic = (game, topic) => (game === "mathville" && RETIRED_MATHVILLE_TOPICS.includes(topic)) || (RETIRED_TOPICS[game] || []).includes(topic);
   async function getWeakTopics(limit) {
     const me = perksPlayer();
     if (!me) return [];
@@ -2346,7 +2351,7 @@
     const rows = [];
     Object.entries(ts).forEach(([game, topics]) => Object.entries(topics || {}).forEach(([topic, v]) => {
       const c = (v && v.correct) || 0, x = (v && v.wrong) || 0, n = c + x;
-      if (n >= 3 && x > 0 && !(game === "mathville" && RETIRED_MATHVILLE_TOPICS.includes(topic)) && !["drive-mode", "plane-mode", "ninja-runner", "speed-round", "focus-round", "azka-pr", "weekly-boss-rush", "perk-test"].includes(topic)) rows.push({ game, topic, acc: c / n, n });
+      if (n >= 3 && x > 0 && !isRetiredTopic(game, topic) && !["drive-mode", "plane-mode", "ninja-runner", "speed-round", "focus-round", "azka-pr", "weekly-boss-rush", "perk-test"].includes(topic)) rows.push({ game, topic, acc: c / n, n });
     }));
     return rows.sort((a, b) => a.acc - b.acc).slice(0, limit || 3);
   }
@@ -6266,7 +6271,7 @@
       const prefix = SMART_PRACTICE_PREFIX[gameId];
       if (!prefix) return;
       Object.entries(topics).forEach(([topic, data]) => {
-        if (gameId === "mathville" && RETIRED_MATHVILLE_TOPICS.includes(topic)) return; // Term 1 chapter, no longer in the app
+        if (isRetiredTopic(gameId, topic)) return; // Term 1 content, no longer in the app
         const correct = data.correct || 0, wrong = data.wrong || 0, total = correct + wrong;
         if (total < WEAK_MIN_ATTEMPTS) return;
         const accuracy = correct / total;
