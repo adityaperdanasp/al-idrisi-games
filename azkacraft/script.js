@@ -16,14 +16,16 @@ const THEME_KEY = "azkacraft-theme";
 const API_BASE = ["playalidrisi.fun", "localhost"].includes(location.hostname) ? "" : "https://playalidrisi.fun";
 
 const STICKER_EMOJI = {
-  "sticker-interview": "🎤",
-  "sticker-spelling": "🔤",
-  "sticker-antonym": "🔄",
-  "sticker-affixes": "🧩",
-  "sticker-contraction": "✂️",
-  "sticker-punctuation": "❗",
+  // Term 2 (2026-10-13)
+  "sticker-poem": "🎶",
+  "sticker-letter": "✉️",
+  "sticker-noun": "🏷️",
+  "sticker-synonym": "🔀",
+  "sticker-homophone": "👂",
+  "sticker-capitals": "🔠",
+  "sticker-speech": "💬",
   "sticker-reading": "📖",
-  "sticker-creative": "✍️"
+  "sticker-dialogue": "🗣️"
 };
 
 const QUESTIONS_PER_SESSION = 5;
@@ -209,12 +211,19 @@ function wireNavigation() {
 
 /* ---------------------------- Progress (localStorage) ---------------------------- */
 
+// Term 2 (2026-10-13) replaced all 7 Term 1 chapters with 9 new ones, so old per-chapter stars/unlocks
+// would land on the wrong chapters. XP total is kept; chapter progress restarts once (flag `term2`).
+function migrateToTerm2(p) {
+  if (p && p.term2) return p;
+  return { xpTotal: (p && p.xpTotal) || 0, unlockedChapter: 1, chapters: {}, term2: true };
+}
+
 function loadProgress() {
   try {
     const raw = localStorage.getItem(PROGRESS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) return migrateToTerm2(JSON.parse(raw));
   } catch (e) { /* ignore corrupt data */ }
-  return { xpTotal: 0, unlockedChapter: 1, chapters: {} };
+  return { xpTotal: 0, unlockedChapter: 1, chapters: {}, term2: true };
 }
 
 function saveProgress() {
@@ -228,7 +237,9 @@ function saveProgress() {
 // and unlocked chapter never go backwards. Writes the merged result back
 // to both localStorage and the cloud so both sides end up in sync.
 function mergeProgress(local, cloud) {
+  cloud = migrateToTerm2(cloud); // an old (Term 1) cloud copy must not bring its chapter stars back
   const merged = {
+    term2: true,
     xpTotal: Math.max(local.xpTotal || 0, cloud.xpTotal || 0),
     unlockedChapter: Math.max(local.unlockedChapter || 1, cloud.unlockedChapter || 1),
     chapters: {}
@@ -268,11 +279,16 @@ async function syncProgressWithCloud() {
 
 // Same subject → icon/color mapping as the storybook design mockup.
 const TOPIC_STYLE = {
-  "Spelling":            { icon: "✏️", color: "#FF9F40", colorDark: "#E08428" },
-  "Vocabulary":          { icon: "🔤", color: "#FF6F91", colorDark: "#E8547A" },
-  "Grammar":             { icon: "📐", color: "#2F6FED", colorDark: "#1E56C4" },
-  "Reading Comprehension": { icon: "🌊", color: "#22B573", colorDark: "#158A54" },
-  "Creative Writing":    { icon: "🎨", color: "#9B59FF", colorDark: "#7E3EDB" }
+  "Poetry":               { icon: "🎶", color: "#FF6F91", colorDark: "#E8547A" },
+  "Letter Writing":       { icon: "✉️", color: "#FF9F40", colorDark: "#E08428" },
+  "Nouns":                { icon: "🏷️", color: "#2F6FED", colorDark: "#1E56C4" },
+  "Synonyms":             { icon: "🔀", color: "#9B59FF", colorDark: "#7E3EDB" },
+  "Homophones":           { icon: "👂", color: "#1FA6B8", colorDark: "#13808F" },
+  "Capital Letters":      { icon: "🔠", color: "#E4572E", colorDark: "#C1431F" },
+  "Direct Speech":        { icon: "💬", color: "#22B573", colorDark: "#158A54" },
+  "Reading Comprehension": { icon: "📖", color: "#8E5BD0", colorDark: "#6E3FB0" },
+  "Dialogue":             { icon: "🗣️", color: "#F2B705", colorDark: "#C99700" },
+  "Grammar":              { icon: "📐", color: "#2F6FED", colorDark: "#1E56C4" }
 };
 const CHAPTER_DECO = ["⭐", "✨", "🍃", "🌟", "🎈", "📎", "💫"];
 
@@ -593,7 +609,7 @@ function handleFillAnswer(q) {
   input.disabled = true;
   submitBtn.disabled = true;
 
-  const isCapitalizationChapter = session.chapter.id === 5;
+  const isCapitalizationChapter = !!session.chapter.caseSensitive; // Term 2 ch 6 (Capital Letters) is case-sensitive
   const given = isCapitalizationChapter ? input.value.trim() : input.value.trim().toLowerCase();
   const correct = isCapitalizationChapter ? q.answer.trim() : q.answer.trim().toLowerCase();
   const isCorrect = given === correct;
@@ -1433,7 +1449,7 @@ function ensureGlassQuestionPool() {
   if (glassQuestionPool || !QUESTION_BANK) return;
   glassQuestionPool = [];
   QUESTION_BANK.chapters.forEach(ch => {
-    if (ch.id === 6 || ch.id === 7) return; // passage-based, can't stand alone
+    if (ch.id === 8) return; // Term 2 ch 8 = Reading Comprehension (passage-based, can't stand alone)
     ch.questions.forEach(q => {
       if (q.type === "mc" && Array.isArray(q.options) && q.options.length >= 2) {
         glassQuestionPool.push({ prompt: q.prompt, options: q.options, answer: q.answer });

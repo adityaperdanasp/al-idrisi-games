@@ -2941,10 +2941,10 @@ async function ensurePlaneQuestionPools() {
       // for that type alone lets Creative Writing leak through. Exclude
       // both chapters by id explicitly instead, same fix already applied
       // to Focus Round's picker (see FOCUS_LANG_EXCLUDED_CHAPTER_IDS).
-      if (ch.id === 6 || ch.id === 7) return;
+      if (ch.id === 8) return; // Term 2 ch 8 = Reading Comprehension (needs its passage)
       (ch.questions || []).forEach(q => {
-        if (q.type === "mc") {
-          langPool.push({ prompt: q.prompt, options: q.options, correctLabel: q.answer, tier: ch.id <= 2 ? "easy" : ch.id === 3 ? "medium" : "hard" });
+        if (q.type === "mc" && focusPlain(q.prompt).length <= 150) {
+          langPool.push({ prompt: focusPlain(q.prompt), options: q.options, correctLabel: q.answer, tier: ch.id <= 3 ? "easy" : ch.id <= 6 ? "medium" : "hard" });
         }
       });
     });
@@ -3010,7 +3010,9 @@ const FOCUS_ROUND_SIZE = 20;
 // to the text/passage..." -- unanswerable without the passage, which this
 // picker has no room to show. Plane Mode's cross-game pool excludes the
 // same two chapter ids for the same reason (see ensurePlaneQuestionPools).
-const FOCUS_LANG_EXCLUDED_CHAPTER_IDS = [6, 7];
+const FOCUS_LANG_EXCLUDED_CHAPTER_IDS = [8]; // Term 2: ch 8 = Reading Comprehension (passage-based)
+// Term 2 Language prompts may contain light HTML for azkacraft's own UI; flatten it for mathville's plain-text screens.
+function focusPlain(s) { return String(s).replace(/<br\s*\/?>/gi, " / ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim(); }
 
 // Converts one azkacraft/azkauniverse question into mathville's generic
 // step shape ({uiType, prompt, ...}), or returns null to skip it
@@ -3033,10 +3035,10 @@ function focusNormalizeQuestion(q, source) {
     if (source === "sci" && q.image) return null; // no room to show the diagram here
     return source === "sci"
       ? { uiType: "mc", prompt: q.question, options: [...q.options], correctLabel: q.options[q.answer] }
-      : { uiType: "mc", prompt: q.prompt, options: [...q.options], correctLabel: q.answer };
+      : { uiType: "mc", prompt: focusPlain(q.prompt), options: [...q.options], correctLabel: q.answer };
   }
   if (q.type === "fill") {
-    const prompt = source === "sci" ? q.question : q.prompt;
+    const prompt = source === "sci" ? q.question : focusPlain(q.prompt);
     const answer = String(q.answer).trim();
     if (!prompt || !answer) return null;
     return { _fill: true, prompt, answer };
@@ -3102,7 +3104,7 @@ async function ensureFocusPools() {
 // all share "Grammar". So weighting for language topics is coarser than
 // math/science (which key 1:1 by chapter id / level id) -- an accurate
 // reflection of what data actually exists, not a bug.
-const FOCUS_LANG_TOPIC_LABELS = { 1: "Spelling", 2: "Vocabulary", 3: "Grammar", 4: "Grammar", 5: "Grammar" };
+const FOCUS_LANG_TOPIC_LABELS = { 1: "Poetry", 2: "Letter Writing", 3: "Nouns", 4: "Synonyms", 5: "Homophones", 6: "Capital Letters", 7: "Direct Speech", 9: "Dialogue" }; // Term 2 chapter topics (azkacraft/questions.json `topic`)
 
 // Mastery-based weighting, same spirit as Math Race's weightedRand()
 // (weight = 1 + wrong*k, backing off once mastered) but at topic

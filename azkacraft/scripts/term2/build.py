@@ -1,0 +1,72 @@
+"""Builds azkacraft/questions.json for Term 2 (Green Montessori Grade 4, 2026-2027 S1-T2 Language Arts workbook).
+Usage: python3 build.py   (from azkacraft/scripts/term2)   -> writes ../../questions.json and validates."""
+import json, sys, re, os
+sys.path.insert(0, os.path.dirname(__file__))
+import ch1_poem, ch2_letter, ch3_noun, ch4_synonym, ch5_homophone, ch6_capitals, ch7_speech, ch8_reading, ch9_speaker
+
+CHAPTERS = [
+    (1, "Poem", "Poetry", "sticker-poem", ch1_poem, "Rhymes, similes and a frog haiku - poems let words dance and paint pictures in your head!"),
+    (2, "Writing a Letter", "Letter Writing", "sticker-letter", ch2_letter, "Dear Aunty Susie, thank you for the lovely present... Every great letter has a greeting, a message and a friendly goodbye!"),
+    (3, "Types of Noun", "Nouns", "sticker-noun", ch3_noun, "Proper, common, abstract, collective, compound - nouns come in many kinds, from London to love to a pack of wolves!"),
+    (4, "Synonyms", "Synonyms", "sticker-synonym", ch4_synonym, "Why say 'big' when you can say enormous, huge or gigantic? Synonyms make your words sparkle!"),
+    (5, "Homophones", "Homophones", "sticker-homophone", ch5_homophone, "Their, there and they're sound the same but mean different things - tricky twins of the English language!"),
+    (6, "Capital Letters & Full Stops", "Capital Letters", "sticker-capitals", ch6_capitals, "Luvakass the alien keeps forgetting his capital letters and full stops. Can you help him fix his letter home?"),
+    (7, "Writing with Direct Speech", "Direct Speech", "sticker-speech", ch7_speech, "“Hurry up!” called Sam. Speech marks show the exact words someone says - let's get them in the right place!"),
+    (8, "Reading Comprehension", "Reading Comprehension", "sticker-reading", ch8_reading, "From rocks and camouflage to singing owls and kites - great readers notice every clue in a text!"),
+    (9, "Identifying the Speaker in Dialogue", "Dialogue", "sticker-dialogue", ch9_speaker, "Who said it? Be a speaker detective and use names, new lines and clues to find out!"),
+]
+
+def validate(chapters):
+    errs = []
+    for ch in chapters:
+        pids = {q["passageId"] for q in ch["questions"] if q["type"] == "passage"}
+        seen = set()
+        for q in ch["questions"]:
+            where = "ch%d %s" % (ch["id"], q.get("prompt", q.get("word", q.get("title")))[:60] if isinstance(q.get("prompt", q.get("word", q.get("title"))), str) else "?")
+            t = q["type"]
+            if t == "mc":
+                o = q["options"]
+                if q["answer"] not in o: errs.append(where + " answer not in options")
+                if len(set(o)) != len(o): errs.append(where + " duplicate options")
+                if not (2 <= len(o) <= 4): errs.append(where + " option count %d" % len(o))
+                if any(not x.strip() for x in o): errs.append(where + " empty option")
+            elif t == "fill":
+                if not q["answer"].strip(): errs.append(where + " empty fill answer")
+                if "___" not in q["prompt"] and "Type" not in q["prompt"] and "Rewrite" not in q["prompt"] and "Fix" not in q["prompt"] and "?" not in q["prompt"] and "(" not in q["prompt"]: errs.append(where + " fill prompt unclear")
+            elif t == "match":
+                if len(q["pairs"]) < 2: errs.append(where + " <2 pairs")
+                if len({p["left"] for p in q["pairs"]}) != len(q["pairs"]): errs.append(where + " duplicate left")
+            elif t == "sentence-builder":
+                if sorted(q["words"]) != sorted(q["answer"].split()): errs.append(where + " words/answer mismatch %s | %s" % (q["words"], q["answer"]))
+            if q.get("passageId") and q["passageId"] not in pids: errs.append(where + " unknown passageId")
+            key = json.dumps({k: v for k, v in q.items() if k not in ("options",)}, sort_keys=True)
+            if key in seen: errs.append(where + " DUPLICATE question")
+            seen.add(key)
+        if ch["id"] == 8 and any(q["type"] != "flashcard" and "passageId" not in q for q in ch["questions"]): errs.append("ch8 has ungrouped non-flashcard question")
+    return errs
+
+def main():
+    chapters = []
+    for cid, title, topic, sticker, mod, snippet in CHAPTERS:
+        qs = mod.build()
+        # drop exact duplicates
+        uniq, seen = [], set()
+        for q in qs:
+            k = json.dumps({a: b for a, b in q.items() if a != "options"}, sort_keys=True)
+            if k in seen: continue
+            seen.add(k); uniq.append(q)
+        ch = {"id": cid, "title": title, "topic": topic, "snippet": snippet, "stickerId": sticker, "questions": uniq}
+        if cid == 6: ch["caseSensitive"] = True
+        chapters.append(ch)
+    errs = validate(chapters)
+    out = {"_comment": "AzkaSocial question bank - Term 2. Written for 'GMS Workbook: Language Arts, Upper Elementary, Grade 4 Term 2' (Green Montessori School, 2026/2027). Chapters follow the workbook's table of contents. Generated by azkacraft/scripts/term2/build.py (original wording; answers authored and validated by code). The game draws 5 questions per playthrough.", "chapters": chapters}
+    path = os.path.join(os.path.dirname(__file__), "..", "..", "questions.json")
+    with open(path, "w") as f: json.dump(out, f, ensure_ascii=False, indent=1)
+    for ch in chapters:
+        import collections
+        print(ch["id"], ch["title"], len(ch["questions"]), dict(collections.Counter(q["type"] for q in ch["questions"])))
+    print("ERRORS:", len(errs)); [print(" ", e) for e in errs[:40]]
+    return 1 if errs else 0
+
+if __name__ == "__main__":
+    sys.exit(main())
