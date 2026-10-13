@@ -19,7 +19,7 @@ if (!player || player.role === "parent") {
 
 function initFortressMath() {
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
-  const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
   const TOWER_SLOTS_X = [22, 42, 62, 82]; // % positions along the path
   const BUILD_QUESTIONS = TOWER_SLOTS_X.length;
   const WAVE_COUNT = 5;

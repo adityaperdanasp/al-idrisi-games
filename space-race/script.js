@@ -9,7 +9,7 @@
    existing Weekly Leaderboard feature reads players/ once.
    ================================================================= */
 
-const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
 const QUESTION_COUNT = 12;
 const BOOST_TIERS = [
   { maxMs: 3000, label: "🚀 MEGA BOOST!", distance: 50 },

@@ -18,7 +18,7 @@ if (!player || player.role === "parent") {
 function initMonsterBattle() {
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const CATCH_ROUNDS = 5;
-  const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
   const WILD_MONSTERS = ["🐲", "🦖", "🐉", "🦕", "🐊", "🦎", "🐸", "🐙", "🦑", "🐍"];
   // Audit batch 9: elemental types (🔥 beats 🌿, 🌿 beats 💧, 💧 beats 🔥: x1.5 / x0.75), named species
   // and a Monsterdex kept between visits, ✨ shiny monsters (5%, +3 attack), a rare ⭐ monster that flees

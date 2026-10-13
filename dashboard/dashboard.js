@@ -29,16 +29,9 @@
   // load the game's own data file, same approach as language-arts' own
   // CHAPTER_NAMES list further down.
   const MATHVILLE_CHAPTER_TITLES = {
-    "place-value": "Place Value",
-    "addition-subtraction": "Addition & Subtraction",
-    "prime-numbers": "Prime Numbers",
-    "gcf-lcm": "GCF & LCM",
-    "multiplication": "Multiplication",
-    "division": "Division",
-    "mixed-operation": "Mixed Operation",
-    "measurement": "Measurement",
-    "rounding": "Rounding",
-    "word-problems": "Word Problems"
+    "basic-ops": "Basic Math Operations", "pictograph": "Pictograph", "bar-graph": "Bar Graph", "line-graph": "Line Graph",
+    "angles": "Measuring Angles", "perimeter": "Perimeter", "area": "Area", "square-numbers": "Square Numbers",
+    "factors-primes": "Factors & Prime Numbers", "multiples-lcm-gcf": "Multiples, LCM & GCF"
   };
 
   function escapeHtml(str) {

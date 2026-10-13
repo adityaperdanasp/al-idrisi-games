@@ -2453,7 +2453,7 @@
   }
 
   // ---- 17. Parent focus -- topics a parent picked in the Parent Portal.
-  const FOCUS_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const FOCUS_KEYS = ["t2-add", "t2-sub", "t2-div", "t2-twostep", "t2-muldiv", "t2-angle", "t2-perimeter", "t2-area", "t2-square", "t2-factors", "t2-multiple", "t2-lcm", "t2-gcf"];
   async function getWeeklyFocus() {
     const me = perksPlayer();
     if (!me) return null;
@@ -2865,11 +2865,13 @@
   // ---- 15. Level-up readiness -- a topic path where each topic lists what to
   // know first. A passed 5-question check is remembered (players/{id}/ready).
   const READY_PATH = [
-    { id: "multiplication", name: "Multiplication", after: null },
-    { id: "division", name: "Division", after: "multiplication" },
-    { id: "fractions", name: "Fractions", after: "division" },
-    { id: "measurement", name: "Measurement", after: "multiplication" },
-    { id: "rounding", name: "Rounding", after: null },
+    { id: "t2-add", name: "Big-Number Add & Subtract", after: null },
+    { id: "t2-div", name: "Long Division", after: "t2-add" },
+    { id: "t2-angle", name: "Angles", after: null },
+    { id: "t2-perimeter", name: "Perimeter", after: "t2-angle" },
+    { id: "t2-area", name: "Area", after: "t2-perimeter" },
+    { id: "t2-factors", name: "Factors & Primes", after: "t2-div" },
+    { id: "t2-lcm", name: "Multiples, LCM & GCF", after: "t2-factors" },
     { id: "words", name: "Spelling & Grammar", after: null },
     { id: "science", name: "Science Basics", after: null }
   ];

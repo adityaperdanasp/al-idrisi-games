@@ -19,7 +19,7 @@ if (!player || player.role === "parent") {
 function initEscapeRoom() {
   if (window.AIGQuestionPools) window.AIGQuestionPools.ensurePools();
   const CLASSIC_DOORS = 6;
-  const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
   const DIFFS = {
     easy: { dur: 420, timeWrong: 3, bonusNeed: 0, tierShift: -1, extraItem: "peek" },
     normal: { dur: 300, timeWrong: 5, bonusNeed: 0, tierShift: 0 },

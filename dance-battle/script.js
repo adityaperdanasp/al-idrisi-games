@@ -9,7 +9,7 @@
    bounded number of steps regardless of answers.
    ================================================================= */
 
-const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
 const TIERS = [
   { name: "Slow", interval: 1000 },
   { name: "Medium", interval: 800 },

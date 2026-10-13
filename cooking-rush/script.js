@@ -8,7 +8,7 @@
    timer ends the whole rush.
    ================================================================= */
 
-const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
 const CUSTOMER_EMOJIS = ["😀", "😊", "🤠", "👦", "👧", "🧑", "👵", "👴", "🐻", "🐰"];
 const SLOT_COUNT = 3;
 const ROUND_DURATION_SEC = 60;

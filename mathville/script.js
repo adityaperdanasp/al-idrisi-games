@@ -79,26 +79,15 @@ if (window.AIGLeaderboard) {
 // the harvest festival" arc. Purely cosmetic text shown above the normal
 // intro copy (goToIntro) -- no gameplay/logic ties to it at all, so it can
 // never affect scoring, progress, or the round flow.
-const CHAPTER_META = {
-  "place-value": { location: "Town Hall", icon: "🏛️", mapX: 80, mapY: 70, story: "The mayor's chest of festival coins toppled over! Help sort them by place value before the gates open." },
-  "addition-subtraction": { location: "Bakery", icon: "🥐", mapX: 340, mapY: 240, story: "The baker's order slips got mixed up -- add and subtract the batches so nobody goes hungry at the festival." },
-  "prime-numbers": { location: "Factor Grove", icon: "🌳", mapX: 80, mapY: 410, story: "The grove keeper says only prime-numbered trees may be tapped for syrup this festival season." },
-  "gcf-lcm": { location: "Twin Bridges", icon: "🌉", mapX: 340, mapY: 580, story: "Two work crews need to meet on the bridge at the same time -- find when their schedules line up." },
-  "multiplication": { location: "Windmill", icon: "🎡", mapX: 80, mapY: 750, story: "The windmill grinds grain in batches for festival bread -- figure out how much flour each batch makes." },
-  "division": { location: "Water Tower", icon: "🚰", mapX: 340, mapY: 920, story: "The water tower needs to share its supply fairly across every street before the festival crowds arrive." },
-  "mixed-operation": { location: "Crossroads Plaza", icon: "🚦", mapX: 80, mapY: 1090, story: "Festival stalls are going up at the crossroads -- juggle all kinds of math to get them ready in time." },
-  "measurement": { location: "General Store", icon: "🏪", mapX: 340, mapY: 1260, story: "The shopkeeper needs help measuring out festival supplies exactly right." },
-  "rounding": { location: "Clock Tower", icon: "🕰️", mapX: 80, mapY: 1430, story: "The clock tower keeper likes things tidy -- round the numbers before ringing the festival bell." },
-  "word-problems": { location: "The Library", icon: "📖", mapX: 340, mapY: 1600, story: "The town librarian collected everyone's trickiest story problems from the whole festival -- one last challenge!" },
-  // Synthetic chapterId (never in MATHVILLE_BANK.chapters, same pattern as
-  // Plane Mode's "plane-mode") so showReward()'s CHAPTER_META lookup and
-  // saveChapterProgress() work unmodified for a Focus Round. Town-map
-  // rendering only ever iterates the real chapters array, never this
-  // object's own keys, so this extra entry is inert there.
+const CHAPTER_POS = [[80, 70], [340, 240], [80, 410], [340, 580], [80, 750], [340, 920], [80, 1090], [340, 1260], [80, 1430], [340, 1600]];
+// Term 2 (2026-10-13): the 10 chapters + their town-stop flavour live in generators.js (MATHVILLE_T2.chapters).
+const CHAPTER_META = Object.assign({}, ...MATHVILLE_T2.chapters.map((c, i) => ({ [c.id]: { location: c.location, icon: c.icon, mapX: CHAPTER_POS[i][0], mapY: CHAPTER_POS[i][1], story: c.story } })), {
+  // Synthetic chapterIds (never in MATHVILLE_BANK.chapters, same pattern as Plane Mode's "plane-mode")
+  // so showReward()'s CHAPTER_META lookup and saveChapterProgress() work unmodified. Town-map rendering
+  // only iterates the real chapters array, never this object's own keys, so these are inert there.
   "focus-round": { location: "Focus Round", icon: "🎯" },
-  // Same synthetic pattern, for Azka's Weekly PR (see launchAzkaPrRound()).
   "azka-pr": { location: "Azka's Weekly PR", icon: "🎯" }
-};
+});
 const MAP_HEIGHT = 1690;
 
 // Decorative scenery scattered along the road — purely cosmetic, recolored
@@ -822,77 +811,7 @@ function hexToRgb(hex) {
 //   "steps" -- a short vertical sequence of lines walking through one
 //              worked example. `mono: true` right-aligns them in a
 //              monospace column (for actual column arithmetic).
-const INTRO_DEMOS = {
-  "place-value": {
-    type: "grid",
-    label: "5.985.465 — one digit, one job",
-    cells: [
-      { d: "5", place: "Millions", sep: true },
-      { d: "9", place: "Hundred Thousands" },
-      { d: "8", place: "Ten Thousands" },
-      { d: "5", place: "Thousands", sep: true },
-      { d: "4", place: "Hundreds" },
-      { d: "6", place: "Tens" },
-      { d: "5", place: "Ones" }
-    ]
-  },
-  "addition-subtraction": {
-    type: "steps",
-    mono: true,
-    label: "12,456 + 8,738 — carry when a column tops 9",
-    lines: ["  12456", "+  8738", "———————", "  21194"]
-  },
-  "prime-numbers": {
-    type: "steps",
-    label: "Breaking 24 down into its prime factors",
-    lines: ["24 = 2 × 12", "12 = 2 × 6", "6 = 2 × 3", "24 = 2 × 2 × 2 × 3"]
-  },
-  "gcf-lcm": {
-    type: "steps",
-    label: "GCF and LCM of 12 and 18",
-    lines: [
-      "Factors of 12: 1, 2, 3, 4, 6, 12",
-      "Factors of 18: 1, 2, 3, 6, 9, 18",
-      "GCF = 6 (biggest factor they share)",
-      "LCM = 36 (smallest multiple they share)"
-    ]
-  },
-  "multiplication": {
-    type: "steps",
-    mono: true,
-    label: "6 × 47 using the distributive property",
-    lines: ["6 × 47", "= 6×40 + 6×7", "= 240 + 42", "= 282"]
-  },
-  "division": {
-    type: "steps",
-    label: "Is 348 divisible by 4? Check the last 2 digits",
-    lines: ["Last 2 digits of 348 → 48", "48 ÷ 4 = 12, no remainder", "So yes — 348 divides evenly by 4!"]
-  },
-  "mixed-operation": {
-    type: "steps",
-    label: "\"The clinic has 84 masks, split evenly into 4 boxes\"",
-    lines: [
-      "Splitting into equal groups means DIVIDE",
-      "84 ÷ 4 = 21",
-      "21 masks in each box"
-    ]
-  },
-  "measurement": {
-    type: "steps",
-    mono: true,
-    label: "Converting 3 kilometers to meters",
-    lines: ["1 km = 1000 m", "3 km = 3 × 1000", "3 km = 3000 m"]
-  },
-  "rounding": {
-    type: "steps",
-    label: "Round 4,672 to the nearest hundred",
-    lines: [
-      "Look at the tens digit of 4,672 → it's 7",
-      "7 is 5 or more, so round UP",
-      "4,672 → 4,700"
-    ]
-  }
-};
+const INTRO_DEMOS = Object.fromEntries(MATHVILLE_T2.chapters.map(c => [c.id, c.demo]));
 
 // Renders an INTRO_DEMOS entry into ANY container -- extracted from
 // goToIntro's original inline version so the SAME step-by-step visual
@@ -1046,24 +965,9 @@ const DRIVE_CITY_POS = [
   { x: 18, y: 64 }, { x: 50, y: 66 }, { x: 82, y: 62 },
   { x: 50, y: 82 } // 10th chapter (Word Problems) -- bottom-center, clear of both corner joysticks
 ];
-const DRIVE_QUICK_GEN_KEYS = [
-  "place-value", "addition-subtraction-add", "addition-subtraction-sub",
-  "multiplication", "division", "measurement", "rounding"
-];
-// Drive Mode city markers use topic icons (not the town-map's whimsical
-// building icons) so a kid can tell what's inside at a glance.
-const DRIVE_CITY_ICONS = {
-  "place-value": "🔢",
-  "addition-subtraction": "➕",
-  "prime-numbers": "🌳",
-  "gcf-lcm": "🧩",
-  "multiplication": "✖️",
-  "division": "➗",
-  "mixed-operation": "🔀",
-  "measurement": "📏",
-  "rounding": "🎯",
-  "word-problems": "📖"
-};
+const DRIVE_QUICK_GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
+// Drive Mode city markers use topic icons (not the town-map's whimsical building icons).
+const DRIVE_CITY_ICONS = Object.fromEntries(MATHVILLE_T2.chapters.map(c => [c.id, c.emoji]));
 // A little variety so obstacles don't all look like the same yellow
 // barrier — purely cosmetic, doesn't affect collision size/behavior.
 const DRIVE_OBSTACLE_ICONS = ["🚧", "🪨", "🚦", "🪵", "⚠️", "🧱"];
@@ -1648,7 +1552,7 @@ function rollDriveQuestion(difficulty) {
     const raw = MATHVILLE_GENERATORS[key](difficulty);
     if (isCleanQuickAnswer(raw)) return raw;
   }
-  return MATHVILLE_GENERATORS.rounding(difficulty); // always clean — guaranteed fallback
+  return MATHVILLE_GENERATORS["t2-multiple"](difficulty); // always clean — guaranteed fallback
 }
 
 // Place-value questions ("value of the digit 9 in 92,678?") need
@@ -4406,7 +4310,7 @@ if (new URLSearchParams(location.search).get("diagnostic") === "1") {
 }
 if (new URLSearchParams(location.search).get("worksheet") === "1") {
   const params = new URLSearchParams(location.search);
-  launchWorksheet(params.get("topic") || "mixed-operation", params.get("for") || "");
+  launchWorksheet(params.get("topic") || MATHVILLE_T2.chapters[0].id, params.get("for") || "");
 }
 
 // Analog joystick: drag anywhere inside (pointer capture lets the finger
@@ -4691,81 +4595,19 @@ const GCF_LCM_SHORT_RE = /^Find the (Greatest Common Factor \(GCF\)|GCF|Least Co
 // mixed-operation/word-problems ignore it entirely (bespoke generator or
 // static bank, no difficulty tiers to speak of).
 function buildRound(chapterId, difficulty) {
-  const chapterData = MATHVILLE_BANK.chapters.find(c => c.id === chapterId);
-  const steps = [];
-
-  if (chapterId === "place-value") {
-    for (let i = 0; i < ROUND_SIZE; i++) steps.push(buildPlaceValueStep());
-
-  } else if (chapterId === "addition-subtraction") {
-    const statics = pickN(chapterData.staticQuestions, 2);
-    statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer }));
-    for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
-      const key = i % 2 === 0 ? "addition-subtraction-add" : "addition-subtraction-sub";
-      const q = MATHVILLE_GENERATORS[key](difficulty);
-      steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer });
-    }
-
-  } else if (chapterId === "prime-numbers") {
-    pickN(chapterData.questions.filter(q => !q.skipInRound), ROUND_SIZE).forEach(q => {
-      if (/prime or not prime/i.test(q.prompt)) {
-        steps.push({ uiType: "tap", prompt: q.prompt, options: ["Prime", "Not Prime"], correctLabel: /^not prime/i.test(q.answer) ? "Not Prime" : "Prime", image: q.image });
-      } else {
-        steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer, image: q.image });
-      }
-    });
-
-  } else if (chapterId === "gcf-lcm") {
-    const matchable = chapterData.questions.filter(q => GCF_LCM_SHORT_RE.test(q.prompt));
-    const wordProblems = chapterData.questions.filter(q => !GCF_LCM_SHORT_RE.test(q.prompt));
-    const pairs = pickN(matchable, 4).map(q => ({ left: q.prompt.replace(/^Find the /i, "").replace(/\.$/, ""), right: q.answer }));
-    steps.push({ uiType: "match", pairs });
-    pickN(wordProblems, 2).forEach(q => steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer }));
-
-  } else if (chapterId === "multiplication") {
-    const statics = pickN(chapterData.staticQuestions, 2);
-    statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer, image: s.image }));
-    for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
-      const q = MATHVILLE_GENERATORS.multiplication(difficulty);
-      steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer });
-    }
-
-  } else if (chapterId === "division") {
-    const statics = pickN(chapterData.staticQuestions.filter(q => !q.skipInRound), 2);
-    statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer, image: s.image }));
-    for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
-      const q = MATHVILLE_GENERATORS.division(difficulty);
-      steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer });
-    }
-
-  } else if (chapterId === "mixed-operation") {
-    pickN(chapterData.questions, Math.min(ROUND_SIZE, chapterData.questions.length))
-      .forEach(q => steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer, image: q.image }));
-
-  } else if (chapterId === "measurement") {
-    const statics = pickN(chapterData.staticQuestions, 2);
-    statics.forEach(s => steps.push({ uiType: "typein", prompt: s.prompt, answer: s.answer, image: s.image }));
-    for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
-      const q = MATHVILLE_GENERATORS.measurement(difficulty);
-      if (q.prompt.startsWith("Compare")) {
-        steps.push({ uiType: "tap", prompt: q.prompt, options: ["<", "=", ">"], correctLabel: q.answer });
-      } else {
-        steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer });
-      }
-    }
-
-  } else if (chapterId === "rounding") {
-    const statics = pickN(chapterData.staticQuestions, 2);
-    statics.forEach(s => steps.push(parseEmbeddedMC(s.prompt, s.answer) || { uiType: "typein", prompt: s.prompt, answer: s.answer }));
-    for (let i = 0; i < ROUND_SIZE - statics.length; i++) {
-      steps.push(buildRoundingMcStep(MATHVILLE_GENERATORS.rounding(difficulty)));
-    }
-
-  } else if (chapterId === "word-problems") {
-    pickN(chapterData.questions, Math.min(ROUND_SIZE, chapterData.questions.length))
-      .forEach(q => steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer, image: q.image }));
+  // Term 2: every chapter is generated (graphs, angles, shapes, number work) by MATHVILLE_T2.makeStep.
+  // `difficulty` is undefined for normal rounds (-> "hard", the workbook level); adaptive tiers pass easy/medium.
+  const steps = [], seen = new Set();
+  let guard = 0;
+  while (steps.length < ROUND_SIZE && guard++ < ROUND_SIZE * 15) {
+    const q = MATHVILLE_T2.makeStep(chapterId, difficulty);
+    const key = q.prompt + "|" + (q.answer || q.correctLabel) + "|" + (q.image || "").length;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    steps.push(q.uiType === "tap"
+      ? { uiType: "tap", prompt: q.prompt, options: q.options, correctLabel: q.correctLabel, image: q.image }
+      : { uiType: "typein", prompt: q.prompt, answer: q.answer, image: q.image });
   }
-
   return steps;
 }
 
@@ -4974,7 +4816,7 @@ function goToNextStep() {
 // (see buildRound's own comment). place-value/prime-numbers/gcf-lcm/
 // mixed-operation/word-problems are excluded: bespoke generator or a
 // static hand-written bank, no tiers to move between.
-const ADAPTIVE_DIFFICULTY_CHAPTERS = ["addition-subtraction", "multiplication", "division", "measurement", "rounding"];
+const ADAPTIVE_DIFFICULTY_CHAPTERS = MATHVILLE_T2.chapters.map(c => c.id); // every Term 2 chapter accepts a difficulty tier
 const DIFFICULTY_ORDER = ["easy", "medium", "hard"];
 const ADAPTIVE_DOWN_THRESHOLD = -3; // 3 wrong in a row at the current tier
 const ADAPTIVE_UP_THRESHOLD = 5;    // 5 correct in a row at the current tier
@@ -6325,7 +6167,7 @@ function generateWorksheetQuestions(chapterId, count) {
     buildRound(chapterId).forEach(s => {
       if (collected.length >= count || s.uiType === "match" || !s.prompt) return;
       const answer = s.uiType === "typein" ? s.answer : s.correctLabel;
-      collected.push({ prompt: s.prompt, answer });
+      collected.push({ prompt: s.prompt, answer, image: s.image || "" });
     });
   }
   return collected;
@@ -6339,7 +6181,7 @@ function launchWorksheet(chapterId, forName) {
   $("worksheet-chapter-title-2").textContent = title;
   $("worksheet-for-name").textContent = forName || "_______________";
   $("worksheet-date").textContent = new Date().toLocaleDateString();
-  $("worksheet-questions").innerHTML = questions.map(q => `<li>${q.prompt}<div class="worksheet-blank"></div></li>`).join("");
+  $("worksheet-questions").innerHTML = questions.map(q => `<li>${q.image || ""}${q.prompt}<div class="worksheet-blank"></div></li>`).join("");
   $("worksheet-answers").innerHTML = questions.map(q => `<li>${q.answer}</li>`).join("");
   showScreen("screen-worksheet");
 }

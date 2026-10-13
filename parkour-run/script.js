@@ -9,7 +9,7 @@
    vault through, pausing the approach until answered.
    ================================================================= */
 
-const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
 const OBSTACLE_EMOJI = { jump: "🪨", wallrun: "🧱", slide: "🕸️" };
 const ACTION_LABEL = { jump: "Jump", wallrun: "Wall-Run", slide: "Slide" };
 const TOTAL_OBSTACLES = 15;

@@ -22,10 +22,9 @@
   const WEAK_ACCURACY = 0.7;
 
   const MATHVILLE_CHAPTER_TITLES = {
-    "place-value": "Place Value", "addition-subtraction": "Addition & Subtraction",
-    "prime-numbers": "Prime Number", "gcf-lcm": "GCF & LCM", "multiplication": "Multiplication",
-    "division": "Division", "mixed-operation": "Mixed Operation", "measurement": "Measurement",
-    "rounding": "Rounding", "word-problems": "Word Problems"
+    "basic-ops": "Basic Math Operations", "pictograph": "Pictograph", "bar-graph": "Bar Graph", "line-graph": "Line Graph",
+    "angles": "Measuring Angles", "perimeter": "Perimeter", "area": "Area", "square-numbers": "Square Numbers",
+    "factors-primes": "Factors & Prime Numbers", "multiples-lcm-gcf": "Multiples, LCM & GCF"
   };
 
   // Same 7 tiers as leaderboard.js's TITLE_TIERS -- duplicated here (this
@@ -310,7 +309,7 @@
     box.innerHTML = `<div class="p-quiz-card"><div>${rows}</div>${flags ? `<div style="margin-top:8px;font-weight:700;font-size:.85rem">👀 Worth a chat or a break:<ul style="margin:4px 0 0 18px">${flags}</ul></div>` : '<div style="margin-top:8px;font-weight:700;font-size:.85rem;color:#15803d">No worrying pattern — nothing stands out. 💚</div>'}</div>`;
   }
 
-  const FOCUS_TOPICS = [["addition-subtraction-add", "Addition"], ["addition-subtraction-sub", "Subtraction"], ["multiplication", "Multiplication"], ["division", "Division"], ["measurement", "Measurement"], ["rounding", "Rounding"]];
+  const FOCUS_TOPICS = [["t2-add", "Addition (big numbers)"], ["t2-sub", "Subtraction (big numbers)"], ["t2-div", "Long division"], ["t2-twostep", "Two-step word problems"], ["t2-muldiv", "× / ÷ word problems"], ["t2-angle", "Angles"], ["t2-perimeter", "Perimeter"], ["t2-area", "Area"], ["t2-square", "Square numbers"], ["t2-factors", "Factors & primes"], ["t2-multiple", "Multiples"], ["t2-lcm", "LCM"], ["t2-gcf", "GCF"]];
   function renderFocus(focus) {
     const active = focus && focus.topics && focus.topics.length && Date.now() - (focus.setAt || 0) < 8 * 86400000 ? focus : null;
     const picker = document.getElementById("p-focus-picker");

@@ -16,7 +16,7 @@ if (!player || player.role === "parent") {
 
 function initDuel() {
   const ROUND_SIZE = 10;
-  const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
 
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
   function shuffle(arr) {
@@ -52,7 +52,7 @@ function initDuel() {
   // Audit batch 4 (Duel Arena): friend picker, duel themes, a ghost of your friend's answer times,
   // one 50/50 per duel, a VS intro, speed tie-break, rematch button, a local league (Wood -> Diamond)
   // from your results, a champion belt for 3 wins in a row, and a record per friend.
-  const THEMES = { mixed: GEN_KEYS, times: ["multiplication", "division"], addsub: ["addition-subtraction-add", "addition-subtraction-sub"], measure: ["measurement", "rounding"] };
+  const THEMES = { mixed: GEN_KEYS, times: ["t2-square", "t2-multiple", "t2-lcm", "t2-gcf"], addsub: ["t2-add", "t2-sub", "t2-div"], measure: ["t2-angle", "t2-perimeter", "t2-area"] };
   let theme = "mixed";
   const lsd = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
   const lsdw = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -242,7 +242,7 @@ function initDuel() {
     const lg = league(), streak = Number(lsd("dl_streak", "0")), rec = JSON.parse(lsd("dl_rec", "{}") || "{}");
     document.getElementById("dl-arena").innerHTML = `<div class="dl-lg"><b>${lg.name} league</b> · ${lg.wins} wins${lg.next[0] ? ` · ${lg.next[1] - lg.wins} more for ${lg.next[0]}` : " · top league!"}${streak >= 3 ? " · 🥊 Champion belt!" : streak ? ` · 🔥 ${streak} win streak` : ""}</div>
       ${Object.keys(rec).length ? `<div class="dl-recs">${Object.entries(rec).slice(0, 6).map(([n, r]) => `<span>${escapeHtml(n)}: ${r.w}W ${r.l}L${r.t ? ` ${r.t}T` : ""}</span>`).join("")}</div>` : ""}
-      <div class="dl-themes">${[["mixed", "🎲 Mixed"], ["times", "✖️ Times & ÷"], ["addsub", "➕ Add/Sub"], ["measure", "📏 Measure"]].map(([k, l]) => `<button type="button" data-th="${k}" class="${theme === k ? "on" : ""}">${l}</button>`).join("")}</div>`;
+      <div class="dl-themes">${[["mixed", "🎲 Mixed"], ["times", "🔲 Squares & LCM"], ["addsub", "➕ Big Numbers"], ["measure", "📐 Shapes"]].map(([k, l]) => `<button type="button" data-th="${k}" class="${theme === k ? "on" : ""}">${l}</button>`).join("")}</div>`;
     document.querySelectorAll("[data-th]").forEach(b => b.onclick = () => { theme = b.dataset.th; arena(); });
     try { const names = await AIGLeaderboard.listPlayerNames(); document.getElementById("dl-friends").innerHTML = names.filter(n => n.id !== player.id).map(n => `<option value="${escapeHtml(n.name)}"></option>`).join(""); } catch (e) {}
   }

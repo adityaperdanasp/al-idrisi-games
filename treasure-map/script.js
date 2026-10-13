@@ -11,7 +11,7 @@
    the player cash in partial progress at any point.
    ================================================================= */
 
-const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
 const WEEKLY = [["🌴", "⛰️", "🏚️", "🌊", "🗿", "🕳️", "🌵", "🏰"], ["🌲", "🍄", "🦉", "🏞️", "🪵", "🐻", "🌋", "⛺"], ["🏜️", "🐪", "🌵", "🏺", "🦂", "🐍", "☀️", "🕌"]];
 const LANDMARKS = [
   { emoji: "🌴", name: "Palm Cove", x: 15, y: 20, difficulty: "easy" },

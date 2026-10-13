@@ -34,7 +34,7 @@ function initBasketball() {
   // of the same digit (see mathville/script.js's buildPlaceValueMc), not
   // generic jittered numbers, and that's more machinery than this mini-
   // game's own question flow needs.
-  const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
 
   // Daily Challenge (round 1, item 26) -- `?daily=1` deep-link, same
   // convention as the hub's other `?ninja=1`-style query flags. Seeds a
@@ -831,12 +831,9 @@ function initBasketball() {
   // Lightning Round (round 3, item 18) -- a rare true/false bonus question
   // slotted in right after shot LIGHTNING_ROUND_AT, on its own short timer,
   // worth a flat bonus if answered correctly -- ONE per round at most.
-  // Restricted to the 4 GEN_KEYS whose prompts reliably end in "= ?"
-  // (addition/subtraction/multiplication/division) -- "measurement"
-  // ("Convert: X g = ? kg") and "rounding" ("Round X to the nearest Y.")
-  // don't end that way, which read awkwardly once True/or/False's own
-  // "= shownAnswer?" is appended after stripping the original ending.
-  const LIGHTNING_GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division"];
+  // Restricted to the generators whose prompts reliably end in "= ?" (big-number add / subtract),
+  // so True/False's own "= shownAnswer?" reads naturally after stripping the original ending.
+  const LIGHTNING_GEN_KEYS = ["t2-add", "t2-sub"];
   function maybeOfferLightningRound(onDone) {
     if (state.lightningRoundDone || state.qIndex !== LIGHTNING_ROUND_AT || rng() >= LIGHTNING_ROUND_CHANCE) { onDone(); return; }
     state.lightningRoundDone = true;

@@ -23,7 +23,7 @@ function initBossRush() {
       document.getElementById("br-daily-banner").classList.toggle("hidden", status.claimed);
     }).catch(() => {});
   }
-  const GEN_KEYS = ["addition-subtraction-add", "addition-subtraction-sub", "multiplication", "division", "measurement", "rounding"];
+  const GEN_KEYS = MATHVILLE_GENERATORS.QUICK_KEYS;
   const BASE_BOSSES = [
     { emoji: "👹", name: "Ogre", hp: 25, atk: 5 },
     { emoji: "🐺", name: "Werewolf", hp: 35, atk: 7 },
