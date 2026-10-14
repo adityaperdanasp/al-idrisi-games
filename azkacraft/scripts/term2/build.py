@@ -47,10 +47,22 @@ def validate(chapters):
         if ch["id"] == 8 and any(q["type"] != "flashcard" and "passageId" not in q for q in ch["questions"]): errs.append("ch8 has ungrouped non-flashcard question")
     return errs
 
+# Second batch ("doubling", 2026-10-14): extra modules x{N}_*.py, built AFTER all base chapters so the original
+# questions (and their seeded option order) stay byte-identical. Missing modules are simply skipped.
+import importlib
+EXTRA_MODULES = {1: "x1_poem", 2: "x2_letter", 3: "x3_noun", 4: "x4_synonym", 5: "x5_homophone", 6: "x6_capitals", 7: "x7_speech", 8: "x8_reading", 9: "x9_speaker"}
+def extra_for(cid):
+    name = EXTRA_MODULES.get(cid)
+    if not name or not os.path.exists(os.path.join(os.path.dirname(__file__), name + ".py")): return []
+    return importlib.import_module(name).build()
+
 def main():
     chapters = []
+    base = {}
     for cid, title, topic, sticker, mod, snippet in CHAPTERS:
-        qs = mod.build()
+        base[cid] = mod.build()
+    for cid, title, topic, sticker, mod, snippet in CHAPTERS:
+        qs = base[cid] + extra_for(cid)
         # drop exact duplicates
         uniq, seen = [], set()
         for q in qs:
