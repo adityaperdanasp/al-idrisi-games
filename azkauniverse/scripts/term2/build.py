@@ -48,11 +48,22 @@ def validate(levels):
             seen.add(key)
     return errs
 
+# Second batch ("doubling", 2026-10-14): extra modules y{N}_*.py, built AFTER all base levels so the original
+# questions (and their seeded option order) stay byte-identical. Missing modules are skipped.
+import importlib
+EXTRA_MODULES = {"energy-transformation": "y1_energy", "light-and-eye": "y2_light", "moon-phases": "y3_moon", "eclipses": "y4_eclipse",
+                 "lakes-deserts-rivers": "y5_water_land", "ethnic-groups": "y6_ethnic", "history-of-jakarta": "y7_history", "jakarta-landmarks": "y8_landmarks"}
+def extra_for(lid):
+    name = EXTRA_MODULES.get(lid)
+    if not name or not os.path.exists(os.path.join(os.path.dirname(__file__), name + ".py")): return []
+    return importlib.import_module(name).build()
+
 def main():
     levels = []
+    base = {lid: mod.build() for lid, name, emoji, theme, mod in LEVELS}
     for lid, name, emoji, theme, mod in LEVELS:
         qs, seen = [], set()
-        for q in mod.build():
+        for q in base[lid] + extra_for(lid):
             k = json.dumps({a: b for a, b in q.items() if a not in ("options", "answer", "image")}, sort_keys=True)
             if q["type"] == "mc": k += "|" + q["options"][q["answer"]]
             if k in seen: continue
