@@ -2736,3 +2736,20 @@ body.plane-only #mv-modes, body.drive-only #mv-modes, html.focus-azka #mv-modes 
   #ui-typein .keypad-display { min-height: 40px; }
   #app:has(#screen-question.active) .powerup-bar { margin-bottom: 4px; }
 }
+
+/* ---------- Story help ("Bo, help me!"), chain banner, wrong-answer explanation ---------- */
+.sh-chain { display: inline-block; font: 800 12px "Fredoka", sans-serif; background: #fff3c4; border: 2px solid #f0c24b; color: #7a4b00; border-radius: 999px; padding: 3px 10px; }
+.sh-wrap { margin: 0 0 12px; }
+.sh-btn { border: 3px solid #1b1b1b; background: #fff3c4; color: #3b2a1a; border-radius: 12px; padding: 8px 12px; font: 800 14px "Fredoka", sans-serif; cursor: pointer; box-shadow: 0 3px 0 rgba(0,0,0,.25); }
+.sh-btn:disabled { opacity: .6; }
+.sh-msg { margin: 8px 0 0; font: 700 14px/1.4 "Fredoka", sans-serif; color: var(--ink); }
+.sh-num { background: #ffe066; color: inherit; padding: 0 3px; border-radius: 4px; }
+.sh-ops { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.sh-op { border: 3px solid transparent; border-radius: 12px; background: var(--card); padding: 9px; font: 700 14px "Fredoka", sans-serif; cursor: pointer; }
+.sh-op.ok { border-color: var(--good); background: #e9f6ee; }
+.sh-op.bad { border-color: var(--bad); background: #fdeaea; }
+.sh-row { margin-top: 8px; text-align: center; }
+.sh-line { font: 700 15px "Fredoka", sans-serif; color: var(--ink); margin-bottom: 2px; }
+.sh-explain { margin-top: 10px; padding: 10px; border: 3px solid #8ec1f0; border-radius: 14px; background: #f2f9ff; color: var(--ink); text-align: center; font-size: 14px; }
+.sh-title { font: 800 14px "Fredoka", sans-serif; }
+.sh-next { margin-top: 10px; width: 100%; }

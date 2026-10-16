@@ -549,7 +549,7 @@
   const COLL = ["stickers", "marbles", "football cards", "coins", "seashells", "Minecraft cards", "bookmarks", "toy cars"];
   const collList = () => { const p = persona(); return p && Array.isArray(p.things) && p.things.length ? p.things.concat(COLL.slice(0, 2)) : COLL; };
   const FOOD = ["cookies", "doughnuts", "mangoes", "bananas", "rolls", "pancakes", "apples", "oranges"];
-  const mk = (p, r, expr, op) => ({ p, r, expr, op });
+  const mk = (p, r, expr, op, disp) => (disp ? { p, r, expr, op, disp } : { p, r, expr, op });
 
   const ONE = {
     add: [
@@ -562,11 +562,11 @@
       d => { const a = R3(d, [6, 15], [35, 90], [120, 420]), b = R3(d, [4, 12], [25, 80], [90, 360]), f = choice(FOOD); return mk(`A bakery makes ${fmt(a)} ${f} in the morning and ${fmt(b)} ${f} in the afternoon. How many ${f} does it make in one day?`, a + b, `${a}+${b}`, "add"); },
       d => { const n = nm(), a = R3(d, [5, 14], [20, 70], [110, 380]), b = R3(d, [5, 14], [20, 70], [110, 380]); return mk(`${n} read ${fmt(a)} pages on Monday and ${fmt(b)} pages on Tuesday. How many pages did ${n} read in the two days?`, a + b, `${a}+${b}`, "add"); },
       d => { const a = R3(d, [8, 20], [40, 160], [220, 700]), b = R3(d, [6, 18], [30, 140], [200, 650]); return mk(`A shop sold ${fmt(a)} T-shirts on Saturday and ${fmt(b)} T-shirts on Sunday. How many T-shirts did it sell on the weekend?`, a + b, `${a}+${b}`, "add"); },
-      d => { const n = nm(), a = R3(d, [3, 9], [12, 70], [100, 600]), b = R3(d, [3, 9], [12, 70], [100, 600]); return mk(`${n} saved ${rp(a)} last month and ${rp(b)} this month. How much has ${n} saved altogether (in rupiah)?`, (a + b) * 1000, `(${a}+${b})*1000`, "add"); }
+      d => { const n = nm(), a = R3(d, [3, 9], [12, 70], [100, 600]), b = R3(d, [3, 9], [12, 70], [100, 600]); return mk(`${n} saved ${rp(a)} last month and ${rp(b)} this month. How much has ${n} saved altogether (in rupiah)?`, (a + b) * 1000, `(${a}+${b})*1000`, "add", `${a * 1000}+${b * 1000}`); }
     ],
     sub: [
       d => { const n = nm(), it = choice(collList()), a = R3(d, [10, 20], [60, 190], [300, 950]), b = R3(d, [2, 9], [12, 55], [80, 290]); return mk(`${n} has ${fmt(a)} ${it} and gives ${fmt(b)} of them to a friend. How many ${it} does ${n} have left?`, a - b, `${a}-${b}`, "sub"); },
-      d => { const n = nm(), a = R3(d, [10, 20], [50, 200], [500, 2000]), b = R3(d, [2, 9], [10, 45], [80, 380]); return mk(`${n} has ${rp(a)} and buys a book for ${rp(b)}. How much money does ${n} have left (in rupiah)?`, (a - b) * 1000, `(${a}-${b})*1000`, "sub"); },
+      d => { const n = nm(), a = R3(d, [10, 20], [50, 200], [500, 2000]), b = R3(d, [2, 9], [10, 45], [80, 380]); return mk(`${n} has ${rp(a)} and buys a book for ${rp(b)}. How much money does ${n} have left (in rupiah)?`, (a - b) * 1000, `(${a}-${b})*1000`, "sub", `${a * 1000}-${b * 1000}`); },
       d => { const a = R3(d, [15, 28], [60, 190], [300, 900]), b = R3(d, [3, 12], [14, 55], [60, 260]); return mk(`There are ${fmt(a)} people on a train. At the station ${fmt(b)} people get off. How many people are still on the train?`, a - b, `${a}-${b}`, "sub"); },
       d => { const a = R3(d, [12, 24], [60, 180], [260, 800]), b = R3(d, [3, 10], [14, 55], [60, 240]), f = choice(FOOD); return mk(`A tray holds ${fmt(a)} ${f}. The children eat ${fmt(b)} of them. How many ${f} are left on the tray?`, a - b, `${a}-${b}`, "sub"); },
       d => { const n = nm(), a = R3(d, [12, 24], [80, 200], [300, 900]), b = R3(d, [3, 10], [20, 70], [80, 280]); return mk(`${n} wants to collect ${fmt(a)} stickers and already has ${fmt(b)}. How many more stickers does ${n} need?`, a - b, `${a}-${b}`, "sub"); },
@@ -579,9 +579,9 @@
     mul: [
       d => { const a = R3(d, [2, 5], [4, 9], [7, 12]), b = R3(d, [2, 6], [5, 12], [13, 45]); return mk(`There are ${a} bags with ${b} sweets in each bag. How many sweets are there in total?`, a * b, `${a}*${b}`, "mul"); },
       d => { const a = R3(d, [2, 5], [6, 12], [13, 30]), b = R3(d, [3, 8], [6, 12], [8, 16]); return mk(`A hall has ${a} rows of chairs with ${b} chairs in each row. How many chairs are in the hall?`, a * b, `${a}*${b}`, "mul"); },
-      d => { const n = nm(), a = R3(d, [2, 5], [3, 9], [10, 20]); return mk(`${n} gets ${rp(a)} pocket money every day. How much pocket money does ${n} get in one week (7 days), in rupiah?`, a * 7 * 1000, `${a}*7*1000`, "mul"); },
+      d => { const n = nm(), a = R3(d, [2, 5], [3, 9], [10, 20]); return mk(`${n} gets ${rp(a)} pocket money every day. How much pocket money does ${n} get in one week (7 days), in rupiah?`, a * 7 * 1000, `${a}*7*1000`, "mul", `${a * 1000}*7`); },
       d => { const a = R3(d, [2, 5], [4, 9], [8, 15]), b = R3(d, [3, 8], [6, 12], [12, 36]); return mk(`A teacher has ${a} boxes of pencils. Each box has ${b} pencils. How many pencils does the teacher have?`, a * b, `${a}*${b}`, "mul"); },
-      d => { const a = R3(d, [2, 5], [4, 9], [6, 12]), b = R3(d, [2, 6], [4, 9], [15, 80]); return mk(`One notebook costs ${rp(b)}. How much do ${a} notebooks cost (in rupiah)?`, a * b * 1000, `${a}*${b}*1000`, "mul"); },
+      d => { const a = R3(d, [2, 5], [4, 9], [6, 12]), b = R3(d, [2, 6], [4, 9], [15, 80]); return mk(`One notebook costs ${rp(b)}. How much do ${a} notebooks cost (in rupiah)?`, a * b * 1000, `${a}*${b}*1000`, "mul", `${a}*${b * 1000}`); },
       d => { const a = R3(d, [2, 5], [4, 9], [6, 14]), b = R3(d, [3, 8], [6, 12], [12, 40]), f = choice(FOOD); return mk(`A baker puts ${b} ${f} on each tray. How many ${f} are on ${a} trays?`, a * b, `${a}*${b}`, "mul"); },
       d => { const n = nm(), a = R3(d, [2, 5], [4, 9], [6, 12]), b = R3(d, [3, 9], [8, 25], [20, 60]); return mk(`${n} reads ${b} pages every day for ${a} days. How many pages does ${n} read in total?`, a * b, `${a}*${b}`, "mul"); },
       d => { const a = R3(d, [2, 5], [4, 9], [6, 15]), b = R3(d, [3, 6], [5, 10], [10, 30]); return mk(`Each pack has ${b} stickers. How many stickers are in ${a} packs?`, a * b, `${a}*${b}`, "mul"); },
@@ -592,7 +592,7 @@
       d => { const k = R3(d, [2, 5], [3, 9], [6, 12]), q = R3(d, [2, 6], [5, 15], [12, 80]), n = nm(); return mk(`${n} shares ${fmt(k * q)} stickers equally among ${k} friends. How many stickers does each friend get?`, q, `${k * q}/${k}`, "div"); },
       d => { const k = R3(d, [2, 5], [3, 9], [6, 12]), q = R3(d, [2, 6], [5, 14], [12, 60]); return mk(`${fmt(k * q)} oranges are packed equally into ${k} boxes. How many oranges are in each box?`, q, `${k * q}/${k}`, "div"); },
       d => { const k = R3(d, [2, 5], [3, 9], [4, 10]), q = R3(d, [3, 8], [6, 15], [12, 50]), n = nm(); return mk(`${n} has a book with ${fmt(k * q)} pages and wants to finish it in ${k} days, reading the same number of pages each day. How many pages must ${n} read each day?`, q, `${k * q}/${k}`, "div"); },
-      d => { const p = R3(d, [2, 5], [3, 9], [4, 15]), q = R3(d, [2, 6], [4, 12], [10, 40]), n = nm(); return mk(`${n} has ${rp(p * q)}. A pen costs ${rp(p)}. How many pens can ${n} buy?`, q, `${p * q}/${p}`, "div"); },
+      d => { const p = R3(d, [2, 5], [3, 9], [4, 15]), q = R3(d, [2, 6], [4, 12], [10, 40]), n = nm(); return mk(`${n} has ${rp(p * q)}. A pen costs ${rp(p)}. How many pens can ${n} buy?`, q, `${p * q}/${p}`, "div", `${p * q * 1000}/${p * 1000}`); },
       d => { const k = R3(d, [3, 6], [6, 10], [8, 14]), q = R3(d, [2, 5], [4, 10], [10, 40]); return mk(`A cinema has ${fmt(k * q)} seats in rows of ${k}. How many rows are there?`, q, `${k * q}/${k}`, "div"); },
       d => { const k = R3(d, [2, 5], [3, 9], [6, 12]), q = R3(d, [2, 6], [4, 12], [10, 50]); return mk(`A teacher gives out ${fmt(k * q)} sweets equally to ${k} kids. How many sweets does each kid get?`, q, `${k * q}/${k}`, "div"); },
       d => { const k = R3(d, [2, 5], [3, 8], [5, 9]), q = R3(d, [4, 9], [20, 60], [70, 190]); return mk(`A cyclist rides ${fmt(k * q)} kilometres in ${k} days, riding the same distance each day. How many kilometres does the cyclist ride each day?`, q, `${k * q}/${k}`, "div"); },
@@ -612,21 +612,21 @@
     d => { const a = R3(d, [2, 4], [3, 6], [4, 8]), b = R3(d, [2, 5], [3, 8], [6, 12]), c = R3(d, [2, 5], [3, 8], [5, 12]); return mk(`A cinema shows ${a} films a day. Each film has ${b} showings and each showing sells ${c} tickets. How many tickets are sold in a day?`, a * b * c, `${a}*${b}*${c}`, "mul-mul"); },
     d => { const n = nm(), a = R3(d, [2, 5], [4, 9], [6, 12]), b = R3(d, [3, 8], [6, 12], [12, 40]), c = R3(d, [2, 5], [3, 8], [5, 9]); return mk(`${n} reads ${b} pages a day for ${a} days. Then ${n} reads ${c} pages a day for 2 more days. How many pages did ${n} read in all?`, a * b + c * 2, `${a}*${b}+${c}*2`, "mul-add"); },
     d => { const a = R3(d, [12, 30], [60, 200], [300, 900]), b = R3(d, [4, 12], [20, 70], [80, 300]), c = R3(d, [2, 9], [10, 50], [40, 220]); return mk(`A library has ${fmt(a)} books. It buys ${fmt(b)} new books and lends out ${fmt(c)}. How many books are on the shelves now?`, a + b - c, `${a}+${b}-${c}`, "add-sub"); },
-    d => { const p = R3(d, [2, 5], [3, 9], [4, 12]), q = R3(d, [2, 5], [3, 8], [5, 12]), c = R3(d, [1, 5], [3, 12], [6, 25]), n = nm(); return mk(`Pencils cost ${rp(p)} each. ${n} buys ${q} pencils and pays with ${rp(p * q + c)}. How much change does ${n} get (in rupiah)?`, c * 1000, `(${p * q + c}-${p}*${q})*1000`, "mul-sub"); },
+    d => { const p = R3(d, [2, 5], [3, 9], [4, 12]), q = R3(d, [2, 5], [3, 8], [5, 12]), c = R3(d, [1, 5], [3, 12], [6, 25]), n = nm(); return mk(`Pencils cost ${rp(p)} each. ${n} buys ${q} pencils and pays with ${rp(p * q + c)}. How much change does ${n} get (in rupiah)?`, c * 1000, `(${p * q + c}-${p}*${q})*1000`, "mul-sub", `${(p * q + c) * 1000}-${p * 1000}*${q}`); },
     d => { const k = R3(d, [2, 5], [3, 8], [4, 9]), q = R3(d, [3, 6], [5, 12], [9, 30]); const c = rand(1, Math.min(q - 1, byTier(d, 4, 8, 20))); return mk(`${fmt(k * q)} marbles are shared equally among ${k} children. Each child then loses ${c} marbles. How many marbles does each child have now?`, q - c, `${k * q}/${k}-${c}`, "div-sub"); },
     d => { const a = R3(d, [3, 8], [6, 15], [12, 40]), b = R3(d, [2, 5], [3, 8], [5, 14]), c = R3(d, [3, 9], [10, 40], [50, 200]); return mk(`There are ${a} tables with ${b} chairs at each table. ${fmt(c)} more chairs are brought in. How many chairs are there now?`, a * b + c, `${a}*${b}+${c}`, "mul-add"); },
     d => { const k = R3(d, [2, 4], [3, 6], [4, 8]), q = R3(d, [2, 6], [4, 10], [8, 30]), j = R3(d, [2, 5], [3, 6], [4, 8]); return mk(`A baker packs ${fmt(k * q)} rolls equally into ${k} bags. How many rolls are in ${j} bags?`, q * j, `${k * q}/${k}*${j}`, "div-mul"); },
     d => { const k = R3(d, [2, 4], [2, 6], [3, 8]), q = R3(d, [3, 9], [6, 20], [12, 60]), a = rand(1, k * q - 1), b = k * q - a, [x, y] = two(); return mk(`${x} has ${fmt(a)} stickers and ${y} has ${fmt(b)} stickers. They put them together and share them equally among ${k} friends. How many stickers does each friend get?`, q, `(${a}+${b})/${k}`, "add-div"); },
     d => { const k = R3(d, [2, 5], [3, 6], [4, 9]), q = R3(d, [3, 8], [6, 15], [12, 50]), b = R3(d, [2, 6], [5, 25], [20, 90]); return mk(`There are ${fmt(k * q + b)} sweets. ${fmt(b)} of them are eaten and the rest are shared equally among ${k} kids. How many sweets does each kid get?`, q, `(${k * q + b}-${b})/${k}`, "sub-div"); },
     d => { const a = R3(d, [10, 30], [60, 200], [300, 800]), b = R3(d, [3, 9], [15, 60], [80, 250]), c = R3(d, [3, 9], [15, 60], [80, 250]); return mk(`A train has ${fmt(a)} passengers. ${fmt(b)} more get on at the first station and ${fmt(c)} more get on at the second station. How many passengers are on the train now?`, a + b + c, `${a}+${b}+${c}`, "add-add"); },
-    d => { const n = nm(), b = R3(d, [2, 4], [3, 6], [4, 9]), c = R3(d, [2, 5], [3, 9], [6, 15]), e = R3(d, [2, 6], [5, 20], [20, 80]); return mk(`${n} has ${rp(b * c + e)}. ${n} buys ${b} erasers that cost ${rp(c)} each. How much money does ${n} have left (in rupiah)?`, e * 1000, `(${b * c + e}-${b}*${c})*1000`, "mul-sub"); },
+    d => { const n = nm(), b = R3(d, [2, 4], [3, 6], [4, 9]), c = R3(d, [2, 5], [3, 9], [6, 15]), e = R3(d, [2, 6], [5, 20], [20, 80]); return mk(`${n} has ${rp(b * c + e)}. ${n} buys ${b} erasers that cost ${rp(c)} each. How much money does ${n} have left (in rupiah)?`, e * 1000, `(${b * c + e}-${b}*${c})*1000`, "mul-sub", `${(b * c + e) * 1000}-${b}*${c * 1000}`); },
     d => { const a = R3(d, [2, 5], [3, 7], [4, 9]), b = R3(d, [2, 6], [3, 8], [4, 10]), m = a * b, ks = [2, 3, 4, 5, 6, 7, 8, 9, 10, 12].filter(k => m % k === 0 && k < m), k = choice(ks); return mk(`A factory makes ${a} toys every minute for ${b} minutes. The toys are packed equally into ${k} boxes. How many toys are in each box?`, m / k, `${a}*${b}/${k}`, "mul-div"); },
     d => { const a = R3(d, [20, 40], [150, 400], [800, 2500]), b = R3(d, [4, 12], [30, 100], [150, 500]), c = R3(d, [2, 9], [15, 80], [100, 400]); return mk(`A water tank has ${fmt(a)} litres. ${fmt(b)} litres leak out, then ${fmt(c)} litres are poured in. How many litres are in the tank now?`, a - b + c, `${a}-${b}+${c}`, "sub-add"); },
-    d => { const n = nm(), p = R3(d, [3, 8], [10, 30], [25, 80]), q = R3(d, [2, 4], [3, 6], [4, 9]), c = R3(d, [2, 9], [8, 40], [20, 120]); return mk(`A book costs ${rp(p)}. ${n} buys ${q} books and a bag that costs ${rp(c)}. How much does ${n} pay in total (in rupiah)?`, (p * q + c) * 1000, `(${p}*${q}+${c})*1000`, "mul-add"); },
+    d => { const n = nm(), p = R3(d, [3, 8], [10, 30], [25, 80]), q = R3(d, [2, 4], [3, 6], [4, 9]), c = R3(d, [2, 9], [8, 40], [20, 120]); return mk(`A book costs ${rp(p)}. ${n} buys ${q} books and a bag that costs ${rp(c)}. How much does ${n} pay in total (in rupiah)?`, (p * q + c) * 1000, `(${p}*${q}+${c})*1000`, "mul-add", `${p * 1000}*${q}+${c * 1000}`); },
     d => { const a = R3(d, [2, 5], [3, 8], [4, 10]), b = R3(d, [4, 10], [10, 30], [20, 50]), c = R3(d, [2, 5], [4, 14], [10, 40]); return mk(`${a} buses each carry ${b} children, but ${c} seats on the buses are empty. How many children are on the buses?`, a * b - c, `${a}*${b}-${c}`, "mul-sub"); },
     d => { const k = R3(d, [2, 5], [3, 6], [4, 8]), q = R3(d, [12, 30], [40, 120], [150, 400]), c = R3(d, [2, 9], [8, 30], [25, 90]); return mk(`A rope ${fmt(k * q)} cm long is cut into ${k} equal pieces. Then ${c} cm is cut off one piece. How long is that piece now (in cm)?`, q - c, `${k * q}/${k}-${c}`, "div-sub"); },
     d => { const b = R3(d, [5, 15], [30, 100], [150, 500]), c = R3(d, [4, 12], [20, 90], [100, 400]), e = R3(d, [3, 20], [15, 120], [100, 600]), a = b + c + e; return mk(`A farmer picks ${fmt(a)} mangoes. ${fmt(b)} are sold at the market and ${fmt(c)} are given to neighbours. How many mangoes are left?`, e, `${a}-${b}-${c}`, "sub-sub"); },
-    d => { const a = R3(d, [3, 8], [6, 15], [12, 40]), b = R3(d, [2, 5], [3, 9], [5, 14]), c = R3(d, [2, 6], [3, 9], [4, 12]); return mk(`There are ${a} packs of juice boxes with ${b} boxes in each pack. Each box costs ${rp(c)}. How much do all the juice boxes cost (in rupiah)?`, a * b * c * 1000, `${a}*${b}*${c}*1000`, "mul-mul"); }
+    d => { const a = R3(d, [3, 8], [6, 15], [12, 40]), b = R3(d, [2, 5], [3, 9], [5, 14]), c = R3(d, [2, 6], [3, 9], [4, 12]); return mk(`There are ${a} packs of juice boxes with ${b} boxes in each pack. Each box costs ${rp(c)}. How much do all the juice boxes cost (in rupiah)?`, a * b * c * 1000, `${a}*${b}*${c}*1000`, "mul-mul", `${a}*${b}*${c * 1000}`); }
   ];
   const OPS = [["add", "Add (+)"], ["sub", "Subtract (−)"], ["mul", "Multiply (×)"], ["div", "Divide (÷)"]];
   const OPNAME = Object.fromEntries(OPS);
@@ -639,17 +639,85 @@
   const stripAmt = s => s;
   function genStoryOne(d) {
     const op = choice(["add", "sub", "mul", "div"]), o = choice(ONE[op])(d);
-    return { prompt: o.p, answer: fmt(o.r), meta: { op: o.op, expr: o.expr, r: o.r } };
+    return { prompt: o.p, answer: fmt(o.r), meta: o.disp ? { op: o.op, expr: o.expr, r: o.r, disp: o.disp } : { op: o.op, expr: o.expr, r: o.r } };
   }
   function genStoryTwo(d) {
     const o = choice(TWO)(d);
-    return { prompt: o.p, answer: fmt(o.r), meta: { op: o.op, expr: o.expr, r: o.r } };
+    return { prompt: o.p, answer: fmt(o.r), meta: o.disp ? { op: o.op, expr: o.expr, r: o.r, disp: o.disp } : { op: o.op, expr: o.expr, r: o.r } };
   }
   function genStory(d) { return Math.random() < byTier(d, 0.85, 0.6, 0.45) ? genStoryOne(d) : genStoryTwo(d); }
   function genStoryOp(d) {
     if (Math.random() < 0.3) { const [t, op] = choice(KEYWORDS); return tap(`In a story problem, the words ${t} usually tell you to...`, OPS.map(x => x[1]), OPNAME[op], "", { kw: t, op }); }
     const op = choice(["add", "sub", "mul", "div"]), o = choice(ONE[op])(d);
     return tap(`${o.p.replace(/ How (many|much)[^?]*\?$/, "")} Which operation would you use to find the answer?`.replace(/\s+/g, " "), OPS.map(x => x[1]), OPNAME[o.op], "", { op: o.op, expr: o.expr });
+  }
+  /* ---- Story chains ("Petualangan"): 5 connected questions in one little story; numbers flow from step to step. ---- */
+  const CHAINS = [
+    { id: "market", title: "Market Day", build: d => {
+      const n = nm(), k = R3(d, [2, 3], [2, 4], [3, 5]), q = R3(d, [2, 2], [2, 3], [2, 3]), c = k * q, p = R3(d, [2, 3], [2, 5], [3, 8]), cost = p * c;
+      const e = R3(d, [10, 16], [12, 25], [20, 40]), M = cost + e, nb = rand(2, e - 3), m = R3(d, [2, 2], [2, 4], [3, 6]);
+      return [
+        mk(`${n} goes to the Blockville market and buys ${c} pencils at ${rp(p)} each. How much do the pencils cost (in rupiah)?`, cost * 1000, `${p}*${c}*1000`, "mul", `${p * 1000}*${c}`),
+        mk(`${n} started with ${rp(M)}. How much money is left after buying the pencils (in rupiah)?`, e * 1000, `(${M}-${cost})*1000`, "sub", `${M * 1000}-${cost * 1000}`),
+        mk(`With the money that is left, ${n} buys a notebook for ${rp(nb)}. How much money does ${n} have now (in rupiah)?`, (e - nb) * 1000, `(${e}-${nb})*1000`, "sub", `${e * 1000}-${nb * 1000}`),
+        mk(`${n} shares the ${c} pencils equally among ${k} friends. How many pencils does each friend get?`, q, `${c}/${k}`, "div"),
+        mk(`Each friend finds ${m} more pencils in their bag. How many pencils does each friend have now?`, q + m, `${q}+${m}`, "add")];
+    } },
+    { id: "trip", title: "School Trip", build: d => {
+      const g = R3(d, [2, 3], [3, 4], [3, 5]), per = R3(d, [5, 6], [5, 8], [6, 9]), st = g * per, b = R3(d, [2, 3], [3, 4], [3, 5]);
+      const s = Math.ceil((st + 8) / b) + rand(0, 3), total = b * s, t = R3(d, [2, 3], [2, 4], [3, 6]), x = R3(d, [2, 3], [2, 4], [3, 5]);
+      return [
+        mk(`The class goes on a trip to the zoo with ${b} buses. Each bus has ${s} seats. How many seats are there in all?`, total, `${b}*${s}`, "mul"),
+        mk(`There are ${st} students on the trip. How many seats stay empty?`, total - st, `${b}*${s}-${st}`, "mul-sub"),
+        mk(`At the zoo, the ${st} students split equally into ${g} groups. How many students are in each group?`, per, `${st}/${g}`, "div"),
+        mk(`Each student pays ${rp(t)} for a ticket. How much do all ${st} students pay (in rupiah)?`, st * t * 1000, `${st}*${t}*1000`, "mul", `${st}*${t * 1000}`),
+        mk(`The guide gives each group ${x} stickers. How many stickers does the guide give out in all?`, g * x, `${g}*${x}`, "mul")];
+    } },
+    { id: "bakery", title: "Bake Sale", build: d => {
+      const tr = R3(d, [3, 4], [3, 6], [4, 8]), c = R3(d, [8, 10], [8, 15], [10, 20]), total = tr * c, z = choice([2, 3, 4, 5]);
+      const mmax = Math.floor((total - 6) / z), m = rand(Math.max(2, Math.floor(mmax / 2)), mmax), L = z * m, sold = total - L;
+      const pr = R3(d, [3, 4], [3, 8], [5, 12]), cost = rand(2, z * pr - 2);
+      return [
+        mk(`A bakery bakes ${tr} trays of cookies with ${c} cookies on each tray. How many cookies does it bake?`, total, `${tr}*${c}`, "mul"),
+        mk(`By lunchtime, ${sold} cookies are sold. How many cookies are left?`, L, `${tr}*${c}-${sold}`, "mul-sub"),
+        mk(`The cookies that are left are packed equally into ${z} boxes. How many cookies are in each box?`, m, `${L}/${z}`, "div"),
+        mk(`Each box is sold for ${rp(pr)}. How much money do the ${z} boxes bring in (in rupiah)?`, z * pr * 1000, `${z}*${pr}*1000`, "mul", `${z}*${pr * 1000}`),
+        mk(`The ingredients cost ${rp(cost)}. How much profit does the bakery make from these boxes (in rupiah)?`, (z * pr - cost) * 1000, `(${z * pr}-${cost})*1000`, "sub", `${z * pr * 1000}-${cost * 1000}`)];
+    } },
+    { id: "reading", title: "Reading Challenge", build: d => {
+      const n = nm(), a = R3(d, [5, 8], [6, 12], [8, 16]), dd = R3(d, [3, 4], [4, 6], [5, 9]), read = a * dd, w = choice([2, 3, 4, 5]);
+      const per = rand(3, R3(d, [6, 6], [10, 10], [15, 15])), rem = w * per, B = read + rem, f = choice([3, 4, 5, 6]), days = R3(d, [3, 4], [4, 7], [5, 9]), Y = f * days;
+      return [
+        mk(`${n} reads ${a} pages of a storybook every day for ${dd} days. How many pages does ${n} read in all?`, read, `${a}*${dd}`, "mul"),
+        mk(`The storybook has ${B} pages. How many pages are still left to read?`, rem, `${B}-${a}*${dd}`, "mul-sub"),
+        mk(`${n} wants to finish the rest in ${w} equal days. How many pages must ${n} read each day?`, per, `${rem}/${w}`, "div"),
+        mk(`The next book has ${Y} pages. How many pages are there in the two books together?`, B + Y, `${B}+${Y}`, "add"),
+        mk(`${n} will read ${f} pages a day in the second book. How many days will it take to finish it?`, days, `${Y}/${f}`, "div")];
+    } },
+    { id: "cards", title: "Card Collector", build: d => {
+      const n = nm(), k = R3(d, [2, 3], [2, 4], [3, 5]), c = rand(30, 80), w = rand(10, 30), T = k * Math.floor((c + w - 4) / k), g = c + w - T, q = T / k, p = R3(d, [2, 3], [2, 5], [3, 8]);
+      return [
+        mk(`${n} has ${c} football cards and wins ${w} more in a game. How many cards does ${n} have now?`, c + w, `${c}+${w}`, "add"),
+        mk(`Then ${n} gives ${g} cards to a friend. How many cards does ${n} have left?`, T, `${c}+${w}-${g}`, "add-sub"),
+        mk(`${n} puts the cards equally into ${k} albums. How many cards go in each album?`, q, `${T}/${k}`, "div"),
+        mk(`${n} adds ${p} new cards to each album. How many cards are in each album now?`, q + p, `${q}+${p}`, "add"),
+        mk(`How many cards are there in all ${k} albums now?`, k * (q + p), `${k}*${q + p}`, "mul")];
+    } },
+    { id: "garden", title: "Garden Day", build: d => {
+      const n = nm(), r = R3(d, [3, 4], [3, 6], [4, 8]), c = R3(d, [5, 8], [6, 12], [8, 15]), planted = r * c, z = choice([2, 3, 4, 5]);
+      const T = z * Math.floor((planted - 3) / z), lost = planted - T, m = T / z, pr = R3(d, [2, 3], [2, 5], [3, 8]), y = R3(d, [2, 3], [2, 4], [3, 6]);
+      return [
+        mk(`${n} plants ${r} rows of tomato plants with ${c} plants in each row. How many plants are there?`, planted, `${r}*${c}`, "mul"),
+        mk(`${lost} plants are eaten by snails. How many plants are left?`, T, `${r}*${c}-${lost}`, "mul-sub"),
+        mk(`The plants that are left are shared equally between ${z} neighbours. How many plants does each neighbour get?`, m, `${T}/${z}`, "div"),
+        mk(`Each plant is sold for ${rp(pr)}. How much do one neighbour's ${m} plants cost (in rupiah)?`, m * pr * 1000, `${m}*${pr}*1000`, "mul", `${m}*${pr * 1000}`),
+        mk(`That neighbour buys ${y} more plants at the same price. What is the total cost of all of that neighbour's plants (in rupiah)?`, (m + y) * pr * 1000, `(${m}+${y})*${pr}*1000`, "add-mul", `(${m}+${y})*${pr * 1000}`)];
+    } }
+  ];
+  // One connected story as an array of typein steps, with a banner ("Market Day - Part 2 of 5") in the image slot.
+  function genStoryChain(d, id) {
+    const c = (id && CHAINS.find(x => x.id === id)) || choice(CHAINS), list = c.build(d || "medium");
+    return list.map((o, i) => typein(o.p, fmt(o.r), `<div class="sh-chain">📖 ${c.title} · Part ${i + 1} of ${list.length}</div>`, Object.assign({ op: o.op, expr: o.expr, r: o.r, chain: { id: c.id, i: i + 1, n: list.length } }, o.disp ? { disp: o.disp } : {})));
   }
   function genStoryStep(d) { return Math.random() < 0.8 ? (() => { const g = genStory(d); return typein(g.prompt, g.answer, "", g.meta); })() : genStoryOp(d); }
   const storyQuick = d => { const g = genStory(d); return { prompt: g.prompt, answer: g.answer }; };
@@ -758,7 +826,7 @@
   };
   const QUICK_KEYS = Object.keys(QUICK);
 
-  const api = { chapters: CHAPTERS, makeStep, quick: QUICK, quickKeys: QUICK_KEYS, story: storyQuick, _gen: { genStory, genStoryOne, genStoryTwo, genStoryOp, genAdd6, genSub6, genDiv1, genDiv2, genTwoStep, genMulDiv, genPictograph, genBarGraph, genLineGraph, genAngleClassify, genAngleMeasure, genAngleMissing, genAngleReflex, genPerimeter, genArea, genSquare, genFactors, genMultiples } };
+  const api = { chapters: CHAPTERS, makeStep, quick: QUICK, quickKeys: QUICK_KEYS, story: storyQuick, storyChain: genStoryChain, _gen: { genStoryChain, genStory, genStoryOne, genStoryTwo, genStoryOp, genAdd6, genSub6, genDiv1, genDiv2, genTwoStep, genMulDiv, genPictograph, genBarGraph, genLineGraph, genAngleClassify, genAngleMeasure, genAngleMissing, genAngleReflex, genPerimeter, genArea, genSquare, genFactors, genMultiples } };
   root.MATHVILLE_T2 = api;
   // Every page that loads mathville/generators.js gets the quick generators under the same global as before.
   const GENS = Object.assign({}, QUICK); Object.defineProperty(GENS, "QUICK_KEYS", { value: QUICK_KEYS, enumerable: false });

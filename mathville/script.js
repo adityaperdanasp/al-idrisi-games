@@ -4609,15 +4609,31 @@ function buildRound(chapterId, difficulty) {
   // Term 2: every chapter is generated (graphs, angles, shapes, number work) by MATHVILLE_T2.makeStep.
   // `difficulty` is undefined for normal rounds (-> "hard", the workbook level); adaptive tiers pass easy/medium.
   const steps = [], seen = new Set();
+  // Story Problems: about half the rounds are one connected "Petualangan" (5 linked questions) + 1 loose question.
+  if (chapterId === "story-problems" && Math.random() < 0.5 && MATHVILLE_T2.storyChain) {
+    try {
+      MATHVILLE_T2.storyChain(difficulty || "medium").forEach(q => steps.push({ uiType: "typein", prompt: q.prompt, answer: q.answer, image: q.image, meta: JSON.parse(JSON.stringify(q.meta)) }));
+      const extra = MATHVILLE_T2.makeStep(chapterId, difficulty);
+      steps.push(extra.uiType === "tap"
+        ? { uiType: "tap", prompt: extra.prompt, options: extra.options, correctLabel: extra.correctLabel, image: extra.image }
+        : { uiType: "typein", prompt: extra.prompt, answer: extra.answer, image: extra.image, meta: extra.meta ? JSON.parse(JSON.stringify(extra.meta)) : undefined });
+      steps.forEach(st => { if (st.meta === undefined) delete st.meta; });
+      return steps.slice(0, ROUND_SIZE);
+    } catch (e) { steps.length = 0; }
+  }
   let guard = 0;
   while (steps.length < ROUND_SIZE && guard++ < ROUND_SIZE * 15) {
     const q = MATHVILLE_T2.makeStep(chapterId, difficulty);
     const key = q.prompt + "|" + (q.answer || q.correctLabel) + "|" + (q.image || "").length;
     if (seen.has(key)) continue;
     seen.add(key);
-    steps.push(q.uiType === "tap"
-      ? { uiType: "tap", prompt: q.prompt, options: q.options, correctLabel: q.correctLabel, image: q.image }
-      : { uiType: "typein", prompt: q.prompt, answer: q.answer, image: q.image });
+    if (q.uiType === "tap") steps.push({ uiType: "tap", prompt: q.prompt, options: q.options, correctLabel: q.correctLabel, image: q.image });
+    else {
+      const st = { uiType: "typein", prompt: q.prompt, answer: q.answer, image: q.image };
+      // story-problem steps carry their working (expr/disp) so "Bo, help me!" and the wrong-answer explanation can use it
+      if (q.meta && q.meta.expr) st.meta = JSON.parse(JSON.stringify(q.meta));
+      steps.push(st);
+    }
   }
   return steps;
 }
@@ -5174,6 +5190,17 @@ function submitAnswer(isCorrect, prompt, answerForHint) {
     clearBossTimer();
     if (!isCorrect) { setTimeout(() => finishBossRound(false), 900); return; }
   }
+  const cur = state.steps && state.steps[state.stepIndex];
+  if (!isCorrect && cur && cur.__explained) {
+    const rev = $("typein-reveal");
+    if (rev) {
+      rev.insertAdjacentHTML("beforeend", `<button type="button" class="btn btn-primary sh-next">Next ▶</button>`);
+      const nb = rev.querySelector(".sh-next"); let went = false;
+      nb.onclick = () => { if (went) return; went = true; goToNextStep(); };
+      try { nb.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {}
+      return;
+    }
+  }
   setTimeout(goToNextStep, isCorrect ? 700 : 1600);
 }
 
@@ -5206,13 +5233,20 @@ function renderTypeinStep(step) {
     pad.appendChild(btn);
   });
 
+  if (window.AIGStoryHelp) { if (step.meta && !state.isBoss && !state.isChallenge) AIGStoryHelp.attach(step); else AIGStoryHelp.remove(); }
   const submit = $("typein-submit");
   submit.disabled = false;
   submit.onclick = () => {
     if (typedValue === "") return;
     const isCorrect = gradeTypein(typedValue, step.answer);
     $("typein-display").classList.add(isCorrect ? "correct-flash" : "wrong-flash");
-    if (!isCorrect) $("typein-reveal").textContent = `Answer: ${step.answer}`;
+    if (!isCorrect) {
+      $("typein-reveal").textContent = `Answer: ${step.answer}`;
+      // Story problems: show the working + a bar model, and wait for the kid to tap Next (no 1.6s rush).
+      const canExplain = !state.isBoss && !state.isChallenge && !state.isCoop && state.mode !== "multiplayer";
+      const ex = canExplain && window.AIGStoryHelp && step.meta ? AIGStoryHelp.explainHtml(step) : "";
+      if (ex) { $("typein-reveal").insertAdjacentHTML("beforeend", ex); step.__explained = true; }
+    }
     pad.querySelectorAll(".key").forEach(b => (b.disabled = true));
     submit.disabled = true;
     submitAnswer(isCorrect, step.prompt, step.answer);

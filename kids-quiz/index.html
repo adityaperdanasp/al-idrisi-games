@@ -362,7 +362,7 @@
     }
 
     // templates + live preview
-    const TPL = [["➗", "What is 7 × 8?", ["56", "54", "64", "48"], "math"], ["📖", "Which word means the opposite of HAPPY?", ["Sad", "Glad", "Jolly", "Merry"], "words"], ["🔭", "Which planet is closest to the Sun?", ["Mercury", "Venus", "Earth", "Mars"], "science"], ["🐾", "Which animal is a mammal?", ["Whale", "Shark", "Frog", "Eagle"], "animals"]];
+    const TPL = [["➗", "What is 7 × 8?", ["56", "54", "64", "48"], "math"], ["📖", "Which word means the opposite of HAPPY?", ["Sad", "Glad", "Jolly", "Merry"], "words"], ["🔭", "Which planet is closest to the Sun?", ["Mercury", "Venus", "Earth", "Mars"], "science"], ["🐾", "Which animal is a mammal?", ["Whale", "Shark", "Frog", "Eagle"], "animals"], ["🛒", "Rafi has 12 stickers and gets 8 more. How many stickers does Rafi have now?", ["20", "4", "96", "18"], "math"], ["✏️", "Which is the correct spelling?", ["neighbour", "nayber", "neighbor", "neigbour"], "words"]];
     document.getElementById("kq-tpl").innerHTML = TPL.map((t, i) => `<button type="button" class="kq-mini" data-tpl="${i}">${t[0]} ${escapeHtml(t[1])}</button>`).join("");
     document.querySelectorAll("[data-tpl]").forEach(b => b.onclick = () => { const t = TPL[+b.dataset.tpl]; document.getElementById("kq-new-prompt").value = t[1]; document.querySelectorAll("[data-opt-input]").forEach((inp, i) => inp.value = t[2][i]); document.getElementById("kq-new-cat").value = t[3]; correctChoice = 0; const r = document.querySelector('input[name="kq-correct"][value="0"]'); if (r) r.checked = true; preview(); });
     function preview() {
