@@ -69,6 +69,7 @@
       <div class="p-section">
         <div class="p-section-title">💌 Send a Message</div>
         <p class="p-section-desc">A quick note of encouragement — pops up on their screen next time they open the app.</p>
+        <div id="p-msg-presets" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
         <textarea class="p-msg-input" id="p-msg-input" maxlength="200" rows="3" placeholder="e.g. We're so proud of how hard you've been practicing!"></textarea>
         <button class="p-save-btn" id="p-msg-send-btn">Send Message</button>
         <p class="p-save-note" id="p-msg-note"></p>
@@ -182,6 +183,44 @@
         <div id="p-mission-list"></div>
       </div>
 
+      <!-- ---- Fokus quota: earn free play ---- -->
+      <div class="p-section">
+        <div class="p-section-title">⏱️ Kuota Fokus → waktu bebas</div>
+        <p class="p-section-desc">Saat Fokus Azka menyala, tiap jawaban benar menambah progres. Begitu target tercapai, Fokus otomatis mati dan semua game terbuka selama beberapa menit. Setelah itu Fokus menyala lagi sendiri. Cocok supaya Fokus tidak terasa dipaksa.</p>
+        <div class="p-quiz-card">
+          <label style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-weight:800"><input type="checkbox" id="p-quota-on"> Aktifkan kuota</label>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <input id="p-quota-target" type="number" min="5" max="300" placeholder="Target benar (mis. 30)" style="flex:1;padding:10px;border:2px solid #eadff5;border-radius:10px;font:inherit">
+            <input id="p-quota-min" type="number" min="5" max="120" placeholder="Menit bebas (mis. 20)" style="flex:1;padding:10px;border:2px solid #eadff5;border-radius:10px;font:inherit">
+          </div>
+          <div class="p-quiz-actions"><button class="p-quiz-btn p-quiz-approve" id="p-quota-save" type="button">Simpan</button></div>
+          <p class="p-empty-note" id="p-quota-note"></p>
+        </div>
+      </div>
+
+      <!-- ---- School spelling words ---- -->
+      <div class="p-section">
+        <div class="p-section-title">🔤 Kata ejaan dari sekolah</div>
+        <p class="p-section-desc">Tulis daftar kata spelling minggu ini (satu per baris, atau pisahkan dengan koma). Kata-kata ini akan lebih sering muncul di latihan ejaan Azka. Kata yang belum ada di bank bawaan tetap bisa dilatih (didengar, huruf hilang, susun huruf).</p>
+        <div class="p-quiz-card">
+          <textarea id="p-words-text" rows="4" placeholder="mis. ocean, neighbour, because" style="width:100%;padding:10px;border:2px solid #eadff5;border-radius:10px;font:inherit;margin-bottom:6px;box-sizing:border-box;resize:vertical"></textarea>
+          <div class="p-quiz-actions"><button class="p-quiz-btn p-quiz-approve" id="p-words-save" type="button">Simpan daftar kata</button> <button class="p-quiz-btn p-quiz-reject" id="p-words-clear" type="button">Kosongkan</button></div>
+          <p class="p-empty-note" id="p-words-note"></p>
+        </div>
+      </div>
+
+      <!-- ---- Personalise story problems ---- -->
+      <div class="p-section">
+        <div class="p-section-title">🎨 Personalisasi soal cerita</div>
+        <p class="p-section-desc">Biar soal cerita terasa seperti tentang dunianya: nama keluarga/teman yang boleh muncul, dan hal yang dia suka (mis. kartu Pokemon, bola, dinosaurus). Kosongkan untuk memakai nama bawaan.</p>
+        <div class="p-quiz-card">
+          <input id="p-persona-names" type="text" maxlength="160" placeholder="Nama (pisahkan koma): Azka, Papa, Mama, Rafi, Dimas" style="width:100%;padding:10px;border:2px solid #eadff5;border-radius:10px;font:inherit;margin-bottom:6px;box-sizing:border-box">
+          <input id="p-persona-things" type="text" maxlength="160" placeholder="Hal yang disukai (koma): kartu Pokemon, bola, dinosaurus" style="width:100%;padding:10px;border:2px solid #eadff5;border-radius:10px;font:inherit;margin-bottom:6px;box-sizing:border-box">
+          <div class="p-quiz-actions"><button class="p-quiz-btn p-quiz-approve" id="p-persona-save" type="button">Simpan</button> <button class="p-quiz-btn p-quiz-reject" id="p-persona-clear" type="button">Pakai bawaan</button></div>
+          <p class="p-empty-note" id="p-persona-note"></p>
+        </div>
+      </div>
+
       <!-- ---- Review kid-written quiz questions before they go live ---- -->
       <div class="p-section">
         <div class="p-section-title">✏️ Review Quiz Questions</div>
@@ -242,6 +281,6 @@
 </main>
 
 <script src="../firebase.js"></script>
-<script src="script.js?v=3"></script>
+<script src="script.js?v=4"></script>
 </body>
 </html>

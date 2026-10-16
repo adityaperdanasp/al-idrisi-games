@@ -373,25 +373,69 @@ fraction|a part of a whole number
     return [...new Set(list)].slice(0, 6);
   }
 
-  /* ---- weak-word memory ---- */
-  const KEY = "azka_spell";
+  /* ---- weak-word memory + per-word progress (garden) ---- */
+  const KEY = "azka_spell", KEY2 = "azka_spell2";
   const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { return {}; } };
   const save = m => { try { localStorage.setItem(KEY, JSON.stringify(m)); } catch (e) {} };
+  const load2 = () => { try { return JSON.parse(localStorage.getItem(KEY2) || "{}") || {}; } catch (e) { return {}; } };
+  const save2 = m => { try { localStorage.setItem(KEY2, JSON.stringify(m)); } catch (e) {} };
   function record(word, ok) {
+    // per-word progress for the Word Garden: ok = total right, st = right in a row, miss = total wrong
+    const s2 = load2(), r2 = s2[word] || { ok: 0, st: 0, miss: 0, t: 0 };
+    if (ok) { r2.ok++; r2.st++; } else { r2.miss++; r2.st = 0; }
+    r2.t = Date.now(); s2[word] = r2; save2(s2);
+    // spaced-repetition schedule for words that were missed (unchanged behaviour)
     const m = load(), r = m[word] || { m: 0, c: 0, d: 0 }, DAY = 86400000;
     if (ok) { r.c++; if (r.m > 0) r.d = Date.now() + (r.c >= 3 ? 7 : r.c >= 2 ? 3 : 1) * DAY; } else { r.m++; r.c = 0; r.d = Date.now() + DAY / 2; }
     if (ok && r.m === 0) return;
     if (ok && r.c >= 4) delete m[word]; else m[word] = r;
     save(m);
   }
+  // Stage of a word: 0 = never practised, 1 = seen, 2 = learning (right at least once), 3 = mastered (3 right in a row)
+  function stage(word) { const r = load2()[word]; if (!r) return 0; if (r.st >= 3) return 3; if (r.ok > 0) return 2; return 1; }
+  const tierOf = w => (w.length <= 5 ? 1 : w.length <= 7 ? 2 : 3);
+  function masteredCount() { const s2 = load2(); return Object.keys(s2).filter(w => s2[w].st >= 3).length; }
+  // Word ladder: short words first; longer/harder words unlock as more words are mastered.
+  function level() { const n = masteredCount(); return n >= 30 ? 3 : n >= 10 ? 2 : 1; }
+  // Words the parent typed into the Parent Portal ("kata dari sekolah"); synced into localStorage by joy.js.
+  function schoolEntries() {
+    let list = [];
+    try { list = (root.AIGJoy && AIGJoy.schoolWords && AIGJoy.schoolWords()) || JSON.parse(localStorage.getItem("azka_school_words") || "[]") || []; } catch (e) { list = []; }
+    const out = [];
+    list.forEach(w => {
+      w = String(w || "").trim(); if (w.length < 2) return;
+      const found = WORDS.find(x => x.w.toLowerCase() === w.toLowerCase());
+      out.push(found ? Object.assign({ school: true }, found) : { w, d: `a word from your school list (${w.length} letters, starts with "${w[0]}")`, school: true, custom: true });
+    });
+    return out;
+  }
   function chooseWord(exclude) {
-    const m = load(), now = Date.now();
-    const due = WORDS.filter(x => m[x.w] && m[x.w].d <= now && !(exclude || []).includes(x.w));
+    exclude = exclude || [];
+    const m = load(), now = Date.now(), s2 = load2(), lvl = level();
+    const school = schoolEntries().filter(x => !exclude.includes(x.w) && stage(x.w) < 3);
+    if (school.length && Math.random() < 0.5) return choice(school);
+    const due = WORDS.filter(x => m[x.w] && m[x.w].d <= now && !exclude.includes(x.w));
     if (due.length && Math.random() < 0.55) return choice(due);
-    const rest = WORDS.filter(x => !(exclude || []).includes(x.w));
-    return choice(rest.length ? rest : WORDS);
+    const rest = WORDS.filter(x => !exclude.includes(x.w) && (s2[x.w] || tierOf(x.w) <= lvl));
+    const pool = rest.length ? rest : WORDS.filter(x => !exclude.includes(x.w));
+    return choice(pool.length ? pool : WORDS);
   }
   const choice = a => a[rand(0, a.length - 1)];
+  const esc = x => String(x == null ? "" : x).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const X = () => root.AIGSpellingExtra || { EX: {}, TIP: {}, FACT: {} };
+  // Small card shown after an answer: a memory trick + example when wrong, an occasional origin fact when right.
+  function afterAnswerHtml(word, ok) {
+    if (!word) return "";
+    const x = X(), tip = x.TIP[word], ex = x.EX[word], fact = x.FACT[word];
+    let h = "";
+    if (!ok) {
+      if (tip) h += `<div class="sp-note sp-tip">💡 <b>Memory trick:</b> ${esc(tip)}</div>`;
+      if (ex) h += `<div class="sp-note sp-ex">✏️ <i>${esc(ex)}</i></div>`;
+    } else if (fact && Math.random() < 0.4) {
+      h += `<div class="sp-note sp-fact">🔎 <b>Did you know?</b> ${esc(fact)}</div>`;
+    }
+    return h;
+  }
 
   /* ---- question builders ---- */
   const defHtml = e => `<i>${e.d}</i>`;
@@ -399,9 +443,21 @@ fraction|a part of a whole number
     const opts = shuffle([e.w, ...wrongSpellings(e).slice(0, 3)]);
     return { type: "mc", prompt: `Which is the correct spelling of the word that means ${defHtml(e)}?`, options: opts, answer: e.w, spellWord: e.w };
   }
-  const say = w => { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(w); u.lang = "en-US"; u.rate = 0.8; speechSynthesis.speak(u); } catch (e) {} };
+  // Text-to-speech: prefer a clear English voice (Google/local), adjustable speed (slow = 🐢).
+  let VOICE = null;
+  function pickVoice() {
+    try {
+      const vs = speechSynthesis.getVoices() || [];
+      if (!vs.length) return null;
+      const en = vs.filter(v => /^en[-_](US|GB|AU|IN)/i.test(v.lang) || /^en$/i.test(v.lang));
+      return en.find(v => /google/i.test(v.name) && /en[-_]US/i.test(v.lang)) || en.find(v => /en[-_]US/i.test(v.lang) && v.localService) || en.find(v => /en[-_]US/i.test(v.lang)) || en[0] || null;
+    } catch (e) { return null; }
+  }
+  try { if (typeof speechSynthesis !== "undefined") speechSynthesis.onvoiceschanged = () => { VOICE = pickVoice(); }; } catch (e) {}
+  const rateOf = slow => { let r = 0.8; try { const v = parseFloat(localStorage.getItem("azka_tts_rate")); if (v >= 0.4 && v <= 1.2) r = v; } catch (e) {} return slow ? Math.max(0.45, r - 0.3) : r; };
+  const say = (w, slow) => { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(w); u.lang = "en-US"; u.rate = rateOf(slow); if (!VOICE) VOICE = pickVoice(); if (VOICE) u.voice = VOICE; speechSynthesis.speak(u); } catch (e) {} };
   function typedListen(e) {
-    return { type: "fill", prompt: `<button type="button" class="btn btn-secondary" onclick="AIGSpelling.say('${e.w}')">🔊 Hear the word</button><br>Type the word that means ${defHtml(e)} <small>(${e.w.length} letters, starts with <b>${e.w[0].toLowerCase()}</b>)</small>`, answer: e.w, spellWord: e.w };
+    return { type: "fill", prompt: `<button type="button" class="btn btn-secondary" data-w="${e.w.replace(/"/g, "&quot;")}" onclick="AIGSpelling.say(this.dataset.w)">🔊 Hear the word</button> <button type="button" class="btn btn-secondary" data-w="${e.w.replace(/"/g, "&quot;")}" onclick="AIGSpelling.say(this.dataset.w, true)" aria-label="Hear it slowly">🐢</button><br>Type the word that means ${defHtml(e)} <small>(${e.w.length} letters, starts with <b>${e.w[0].toLowerCase()}</b>)</small>`, answer: e.w, spellWord: e.w };
   }
   function typedMissing(e) {
     const lw = e.w, idx = [];
@@ -440,6 +496,35 @@ fraction|a part of a whole number
     for (let i = 0; i < 30; i++) { const e = choice(WORDS); if (e.d.length <= maxPrompt && e.w.length <= maxAnswer) return { prompt: e.d, correctLabel: e.w }; }
     return null;
   }
-  root.AIGSpelling = { WORDS, wrongSpellings, mutations, record, say, buildSession, oneQuestion, quickMc, shortPair, mcQuestion, typedListen, typedMissing, typedScramble, weak: () => load() };
+  const entryOf = w => WORDS.find(x => x.w.toLowerCase() === String(w).toLowerCase()) || schoolEntries().find(x => x.w.toLowerCase() === String(w).toLowerCase()) || null;
+  function anyFormat(e) {
+    const r = Math.random();
+    if (r < 0.34) return mcQuestion(e);
+    if (r < 0.6) return typedListen(e);
+    if (r < 0.85) return typedMissing(e);
+    return typedScramble(e);
+  }
+  // "Revenge round": the words you missed (most missed first); tops up with normal words if there are fewer than n.
+  function buildRevenge(n) {
+    const m = load();
+    const weak = Object.keys(m).map(w => ({ e: entryOf(w), m: m[w].m || 1 })).filter(x => x.e).sort((a, b) => b.m - a.m).slice(0, n).map(x => x.e);
+    const used = weak.map(e => e.w), out = weak.map(anyFormat);
+    while (out.length < n) { const e = chooseWord(used); used.push(e.w); out.push(anyFormat(e)); }
+    return { questions: out, weakCount: weak.length };
+  }
+  // "Spelling Bee": listen and type, words from the ladder level (school words first). Timer lives in the UI.
+  function buildBee(n) {
+    const used = [], out = [];
+    while (out.length < n) { const e = chooseWord(used); used.push(e.w); out.push(typedListen(e)); }
+    return out;
+  }
+  // Every practisable word with its stage, for the Word Garden.
+  function gardenWords() {
+    const school = schoolEntries(), seen = new Set(WORDS.map(x => x.w.toLowerCase()));
+    const extra = school.filter(x => !seen.has(x.w.toLowerCase()));
+    const sl = new Set(school.map(x => x.w.toLowerCase()));
+    return WORDS.concat(extra).map(e => ({ w: e.w, d: e.d, school: sl.has(e.w.toLowerCase()), stage: stage(e.w), tier: tierOf(e.w) }));
+  }
+  root.AIGSpelling = { WORDS, wrongSpellings, mutations, record, say, buildSession, oneQuestion, quickMc, shortPair, mcQuestion, typedListen, typedMissing, typedScramble, weak: () => load(), progress: load2, stage, level, tierOf, masteredCount, afterAnswerHtml, schoolEntries, entryOf, buildRevenge, buildBee, gardenWords, chooseWord, extra: X };
   if (typeof module !== "undefined" && module.exports) module.exports = root.AIGSpelling;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -302,6 +302,7 @@
     ref.child("streak").transaction(cur => isCorrect ? (cur || 0) + 1 : 0);
     if (isCorrect) { awardCurrency(comboMultiplier || 1); touchSeasonProgress(); touchWeeklyStats(); touchTotalCorrect(); }
     touchDailyStats(gameId, isCorrect);
+    try { if (window.AIGJoy) AIGJoy.onAnswer(gameId, topicKey, isCorrect); } catch (e) {}
   }
 
   // =====================================================================
@@ -7459,4 +7460,18 @@
     awardTreasureMapBonus,
     db: aigDb
   };
+})();
+
+// joy.js (parent messages, Fokus quota, synced Parent Portal settings) is loaded from here so every page that
+// already loads leaderboard.js gets it without per-page edits. No version param on purpose: Vercel serves static
+// files with must-revalidate, so a fresh joy.js is always picked up.
+(function () {
+  try {
+    var s = document.currentScript;
+    if (!s || !s.src) return;
+    var j = document.createElement("script");
+    j.src = s.src.replace(/leaderboard\.js.*$/, "joy.js");
+    j.async = true;
+    document.head.appendChild(j);
+  } catch (e) { /* never block the page */ }
 })();

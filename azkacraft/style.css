@@ -1265,3 +1265,9 @@ body:has(#screen-landing.active) .hub-home-btn::after { content: " BrainBox"; }
 
 /* Home/back always on top of pop-ups and full-screen layers, so a kid can leave mid-game. */
 .hub-home-btn { z-index: 10000; }
+
+/* Spelling tips shown after an answer (Spell It Right + any spellWord question) */
+.sp-note { margin: 10px 0 0; padding: 8px 12px; border-radius: 12px; font-size: .9rem; line-height: 1.4; text-align: left; }
+.sp-tip { background: #fff3c4; border: 2px solid #f0c24b; }
+.sp-ex { background: #e8f4ff; border: 2px solid #8ec1f0; }
+.sp-fact { background: #e9f8e6; border: 2px solid #8fd08a; }

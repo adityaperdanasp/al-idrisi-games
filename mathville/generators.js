@@ -539,17 +539,21 @@
      arithmetic as `expr`, so scripts/qa-azka-focus.js can re-evaluate each answer independently.
      ================================================================= */
   const NAMES = ["Azka", "Rani", "Budi", "Sari", "Dimas", "Mia", "Rafi", "Nadia", "Bayu", "Citra", "Fajar", "Lina"];
-  const nm = () => choice(NAMES);
-  const two = () => { const a = choice(NAMES); let b = choice(NAMES); while (b === a) b = choice(NAMES); return [a, b]; };
+  // Parent Portal "Personalisasi soal cerita" (synced into localStorage by joy.js): own names / favourite things.
+  const persona = () => { try { return JSON.parse(localStorage.getItem("azka_persona") || "null"); } catch (e) { return null; } };
+  const nameList = () => { const p = persona(); return p && Array.isArray(p.names) && p.names.length >= 3 ? p.names : NAMES; };
+  const nm = () => choice(nameList());
+  const two = () => { const L = nameList(); const a = choice(L); let b = choice(L), t = 0; while (b === a && t++ < 30) b = choice(L); return [a, b]; };
   const R3 = (d, e, m, h) => { const r = byTier(d, e, m, h); return rand(r[0], r[1]); };
   const rp = n => "Rp" + fmt(n * 1000);   // n is in thousands of rupiah
   const COLL = ["stickers", "marbles", "football cards", "coins", "seashells", "Minecraft cards", "bookmarks", "toy cars"];
+  const collList = () => { const p = persona(); return p && Array.isArray(p.things) && p.things.length ? p.things.concat(COLL.slice(0, 2)) : COLL; };
   const FOOD = ["cookies", "doughnuts", "mangoes", "bananas", "rolls", "pancakes", "apples", "oranges"];
   const mk = (p, r, expr, op) => ({ p, r, expr, op });
 
   const ONE = {
     add: [
-      d => { const n = nm(), it = choice(COLL), a = R3(d, [3, 9], [25, 90], [120, 650]), b = R3(d, [2, 9], [14, 70], [90, 480]); return mk(`${n} has ${fmt(a)} ${it}. A friend gives ${n} ${fmt(b)} more. How many ${it} does ${n} have now?`, a + b, `${a}+${b}`, "add"); },
+      d => { const n = nm(), it = choice(collList()), a = R3(d, [3, 9], [25, 90], [120, 650]), b = R3(d, [2, 9], [14, 70], [90, 480]); return mk(`${n} has ${fmt(a)} ${it}. A friend gives ${n} ${fmt(b)} more. How many ${it} does ${n} have now?`, a + b, `${a}+${b}`, "add"); },
       d => { const a = R3(d, [5, 14], [20, 60], [150, 480]), b = R3(d, [2, 9], [8, 40], [60, 320]); return mk(`There are ${fmt(a)} children on a school bus. At the next stop ${fmt(b)} more children get on. How many children are on the bus now?`, a + b, `${a}+${b}`, "add"); },
       d => { const a = R3(d, [6, 15], [40, 160], [260, 900]), b = R3(d, [4, 12], [30, 140], [180, 700]); return mk(`The class library has ${fmt(a)} storybooks and ${fmt(b)} comic books. How many books are there altogether?`, a + b, `${a}+${b}`, "add"); },
       d => { const [x, y] = two(), a = R3(d, [2, 9], [12, 55], [80, 400]), b = R3(d, [2, 9], [12, 55], [80, 400]); return mk(`${x} scored ${fmt(a)} points in the first game and ${y} scored ${fmt(b)} points. How many points did they score in total?`, a + b, `${a}+${b}`, "add"); },
@@ -561,7 +565,7 @@
       d => { const n = nm(), a = R3(d, [3, 9], [12, 70], [100, 600]), b = R3(d, [3, 9], [12, 70], [100, 600]); return mk(`${n} saved ${rp(a)} last month and ${rp(b)} this month. How much has ${n} saved altogether (in rupiah)?`, (a + b) * 1000, `(${a}+${b})*1000`, "add"); }
     ],
     sub: [
-      d => { const n = nm(), it = choice(COLL), a = R3(d, [10, 20], [60, 190], [300, 950]), b = R3(d, [2, 9], [12, 55], [80, 290]); return mk(`${n} has ${fmt(a)} ${it} and gives ${fmt(b)} of them to a friend. How many ${it} does ${n} have left?`, a - b, `${a}-${b}`, "sub"); },
+      d => { const n = nm(), it = choice(collList()), a = R3(d, [10, 20], [60, 190], [300, 950]), b = R3(d, [2, 9], [12, 55], [80, 290]); return mk(`${n} has ${fmt(a)} ${it} and gives ${fmt(b)} of them to a friend. How many ${it} does ${n} have left?`, a - b, `${a}-${b}`, "sub"); },
       d => { const n = nm(), a = R3(d, [10, 20], [50, 200], [500, 2000]), b = R3(d, [2, 9], [10, 45], [80, 380]); return mk(`${n} has ${rp(a)} and buys a book for ${rp(b)}. How much money does ${n} have left (in rupiah)?`, (a - b) * 1000, `(${a}-${b})*1000`, "sub"); },
       d => { const a = R3(d, [15, 28], [60, 190], [300, 900]), b = R3(d, [3, 12], [14, 55], [60, 260]); return mk(`There are ${fmt(a)} people on a train. At the station ${fmt(b)} people get off. How many people are still on the train?`, a - b, `${a}-${b}`, "sub"); },
       d => { const a = R3(d, [12, 24], [60, 180], [260, 800]), b = R3(d, [3, 10], [14, 55], [60, 240]), f = choice(FOOD); return mk(`A tray holds ${fmt(a)} ${f}. The children eat ${fmt(b)} of them. How many ${f} are left on the tray?`, a - b, `${a}-${b}`, "sub"); },
@@ -598,7 +602,7 @@
     ]
   };
   const TWO = [
-    d => { const n = nm(), a = R3(d, [8, 15], [40, 120], [200, 600]), b = R3(d, [4, 9], [15, 60], [100, 300]), c = R3(d, [2, 7], [10, 50], [60, 250]), it = choice(COLL); return mk(`${n} has ${fmt(a)} ${it}, then buys ${fmt(b)} more and gives ${fmt(c)} to a friend. How many ${it} does ${n} have now?`, a + b - c, `${a}+${b}-${c}`, "add-sub"); },
+    d => { const n = nm(), a = R3(d, [8, 15], [40, 120], [200, 600]), b = R3(d, [4, 9], [15, 60], [100, 300]), c = R3(d, [2, 7], [10, 50], [60, 250]), it = choice(collList()); return mk(`${n} has ${fmt(a)} ${it}, then buys ${fmt(b)} more and gives ${fmt(c)} to a friend. How many ${it} does ${n} have now?`, a + b - c, `${a}+${b}-${c}`, "add-sub"); },
     d => { const a = R3(d, [20, 40], [150, 400], [800, 2500]), b = R3(d, [3, 9], [20, 70], [100, 400]), c = R3(d, [2, 8], [15, 60], [90, 380]); return mk(`A shop has ${fmt(a)} bottles of juice. It sells ${fmt(b)} in the morning and ${fmt(c)} in the afternoon. How many bottles are left?`, a - b - c, `${a}-${b}-${c}`, "sub-sub"); },
     d => { const a = R3(d, [2, 5], [3, 9], [6, 12]), b = R3(d, [3, 8], [6, 12], [12, 40]), c = R3(d, [2, 9], [8, 30], [40, 120]); return mk(`There are ${a} bags with ${b} marbles in each bag, plus ${fmt(c)} loose marbles. How many marbles are there altogether?`, a * b + c, `${a}*${b}+${c}`, "mul-add"); },
     d => { const a = R3(d, [2, 5], [4, 9], [6, 12]), b = R3(d, [4, 8], [8, 16], [12, 36]), c = R3(d, [2, 5], [4, 14], [10, 50]); return mk(`A farmer packs ${a} crates with ${b} eggs in each crate. ${c} eggs break. How many eggs are not broken?`, a * b - c, `${a}*${b}-${c}`, "mul-sub"); },

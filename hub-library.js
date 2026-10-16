@@ -16,14 +16,14 @@
     ["sport", "⚽ Olahraga & Irama", "#d06a2a", [["math-tennis", "Math Tennis", "🎾"], ["basketball", "Math Hoops", "🏀"], ["number-line-jump", "Number Jump", "🐇"], ["dance-battle", "Dance Battle", "💃"], ["times-rhythm", "Times Rhythm", "🎵"]]],
     ["puzzle", "🧩 Teka-teki & Misteri", "#7b3fe4", [["escape-room", "Escape the Vault", "🔐"], ["treasure-map", "Treasure Map", "🗺️"], ["memory-match", "Memory Match", "🧠"], ["pattern-puzzles", "Pattern Puzzles", "🔷"], ["word-detective", "Word Detective", "🕵️"], ["quiz-show", "Quiz Show", "🎤"]]],
     ["build", "🏗️ Bangun & Kreasi", "#58b368", [["city-builder", "City Builder", "🏙️"], ["cooking-rush", "Cooking Rush", "🍳"], ["fractions-kitchen", "Fractions Kitchen", "🥣"], ["story-maker", "Story Maker", "✏️"], ["music-corner", "Music Corner", "🎼"], ["geo-flight", "Geo Flight", "🌍"], ["kids-quiz", "Kids' Quiz", "📝"]]],
-    ["learn", "📚 Belajar", "#59607a", [["quick-review", "Quick Review", "🔁"], ["word-book", "Word Book", "📕"], ["bo-class", "Bo's Classroom", "🎓"], ["bo-tutor", "Bo's Tutor", "🧑‍🏫"], ["ready-check", "Level-Up Check", "✅"], ["focus-round", "Focus Round", "🎯"], ["science-lab", "Science Lab", "🧪"], ["speak-with-bo", "Speak with Bo", "🎙️"], ["voice-quiz", "Voice Quiz", "🗣️"], ["zen-mode", "Zen Mode", "🍃"]]],
+    ["learn", "📚 Belajar", "#59607a", [["quick-review", "Quick Review", "🔁"], ["word-garden", "Kebun Kata", "🌱"], ["word-book", "Word Book", "📕"], ["bo-class", "Bo's Classroom", "🎓"], ["bo-tutor", "Bo's Tutor", "🧑‍🏫"], ["ready-check", "Level-Up Check", "✅"], ["focus-round", "Focus Round", "🎯"], ["science-lab", "Science Lab", "🧪"], ["speak-with-bo", "Speak with Bo", "🎙️"], ["voice-quiz", "Voice Quiz", "🗣️"], ["zen-mode", "Zen Mode", "🍃"]]],
     ["home", "🏠 Bo & Barang", "#8b5a2b", [["bo-home", "Bo's World", "🏠"], ["garage", "Garage", "🔧"], ["workshop", "Crafting Table", "⚒️"], ["class-board", "Class Teams", "🏆"], ["world-map", "World Map", "🧭"]]]
   ];
   const NEW = { dinorace: 1, plane: 1, drive: 1 };
   // "Fokus Azka": child-side switch. ON = only the games below stay open and every question is a story problem or a
   // spelling word (see generators.js + question-pools.js + azkacraft/spelling.js). OFF = everything as usual.
   const FOCUS_KEY = "azka_focus";
-  const FOCUS_GAMES = new Set(["mathville", "azkacraft", "math-tennis", "treasure-dig", "treasure-map", "quiz-show", "monster-battle", "boss-rush", "space-race", "escape-room", "cooking-rush", "fortress-math"]);
+  const FOCUS_GAMES = new Set(["word-garden", "mathville", "azkacraft", "math-tennis", "treasure-dig", "treasure-map", "quiz-show", "monster-battle", "boss-rush", "space-race", "escape-room", "cooking-rush", "fortress-math"]);
   const FOCUS_DEFAULT_FAV = ["mathville", "azkacraft", "treasure-dig", "math-tennis", "quiz-show", "monster-battle"];
   const focusOn = () => { try { return localStorage.getItem(FOCUS_KEY) === "1"; } catch (e) { return false; } };
   const setFocus = v => { try { localStorage.setItem(FOCUS_KEY, v ? "1" : "0"); } catch (e) {} };
@@ -92,7 +92,7 @@
     const roam = document.getElementById("roam-car"); if (roam) roam.setAttribute("href", FOCUS ? "mathville/" : "plane/");
     const lib = document.createElement("div"); lib.className = `lib lib-b`; lib.id = "hub-library";
     lib.innerHTML = `
-      <button id="lib-focus" type="button" class="lib-focus ${FOCUS ? "on" : ""}" aria-pressed="${FOCUS}"><span class="lib-focus-star">⭐</span><span><b>Fokus Azka: ${FOCUS ? "HIDUP" : "MATI"}</b><small>${FOCUS ? "Soal cerita math + mengeja. Game lain terkunci 🔒 — tekan lagi untuk mematikan." : "Tekan untuk latihan soal cerita math + mengeja kata."}</small></span></button>
+      <button id="lib-focus" type="button" class="lib-focus ${FOCUS ? "on" : ""}" aria-pressed="${FOCUS}"><span class="lib-focus-star">⭐</span><span><b>Fokus Azka: ${FOCUS ? "HIDUP" : "MATI"}</b><small>${FOCUS ? "Soal cerita math + mengeja. Game lain terkunci 🔒 — tekan lagi untuk mematikan." : "Tekan untuk latihan soal cerita math + mengeja kata."}</small><small id="lib-quota-line" style="display:none;margin-top:4px;font-weight:800"></small></span></button>
       <div class="lib-search"><input id="lib-q" type="search" placeholder="🔍 Cari game… (mis. dino, pecahan, boss)" autocomplete="off"></div>
       <section class="lib-fav"><h3 class="lib-h">⭐ Favorit kamu</h3><div class="lib-favgrid">${favDirs.map(d => tile(byDir[d], c, true)).join("")}</div></section>
       ${CLUSTERS.map(([id, label, color, games], i) => {

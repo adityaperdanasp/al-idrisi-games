@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<script src="../tablet.js?v=1"></script>
+<title>Kebun Kata — BrainBox</title>
+<meta name="theme-color" content="#2f9e44">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<style>
+  .wg-tabs{display:flex;gap:8px;padding:0 14px 10px}
+  .wg-tab{flex:1;border:none;border-radius:12px;padding:9px;font-family:"Baloo 2",sans-serif;font-weight:800;background:rgba(0,0,0,.07);color:inherit;cursor:pointer}
+  .wg-tab.on{background:var(--kit-accent);color:#fff}
+  .wg-hero{text-align:center}
+  .wg-hero .wg-big{font-size:3rem;line-height:1}
+  .wg-bar{height:16px;border:3px solid #1b1b1b;background:#fff;margin:8px 0}
+  .wg-bar>i{display:block;height:100%;background:linear-gradient(90deg,#7bd36b,#2f9e44);transition:width .5s}
+  .wg-chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+  .wg-chip{border:2px solid #1b1b1b;background:#fff;border-radius:999px;padding:4px 10px;font:800 .75rem "Nunito",sans-serif;cursor:pointer}
+  .wg-chip.on{background:#2f9e44;color:#fff}
+  .wg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px}
+  .wg-tile{position:relative;border:3px solid #1b1b1b;background:#fff;padding:6px 2px;text-align:center;cursor:pointer;font:800 .7rem/1.2 "Nunito",sans-serif;word-break:break-word}
+  .wg-tile .wg-em{display:block;font-size:1.5rem}
+  .wg-tile.s0{opacity:.55}.wg-tile.s3{background:#fff0f6;border-color:#d6336c}
+  .wg-tile .wg-sch{position:absolute;top:-8px;right:-6px;font-size:.9rem}
+  .wg-modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+  .wg-modal .kit-card{max-width:440px;width:100%;max-height:88vh;overflow:auto}
+  .wg-say{display:flex;gap:8px;justify-content:center;margin:8px 0}
+  .wg-note{margin:8px 0;padding:8px 10px;border-radius:12px;font-size:.88rem;line-height:1.4;text-align:left}
+  .wg-tip{background:#fff3c4;border:2px solid #f0c24b}.wg-ex{background:#e8f4ff;border:2px solid #8ec1f0}.wg-fact{background:#e9f8e6;border:2px solid #8fd08a}
+  .wg-opts{display:grid;gap:8px;margin-top:10px}
+  .wg-opt{border:3px solid #1b1b1b;background:#fff;padding:12px;font:800 1rem "Nunito",sans-serif;cursor:pointer;text-align:center}
+  .wg-opt.ok{background:#c9f2c7}.wg-opt.bad{background:#ffd0d0}
+  .wg-in{width:100%;box-sizing:border-box;padding:12px;font-size:1.2rem;border:3px solid #1b1b1b;text-align:center;margin-top:10px}
+  .wg-hud{display:flex;justify-content:space-between;font:800 .85rem "Nunito",sans-serif;margin-bottom:6px}
+  .wg-time{height:10px;border:2px solid #1b1b1b;background:#fff;margin-bottom:8px}.wg-time>i{display:block;height:100%;background:#f59f00;width:100%}
+  .wg-q{font:700 1.05rem/1.45 "Nunito",sans-serif;margin:6px 0}
+  .wg-fb{margin-top:10px;font:800 1rem "Nunito",sans-serif;text-align:center}
+  .wg-who{font:800 1.4rem "Baloo 2",sans-serif;text-align:center}
+</style>
+<link rel="stylesheet" href="/blockworld-games.css?v=6" />
+<script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="word-garden";</script>
+</head>
+<body>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../" class="kit-back">←</a><div class="kit-title">🌱 Kebun Kata</div></div>
+  <div class="wg-tabs"><button class="wg-tab on" data-t="garden" type="button">🌳 Kebunku</button><button class="wg-tab" data-t="practice" type="button">🎯 Latihan</button></div>
+  <div id="wg-main"></div><div id="wg-overlay"></div>
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js?v=5"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js?v=8"></script>
+<script src="../question-pools.js?v=4"></script>
+<script src="../gamekit.js?v=6"></script>
+<script>AIGKit.mount({title:'Kebun Kata',accent:'#2f9e44',bg:'linear-gradient(180deg,#eefbe7,#d6f1c9)'});</script>
+<script src="../azkacraft/spelling-extra.js?v=1"></script>
+<script src="../azkacraft/spelling.js?v=2"></script>
+<script src="script.js?v=1"></script>
+</body>
+</html>

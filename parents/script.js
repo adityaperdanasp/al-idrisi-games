@@ -210,6 +210,9 @@
     // ---- Real-world missions (PM round 10, item 19) ----
     renderMissions(player.parentMissions || {});
 
+    // ---- Joy batch: cheers, Fokus quota, school words, personalisation ----
+    renderJoy(player);
+
     // ---- Review kid-written quiz questions ----
     renderQuizReview(player.customQuestions || {});
 
@@ -338,6 +341,53 @@
       const label = (FOCUS_TOPICS.find(x => x[0] === t) || [t, t])[1];
       return `<div class="p-quiz-card"><div class="p-quiz-prompt">${escapeHtml(label)}</div><div class="p-quiz-options">${n ? `${n} question${n === 1 ? "" : "s"} answered since you set this · ${Math.round(c / n * 100)}% correct` : "No practice yet — it will show up as your child plays the Game Room games."}</div></div>`;
     }).join("") : "";
+  }
+
+
+  // ---------------------------------------------------------------------
+  // Joy batch (2026-10): preset pesan, Kuota Fokus, kata dari sekolah, personalisasi.
+  // Paths (all under the already-open players/{id}): focusQuota, schoolWords, persona.
+  // joy.js (loaded by leaderboard.js in the games) reads/syncs them on the child's device.
+  // ---------------------------------------------------------------------
+  function renderJoy(player) {
+    const $ = id => document.getElementById(id);
+    const ref = path => aigDb.ref(`players/${childId}/${path}`);
+    // --- message presets (quick phrases for the existing "Send a Message" box) ---
+    const PRESETS = ["Papa/Mama bangga sama kamu!", "Hebat, terus semangat ya!", "Kamu makin jago hari ini!", "Salah itu bagian dari belajar, ayo coba lagi!", "Selesai belajar, nanti kita main bareng!"];
+    const pr = $("p-msg-presets");
+    if (pr) { pr.innerHTML = PRESETS.map((t, i) => `<button type="button" class="p-quiz-btn" data-preset="${i}" style="background:#f3ecff">${escapeHtml(t)}</button>`).join(""); pr.onclick = e => { const b = e.target.closest("[data-preset]"); if (b) { $("p-msg-input").value = PRESETS[+b.dataset.preset]; } }; }
+    // --- quota ---
+    const q = player.focusQuota || {};
+    $("p-quota-on").checked = !!q.enabled; $("p-quota-target").value = q.target || 30; $("p-quota-min").value = q.freeMin || 20;
+    $("p-quota-note").textContent = q.enabled ? `Aktif: ${q.target} jawaban benar → ${q.freeMin} menit main bebas.` : "Belum aktif.";
+    $("p-quota-save").onclick = async () => {
+      const target = Math.max(5, Math.min(300, parseInt($("p-quota-target").value, 10) || 30));
+      const freeMin = Math.max(5, Math.min(120, parseInt($("p-quota-min").value, 10) || 20));
+      await ref("focusQuota").set({ enabled: $("p-quota-on").checked, target, freeMin, updatedAt: Date.now() });
+      $("p-quota-note").textContent = "Tersimpan. Berlaku di perangkat anak saat dia buka app berikutnya.";
+    };
+    // --- school words ---
+    const list = ((player.schoolWords || {}).list || []);
+    $("p-words-text").value = list.join(", ");
+    $("p-words-note").textContent = list.length ? `${list.length} kata aktif.` : "Belum ada daftar.";
+    $("p-words-save").onclick = async () => {
+      const words = [...new Set($("p-words-text").value.toLowerCase().split(/[\s,;]+/).map(w => w.replace(/[^a-z'-]/g, "")).filter(w => w.length >= 2 && w.length <= 22))].slice(0, 80);
+      await ref("schoolWords").set({ list: words, updatedAt: Date.now() });
+      $("p-words-text").value = words.join(", ");
+      $("p-words-note").textContent = `${words.length} kata tersimpan.`;
+    };
+    $("p-words-clear").onclick = async () => { await ref("schoolWords").remove(); $("p-words-text").value = ""; $("p-words-note").textContent = "Daftar dikosongkan."; };
+    // --- persona ---
+    const pe = player.persona || {};
+    $("p-persona-names").value = (pe.names || []).join(", "); $("p-persona-things").value = (pe.things || []).join(", ");
+    $("p-persona-note").textContent = (pe.names || []).length || (pe.things || []).length ? "Personalisasi aktif." : "Memakai nama bawaan.";
+    $("p-persona-save").onclick = async () => {
+      const clean = (v, n) => [...new Set(v.split(",").map(x => x.trim().replace(/[<>&"]/g, "")).filter(x => x.length >= 2 && x.length <= 24))].slice(0, n);
+      const names = clean($("p-persona-names").value, 14), things = clean($("p-persona-things").value, 10);
+      await ref("persona").set({ names, things, updatedAt: Date.now() });
+      $("p-persona-note").textContent = "Tersimpan. Soal cerita memakai ini mulai dari soal berikutnya.";
+    };
+    $("p-persona-clear").onclick = async () => { await ref("persona").remove(); $("p-persona-names").value = ""; $("p-persona-things").value = ""; $("p-persona-note").textContent = "Memakai nama bawaan."; };
   }
 
   function renderMissions(missions) {

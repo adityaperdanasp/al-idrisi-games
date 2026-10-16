@@ -566,6 +566,8 @@ function handleMCAnswer(selected, q, grid) {
   buttons.forEach(b => (b.disabled = true));
   const isCorrect = selected === q.answer;
   if (q.spellWord && window.AIGSpelling) AIGSpelling.record(q.spellWord, isCorrect);
+  const spHtml = q.spellWord && window.AIGSpelling && AIGSpelling.afterAnswerHtml ? AIGSpelling.afterAnswerHtml(q.spellWord, isCorrect) : "";
+  if (spHtml) { const qa = document.getElementById("question-area"); if (qa) qa.insertAdjacentHTML("beforeend", spHtml); }
   if (window.AIGJuice) AIGJuice.answer(isCorrect, session.correctCount); // haptic + rising blip (juice.js)
 
   if (isCorrect) {
@@ -575,7 +577,7 @@ function handleMCAnswer(selected, q, grid) {
     session.score += 10;
     session.correctCount++;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, true);
-    nextQuestion(1500);
+    nextQuestion(spHtml ? 3600 : 1500);
   } else {
     buttons.find(b => b.textContent === selected).classList.add("selected-wrong");
     buttons.find(b => b.textContent === q.answer).classList.add("reveal-correct");
@@ -586,7 +588,7 @@ function handleMCAnswer(selected, q, grid) {
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
     // Spaced repetition (PM round 12, item 17): remember this one for Quick Review.
     if (window.AIGLeaderboard && AIGLeaderboard.srsAdd && q.options && q.options.length === 4) AIGLeaderboard.srsAdd({ prompt: q.prompt, options: q.options, correctLabel: q.answer, key: session.chapter.topic }, "lang");
-    nextQuestion(5000);
+    nextQuestion(spHtml ? 7500 : 5000);
   }
 }
 
@@ -623,6 +625,8 @@ function handleFillAnswer(q) {
   const correct = isCapitalizationChapter ? q.answer.trim() : q.answer.trim().toLowerCase();
   const isCorrect = given === correct;
   if (q.spellWord && window.AIGSpelling) AIGSpelling.record(q.spellWord, isCorrect);
+  const spHtml = q.spellWord && window.AIGSpelling && AIGSpelling.afterAnswerHtml ? AIGSpelling.afterAnswerHtml(q.spellWord, isCorrect) : "";
+  if (spHtml) { const qa = document.getElementById("question-area"); if (qa) qa.insertAdjacentHTML("beforeend", spHtml); }
 
   if (isCorrect) {
     input.classList.add("correct");
@@ -631,7 +635,7 @@ function handleFillAnswer(q) {
     session.score += 10;
     session.correctCount++;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, true);
-    nextQuestion(1500);
+    nextQuestion(spHtml ? 3600 : 1500);
   } else {
     input.classList.add("wrong");
     document.getElementById("fill-correction").innerHTML =
@@ -641,7 +645,7 @@ function handleFillAnswer(q) {
     session.lastWrong = { question: q.prompt, correctAnswer: q.answer, kidAnswer: input.value.trim(), topic: session.chapter.topic };
     session.score += 3;
     if (window.AIGLeaderboard) AIGLeaderboard.recordTopicAttempt("language-arts", session.chapter.topic, false);
-    nextQuestion(5000);
+    nextQuestion(spHtml ? 7500 : 5000);
   }
 }
 
