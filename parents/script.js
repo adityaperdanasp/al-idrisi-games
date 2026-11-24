@@ -353,7 +353,7 @@
     const $ = id => document.getElementById(id);
     const ref = path => aigDb.ref(`players/${childId}/${path}`);
     // --- message presets (quick phrases for the existing "Send a Message" box) ---
-    const PRESETS = ["Papa/Mama bangga sama kamu!", "Hebat, terus semangat ya!", "Kamu makin jago hari ini!", "Salah itu bagian dari belajar, ayo coba lagi!", "Selesai belajar, nanti kita main bareng!"];
+    const PRESETS = ["Mom and Dad are proud of you!", "Great job, keep going!", "You are getting better every day!", "Mistakes are part of learning, let's try again!", "When you finish studying, we'll play together!"];
     const pr = $("p-msg-presets");
     if (pr) { pr.innerHTML = PRESETS.map((t, i) => `<button type="button" class="p-quiz-btn" data-preset="${i}" style="background:#f3ecff">${escapeHtml(t)}</button>`).join(""); pr.onclick = e => { const b = e.target.closest("[data-preset]"); if (b) { $("p-msg-input").value = PRESETS[+b.dataset.preset]; } }; }
     // --- quota ---

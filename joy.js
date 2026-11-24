@@ -87,7 +87,7 @@
         if (!v || v.read || !v.text || Date.now() - (v.sentAt || 0) > 7 * 86400000) return;
         try { snap.ref.child("read").set(true); } catch (e) {}
         buzz([60, 40, 60]); confetti(18);
-        toast("💌 Pesan untukmu!", esc(v.text), 15000);
+        toast("💌 A message for you!", esc(v.text), 15000);
       });
     } catch (e) {}
   }
@@ -116,8 +116,8 @@
     const c = cfg();
     if (!c) return "";
     const left = freeLeftMs();
-    if (left > 0) { const s = Math.ceil(left / 1000); return `🎉 Waktu bebas: sisa ${Math.floor(s / 60)}:${pad(s % 60)}`; }
-    if (focusOn()) return `🎯 Target hari ini: ${Math.min(prog().n, c.target)}/${c.target} benar → ${c.freeMin} menit main bebas`;
+    if (left > 0) { const s = Math.ceil(left / 1000); return `🎉 Free time left: ${Math.floor(s / 60)}:${pad(s % 60)}`; }
+    if (focusOn()) return `🎯 Today's goal: ${Math.min(prog().n, c.target)}/${c.target} correct → ${c.freeMin} min free play`;
     return "";
   }
   function grantFree(c) {
@@ -126,7 +126,7 @@
     ls.rawSet(FOCUS_KEY, "0");
     css(); confetti(60); buzz([120, 60, 120, 60, 200]);
     const o = document.createElement("div"); o.className = "joy-over";
-    o.innerHTML = `<div class="joy-card"><div class="joy-big">🎉</div><h2>Target tercapai!</h2><div>Hebat, Azka! Kamu dapat <b>${c.freeMin} menit main bebas</b>. Semua game terbuka.</div><button class="joy-btn" type="button">Main bebas! 🚀</button></div>`;
+    o.innerHTML = `<div class="joy-card"><div class="joy-big">🎉</div><h2>Goal reached!</h2><div>Great job, Azka! You earned <b>${c.freeMin} minutes of free play</b>. All games are open.</div><button class="joy-btn" type="button">Free play! 🚀</button></div>`;
     document.body.appendChild(o);
     o.querySelector("button").onclick = () => { try { location.reload(); } catch (e) { o.remove(); } };
     emit();
@@ -136,7 +136,7 @@
     ls.rawSet(FOCUS_KEY, "1");
     css();
     const o = document.createElement("div"); o.className = "joy-over";
-    o.innerHTML = `<div class="joy-card"><div class="joy-big">⏰</div><h2>Waktu bebas habis</h2><div>Seru ya! Yuk balik ke Fokus Azka dulu, kumpulkan target lagi.</div><button class="joy-btn" type="button">Oke! ⭐</button></div>`;
+    o.innerHTML = `<div class="joy-card"><div class="joy-big">⏰</div><h2>Free time is up</h2><div>That was fun! Let's go back to Azka Focus and earn more free time.</div><button class="joy-btn" type="button">OK! ⭐</button></div>`;
     document.body.appendChild(o);
     o.querySelector("button").onclick = () => { try { location.href = BASE; } catch (e) { o.remove(); } };
     emit();
@@ -163,7 +163,7 @@
       if (!me()) return;
       if (!ok) { inRow = 0; return; }
       inRow++; bumpDaily();
-      if (inRow > 0 && inRow % 5 === 0) { buzz(40); toast("🔥 Beruntun!", `${inRow} jawaban benar berturut-turut. Keren!`, 3500); }
+      if (inRow > 0 && inRow % 5 === 0) { buzz(40); toast("🔥 On a roll!", `${inRow} correct answers in a row. Awesome!`, 3500); }
       const c = cfg();
       if (c && focusOn()) {
         const p = prog(); p.n++; ls.set(PROG_KEY, p); tick(); emit();

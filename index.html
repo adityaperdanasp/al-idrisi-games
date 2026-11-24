@@ -381,7 +381,7 @@
           <span class="sc-game-icon">🎁</span>
           <span class="sc-game-txt">
             <span class="sc-game-title">Khusus Azka: PR Minggu Ini</span>
-            <span class="sc-game-sub">Latihan soal + hadiah spesial!</span>
+            <span class="sc-game-sub">Practice questions + special rewards!</span>
           </span>
         </a>
         <a class="sc-game-card math" href="multipleazka/">
@@ -1641,7 +1641,7 @@
     // answer from anyone in the class takes HP off it.
     const hp = Math.max(0, goal.target - goal.progress), hpPct = 100 - pct;
     body.innerHTML = `
-      <p class="sc-goal-desc">${goal.achieved ? "🎉 Creeper dikalahkan! Kelas kita hebat!" : `Creeper punya ${hp} HP lagi — setiap jawaban benar dari kelas melukainya!`}</p>
+      <p class="sc-goal-desc">${goal.achieved ? "🎉 Creeper defeated! Our class is awesome!" : `Creeper has ${hp} HP left — every correct answer from the class hurts it!`}</p>
       <div class="sc-goal-track bw-hp"><div class="sc-goal-fill bw-hp-fill" style="width:${hpPct}%"></div></div>
       <div class="bw-hp-text">❤ ${hp} / ${goal.target} HP</div>`;
   }
@@ -3671,7 +3671,7 @@
 </script>
 
 <script src="tour.js"></script>
-<script src="blockworld.js?v=5"></script>
-<script src="hub-library.js?v=8"></script>
+<script src="blockworld.js?v=6"></script>
+<script src="hub-library.js?v=9"></script>
 </body>
 </html>

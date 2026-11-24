@@ -597,7 +597,7 @@ function renderTownMap() {
     `;
     if (mvFocusOn() && ch.id !== "story-problems") {
       stop.classList.add("focus-locked");
-      stop.addEventListener("click", () => showAdaptiveToast("🔒 Fokus Azka is ON: only Story Problems is open. Turn Fokus off on the home screen to visit this stop."));
+      stop.addEventListener("click", () => showAdaptiveToast("🔒 Azka Focus is ON: only Story Problems is open. Turn Azka Focus off on the home screen to visit this stop."));
     } else {
       stop.addEventListener("click", () => mvWalkTo(i, () => goToIntro(ch.id, false)));
     }

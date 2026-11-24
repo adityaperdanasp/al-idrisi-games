@@ -10,14 +10,14 @@
   "use strict";
 
   const CLUSTERS = [
-    ["race", "🏎️ Balapan & Aksi", "#4f86f7", [["multipleazka", "Math Race", "🏎️"], ["dinorace", "Dino Race", "🦖"], ["plane", "Plane Mode", "✈️"], ["drive", "Drive Mode", "🚗"], ["ninja-runner", "Ninja Runner", "🥷"], ["parkour-run", "Parkour", "🧗"], ["space-race", "Space Race", "🚀"], ["dino-rider", "Dino Rider", "🦕"], ["sea-mission", "Sea Mission", "⛵"], ["zombie-defense", "Zombie Defense", "🧟"]]],
-    ["adv", "🗺️ Petualangan", "#e0953a", [["mathville", "MathVille", "🏙️"], ["azkacraft", "Language & Arts", "📖"], ["azkauniverse", "SolarQuest", "🪐"], ["treasure-dig", "Treasure Dig", "⛏️"], ["vault-quest", "Vault Quest", "💰"], ["island-adventure", "Island Adventure", "🏝️"]]],
+    ["race", "🏎️ Racing & Action", "#4f86f7", [["multipleazka", "Math Race", "🏎️"], ["dinorace", "Dino Race", "🦖"], ["plane", "Plane Mode", "✈️"], ["drive", "Drive Mode", "🚗"], ["ninja-runner", "Ninja Runner", "🥷"], ["parkour-run", "Parkour", "🧗"], ["space-race", "Space Race", "🚀"], ["dino-rider", "Dino Rider", "🦕"], ["sea-mission", "Sea Mission", "⛵"], ["zombie-defense", "Zombie Defense", "🧟"]]],
+    ["adv", "🗺️ Adventure", "#e0953a", [["mathville", "MathVille", "🏙️"], ["azkacraft", "Language & Arts", "📖"], ["azkauniverse", "SolarQuest", "🪐"], ["treasure-dig", "Treasure Dig", "⛏️"], ["vault-quest", "Vault Quest", "💰"], ["island-adventure", "Island Adventure", "🏝️"]]],
     ["battle", "⚔️ Battle & Boss", "#c0392b", [["boss-rush", "Boss Rush", "🥊"], ["monster-battle", "Monster Catch", "🐲"], ["fortress-math", "Fortress Math", "🏰"], ["dungeon", "Dungeon", "🗡️"], ["duel", "Duel Arena", "⚔️"], ["card-race", "Card Race", "🃏"], ["weekly-boss", "Weekly Boss", "🐉"]]],
-    ["sport", "⚽ Olahraga & Irama", "#d06a2a", [["math-tennis", "Math Tennis", "🎾"], ["basketball", "Math Hoops", "🏀"], ["number-line-jump", "Number Jump", "🐇"], ["dance-battle", "Dance Battle", "💃"], ["times-rhythm", "Times Rhythm", "🎵"]]],
-    ["puzzle", "🧩 Teka-teki & Misteri", "#7b3fe4", [["escape-room", "Escape the Vault", "🔐"], ["treasure-map", "Treasure Map", "🗺️"], ["memory-match", "Memory Match", "🧠"], ["pattern-puzzles", "Pattern Puzzles", "🔷"], ["word-detective", "Word Detective", "🕵️"], ["quiz-show", "Quiz Show", "🎤"]]],
-    ["build", "🏗️ Bangun & Kreasi", "#58b368", [["city-builder", "City Builder", "🏙️"], ["cooking-rush", "Cooking Rush", "🍳"], ["fractions-kitchen", "Fractions Kitchen", "🥣"], ["story-maker", "Story Maker", "✏️"], ["music-corner", "Music Corner", "🎼"], ["geo-flight", "Geo Flight", "🌍"], ["kids-quiz", "Kids' Quiz", "📝"]]],
-    ["learn", "📚 Belajar", "#59607a", [["quick-review", "Quick Review", "🔁"], ["word-garden", "Kebun Kata", "🌱"], ["word-book", "Word Book", "📕"], ["bo-class", "Bo's Classroom", "🎓"], ["bo-tutor", "Bo's Tutor", "🧑‍🏫"], ["ready-check", "Level-Up Check", "✅"], ["focus-round", "Focus Round", "🎯"], ["science-lab", "Science Lab", "🧪"], ["speak-with-bo", "Speak with Bo", "🎙️"], ["voice-quiz", "Voice Quiz", "🗣️"], ["zen-mode", "Zen Mode", "🍃"]]],
-    ["home", "🏠 Bo & Barang", "#8b5a2b", [["bo-home", "Bo's World", "🏠"], ["garage", "Garage", "🔧"], ["workshop", "Crafting Table", "⚒️"], ["class-board", "Class Teams", "🏆"], ["world-map", "World Map", "🧭"]]]
+    ["sport", "⚽ Sports & Rhythm", "#d06a2a", [["math-tennis", "Math Tennis", "🎾"], ["basketball", "Math Hoops", "🏀"], ["number-line-jump", "Number Jump", "🐇"], ["dance-battle", "Dance Battle", "💃"], ["times-rhythm", "Times Rhythm", "🎵"]]],
+    ["puzzle", "🧩 Puzzles & Mysteries", "#7b3fe4", [["escape-room", "Escape the Vault", "🔐"], ["treasure-map", "Treasure Map", "🗺️"], ["memory-match", "Memory Match", "🧠"], ["pattern-puzzles", "Pattern Puzzles", "🔷"], ["word-detective", "Word Detective", "🕵️"], ["quiz-show", "Quiz Show", "🎤"]]],
+    ["build", "🏗️ Build & Create", "#58b368", [["city-builder", "City Builder", "🏙️"], ["cooking-rush", "Cooking Rush", "🍳"], ["fractions-kitchen", "Fractions Kitchen", "🥣"], ["story-maker", "Story Maker", "✏️"], ["music-corner", "Music Corner", "🎼"], ["geo-flight", "Geo Flight", "🌍"], ["kids-quiz", "Kids' Quiz", "📝"]]],
+    ["learn", "📚 Learn", "#59607a", [["quick-review", "Quick Review", "🔁"], ["word-garden", "Word Garden", "🌱"], ["word-book", "Word Book", "📕"], ["bo-class", "Bo's Classroom", "🎓"], ["bo-tutor", "Bo's Tutor", "🧑‍🏫"], ["ready-check", "Level-Up Check", "✅"], ["focus-round", "Focus Round", "🎯"], ["science-lab", "Science Lab", "🧪"], ["speak-with-bo", "Speak with Bo", "🎙️"], ["voice-quiz", "Voice Quiz", "🗣️"], ["zen-mode", "Zen Mode", "🍃"]]],
+    ["home", "🏠 Bo & Stuff", "#8b5a2b", [["bo-home", "Bo's World", "🏠"], ["garage", "Garage", "🔧"], ["workshop", "Crafting Table", "⚒️"], ["class-board", "Class Teams", "🏆"], ["world-map", "World Map", "🧭"]]]
   ];
   const NEW = { dinorace: 1, plane: 1, drive: 1 };
   // "Fokus Azka": child-side switch. ON = only the games below stay open and every question is a story problem or a
@@ -42,7 +42,7 @@
   }
   function badge(g, counts) {
     const n = counts[g.dir] || 0;
-    if (NEW[g.dir]) return `<i class="lib-badge new">✨ baru</i>`;
+    if (NEW[g.dir]) return `<i class="lib-badge new">✨ new</i>`;
     if (n >= 20) return `<i class="lib-badge hot">🔥</i>`;
     if (!n) return `<i class="lib-badge never">👀</i>`;
     return "";
@@ -92,19 +92,19 @@
     const roam = document.getElementById("roam-car"); if (roam) roam.setAttribute("href", FOCUS ? "mathville/" : "plane/");
     const lib = document.createElement("div"); lib.className = `lib lib-b`; lib.id = "hub-library";
     lib.innerHTML = `
-      <button id="lib-focus" type="button" class="lib-focus ${FOCUS ? "on" : ""}" aria-pressed="${FOCUS}"><span class="lib-focus-star">⭐</span><span><b>Fokus Azka: ${FOCUS ? "HIDUP" : "MATI"}</b><small>${FOCUS ? "Soal cerita math + mengeja. Game lain terkunci 🔒 — tekan lagi untuk mematikan." : "Tekan untuk latihan soal cerita math + mengeja kata."}</small><small id="lib-quota-line" style="display:none;margin-top:4px;font-weight:800"></small></span></button>
-      <div class="lib-search"><input id="lib-q" type="search" placeholder="🔍 Cari game… (mis. dino, pecahan, boss)" autocomplete="off"></div>
-      <section class="lib-fav"><h3 class="lib-h">⭐ Favorit kamu</h3><div class="lib-favgrid">${favDirs.map(d => tile(byDir[d], c, true)).join("")}</div></section>
+      <button id="lib-focus" type="button" class="lib-focus ${FOCUS ? "on" : ""}" aria-pressed="${FOCUS}"><span class="lib-focus-star">⭐</span><span><b>Azka Focus: ${FOCUS ? "ON" : "OFF"}</b><small>${FOCUS ? "Math story problems + spelling. Other games are locked 🔒 — tap again to turn off." : "Tap to practice math story problems + spelling."}</small><small id="lib-quota-line" style="display:none;margin-top:4px;font-weight:800"></small></span></button>
+      <div class="lib-search"><input id="lib-q" type="search" placeholder="🔍 Search games… (e.g. dino, fractions, boss)" autocomplete="off"></div>
+      <section class="lib-fav"><h3 class="lib-h">⭐ Your favorites</h3><div class="lib-favgrid">${favDirs.map(d => tile(byDir[d], c, true)).join("")}</div></section>
       ${CLUSTERS.map(([id, label, color, games], i) => {
         const inner = games.map(g => tile(byDir[g[0]], c, false)).join("");
-        return `<details class="lib-sec" data-cl="${id}" ${(FOCUS ? games.some(g => FOCUS_GAMES.has(g[0])) : i < 2) ? "open" : ""}><summary class="lib-h" style="--c:${color}">${label} <small>${games.length} game</small><b class="lib-chev">▾</b></summary><div class="lib-grid">${inner}</div></details>`;
+        return `<details class="lib-sec" data-cl="${id}" ${(FOCUS ? games.some(g => FOCUS_GAMES.has(g[0])) : i < 2) ? "open" : ""}><summary class="lib-h" style="--c:${color}">${label} <small>${games.length} games</small><b class="lib-chev">▾</b></summary><div class="lib-grid">${inner}</div></details>`;
       }).join("")}
-      <p class="lib-legend">${FOCUS ? "🔒 terkunci selama Fokus Azka HIDUP · " : ""}🔥 sering kamu mainkan · 👀 belum pernah dicoba · ✨ baru · 📌 sematkan ke Favorit</p>`;
+      <p class="lib-legend">${FOCUS ? "🔒 locked while Azka Focus is ON · " : ""}🔥 you play it a lot · 👀 not tried yet · ✨ new · 📌 pin to Favorites</p>`;
     list.style.display = "none"; list.after(lib);
     lib.addEventListener("click", e => {
       if (e.target.closest("#lib-focus")) { e.preventDefault(); setFocus(!focusOn()); lib.remove(); build(); const top = document.getElementById("hub-library"); if (top) top.scrollIntoView({ block: "start" }); return; }
       const lockedTile = e.target.closest("[data-locked]");
-      if (lockedTile) { e.preventDefault(); e.stopPropagation(); const hint = lib.querySelector(".lib-focus small"); if (hint) { hint.textContent = "🔒 Game ini aktif lagi kalau Fokus Azka dimatikan."; lib.querySelector(".lib-focus").classList.add("shake"); setTimeout(() => lib.querySelector(".lib-focus") && lib.querySelector(".lib-focus").classList.remove("shake"), 600); } return; }
+      if (lockedTile) { e.preventDefault(); e.stopPropagation(); const hint = lib.querySelector(".lib-focus small"); if (hint) { hint.textContent = "🔒 This game opens again when Azka Focus is turned off."; lib.querySelector(".lib-focus").classList.add("shake"); setTimeout(() => lib.querySelector(".lib-focus") && lib.querySelector(".lib-focus").classList.remove("shake"), 600); } return; }
       const b = e.target.closest("[data-pin]"); if (!b) return;
       e.preventDefault(); e.stopPropagation();
       const p = pins(), d = b.dataset.pin, i = p.indexOf(d); if (i >= 0) p.splice(i, 1); else p.unshift(d);

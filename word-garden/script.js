@@ -11,7 +11,7 @@ const esc = K.esc;
 const SP = () => window.AIGSpelling;
 
 const STAGE_EM = ["🌰", "🌱", "🌿", "🌸"];
-const STAGE_NAME = ["Belum dicoba", "Baru ketemu", "Sedang tumbuh", "Dikuasai!"];
+const STAGE_NAME = ["Not tried yet", "Just met", "Growing", "Mastered!"];
 let filter = "all";
 
 function init() {
@@ -35,17 +35,17 @@ function garden() {
   const lvl = SP().level();
   const dc = dayCounts();
   const diff = dc.today - dc.yesterday;
-  const dayLine = dc.today || dc.yesterday ? `Hari ini ${dc.today} jawaban benar · kemarin ${dc.yesterday}${dc.today > dc.yesterday ? " 🔥 kamu lebih banyak!" : dc.today === dc.yesterday && dc.today ? " 👏 sama kemarin" : ""}` : "Belum ada jawaban hari ini. Yuk mulai!";
+  const dayLine = dc.today || dc.yesterday ? `Today ${dc.today} correct · yesterday ${dc.yesterday}${dc.today > dc.yesterday ? " 🔥 you beat yesterday!" : dc.today === dc.yesterday && dc.today ? " 👏 same as yesterday" : ""}` : "No answers yet today. Let's start!";
   const hero = pct >= 60 ? "🌳" : pct >= 25 ? "🪴" : mastered ? "🌿" : "🌱";
   const list = ws.filter(w => filter === "all" || (filter === "school" ? w.school : filter === "grow" ? w.stage === 1 || w.stage === 2 : filter === "done" ? w.stage === 3 : w.stage === 0));
   $("wg-main").innerHTML = `<div class="kit-card wg-hero"><div class="wg-big">${hero}</div>
-      <div class="kit-q">${mastered} dari ${ws.length} kata sudah tumbuh jadi 🌸</div>
+      <div class="kit-q">${mastered} of ${ws.length} words have grown into 🌸</div>
       <div class="wg-bar"><i style="width:${Math.max(2, pct)}%"></i></div>
-      <div class="kit-sub" style="margin:0">🌿 ${growing} sedang tumbuh · 🌱 ${seen} baru ketemu · 🌰 ${ws.length - mastered - growing - seen} belum dicoba</div>
-      <div class="kit-sub" style="margin:6px 0 0">Tangga kata: Level ${lvl}/3 ${lvl < 3 ? "(kuasai " + (lvl === 1 ? 10 : 30) + " kata untuk membuka kata yang lebih panjang)" : "(semua kata terbuka!)"}</div>
+      <div class="kit-sub" style="margin:0">🌿 ${growing} growing · 🌱 ${seen} just met · 🌰 ${ws.length - mastered - growing - seen} not tried yet</div>
+      <div class="kit-sub" style="margin:6px 0 0">Word ladder: Level ${lvl}/3 ${lvl < 3 ? "(master " + (lvl === 1 ? 10 : 30) + " words to unlock longer words)" : "(all words unlocked!)"}</div>
       <div class="kit-sub" style="margin:6px 0 0">${esc(dayLine)}</div></div>
-    <div class="kit-card"><div class="wg-chips">${[["all", "Semua"], ["grow", "Sedang tumbuh"], ["done", "Dikuasai 🌸"], ["new", "Belum dicoba"], ["school", "Dari sekolah ⭐"]].map(([k, l]) => `<button type="button" class="wg-chip ${filter === k ? "on" : ""}" data-f="${k}">${l}</button>`).join("")}</div>
-      <div class="wg-grid">${list.map(w => `<button type="button" class="wg-tile s${w.stage}" data-w="${esc(w.w)}">${w.school ? '<span class="wg-sch">⭐</span>' : ""}<span class="wg-em">${STAGE_EM[w.stage]}</span>${esc(w.w)}</button>`).join("") || '<div class="kit-sub">Belum ada kata di sini.</div>'}</div></div>`;
+    <div class="kit-card"><div class="wg-chips">${[["all", "All"], ["grow", "Growing"], ["done", "Mastered 🌸"], ["new", "Not tried yet"], ["school", "From school ⭐"]].map(([k, l]) => `<button type="button" class="wg-chip ${filter === k ? "on" : ""}" data-f="${k}">${l}</button>`).join("")}</div>
+      <div class="wg-grid">${list.map(w => `<button type="button" class="wg-tile s${w.stage}" data-w="${esc(w.w)}">${w.school ? '<span class="wg-sch">⭐</span>' : ""}<span class="wg-em">${STAGE_EM[w.stage]}</span>${esc(w.w)}</button>`).join("") || '<div class="kit-sub">No words here yet.</div>'}</div></div>`;
   document.querySelectorAll(".wg-chip").forEach(b => b.onclick = () => { filter = b.dataset.f; garden(); });
   document.querySelectorAll(".wg-tile").forEach(b => b.onclick = () => wordCard(b.dataset.w));
 }
@@ -58,12 +58,12 @@ function wordCard(word) {
     <div class="kit-big" style="font-size:2.6rem">${STAGE_EM[st]}</div>
     <div class="kit-q" style="font-size:1.6rem">${esc(e.w)}</div>
     <div class="kit-sub">${esc(e.d)}</div>
-    <div class="wg-say"><button class="kit-btn" id="wg-hear" type="button">🔊 Dengar</button><button class="kit-btn" id="wg-slow" type="button">🐢 Pelan</button></div>
+    <div class="wg-say"><button class="kit-btn" id="wg-hear" type="button">🔊 Listen</button><button class="kit-btn" id="wg-slow" type="button">🐢 Slow</button></div>
     ${X.EX[word] ? note("wg-ex", `✏️ <i>${esc(X.EX[word])}</i>`) : ""}
-    ${X.TIP[word] ? note("wg-tip", `💡 <b>Trik ingat:</b> ${esc(X.TIP[word])}`) : ""}
-    ${X.FACT[word] ? note("wg-fact", `🔎 <b>Tahukah kamu?</b> ${esc(X.FACT[word])}`) : ""}
-    <div class="kit-sub">${STAGE_NAME[st]} · benar ${p.ok}× · salah ${p.miss}× · ${p.st}/3 benar berturut-turut</div>
-    <button class="kit-btn block" id="wg-close" type="button">Tutup</button></div></div>`;
+    ${X.TIP[word] ? note("wg-tip", `💡 <b>Memory trick:</b> ${esc(X.TIP[word])}`) : ""}
+    ${X.FACT[word] ? note("wg-fact", `🔎 <b>Did you know?</b> ${esc(X.FACT[word])}`) : ""}
+    <div class="kit-sub">${STAGE_NAME[st]} · right ${p.ok}× · wrong ${p.miss}× · ${p.st}/3 right in a row</div>
+    <button class="kit-btn block" id="wg-close" type="button">Close</button></div></div>`;
   $("wg-hear").onclick = () => SP().say(word); $("wg-slow").onclick = () => SP().say(word, true);
   $("wg-close").onclick = () => { $("wg-overlay").innerHTML = ""; };
   $("wg-mod").onclick = ev => { if (ev.target.id === "wg-mod") $("wg-overlay").innerHTML = ""; };
@@ -72,24 +72,24 @@ function wordCard(word) {
 /* ------------------------------ practice ------------------------------ */
 function practice() {
   const weak = Object.keys(SP().weak()).length;
-  $("wg-main").innerHTML = `<div class="kit-card"><div class="kit-q">Pilih latihan</div>
-    <button class="kit-btn block" data-m="revenge" type="button">🔥 Ronde Balas Dendam — ${weak ? weak + " kata yang pernah salah" : "belum ada kata salah, latihan campur"}</button>
-    <button class="kit-btn block" data-m="bee" type="button">🐝 Spelling Bee — dengar & ketik, 3 nyawa, ada timer</button>
-    <button class="kit-btn block" data-m="duel" type="button">👨‍👧 Duel dengan Papa/Mama — gantian di tablet ini</button>
-    ${window.AIGSpellFix ? '<button class="kit-btn block" data-m="fix" type="button">✏️ Perbaiki Ejaan — kata sulit dari lembar kerja sekolah (pilih, ketik, jodohkan)</button>' : ""}
-    <button class="kit-btn block" data-m="ten" type="button">🌱 Latihan 10 kata</button></div>`;
+  $("wg-main").innerHTML = `<div class="kit-card"><div class="kit-q">Choose a practice</div>
+    <button class="kit-btn block" data-m="revenge" type="button">🔥 Revenge Round — ${weak ? weak + " words you missed before" : "no missed words yet, mixed practice"}</button>
+    <button class="kit-btn block" data-m="bee" type="button">🐝 Spelling Bee — listen & type, 3 lives, with a timer</button>
+    <button class="kit-btn block" data-m="duel" type="button">👨‍👧 Duel with Mom/Dad — take turns on this tablet</button>
+    ${window.AIGSpellFix ? '<button class="kit-btn block" data-m="fix" type="button">✏️ Fix the Spelling — tricky words from school worksheets (choose, type, match)</button>' : ""}
+    <button class="kit-btn block" data-m="ten" type="button">🌱 10-word practice</button></div>`;
   document.querySelectorAll("[data-m]").forEach(b => b.onclick = () => start(b.dataset.m));
 }
 
 function start(mode) {
-  if (mode === "revenge") { const r = SP().buildRevenge(6); play({ title: "🔥 Ronde Balas Dendam", qs: r.questions, record: true, intro: r.weakCount ? `Kita kalahkan ${r.weakCount} kata yang pernah salah!` : "Belum ada kata yang salah, jadi ini latihan campur." }); }
-  else if (mode === "bee") play({ title: "🐝 Spelling Bee", qs: SP().buildBee(10), record: true, lives: 3, secs: 25, autoSay: true, intro: "Dengarkan kata, lalu ketik ejaannya sebelum waktu habis." });
-  else if (mode === "ten") play({ title: "🌱 Latihan 10 kata", qs: SP().buildSession(10), record: true });
+  if (mode === "revenge") { const r = SP().buildRevenge(6); play({ title: "🔥 Revenge Round", qs: r.questions, record: true, intro: r.weakCount ? `Let's beat the ${r.weakCount} words you missed before!` : "No missed words yet, so this is mixed practice." }); }
+  else if (mode === "bee") play({ title: "🐝 Spelling Bee", qs: SP().buildBee(10), record: true, lives: 3, secs: 25, autoSay: true, intro: "Listen to the word, then type its spelling before time runs out." });
+  else if (mode === "ten") play({ title: "🌱 10-word practice", qs: SP().buildSession(10), record: true });
   else if (mode === "fix") {
     const F = window.AIGSpellFix, ws = F.words().sort(() => Math.random() - 0.5), qs = [];
     for (let k = 0; k < 8; k++) qs.push(F.forWord(ws[k], false));
     qs.splice(2 + Math.floor(Math.random() * 6), 0, F.matchRandom());
-    play({ title: "✏️ Perbaiki Ejaan", qs, record: true, intro: "Cari ejaan yang salah dan betulkan. Ada soal pilih, ketik, dan jodohkan." });
+    play({ title: "✏️ Fix the Spelling", qs, record: true, intro: "Find the spelling mistake and fix it. There are choose, type and match questions." });
   }
   else if (mode === "duel") duel();
 }
@@ -103,9 +103,9 @@ function play(cfg, done) {
     const good = score >= Math.ceil(qs.length * 0.7);
     if (good) try { AIGJoy && AIGJoy.confetti && AIGJoy.confetti(40); } catch (e) {}
     $("wg-main").innerHTML = `<div class="kit-card wg-hero"><div class="wg-big">${good ? "🏆" : "💪"}</div><div class="kit-q">${esc(cfg.title)}</div>
-      <div class="kit-sub">Skor: ${score} dari ${qs.length}${lives && !lives ? " · nyawa habis" : ""}</div>
-      ${missed.length ? `<div class="kit-sub">Kata yang perlu dilatih lagi: <b>${missed.map(esc).join(", ")}</b></div>` : '<div class="kit-sub">Semua benar. Keren sekali! 🌸</div>'}
-      <button class="kit-btn block" id="wg-again" type="button">Main lagi</button><button class="kit-btn block" id="wg-back" type="button">Kembali ke kebun</button></div>`;
+      <div class="kit-sub">Score: ${score} out of ${qs.length}${lives && !lives ? " · out of lives" : ""}</div>
+      ${missed.length ? `<div class="kit-sub">Words to practice again: <b>${missed.map(esc).join(", ")}</b></div>` : '<div class="kit-sub">All correct. Awesome! 🌸</div>'}
+      <button class="kit-btn block" id="wg-again" type="button">Play again</button><button class="kit-btn block" id="wg-back" type="button">Back to the garden</button></div>`;
     $("wg-again").onclick = () => practice(); $("wg-back").onclick = () => { document.querySelectorAll(".wg-tab")[0].click(); };
   };
   const show = () => {
@@ -119,7 +119,7 @@ function play(cfg, done) {
       ${cfg.secs ? '<div class="wg-time"><i id="wg-time"></i></div>' : ""}
       ${i === 0 && cfg.intro ? `<div class="kit-sub">${esc(cfg.intro)}</div>` : ""}
       <div class="wg-q">${q.prompt}</div>
-      ${isMatch ? `<div class="wg-match">${q.pairs.map((x, k) => `<div class="wg-mrow"><span class="wg-mleft">${esc(x.left)}</span><select class="wg-msel" data-k="${k}"><option value="">Pilih ejaan benar</option>${mixed.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("")}</select></div>`).join("")}</div><button class="kit-btn block" id="wg-mcheck" type="button">Cek jawaban</button>` : typed ? `<input class="wg-in" id="wg-in" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Ketik kata di sini"><button class="kit-btn block" id="wg-check" type="button">Cek jawaban</button>`
+      ${isMatch ? `<div class="wg-match">${q.pairs.map((x, k) => `<div class="wg-mrow"><span class="wg-mleft">${esc(x.left)}</span><select class="wg-msel" data-k="${k}"><option value="">Choose the correct spelling</option>${mixed.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("")}</select></div>`).join("")}</div><button class="kit-btn block" id="wg-mcheck" type="button">Check answer</button>` : typed ? `<input class="wg-in" id="wg-in" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Type the word here"><button class="kit-btn block" id="wg-check" type="button">Check answer</button>`
               : isMatch ? "" : `<div class="wg-opts">${q.options.map(o => `<button class="wg-opt" type="button" data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>`}
       <div id="wg-after"></div></div>`;
     let answered = false;
@@ -132,7 +132,7 @@ function play(cfg, done) {
       }
       const tip = q.spellWord ? SP().afterAnswerHtml(q.spellWord, ok) : "";
       const ans = isMatch ? q.pairs.map(x => esc(x.left) + " → <b>" + esc(x.right) + "</b>").join("<br>") : "<b>" + esc(q.answer) + "</b>";
-      $("wg-after").innerHTML = `<div class="wg-fb">${ok ? "✅ Benar!" : "❌ " + (given === null ? "Waktu habis. " : "") + "Jawabannya: " + ans}</div>${tip.replace(/sp-note sp-/g, "wg-note wg-")}<button class="kit-btn block" id="wg-next" type="button">${i + 1 >= qs.length || (cfg.lives && lives <= 0) ? "Selesai" : "Lanjut"}</button>`;
+      $("wg-after").innerHTML = `<div class="wg-fb">${ok ? "✅ Correct!" : "❌ " + (given === null ? "Time is up. " : "") + "Answer: " + ans}</div>${tip.replace(/sp-note sp-/g, "wg-note wg-")}<button class="kit-btn block" id="wg-next" type="button">${i + 1 >= qs.length || (cfg.lives && lives <= 0) ? "Finish" : "Next"}</button>`;
       document.querySelectorAll(".wg-opt").forEach(b => { b.disabled = true; if (b.dataset.o === q.answer) b.classList.add("ok"); else if (b.dataset.o === given) b.classList.add("bad"); });
       document.querySelectorAll(".wg-msel").forEach(el => { el.disabled = true; const x = q.pairs[+el.dataset.k]; el.style.background = el.value === x.right ? "#c9f2c7" : "#ffd0d0"; });
       const mc = $("wg-mcheck"); if (mc) mc.disabled = true;
@@ -156,20 +156,20 @@ function play(cfg, done) {
 
 /* ------------------------------ duel with a parent ------------------------------ */
 function duel() {
-  $("wg-main").innerHTML = `<div class="kit-card"><div class="kit-q">👨‍👧 Duel Kata</div><div class="kit-sub">Azka main dulu 5 kata, lalu tablet diserahkan. Soal yang sama! Skor Papa/Mama tidak dicatat di akun Azka.</div>
-    <input class="wg-in" id="wg-pname" value="Papa" maxlength="12" style="font-size:1rem"><button class="kit-btn block" id="wg-go" type="button">Mulai!</button></div>`;
+  $("wg-main").innerHTML = `<div class="kit-card"><div class="kit-q">👨‍👧 Word Duel</div><div class="kit-sub">Azka plays 5 words first, then hands over the tablet. Same questions! Mom/Dad's score is not saved to Azka's account.</div>
+    <input class="wg-in" id="wg-pname" value="Dad" maxlength="12" style="font-size:1rem"><button class="kit-btn block" id="wg-go" type="button">Start!</button></div>`;
   $("wg-go").onclick = () => {
-    const other = ($("wg-pname").value.trim() || "Papa").slice(0, 12);
+    const other = ($("wg-pname").value.trim() || "Dad").slice(0, 12);
     const s = SP(); const used = []; const qs = [];
     while (qs.length < 5) { const e = s.chooseWord ? s.chooseWord(used) : null; const ent = e || s.WORDS[Math.floor(Math.random() * s.WORDS.length)]; used.push(ent.w); qs.push(Math.random() < 0.5 ? s.typedMissing(ent) : s.typedScramble(ent)); }
     const turn = (who, isMe, next) => {
-      $("wg-main").innerHTML = `<div class="kit-card wg-hero"><div class="wg-big">${isMe ? "🧒" : "🧑"}</div><div class="wg-who">Giliran ${esc(who)}!</div><div class="kit-sub">Serahkan tablet ke ${esc(who)}, lalu tekan mulai.</div><button class="kit-btn block" id="wg-t" type="button">Mulai giliran</button></div>`;
+      $("wg-main").innerHTML = `<div class="kit-card wg-hero"><div class="wg-big">${isMe ? "🧒" : "🧑"}</div><div class="wg-who">${esc(who)}'s turn!</div><div class="kit-sub">Hand the tablet to ${esc(who)}, then press start.</div><button class="kit-btn block" id="wg-t" type="button">Start turn</button></div>`;
       $("wg-t").onclick = () => play({ title: who, qs: qs.map(q => Object.assign({}, q)), record: isMe }, next);
     };
     turn(player.name || "Azka", true, r1 => turn(other, false, r2 => {
-      const w = r1.score === r2.score ? "Seri! 🤝" : r1.score > r2.score ? (player.name || "Azka") + " menang! 🏆" : other + " menang! 🏆";
+      const w = r1.score === r2.score ? "It's a tie! 🤝" : r1.score > r2.score ? (player.name || "Azka") + " wins! 🏆" : other + " wins! 🏆";
       try { AIGJoy && AIGJoy.confetti && AIGJoy.confetti(30); } catch (e) {}
-      $("wg-main").innerHTML = `<div class="kit-card wg-hero"><div class="wg-big">🎉</div><div class="kit-q">${esc(w)}</div><div class="kit-sub">${esc(player.name || "Azka")}: ${r1.score}/5 · ${esc(other)}: ${r2.score}/5</div><button class="kit-btn block" id="wg-b" type="button">Kembali</button></div>`;
+      $("wg-main").innerHTML = `<div class="kit-card wg-hero"><div class="wg-big">🎉</div><div class="kit-q">${esc(w)}</div><div class="kit-sub">${esc(player.name || "Azka")}: ${r1.score}/5 · ${esc(other)}: ${r2.score}/5</div><button class="kit-btn block" id="wg-b" type="button">Back</button></div>`;
       $("wg-b").onclick = () => practice();
     }));
   };

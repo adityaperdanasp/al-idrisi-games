@@ -165,16 +165,16 @@
       const PLAYLIST = focusOnNow ? [["mathville/", "MathVille"], ["azkacraft/", "Language & Arts"], ["treasure-dig/", "Treasure Dig"], ["math-tennis/", "Math Tennis"], ["quiz-show/", "Quiz Show"]] : MAIN;
       const day = Math.floor(Date.now() / 86400000) % PLAYLIST.length, pick = PLAYLIST[day];
       const play = document.createElement("a"); play.className = "bw-play"; play.href = pick[0]; play.id = "bw-play";
-      play.innerHTML = `<span class="bw-play-big">▶ LANJUT PETUALANGAN</span><span class="bw-play-sub">Hari ini: ${pick[1]}</span>`;
+      play.innerHTML = `<span class="bw-play-big">▶ CONTINUE ADVENTURE</span><span class="bw-play-sub">Today: ${pick[1]}</span>`;
       hero.appendChild(play);
     }
     // hotbar
     const bar = document.createElement("nav"); bar.className = "bw-hotbar"; bar.id = "bw-hotbar";
     bar.innerHTML = `
-      <button class="bw-slot active" id="bw-slot-main" type="button"><span class="bw-slot-ico">${BW.svg_grass()}</span><span class="bw-slot-lbl">Main</span></button>
-      <a class="bw-slot" href="bo-home/?tab=world"><span class="bw-slot-ico">${BW.svg_globe()}</span><span class="bw-slot-lbl">Dunia</span></a>
-      <button class="bw-slot" id="bw-slot-rewards" type="button"><span class="bw-slot-ico">${BW.svg_chest()}</span><span class="bw-slot-lbl">Hadiah</span><span class="bw-slot-dot" id="bw-slot-dot" hidden></span></button>
-      <a class="bw-slot" href="profile/"><span class="bw-slot-ico" id="bw-slot-me-ico"></span><span class="bw-slot-lbl">Aku</span></a>`;
+      <button class="bw-slot active" id="bw-slot-main" type="button"><span class="bw-slot-ico">${BW.svg_grass()}</span><span class="bw-slot-lbl">Play</span></button>
+      <a class="bw-slot" href="bo-home/?tab=world"><span class="bw-slot-ico">${BW.svg_globe()}</span><span class="bw-slot-lbl">World</span></a>
+      <button class="bw-slot" id="bw-slot-rewards" type="button"><span class="bw-slot-ico">${BW.svg_chest()}</span><span class="bw-slot-lbl">Rewards</span><span class="bw-slot-dot" id="bw-slot-dot" hidden></span></button>
+      <a class="bw-slot" href="profile/"><span class="bw-slot-ico" id="bw-slot-me-ico"></span><span class="bw-slot-lbl">Me</span></a>`;
     landing.appendChild(bar);
     $("bw-slot-main").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
     $("bw-slot-rewards").addEventListener("click", () => { const b = $("sc-rewards-btn"); if (b) b.click(); });
@@ -196,10 +196,10 @@
   function swatches(list, key, cfg, onPick) { return list.map((c, i) => `<button type="button" class="bw-sw ${cfg[key] === i ? "on" : ""}" data-k="${key}" data-i="${i}" style="background:${c}"></button>`).join(""); }
   BW.openCreator = function (onDone, opts) {
     opts = opts || {}; const cfg = Object.assign({}, BW.getAvatar());
-    const o = overlay(`<div class="bw-panel"><div class="bw-h">${opts.title || "Buat Karaktermu!"}</div><div class="bw-preview" id="bw-pv"></div>
-      <div class="bw-row"><span>Kulit</span><div id="bw-r-skin"></div></div><div class="bw-row"><span>Rambut</span><div id="bw-r-hair"></div></div>
-      <div class="bw-row"><span>Baju</span><div id="bw-r-shirt"></div></div><div class="bw-row"><span>Topi</span><div id="bw-r-hat"></div></div>
-      <button class="bw-btn" id="bw-av-ok" type="button">${opts.ok || "SIMPAN ✔"}</button></div>`, "bw-creator");
+    const o = overlay(`<div class="bw-panel"><div class="bw-h">${opts.title || "Create Your Character!"}</div><div class="bw-preview" id="bw-pv"></div>
+      <div class="bw-row"><span>Skin</span><div id="bw-r-skin"></div></div><div class="bw-row"><span>Hair</span><div id="bw-r-hair"></div></div>
+      <div class="bw-row"><span>Shirt</span><div id="bw-r-shirt"></div></div><div class="bw-row"><span>Hat</span><div id="bw-r-hat"></div></div>
+      <button class="bw-btn" id="bw-av-ok" type="button">${opts.ok || "SAVE ✔"}</button></div>`, "bw-creator");
     function draw() {
       $("bw-pv").innerHTML = BW.avatarSvg(cfg, true);
       $("bw-r-skin").innerHTML = swatches(SKINS, "skin", cfg); $("bw-r-hair").innerHTML = swatches(HAIRS, "hair", cfg); $("bw-r-shirt").innerHTML = swatches(SHIRTS, "shirt", cfg);
@@ -210,12 +210,12 @@
     $("bw-av-ok").onclick = () => { BW.saveAvatar(cfg); o.remove(); BW.sfx("pop"); onDone && onDone(); };
   };
   function chestStep(done) {
-    const o = overlay(`<div class="bw-panel bw-center"><div class="bw-h">Hadiah Selamat Datang!</div><div class="bw-chest" id="bw-chest">${BW.svg_chest()}</div><div class="bw-sub" id="bw-chest-sub">Tap peti untuk membukanya!</div><div class="bw-loot" id="bw-loot" hidden></div><button class="bw-btn" id="bw-enter" type="button" hidden>MASUK DUNIA ▶</button></div>`, "bw-chestwrap");
+    const o = overlay(`<div class="bw-panel bw-center"><div class="bw-h">Welcome Gift!</div><div class="bw-chest" id="bw-chest">${BW.svg_chest()}</div><div class="bw-sub" id="bw-chest-sub">Tap the chest to open it!</div><div class="bw-loot" id="bw-loot" hidden></div><button class="bw-btn" id="bw-enter" type="button" hidden>ENTER THE WORLD ▶</button></div>`, "bw-chestwrap");
     let opened = false;
     $("bw-chest").onclick = async () => {
       if (opened) return; opened = true; BW.sfx("chest"); $("bw-chest").classList.add("open"); $("bw-chest").innerHTML = BW.svg_chestOpen();
-      $("bw-chest-sub").textContent = "Wah, isinya banyak!";
-      $("bw-loot").hidden = false; $("bw-loot").innerHTML = `<div>${EM} <b>50</b> Zamrud</div><div>${BW.svg_diamond({ cls: "bw-em" })} <b>3</b> Berlian</div><div>🖼️ Frame <b>Pioneer 2.0</b></div>`;
+      $("bw-chest-sub").textContent = "Wow, so much inside!";
+      $("bw-loot").hidden = false; $("bw-loot").innerHTML = `<div>${EM} <b>50</b> Emeralds</div><div>${BW.svg_diamond({ cls: "bw-em" })} <b>3</b> Diamonds</div><div>🖼️ Frame <b>Pioneer 2.0</b></div>`;
       $("bw-enter").hidden = false;
       try { await LB().claimV2Welcome(); } catch (e) { console.warn(e); }
     };
@@ -224,9 +224,9 @@
   BW.runReveal = function () {
     const p = player(); if (!p || p.role === "parent") return;
     try { if (localStorage.getItem(seenKey())) return; } catch (e) {}
-    const o = overlay(`<div class="bw-stars"></div><div class="bw-panel bw-center bw-intro"><div class="bw-bo-big">${BW.svg_bo()}</div><div class="bw-logo"><span>BRAIN</span><span class="b">BOX</span> <em>2.0</em></div><div class="bw-sub">Dunia baru sudah terbuka!</div><button class="bw-btn" id="bw-start" type="button">MULAI ▶</button></div>`, "bw-introwrap");
+    const o = overlay(`<div class="bw-stars"></div><div class="bw-panel bw-center bw-intro"><div class="bw-bo-big">${BW.svg_bo()}</div><div class="bw-logo"><span>BRAIN</span><span class="b">BOX</span> <em>2.0</em></div><div class="bw-sub">A brand new world is open!</div><button class="bw-btn" id="bw-start" type="button">START ▶</button></div>`, "bw-introwrap");
     BW.sfx("win");
-    $("bw-start").onclick = () => { o.remove(); BW.openCreator(() => chestStep(() => { try { localStorage.setItem(seenKey(), "1"); } catch (e) {} BW.refreshAvatar(); BW.toast("Selamat datang di BrainBox 2.0", "Petualangan dimulai!"); }), { title: "Buat Karaktermu!", ok: "LANJUT ▶" }); };
+    $("bw-start").onclick = () => { o.remove(); BW.openCreator(() => chestStep(() => { try { localStorage.setItem(seenKey(), "1"); } catch (e) {} BW.refreshAvatar(); BW.toast("Welcome to BrainBox 2.0", "Your adventure begins!"); }), { title: "Create Your Character!", ok: "NEXT ▶" }); };
   };
 
   // ---------------- boot ----------------

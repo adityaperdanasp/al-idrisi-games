@@ -687,9 +687,9 @@
   }
 
   function getQuestLabel(type, target) {
-    if (type === "correct") return `Jawab benar ${target}x hari ini`;
-    if (type === "games") return `Coba ${target} game berbeda hari ini`;
-    if (type === "attempts") return `Selesaikan ${target} soal hari ini`;
+    if (type === "correct") return `Answer ${target} questions correctly today`;
+    if (type === "games") return `Try ${target} different games today`;
+    if (type === "attempts") return `Finish ${target} questions today`;
     return "";
   }
 
@@ -6714,7 +6714,7 @@
     { id: "tahun-ajaran-baru", name: "Tahun Ajaran Baru", emoji: "🎒", startMonth: 7, startDay: 1, endMonth: 7, endDay: 20, coins: 20, gems: 1 },
     { id: "kemerdekaan", name: "Kemerdekaan RI", emoji: "🇮🇩", startMonth: 8, startDay: 14, endMonth: 8, endDay: 20, coins: 17, gems: 1 },
     { id: "semangat-september", name: "Semangat September", emoji: "📚", startMonth: 9, startDay: 1, endMonth: 9, endDay: 30, coins: 15, gems: 0 },
-    { id: "hari-pahlawan", name: "Hari Pahlawan", emoji: "🎖️", startMonth: 11, startDay: 8, endMonth: 11, endDay: 12, coins: 15, gems: 1 },
+    { id: "hari-pahlawan", name: "Heroes' Day", emoji: "🎖️", startMonth: 11, startDay: 8, endMonth: 11, endDay: 12, coins: 15, gems: 1 },
     { id: "akhir-tahun", name: "Akhir Tahun", emoji: "🎉", startMonth: 12, startDay: 24, endMonth: 12, endDay: 31, coins: 25, gems: 2 }
   ];
 
