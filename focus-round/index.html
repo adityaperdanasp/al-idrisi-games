@@ -2,25 +2,61 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <script src="../tablet.js?v=1"></script>
-<title>BrainBox — Focus Round</title>
-<!-- Focus Round has its own hub card + URL (not nested under MathVille's
-     own icon/nav) so it reads as its own thing, same footing as the
-     other 4 games -- but its actual question engine (rendering, the 9
-     math chapter generators, reward/XP/AI-hint) is still MathVille's,
-     since that's real shared infrastructure, not duplicated code. This
-     page is a thin redirect into MathVille's own ?focus=1 deep link
-     (same trick the roaming car on the landing page uses to jump
-     straight into Math Race) rather than a full standalone rebuild of
-     that engine, which would mean maintaining two copies of the same
-     question-rendering code. location.replace (not .href) so the back
-     button skips over this page entirely. -->
-<script>location.replace("../mathville/index.html?focus=1");</script>
+<title>Focus Round — BrainBox</title>
+<meta name="theme-color" content="#7b3fe4">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<link rel="stylesheet" href="../mathville/story-help.css?v=1" />
+<style>
+  :root{--ink:#1b1b1b;--card:#fff;--good:#2f9e44;--bad:#d6336c}
+  .sh-btn,.sh-op,.sh-line,.sh-msg,.sh-title{font-family:"Nunito",sans-serif}
+  .fr-hero{text-align:center}
+  .fr-hero .fr-big{font-size:3rem;line-height:1}
+  .fr-themes{display:flex;gap:6px;margin:10px 0}
+  .fr-themes span{flex:1;border:2px solid #1b1b1b;background:#fff;border-radius:12px;padding:6px 4px;font:800 .78rem/1.25 "Nunito",sans-serif;text-align:center}
+  .fr-bar{height:12px;border:3px solid #1b1b1b;background:#fff;margin:6px 0 10px}.fr-bar>i{display:block;height:100%;background:linear-gradient(90deg,#b98ee8,#7b3fe4);transition:width .3s}
+  .fr-badge{display:inline-block;border:2px solid #1b1b1b;border-radius:999px;padding:2px 10px;font:800 .78rem "Nunito",sans-serif;background:#f3e9fc;margin-bottom:6px}
+  .fr-badge.story{background:#ffe9b8}.fr-badge.spell{background:#d9f2d4}.fr-badge.fix{background:#f3e9fc}
+  .fr-hud{display:flex;justify-content:space-between;font:800 .85rem "Nunito",sans-serif;margin-bottom:4px}
+  .fr-q{font:700 1.08rem/1.5 "Nunito",sans-serif;margin:6px 0}
+  .fr-opts{display:grid;gap:8px;margin-top:10px}
+  .fr-opt{border:3px solid #1b1b1b;background:#fff;padding:12px;font:800 1rem "Nunito",sans-serif;cursor:pointer;text-align:center}
+  .fr-opt.ok{background:#c9f2c7}.fr-opt.bad{background:#ffd0d0}
+  .fr-in{width:100%;box-sizing:border-box;padding:12px;font-size:1.2rem;border:3px solid #1b1b1b;text-align:center;margin-top:10px}
+  .fr-fb{margin-top:10px;font:800 1rem "Nunito",sans-serif;text-align:center}
+  .fr-note{margin:8px 0;padding:8px 10px;border-radius:12px;font-size:.88rem;line-height:1.4;text-align:left}
+  .fr-tip{background:#fff3c4;border:2px solid #f0c24b}.fr-ex{background:#e8f4ff;border:2px solid #8ec1f0}.fr-fact{background:#e9f8e6;border:2px solid #8fd08a}
+  .fr-match{display:grid;gap:8px;margin-top:10px}.fr-mrow{display:flex;gap:8px;align-items:center}
+  .fr-mleft{flex:1;font:800 1rem "Nunito",sans-serif;text-decoration:line-through wavy #d6336c;text-align:center}
+  .fr-msel{flex:1.2;padding:10px;font:700 .95rem "Nunito",sans-serif;border:3px solid #1b1b1b;background:#fff}
+  .fr-sum{display:grid;gap:6px;margin:10px 0;text-align:left}.fr-sum div{border:2px solid #1b1b1b;background:#fff;border-radius:10px;padding:6px 10px;font:800 .9rem "Nunito",sans-serif;display:flex;justify-content:space-between}
+</style>
 <link rel="stylesheet" href="/blockworld-games.css?v=6" />
 <script>document.documentElement.classList.add("bw-g");document.documentElement.dataset.bw="focus-round";</script>
 </head>
 <body>
-  <p>Loading Focus Round… if nothing happens, <a href="../mathville/index.html?focus=1">tap here</a>.</p>
+<div class="kit-page" id="app">
+  <div class="kit-top"><a href="../" class="kit-back">←</a><div class="kit-title">🎯 Focus Round</div></div>
+  <div id="fr-main"></div>
+</div>
+<script src="../player.js"></script>
+<script src="../firebase.js"></script>
+<script src="../leaderboard.js?v=5"></script>
+<script src="../skin.js"></script>
+<script src="../juice.js"></script>
+<script src="../mathville/generators.js?v=8"></script>
+<script src="../question-pools.js?v=4"></script>
+<script src="../gamekit.js?v=6"></script>
+<script>AIGKit.mount({title:'Focus Round',accent:'#7b3fe4',bg:'linear-gradient(180deg,#f6eefd,#e6d6f7)'});</script>
+<script src="../mathville/story-help.js?v=1"></script>
+<script src="../azkacraft/spelling-extra.js?v=1"></script>
+<script src="../azkacraft/spelling.js?v=3"></script>
+<script src="../azkacraft/spelling-fix.js?v=1"></script>
+<script src="round.js?v=1"></script>
+<script src="script.js?v=1"></script>
 </body>
 </html>

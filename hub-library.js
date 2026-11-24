@@ -23,8 +23,8 @@
   // "Fokus Azka": child-side switch. ON = only the games below stay open and every question is a story problem or a
   // spelling word (see generators.js + question-pools.js + azkacraft/spelling.js). OFF = everything as usual.
   const FOCUS_KEY = "azka_focus";
-  const FOCUS_GAMES = new Set(["word-garden", "mathville", "azkacraft", "math-tennis", "treasure-dig", "treasure-map", "quiz-show", "monster-battle", "boss-rush", "space-race", "escape-room", "cooking-rush", "fortress-math"]);
-  const FOCUS_DEFAULT_FAV = ["mathville", "azkacraft", "treasure-dig", "math-tennis", "quiz-show", "monster-battle"];
+  const FOCUS_GAMES = new Set(["focus-round", "word-garden", "mathville", "azkacraft", "math-tennis", "treasure-dig", "treasure-map", "quiz-show", "monster-battle", "boss-rush", "space-race", "escape-room", "cooking-rush", "fortress-math"]);
+  const FOCUS_DEFAULT_FAV = ["focus-round", "mathville", "azkacraft", "treasure-dig", "math-tennis", "quiz-show", "monster-battle"];
   const focusOn = () => { try { return localStorage.getItem(FOCUS_KEY) === "1"; } catch (e) { return false; } };
   const setFocus = v => { try { localStorage.setItem(FOCUS_KEY, v ? "1" : "0"); } catch (e) {} };
   const TOPIC2DIR = { "plane-mode": "plane", "drive-mode": "drive" };

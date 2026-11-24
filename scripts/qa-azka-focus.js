@@ -95,6 +95,27 @@ FX.words().forEach(w => {
 for (let t = 0; t < 300; t++) { const sess = S.buildSession(10); if (sess.length !== 10 || sess.some(q => !q || !q.prompt)) fail("buildSession bad"); }
 let matchSeen = 0; for (let t = 0; t < 300; t++) if (S.buildSession(10).some(q => q.type === "match")) matchSeen++;
 if (matchSeen < 40) fail("match questions rarely appear in sessions: " + matchSeen + "/300");
-console.log(JSON.stringify({ spellFixQuestions: descs.length, spellFixKinds: kinds, spellFixDistinct: uniq.size, matchSessions: matchSeen, storyOne: n1, storyTwo: n2, storyOp: nop, chainStories: nchain, uniqueStoryPrompts: prompts.size, words: words.length, failures: fails.length }));
+// ---- Focus Round (focus-round/round.js): 20 questions, 7 story / 7 spelling / 6 worksheet, all valid ----
+const FR = require("../focus-round/round.js"); let frStats = { rounds: 0, match: 0, storyMc: 0, storyTyped: 0 };
+for (let r = 0; r < 400; r++) {
+  const round = FR.build(); frStats.rounds++;
+  if (round.length !== 20) fail("focus round length " + round.length);
+  const by = { story: 0, spell: 0, fix: 0 }; round.forEach(q => by[q.theme]++);
+  if (by.story !== 7 || by.spell !== 7 || by.fix !== 6) fail("focus round theme split " + JSON.stringify(by));
+  const seenW = new Set();
+  round.forEach(q => {
+    if (!q.prompt || /undefined|NaN|\[object/.test(String(q.prompt))) fail("focus round bad prompt " + q.prompt);
+    if (q.theme === "story") {
+      if (!q.meta || !/^[\d,]+$/.test(q.answer)) fail("focus story shape " + q.prompt);
+      if (q.type === "mc") { frStats.storyMc++; if (!q.options.includes(q.answer) || new Set(q.options).size !== 4) fail("focus story mc " + q.prompt + " :: " + q.options); } else frStats.storyTyped++;
+    } else if (q.type === "mc") { if (!q.options.includes(q.answer) || new Set(q.options.map(o => o.toLowerCase())).size !== q.options.length) fail("focus mc options " + q.prompt); }
+    else if (q.type === "fill") { if (!q.answer) fail("focus fill answer"); }
+    else if (q.type === "match") frStats.match++;
+    else fail("focus unknown type " + q.type);
+    if (q.theme === "fix" && q.type !== "match") { if (!FX.has(q.spellWord)) fail("focus fix word not in worksheet set " + q.spellWord); if (seenW.has(q.spellWord)) fail("focus fix repeats word in one round " + q.spellWord); seenW.add(q.spellWord); }
+  });
+}
+if (frStats.match < 300) fail("focus round match too rare " + frStats.match);
+console.log(JSON.stringify({ focusRound: frStats, spellFixQuestions: descs.length, spellFixKinds: kinds, spellFixDistinct: uniq.size, matchSessions: matchSeen, storyOne: n1, storyTwo: n2, storyOp: nop, chainStories: nchain, uniqueStoryPrompts: prompts.size, words: words.length, failures: fails.length }));
 if (fails.length) { console.log(fails.join("\n")); process.exit(1); }
 console.log("ALL OK");
