@@ -1,7 +1,7 @@
 // QA for Azka's Fokus content: story problems (mathville/generators.js) and the spelling bank (azkacraft/spelling.js).
 // Run: node scripts/qa-azka-focus.js [N]
 global.localStorage = { getItem() { return null; }, setItem() {} };
-const T = require("../mathville/generators.js"), S = require("../azkacraft/spelling.js"), H = require("../mathville/story-help.js");
+const FX = require("../azkacraft/spelling-fix.js"), T = require("../mathville/generators.js"), S = require("../azkacraft/spelling.js"), H = require("../mathville/story-help.js");
 const N = Number(process.argv[2] || 3000), fails = [];
 const fail = m => { if (fails.length < 30) fails.push(m); };
 const num = s => Number(String(s).replace(/,/g, ""));
@@ -59,12 +59,42 @@ words.forEach(e => {
 });
 for (let i = 0; i < 2000; i++) {
   const q = S.oneQuestion([]);
-  if (q.type === "mc") { if (!q.options.includes(q.answer) || new Set(q.options).size !== 4) fail("bad spelling mc " + q.prompt); }
+  if (q.type === "mc") { if (!q.options.includes(q.answer) || new Set(q.options).size !== q.options.length || q.options.length < (q.fix === "tricky" ? 3 : 4) || q.options.length > 4) fail("bad spelling mc " + q.prompt); }
   else if (!q.answer || /undefined|NaN/.test(q.prompt)) fail("bad spelling fill " + q.prompt);
   if (q.type === "fill" && /Fill in the missing/.test(q.prompt)) { const shown = (q.prompt.match(/<b>([^<]+)<\/b>/) || [])[1].replace(/ /g, ""); const re = new RegExp("^" + shown.replace(/_/g, ".") + "$", "i"); if (!re.test(q.answer)) fail(`missing-letter mask mismatch ${shown} vs ${q.answer}`); }
   if (q.type === "fill" && /Unscramble/.test(q.prompt)) { const sc = (q.prompt.match(/<b>([^<]+)<\/b>/) || [])[1].replace(/ /g, ""); if ([...sc].sort().join("") !== [...q.answer.toLowerCase()].sort().join("")) fail("scramble letters mismatch " + q.answer); }
-  const qm = S.quickMc(); if (qm.prompt.length > 150 || /[<>]/.test(qm.prompt) || qm.options.length !== 4) fail("quickMc shape " + qm.prompt);
+  const qm = S.quickMc(); if (qm.prompt.length > 150 || /[<>]/.test(qm.prompt) || qm.options.length < 3 || qm.options.length > 4 || !qm.options.includes(qm.correctLabel) || new Set(qm.options).size !== qm.options.length) fail("quickMc shape " + qm.prompt);
 }
-console.log(JSON.stringify({ storyOne: n1, storyTwo: n2, storyOp: nop, chainStories: nchain, uniqueStoryPrompts: prompts.size, words: words.length, failures: fails.length }));
+// ---- worksheet words (spelling-fix.js): 500+ distinct questions in mc / typed / match ----
+const descs = FX.all(), kinds = {}, uniq = new Set();
+if (descs.length < 500) fail("spell-fix only " + descs.length + " questions");
+FX.words().forEach(w => { if (!S.WORDS.some(e => e.w.toLowerCase() === w.toLowerCase())) fail("spell-fix word missing from WORDS: " + w); });
+descs.forEach(d => {
+  const q = FX.build(d); if (!q) { fail("spell-fix build null " + JSON.stringify(d)); return; }
+  kinds[d.k] = (kinds[d.k] || 0) + 1;
+  const plainP = String(q.prompt).replace(/<[^>]*>/g, "");
+  if (/undefined|NaN|\[object/.test(plainP)) fail("spell-fix bad prompt " + plainP);
+  if (q.type === "mc") {
+    if (!q.options.includes(q.answer)) fail("spell-fix answer not in options " + plainP);
+    if (new Set(q.options.map(o => o.toLowerCase())).size !== q.options.length) fail("spell-fix duplicate options " + plainP);
+    if (q.options.length < 3 || q.options.length > 4) fail("spell-fix option count " + plainP);
+  } else if (q.type === "fill") {
+    if (!q.answer) fail("spell-fix fill no answer " + plainP);
+    if (d.k === "fixType" && new RegExp("\\b" + q.answer + "\\b", "i").test(plainP.replace(/<[^>]*>/g, ""))) fail("spell-fix fill shows its own answer " + plainP);
+  } else if (q.type === "match") {
+    const L = q.pairs.map(x => x.left.toLowerCase()), R = q.pairs.map(x => x.right.toLowerCase());
+    if (q.pairs.length !== 4 || new Set(L).size !== 4 || new Set(R).size !== 4) fail("spell-fix match pairs not unique");
+    q.pairs.forEach(x => { if (x.left.toLowerCase() === x.right.toLowerCase()) fail("spell-fix match left==right " + x.left); });
+  } else fail("spell-fix unknown type " + q.type);
+  if (d.k !== "match") uniq.add(plainP + "|" + (q.answer || ""));
+});
+FX.words().forEach(w => {
+  for (let t = 0; t < 40; t++) { const q = FX.quick(w); if (!q || q.prompt.length > 150 || /[<>]/.test(q.prompt) || !q.options.includes(q.correctLabel) || new Set(q.options).size !== q.options.length) fail("spell-fix quick shape " + w + " :: " + (q && q.prompt)); }
+  for (let t = 0; t < 20; t++) { const q = FX.forWord(w, false); if (!q || !q.spellWord) fail("spell-fix forWord " + w); }
+});
+for (let t = 0; t < 300; t++) { const sess = S.buildSession(10); if (sess.length !== 10 || sess.some(q => !q || !q.prompt)) fail("buildSession bad"); }
+let matchSeen = 0; for (let t = 0; t < 300; t++) if (S.buildSession(10).some(q => q.type === "match")) matchSeen++;
+if (matchSeen < 40) fail("match questions rarely appear in sessions: " + matchSeen + "/300");
+console.log(JSON.stringify({ spellFixQuestions: descs.length, spellFixKinds: kinds, spellFixDistinct: uniq.size, matchSessions: matchSeen, storyOne: n1, storyTwo: n2, storyOp: nop, chainStories: nchain, uniqueStoryPrompts: prompts.size, words: words.length, failures: fails.length }));
 if (fails.length) { console.log(fails.join("\n")); process.exit(1); }
 console.log("ALL OK");

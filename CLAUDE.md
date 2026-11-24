@@ -47,6 +47,13 @@ Dari brainstorm 30 ide ("gas semua"); yang sudah ada di app (Word Book, Quick Re
 - **QA**: `node scripts/qa-azka-focus.js 3000` sekarang juga memeriksa 6 chain + `disp` + story-help (harus "ALL OK"). Ukuran bank soal tidak perlu dipecah: questions.json terkirim brotli 76 KB (azkacraft) / 50 KB (azkauniverse).
 - Tidak dikerjakan: mode tulis tangan pena (#30; tidak ada pengenal tulisan tangan yang andal di browser).
 
+### "Perbaiki Ejaan" — soal dari lembar kerja sekolah (2026-11-24)
+Azka kesulitan di lembar Twinkl *Correcting Spelling Mistakes* & *Tricky Words*. Dibuat 48 kata sulit (36 baru di `azkacraft/spelling.js` + 12 yang sudah ada) dan `azkacraft/spelling-fix.js` (`AIGSpellFix`) yang menurunkan **504 soal berbeda**: 48 pilih-ejaan-benar (3 pilihan), 144 pilih-ejaan-kalimat (4 pilihan), 144 ketik-perbaiki, 144 cari-kata-salah, 24 menjodohkan (4 pasang). Kalimat ditulis sendiri (bukan salinan Twinkl, hak cipta). Kata+salah-eja+kalimat ada di blok DATA `word|salah1,salah2|kalimat || kalimat || kalimat` (`*` = kata nyata yang cuma konteks, mis. advise/advice).
+- Masuk pipeline lewat `spelling.js`: `chooseWord` memberi bobot ~35% ke 48 kata ini sampai tiap kata mastered; `oneQuestion` ~60% pakai `AIGSpellFix.forWord`; `buildSession` ~1 dari 3 sesi dapat satu soal menjodohkan; `quickMc` (mini-game Fokus, MC saja, <=150 karakter) ~70% pakai `AIGSpellFix.quick`.
+- Muncul di: mini-game Fokus (MC), azkacraft ch.10 "Spell It Right" (MC/ketik/jodoh), Kebun Kata (`word-garden/`, tombol baru "✏️ Perbaiki Ejaan" + engine kini mendukung `match`).
+- `spelling-fix.js` HARUS dimuat setelah `spelling.js` di 12 halaman (azkacraft + 10 mini-game + word-garden). Cache: `spelling.js?v=3`, `spelling-fix.js?v=1`, azkacraft `script.js?v=4` (opsi jodoh kini diacak di `renderMatch`).
+- QA: `node scripts/qa-azka-focus.js 3000` sekarang juga memeriksa 504 soal (opsi unik, jawaban ada, kalimat memuat salah-eja, quick<=150 char). Harus ALL OK.
+
 ### Hub = perpustakaan game ter-cluster (keputusan user 2026-10-13, menggantikan "5 game" 2026-10-12)
 
 Anak complain game banyak yang hilang → SEMUA game (61 tile) balik di hub, tapi diatur oleh `hub-library.js` (layout B, buka-tutup): ⭐ **Favorit kamu** (6 game paling sering dimainkan dari `players/{id}/topicStats` + pin 📌 di `localStorage hub_pins`; fallback Math Race/MathVille/Language&Arts/Ninja/Dino/Plane), lalu 8 section cluster (Balapan, Petualangan, Battle, Olahraga, Teka-teki, Bangun, Belajar, Bo & Barang; 2 pertama kebuka), search, badge ✨/🔥/👀. List lama `.sc-game-list` tetap ada di DOM tapi di-`display:none` oleh script.

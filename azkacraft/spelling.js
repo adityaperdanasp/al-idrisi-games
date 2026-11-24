@@ -288,6 +288,42 @@ divide|to share into equal groups
 subtract|to take one number away from another
 graph|a picture that shows numbers
 fraction|a part of a whole number
+earlier|before the usual or expected time
+weighed|found out how heavy something is
+identical|exactly the same
+exhibition|a public show of art or other things
+portrait|a painting or photo of a person
+qualifications|exams and skills you have passed or learned
+opportunity|a good chance to do something
+advice|helpful words about what someone should do
+advise|to tell someone what you think they should do
+handwriting|the way a person writes with a pen
+really|truly or very
+expert|a person who knows a lot about one subject
+flexible|able to bend easily
+championship|a contest to find the best player or team
+accidentally|by mistake, not on purpose
+potatoes|round vegetables that grow under the ground
+women|grown-up female people
+therefore|for that reason
+naughty|behaving badly
+fortunate|lucky
+wedge|a triangle-shaped piece of something
+switch|a button that turns something on or off
+author|a person who writes books
+operation|treatment by a surgeon, or a process of working
+bought|past tense of buy
+technique|a special way of doing something well
+ribbon|a long thin strip of cloth
+guessed|gave an answer without being sure
+especially|more than usual; above all
+jewellery|rings, necklaces and bracelets
+precious|very valuable
+expensive|costing a lot of money
+guilty|having done something wrong
+accurate|correct and exact
+against|opposed to, or touching for support
+achieve|to succeed in doing something
 `;
   const MANUAL = {
     ocean: ["osean", "oshun", "ocian"], enough: ["enuff", "enogh", "enouf"], beautiful: ["beutiful", "beatiful", "bootiful"], because: ["becuase", "becouse", "becos"],
@@ -343,7 +379,17 @@ fraction|a part of a whole number
     speaker: ["speeker", "spiker", "speakar"], greeting: ["greating", "greetting", "greting"], signature: ["signiture", "signatur", "signeture"], perimeter: ["perimiter", "perimeeter", "parimeter"],
     triangle: ["triangel", "trianggle", "triangal"], rectangle: ["rectangel", "rectanggle", "rectangal"], rhombus: ["rombus", "rhombas", "rhombuss"], angle: ["angel", "anggle", "angal"],
     protractor: ["protracter", "protractur", "protracktor"], multiply: ["multipy", "multiplie", "multyply"], divide: ["divid", "devide", "dividde"], subtract: ["subtrack", "subtrac", "subract"],
-    graph: ["graf", "grahp", "grapf"], fraction: ["fracshun", "fractoin", "fracton"]
+    graph: ["graf", "grahp", "grapf"], fraction: ["fracshun", "fractoin", "fracton"],
+    earlier: ["earlyer", "earleir", "earlyar"], weighed: ["wayed", "weihed", "wayd"], identical: ["identicle", "identicall", "idenical"], exhibition: ["exebition", "exhibishon", "exibition"],
+    portrait: ["portrate", "portret", "portriat"], qualifications: ["kwalifications", "qualifacations", "qualificasions"], opportunity: ["opertunity", "oppertunity", "opportunety"],
+    advice: ["advic", "adwice", "advize"], advise: ["advize", "adwise", "advyse"], handwriting: ["handriting", "handwritting", "handwritng"], really: ["realy", "reely", "realley"],
+    expert: ["exspert", "expurt", "expirt"], flexible: ["flexable", "flexibel", "flexeble"], championship: ["champianship", "champonship", "champeenship"],
+    accidentally: ["acidentally", "accidently", "accidentaly"], potatoes: ["potatos", "patatoes", "potatoos"], women: ["wommen", "wimin", "womin"], therefore: ["therfore", "theirfore", "therefor"],
+    naughty: ["norty", "nauty", "naughtey"], fortunate: ["fortunet", "fortunete", "fortunat"], wedge: ["wege", "wedje", "weadge"], switch: ["swich", "swithc", "swhich"],
+    author: ["awther", "authur", "authar"], operation: ["operashion", "opperation", "operasion"], bought: ["bort", "bougt", "bawt"], technique: ["techneek", "tecnique", "techniqe"],
+    ribbon: ["ribon", "ribbin", "riben"], guessed: ["guesed", "gessed", "gesed"], especially: ["especialy", "expecially", "espesially"], jewellery: ["jewelery", "jewlery", "jewellry"],
+    precious: ["preshous", "precius", "pretious"], expensive: ["exspensive", "expencive", "expensiv"], guilty: ["gilty", "guiltey", "guilti"], accurate: ["accurat", "acurate", "accuratte"],
+    against: ["agenst", "agianst", "againts"], achieve: ["acheive", "acheave", "achive"]
   };
   const WORDS = RAW.trim().split("\n").map(l => l.split("|")).filter(p => p.length === 2 && !/'s$/.test(p[0])).map(([w, d]) => ({ w: w.trim(), d: d.trim() }));
   const VALID = new Set(WORDS.map(x => x.w.toLowerCase()));
@@ -414,6 +460,12 @@ fraction|a part of a whole number
     const m = load(), now = Date.now(), s2 = load2(), lvl = level();
     const school = schoolEntries().filter(x => !exclude.includes(x.w) && stage(x.w) < 3);
     if (school.length && Math.random() < 0.5) return choice(school);
+    // Words Azka found hard on school worksheets (spelling-fix.js): extra weight until each one is mastered.
+    const FX = root.AIGSpellFix;
+    if (FX && Math.random() < 0.35) {
+      const hard = WORDS.filter(x => FX.has(x.w) && !exclude.includes(x.w) && stage(x.w) < 3);
+      if (hard.length) return choice(hard);
+    }
     const due = WORDS.filter(x => m[x.w] && m[x.w].d <= now && !exclude.includes(x.w));
     if (due.length && Math.random() < 0.55) return choice(due);
     const rest = WORDS.filter(x => !exclude.includes(x.w) && (s2[x.w] || tierOf(x.w) <= lvl));
@@ -476,6 +528,8 @@ fraction|a part of a whole number
   }
   function oneQuestion(exclude) {
     const e = chooseWord(exclude), r = Math.random();
+    // "Correcting spelling mistakes" formats (worksheet words): sentence fix as multiple choice / typed, which-word-is-wrong, tricky-three
+    if (root.AIGSpellFix && root.AIGSpellFix.has(e.w) && Math.random() < 0.6) { const fq = root.AIGSpellFix.forWord(e.w, false); if (fq) return fq; }
     if (r < 0.30) return mcQuestion(e);
     if (r < 0.58) return typedListen(e);
     if (r < 0.84) return typedMissing(e);
@@ -484,11 +538,15 @@ fraction|a part of a whole number
   function buildSession(n) {
     const used = [], out = [];
     while (out.length < n) { const q = oneQuestion(used); used.push(q.spellWord); out.push(q); }
+    // about one session in three also gets a "match the wrong spelling to the right one" question
+    if (root.AIGSpellFix && n >= 5 && Math.random() < 0.34) out[rand(1, n - 1)] = root.AIGSpellFix.matchRandom();
     return out;
   }
   // Multiple choice only, in the shape every mini-game's pool uses.
   function quickMc() {
-    const e = chooseWord(), q = mcQuestion(e);
+    const e = chooseWord();
+    if (root.AIGSpellFix && root.AIGSpellFix.has(e.w) && Math.random() < 0.7) { const fq = root.AIGSpellFix.quick(e.w); if (fq) return fq; }
+    const q = mcQuestion(e);
     return { prompt: plain(q.prompt), options: q.options, correctLabel: q.answer, spellWord: e.w };
   }
   // Short card pair for tile games (e.g. Memory Match): definition <-> word.

@@ -651,7 +651,7 @@ function handleFillAnswer(q) {
 
 /* ----- Matching (also used for Craft/Color Match) ----- */
 function renderMatch(q, area, isCraft) {
-  const rightOptions = q.pairs.map(p => p.right);
+  const rightOptions = q.pairs.map(p => p.right).sort(() => Math.random() - 0.5); // shuffled so the list order never gives the answer away
   area.innerHTML = `
     <div class="question-prompt">${isCraft ? '<span class="craft-icon">🖌️</span>' : ""}${q.prompt}</div>
     <div class="match-grid" id="match-grid"></div>
