@@ -162,7 +162,7 @@
       hero.appendChild(scene);
       // "Fokus Azka" ON: the daily Play button only picks from the games that stay open.
       let focusOnNow = false; try { focusOnNow = localStorage.getItem("azka_focus") === "1"; } catch (e) {}
-      const PLAYLIST = focusOnNow ? [["mathville/", "MathVille"], ["azkacraft/", "Language & Arts"], ["treasure-dig/", "Treasure Dig"], ["math-tennis/", "Math Tennis"], ["quiz-show/", "Quiz Show"]] : MAIN;
+      const PLAYLIST = focusOnNow ? [["focus-round/", "Focus Round"], ["mathville/", "MathVille"], ["azkacraft/", "Language & Arts"], ["treasure-dig/", "Treasure Dig"], ["math-tennis/", "Math Tennis"], ["quiz-show/", "Quiz Show"]] : MAIN;
       const day = Math.floor(Date.now() / 86400000) % PLAYLIST.length, pick = PLAYLIST[day];
       const play = document.createElement("a"); play.className = "bw-play"; play.href = pick[0]; play.id = "bw-play";
       play.innerHTML = `<span class="bw-play-big">▶ CONTINUE ADVENTURE</span><span class="bw-play-sub">Today: ${pick[1]}</span>`;

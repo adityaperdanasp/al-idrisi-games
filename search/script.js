@@ -11,7 +11,7 @@ const INDEX = [
   ["🏎️", "Math Race", "../multipleazka/", "Race by solving multiplication", "math race perkalian multiplication times tables balapan racing multiplayer"],
   ["📖", "Language & Arts", "../azkacraft/", "Spelling, antonyms, prefixes, grammar, reading", "language english bahasa inggris spelling grammar antonym prefix suffix contraction capital reading writing"],
   ["🪐", "SolarQuest", "../azkauniverse/", "Science adventure through space", "science sains planet space solar system star atom"],
-  ["🎯", "Focus Round", "../focus-round/", "20 mixed practice questions", "focus practice latihan mixed campur"],
+  ["🎯", "Focus Round", "../focus-round/", "20 questions: story problems, spelling, tricky words", "focus round practice mixed story problems spelling tricky words fix"],
   ["🥷", "Ninja Runner", "../ninja-runner/", "Run, jump, answer questions", "ninja runner game jump lari"],
   ["🥊", "Boss Rush", "../boss-rush/", "Fight bosses with answers", "boss fight battle"],
   ["🧟", "Zombie Math Defense", "../zombie-defense/", "Shoot zombies with right answers", "zombie defense tower math action"],
