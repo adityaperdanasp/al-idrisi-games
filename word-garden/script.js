@@ -76,6 +76,7 @@ function practice() {
     <button class="kit-btn block" data-m="revenge" type="button">🔥 Ronde Balas Dendam — ${weak ? weak + " kata yang pernah salah" : "belum ada kata salah, latihan campur"}</button>
     <button class="kit-btn block" data-m="bee" type="button">🐝 Spelling Bee — dengar & ketik, 3 nyawa, ada timer</button>
     <button class="kit-btn block" data-m="duel" type="button">👨‍👧 Duel dengan Papa/Mama — gantian di tablet ini</button>
+    ${window.AIGSpellFix ? '<button class="kit-btn block" data-m="fix" type="button">✏️ Perbaiki Ejaan — kata sulit dari lembar kerja sekolah (pilih, ketik, jodohkan)</button>' : ""}
     <button class="kit-btn block" data-m="ten" type="button">🌱 Latihan 10 kata</button></div>`;
   document.querySelectorAll("[data-m]").forEach(b => b.onclick = () => start(b.dataset.m));
 }
@@ -84,6 +85,12 @@ function start(mode) {
   if (mode === "revenge") { const r = SP().buildRevenge(6); play({ title: "🔥 Ronde Balas Dendam", qs: r.questions, record: true, intro: r.weakCount ? `Kita kalahkan ${r.weakCount} kata yang pernah salah!` : "Belum ada kata yang salah, jadi ini latihan campur." }); }
   else if (mode === "bee") play({ title: "🐝 Spelling Bee", qs: SP().buildBee(10), record: true, lives: 3, secs: 25, autoSay: true, intro: "Dengarkan kata, lalu ketik ejaannya sebelum waktu habis." });
   else if (mode === "ten") play({ title: "🌱 Latihan 10 kata", qs: SP().buildSession(10), record: true });
+  else if (mode === "fix") {
+    const F = window.AIGSpellFix, ws = F.words().sort(() => Math.random() - 0.5), qs = [];
+    for (let k = 0; k < 8; k++) qs.push(F.forWord(ws[k], false));
+    qs.splice(2 + Math.floor(Math.random() * 6), 0, F.matchRandom());
+    play({ title: "✏️ Perbaiki Ejaan", qs, record: true, intro: "Cari ejaan yang salah dan betulkan. Ada soal pilih, ketik, dan jodohkan." });
+  }
   else if (mode === "duel") duel();
 }
 
@@ -105,14 +112,15 @@ function play(cfg, done) {
     clearInterval(timer);
     if (i >= qs.length || (cfg.lives && lives <= 0)) return finish();
     const q = qs[i];
-    const typed = q.type === "fill";
+    const typed = q.type === "fill", isMatch = q.type === "match";
+    const mixed = isMatch ? q.pairs.map(x => x.right).sort(() => Math.random() - 0.5) : [];
     $("wg-main").innerHTML = `<div class="kit-card">
       <div class="wg-hud"><span>${esc(cfg.title)} · ${i + 1}/${qs.length}</span><span>${cfg.lives ? "❤️".repeat(Math.max(0, lives)) + " " : ""}⭐ ${score}</span></div>
       ${cfg.secs ? '<div class="wg-time"><i id="wg-time"></i></div>' : ""}
       ${i === 0 && cfg.intro ? `<div class="kit-sub">${esc(cfg.intro)}</div>` : ""}
       <div class="wg-q">${q.prompt}</div>
-      ${typed ? `<input class="wg-in" id="wg-in" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Ketik kata di sini"><button class="kit-btn block" id="wg-check" type="button">Cek jawaban</button>`
-              : `<div class="wg-opts">${q.options.map(o => `<button class="wg-opt" type="button" data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>`}
+      ${isMatch ? `<div class="wg-match">${q.pairs.map((x, k) => `<div class="wg-mrow"><span class="wg-mleft">${esc(x.left)}</span><select class="wg-msel" data-k="${k}"><option value="">Pilih ejaan benar</option>${mixed.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("")}</select></div>`).join("")}</div><button class="kit-btn block" id="wg-mcheck" type="button">Cek jawaban</button>` : typed ? `<input class="wg-in" id="wg-in" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Ketik kata di sini"><button class="kit-btn block" id="wg-check" type="button">Cek jawaban</button>`
+              : isMatch ? "" : `<div class="wg-opts">${q.options.map(o => `<button class="wg-opt" type="button" data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>`}
       <div id="wg-after"></div></div>`;
     let answered = false;
     const settle = (ok, given) => {
@@ -123,12 +131,17 @@ function play(cfg, done) {
         try { AIGLeaderboard.recordTopicAttempt("language-arts", "Spelling Words", ok); } catch (e) {}
       }
       const tip = q.spellWord ? SP().afterAnswerHtml(q.spellWord, ok) : "";
-      $("wg-after").innerHTML = `<div class="wg-fb">${ok ? "✅ Benar!" : "❌ " + (given === null ? "Waktu habis. " : "") + "Jawabannya: <b>" + esc(q.answer) + "</b>"}</div>${tip.replace(/sp-note sp-/g, "wg-note wg-")}<button class="kit-btn block" id="wg-next" type="button">${i + 1 >= qs.length || (cfg.lives && lives <= 0) ? "Selesai" : "Lanjut"}</button>`;
+      const ans = isMatch ? q.pairs.map(x => esc(x.left) + " → <b>" + esc(x.right) + "</b>").join("<br>") : "<b>" + esc(q.answer) + "</b>";
+      $("wg-after").innerHTML = `<div class="wg-fb">${ok ? "✅ Benar!" : "❌ " + (given === null ? "Waktu habis. " : "") + "Jawabannya: " + ans}</div>${tip.replace(/sp-note sp-/g, "wg-note wg-")}<button class="kit-btn block" id="wg-next" type="button">${i + 1 >= qs.length || (cfg.lives && lives <= 0) ? "Selesai" : "Lanjut"}</button>`;
       document.querySelectorAll(".wg-opt").forEach(b => { b.disabled = true; if (b.dataset.o === q.answer) b.classList.add("ok"); else if (b.dataset.o === given) b.classList.add("bad"); });
+      document.querySelectorAll(".wg-msel").forEach(el => { el.disabled = true; const x = q.pairs[+el.dataset.k]; el.style.background = el.value === x.right ? "#c9f2c7" : "#ffd0d0"; });
+      const mc = $("wg-mcheck"); if (mc) mc.disabled = true;
       const inp = $("wg-in"); if (inp) { inp.disabled = true; const c = $("wg-check"); if (c) c.disabled = true; }
       $("wg-next").onclick = () => { i++; show(); };
     };
-    if (typed) {
+    if (isMatch) {
+      $("wg-mcheck").onclick = () => { const sels = [...document.querySelectorAll(".wg-msel")]; if (sels.some(el => !el.value)) return; settle(sels.every(el => el.value === q.pairs[+el.dataset.k].right), "match"); };
+    } else if (typed) {
       const go = () => { const v = $("wg-in").value.trim(); if (!v) return; settle(v.toLowerCase() === String(q.answer).toLowerCase(), v); };
       $("wg-check").onclick = go; $("wg-in").onkeydown = ev => { if (ev.key === "Enter") { ev.preventDefault(); ev.stopPropagation(); go(); } }; $("wg-in").focus();
     } else document.querySelectorAll(".wg-opt").forEach(b => b.onclick = () => settle(b.dataset.o === q.answer, b.dataset.o));
